@@ -23,7 +23,7 @@ app = FastAPI(
 # CORS - frontend'in backend'e erismesi icin
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Next.js dev server
+    allow_origins=["*"],  # Tum origin'lere izin ver (dev mode)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
