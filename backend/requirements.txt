@@ -1,0 +1,23 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# AI providers
+anthropic>=0.40.0
+openai>=1.50.0
+
+# Twitter/X
+tweepy>=4.14.0
+twikit>=2.3.0
+nest_asyncio>=1.6.0
+
+# Search & scraping
+duckduckgo-search>=7.0.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml
+
+# Utils
+pandas
