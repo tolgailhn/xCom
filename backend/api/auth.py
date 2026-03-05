@@ -75,7 +75,10 @@ async def auth_middleware(request: Request, call_next):
     """Middleware to check auth token on /api/* routes (except /api/auth/*)."""
     path = request.url.path
 
-    # Skip auth for these paths
+    # Skip auth for preflight CORS requests and public paths
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
     if (
         path.startswith("/api/auth/")
         or path == "/api/health"
