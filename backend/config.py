@@ -24,8 +24,19 @@ class Settings(BaseSettings):
 
     # Twitter/X API
     twitter_bearer_token: str = ""
+    twitter_api_key: str = ""
+    twitter_api_secret: str = ""
+    twitter_access_token: str = ""
+    twitter_access_secret: str = ""
+
+    # Twitter/X Cookies (twikit)
     twitter_ct0: str = ""
     twitter_auth_token: str = ""
+    twikit_auth_token: str = ""
+    twikit_ct0: str = ""
+    twikit_username: str = ""
+    twikit_password: str = ""
+    twikit_email: str = ""
 
     # Telegram notifications
     telegram_bot_token: str = ""
