@@ -4,19 +4,16 @@ import { usePathname } from "next/navigation";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import Sidebar from "@/components/Sidebar";
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
 
   useEffect(() => {
-    // If not authenticated and not on login page, redirect to login
     if (!isAuthenticated && pathname !== "/login") {
-      router.push("/login");
+      window.location.href = "/login";
     }
-  }, [isAuthenticated, pathname, router]);
+  }, [isAuthenticated, pathname]);
 
   // Login page — no sidebar, no guard
   if (pathname === "/login") {
