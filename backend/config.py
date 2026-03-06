@@ -6,8 +6,11 @@ from pathlib import Path
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
-# .env dosyasini backend/ klasorunde ara
-_ENV_FILE = Path(__file__).resolve().parent / ".env"
+# .env dosyasini once backend/ sonra proje koku (Xcom/) icinde ara
+_BACKEND_DIR = Path(__file__).resolve().parent
+_ENV_FILE = _BACKEND_DIR / ".env"
+if not _ENV_FILE.exists():
+    _ENV_FILE = _BACKEND_DIR.parent / ".env"
 
 
 class Settings(BaseSettings):
