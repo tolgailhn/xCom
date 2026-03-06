@@ -2,8 +2,12 @@
 Application configuration - single source of truth for all settings.
 Reads from environment variables or .env file.
 """
+from pathlib import Path
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+
+# .env dosyasini backend/ klasorunde ara
+_ENV_FILE = Path(__file__).resolve().parent / ".env"
 
 
 class Settings(BaseSettings):
@@ -46,7 +50,7 @@ class Settings(BaseSettings):
     timezone: str = "Europe/Istanbul"
 
     model_config = {
-        "env_file": ".env",
+        "env_file": str(_ENV_FILE),
         "env_file_encoding": "utf-8",
         "extra": "ignore",
     }
