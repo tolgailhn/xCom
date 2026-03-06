@@ -1,7 +1,4 @@
-const API_BASE =
-  typeof window !== "undefined"
-    ? `${window.location.protocol}//${window.location.hostname}:8000`
-    : "http://localhost:8000";
+const API_BASE = "http://localhost:8000";
 
 function getToken(): string | null {
   return localStorage.getItem("xcom_token");
@@ -33,11 +30,35 @@ export function getDashboardStats() {
 }
 
 // Scanner
-export function scanTopics(timeRange: string, category: string) {
+export function scanTopics(params: {
+  time_range: string;
+  category?: string;
+  max_results?: number;
+  custom_query?: string;
+  min_likes?: number;
+  min_retweets?: number;
+  min_followers?: number;
+  engine?: string;
+}) {
   return apiFetch("/api/scanner/scan", {
     method: "POST",
-    body: JSON.stringify({ time_range: timeRange, category }),
+    body: JSON.stringify(params),
   });
+}
+
+export function discoverTopics(params: {
+  time_range: string;
+  max_results?: number;
+  engine?: string;
+}) {
+  return apiFetch("/api/scanner/discover", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+export function getCategories() {
+  return apiFetch("/api/scanner/categories");
 }
 
 // Generator
@@ -47,6 +68,8 @@ export function generateTweet(params: {
   length?: string;
   thread?: boolean;
   research_context?: string;
+  content_format?: string;
+  quote_url?: string;
 }) {
   return apiFetch("/api/generator/tweet", {
     method: "POST",
@@ -55,10 +78,66 @@ export function generateTweet(params: {
 }
 
 // Research
-export function researchTopic(topic: string, depth: string = "normal") {
+export function researchTopic(params: {
+  topic: string;
+  depth?: string;
+  engine?: string;
+  agentic?: boolean;
+}) {
   return apiFetch("/api/generator/research", {
     method: "POST",
-    body: JSON.stringify({ topic, depth }),
+    body: JSON.stringify(params),
+  });
+}
+
+// Score
+export function scoreTweet(text: string) {
+  return apiFetch("/api/generator/score", {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
+}
+
+// Media Finder
+export function findMedia(topic: string, source: string = "x") {
+  return apiFetch("/api/generator/find-media", {
+    method: "POST",
+    body: JSON.stringify({ topic, source }),
+  });
+}
+
+// Fact Check
+export function factCheck(text: string, topic: string = "") {
+  return apiFetch("/api/generator/fact-check", {
+    method: "POST",
+    body: JSON.stringify({ text, topic }),
+  });
+}
+
+// Styles & Formats
+export function getStyles() {
+  return apiFetch("/api/generator/styles");
+}
+
+// Long Content
+export function generateLongContent(params: {
+  topic: string;
+  style?: string;
+  length?: string;
+  research_context?: string;
+  content_format?: string;
+}) {
+  return apiFetch("/api/generator/long-content", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+// Topic Discovery
+export function discoverContentTopics(focusArea: string = "", engine: string = "default") {
+  return apiFetch("/api/generator/discover-topics", {
+    method: "POST",
+    body: JSON.stringify({ focus_area: focusArea, engine }),
   });
 }
 
@@ -97,11 +176,99 @@ export function deleteDraft(index: number) {
 }
 
 // Analytics
-export function analyzeAccount(username: string, tweetCount: number) {
+export function analyzeAccount(username: string, tweetCount: number, aiReport: boolean = true) {
   return apiFetch("/api/analytics/analyze", {
     method: "POST",
-    body: JSON.stringify({ username, tweet_count: tweetCount }),
+    body: JSON.stringify({ username, tweet_count: tweetCount, ai_report: aiReport }),
   });
+}
+
+export function analyzeMulti(usernames: string[], tweetCount: number = 200, aiReport: boolean = true) {
+  return apiFetch("/api/analytics/analyze-multi", {
+    method: "POST",
+    body: JSON.stringify({ usernames, tweet_count: tweetCount, ai_report: aiReport }),
+  });
+}
+
+export function getSavedAnalyses() {
+  return apiFetch("/api/analytics/saved");
+}
+
+export function deleteAnalysis(username: string) {
+  return apiFetch(`/api/analytics/delete/${encodeURIComponent(username)}`, { method: "DELETE" });
+}
+
+export function getTrainingContext(topic: string = "") {
+  return apiFetch(`/api/analytics/training-context?topic=${encodeURIComponent(topic)}`);
+}
+
+export function exportAnalyses() {
+  return apiFetch("/api/analytics/export");
+}
+
+export function importAnalyses(data: string) {
+  return apiFetch("/api/analytics/import", {
+    method: "POST",
+    body: JSON.stringify({ data }),
+  });
+}
+
+// Followers
+export function fetchFollowers(username: string, limit: number = 200, verifiedOnly: boolean = true) {
+  return apiFetch("/api/analytics/followers/fetch", {
+    method: "POST",
+    body: JSON.stringify({ username, limit, verified_only: verifiedOnly }),
+  });
+}
+
+export function listFollowers() {
+  return apiFetch("/api/analytics/followers/list");
+}
+
+export function deleteFollowers(username: string) {
+  return apiFetch(`/api/analytics/followers/${encodeURIComponent(username)}`, { method: "DELETE" });
+}
+
+// Tweet Pool
+export function getPoolAccounts() {
+  return apiFetch("/api/analytics/pool/accounts");
+}
+
+export function savePoolAccounts(accounts: string[]) {
+  return apiFetch("/api/analytics/pool/accounts", {
+    method: "POST",
+    body: JSON.stringify({ accounts }),
+  });
+}
+
+export function getPoolStats() {
+  return apiFetch("/api/analytics/pool/stats");
+}
+
+export function fetchPoolTweets(minEngagement: number = 100, tweetCount: number = 500) {
+  return apiFetch("/api/analytics/pool/fetch", {
+    method: "POST",
+    body: JSON.stringify({ min_engagement: minEngagement, tweet_count: tweetCount }),
+  });
+}
+
+export function importAnalysesToPool(minEngagement: number = 100) {
+  return apiFetch("/api/analytics/pool/import-analyses", {
+    method: "POST",
+    body: JSON.stringify({ min_engagement: minEngagement }),
+  });
+}
+
+export function getPoolDna() {
+  return apiFetch("/api/analytics/pool/dna");
+}
+
+export function regeneratePoolDna() {
+  return apiFetch("/api/analytics/pool/regenerate-dna", { method: "POST" });
+}
+
+export function getPoolPreview(limit: number = 10) {
+  return apiFetch(`/api/analytics/pool/preview?limit=${limit}`);
 }
 
 // Calendar
@@ -109,7 +276,41 @@ export function getTodaySchedule() {
   return apiFetch("/api/calendar/today");
 }
 
-// Settings
+export function logPost(params: {
+  slot_time: string;
+  post_type?: string;
+  has_media?: boolean;
+  has_self_reply?: boolean;
+  url?: string;
+  content?: string;
+}) {
+  return apiFetch("/api/calendar/log", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+export function getChecklist(date: string) {
+  return apiFetch(`/api/calendar/checklist/${encodeURIComponent(date)}`);
+}
+
+export function updateChecklist(date: string, items: Record<string, boolean>) {
+  return apiFetch("/api/calendar/checklist", {
+    method: "POST",
+    body: JSON.stringify({ date, items }),
+  });
+}
+
+export function getWeeklySummary() {
+  return apiFetch("/api/calendar/weekly-summary");
+}
+
+export function getCalendarHistory(limit: number = 30) {
+  return apiFetch(`/api/calendar/history?limit=${limit}`);
+}
+
+// ── Settings ───────────────────────────────────────────
+
 export function getAPIStatus() {
   return apiFetch("/api/settings/status");
 }
@@ -119,4 +320,112 @@ export function updateAPIKey(key: string, value: string) {
     method: "POST",
     body: JSON.stringify({ key, value }),
   });
+}
+
+// Connection Tests
+export function testTwitter() {
+  return apiFetch("/api/settings/test-twitter", { method: "POST" });
+}
+
+export function testAI() {
+  return apiFetch("/api/settings/test-ai", { method: "POST" });
+}
+
+export function testGrok() {
+  return apiFetch("/api/settings/test-grok", { method: "POST" });
+}
+
+export function testTelegram() {
+  return apiFetch("/api/settings/test-telegram", { method: "POST" });
+}
+
+export function testTwikit() {
+  return apiFetch("/api/settings/test-twikit", { method: "POST" });
+}
+
+// Twikit / Cookies
+export function getTwikitStatus() {
+  return apiFetch("/api/settings/twikit-status");
+}
+
+export function saveTwikitCookies(auth_token: string, ct0: string) {
+  return apiFetch("/api/settings/twikit-cookies", {
+    method: "POST",
+    body: JSON.stringify({ auth_token, ct0 }),
+  });
+}
+
+export function deleteTwikitCookies() {
+  return apiFetch("/api/settings/twikit-cookies", { method: "DELETE" });
+}
+
+// X Account Info
+export function getAccountInfo() {
+  return apiFetch("/api/settings/account-info");
+}
+
+// Monitored Accounts
+export function getMonitoredAccounts() {
+  return apiFetch("/api/settings/monitored-accounts");
+}
+
+export function addMonitoredAccount(username: string) {
+  return apiFetch("/api/settings/monitored-accounts", {
+    method: "POST",
+    body: JSON.stringify({ username }),
+  });
+}
+
+export function removeMonitoredAccount(username: string) {
+  return apiFetch(`/api/settings/monitored-accounts/${encodeURIComponent(username)}`, {
+    method: "DELETE",
+  });
+}
+
+// User Samples (Writing Style)
+export function getUserSamples() {
+  return apiFetch("/api/settings/user-samples");
+}
+
+export function addUserSample(text: string) {
+  return apiFetch("/api/settings/user-samples", {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
+}
+
+export function addBulkSamples(texts: string[]) {
+  return apiFetch("/api/settings/user-samples/bulk", {
+    method: "POST",
+    body: JSON.stringify({ texts }),
+  });
+}
+
+export function deleteUserSample(index: number) {
+  return apiFetch(`/api/settings/user-samples/${index}`, { method: "DELETE" });
+}
+
+// Persona
+export function getPersona() {
+  return apiFetch("/api/settings/persona");
+}
+
+export function savePersona(persona: string) {
+  return apiFetch("/api/settings/persona", {
+    method: "POST",
+    body: JSON.stringify({ persona }),
+  });
+}
+
+export function analyzeStyle() {
+  return apiFetch("/api/settings/analyze-style", { method: "POST" });
+}
+
+// Post History
+export function getPostHistory() {
+  return apiFetch("/api/settings/post-history");
+}
+
+export function clearPostHistory() {
+  return apiFetch("/api/settings/post-history", { method: "DELETE" });
 }

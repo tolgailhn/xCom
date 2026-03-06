@@ -4,6 +4,8 @@ interface Slot {
   time: string;
   icon: string;
   posted: boolean;
+  label?: string;
+  type?: string;
 }
 
 interface ScheduleCardProps {
@@ -14,9 +16,14 @@ interface ScheduleCardProps {
 
 const slotEmoji: Record<string, string> = {
   sunrise: "☀️",
+  sun: "☀️",
   lunch: "🍽️",
+  utensils: "🍽️",
   afternoon: "🚶",
+  walking: "🚶",
   night: "🌙",
+  moon: "🌙",
+  sunset: "🌅",
 };
 
 export default function ScheduleCard({
@@ -25,11 +32,13 @@ export default function ScheduleCard({
   todayPosts,
 }: ScheduleCardProps) {
   return (
-    <div
-      className="glass-card"
+    <a
+      href="/takvim"
+      className="block glass-card hover:border-[var(--accent-blue)]/30 transition-colors"
       style={{
         borderLeft: "3px solid transparent",
         borderImage: "linear-gradient(180deg, #6366f1, #22d3ee) 1",
+        textDecoration: "none",
       }}
     >
       <div className="flex justify-between items-center flex-wrap gap-2">
@@ -42,11 +51,15 @@ export default function ScheduleCard({
             </span>
           </div>
         </div>
-        {nextSlot && (
+        {nextSlot ? (
           <span className="text-sm text-[var(--accent-blue)] font-semibold">
             Sonraki: {nextSlot}
           </span>
-        )}
+        ) : todayPosts >= 4 ? (
+          <span className="text-sm text-[var(--accent-green)] font-semibold">
+            Bugun Tamam
+          </span>
+        ) : null}
       </div>
 
       <div className="flex gap-4 mt-3">
@@ -62,6 +75,10 @@ export default function ScheduleCard({
           </div>
         ))}
       </div>
-    </div>
+
+      <div className="text-xs text-[var(--text-secondary)] mt-2 opacity-70">
+        Takvime git →
+      </div>
+    </a>
   );
 }

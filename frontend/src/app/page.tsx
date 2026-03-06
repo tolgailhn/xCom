@@ -22,6 +22,54 @@ interface DashboardData {
   }[];
 }
 
+function HowToUse() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="text-sm text-[var(--accent-blue)] hover:underline"
+      >
+        {open ? "▾ Nasil Kullanilir?" : "▸ Nasil Kullanilir?"}
+      </button>
+      {open && (
+        <div className="glass-card mt-2 text-sm space-y-3">
+          <div>
+            <h4 className="font-semibold">1. API Anahtarlarini Ayarla</h4>
+            <p className="text-xs text-[var(--text-secondary)]">
+              <a href="/ayarlar" className="text-[var(--accent-blue)] hover:underline">Ayarlar</a> sayfasindan AI API anahtarini (MiniMax, Anthropic veya OpenAI) ve X cerezlerini girin.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-semibold">2. AI Gundem Tara</h4>
+            <p className="text-xs text-[var(--text-secondary)]">
+              <a href="/tara" className="text-[var(--accent-blue)] hover:underline">Tara</a> sayfasindan zaman araligini secin, AI gelismelerini inceleyin.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-semibold">3. Tweet / Icerik Yaz</h4>
+            <p className="text-xs text-[var(--text-secondary)]">
+              <a href="/yaz" className="text-[var(--accent-blue)] hover:underline">Yaz</a> veya <a href="/icerik" className="text-[var(--accent-blue)] hover:underline">Icerik</a> sayfasindan konu girin, tarzi secin, AI uretsin. Begendiyseniz paylasin.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-semibold">4. Tweet Analizi</h4>
+            <p className="text-xs text-[var(--text-secondary)]">
+              <a href="/analiz" className="text-[var(--accent-blue)] hover:underline">Analiz</a> sayfasindan hesap tweet'lerini analiz edin. AI bu verilerle daha iyi tweet yazar.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-semibold">5. Takipci Kesfi</h4>
+            <p className="text-xs text-[var(--text-secondary)]">
+              <a href="/analiz" className="text-[var(--accent-blue)] hover:underline">Analiz &gt; Takipci Kesfi</a> tab'indan nisinizdeki hesaplarin takipcilerini kesfedin.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -190,13 +238,28 @@ export default function Dashboard() {
         )}
       </div>
 
+      {/* How to Use Guide */}
+      <HowToUse />
+
       {/* Setup warning */}
       {(!data.has_twitter || !data.has_ai) && (
-        <div className="glass-card border-[var(--accent-amber)]/50 flex items-center gap-3">
+        <div className="glass-card border-[var(--accent-amber)]/50 flex items-start gap-3">
           <span className="text-2xl">⚠️</span>
-          <span className="text-sm text-[var(--accent-amber)]">
-            API anahtarlarinizi Ayarlar sayfasindan yapilandirin.
-          </span>
+          <div>
+            <p className="text-sm text-[var(--accent-amber)] font-semibold">
+              API anahtarlari yapilandirilmamis
+            </p>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">
+              {!data.has_ai && "AI API anahtari (MiniMax, Anthropic veya OpenAI) gerekli. "}
+              {!data.has_twitter && "Twitter Bearer Token gerekli. "}
+              <a
+                href="/ayarlar"
+                className="text-[var(--accent-blue)] hover:underline"
+              >
+                Ayarlar sayfasina git →
+              </a>
+            </p>
+          </div>
         </div>
       )}
     </div>

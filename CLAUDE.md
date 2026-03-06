@@ -129,6 +129,125 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 
 ## Değişiklik Günlüğü
 
+---
+
+## MIGRATION PLANI: Streamlit -> Next.js + FastAPI (AKTIF)
+
+### ONEMLI NOTLAR
+- **Kaynak Streamlit kodu**: Bu repodaki `pages/`, `modules/`, `streamlit_app.py` dosyalari
+- **Hedef Next.js kodu**: `xcom-aktif/frontend/` ve `xcom-aktif/backend/` klasorleri
+- **Workflow**: Degisiklikler `xcom-aktif/` icine yazilir, kullanici xCom reposuna tasir
+- **Streamlit dosyalari TASINMAZ**: Sadece Next.js + FastAPI kodu yazilir
+
+### FAZ 1: AYARLAR SAYFASI (TAMAMLANDI - 2026-03-06)
+Streamlit: `pages/3_Ayarlar.py` -> Next.js: `xcom-aktif/frontend/src/app/ayarlar/page.tsx`
+Backend: `xcom-aktif/backend/api/settings.py`
+
+- [x] 1.1 Backend: Settings API endpoint'leri (GET/POST API keys, test connections)
+- [x] 1.2 Frontend: API anahtarlari formu (Twitter, Twikit, AI, Grok, Telegram)
+- [x] 1.3 Frontend: Baglanti test butonlari (Twitter, AI, Grok, Telegram, Twikit)
+- [x] 1.4 Frontend: Twikit/Cookie yonetimi
+- [x] 1.5 Frontend: Izlenen hesaplar yonetimi
+- [x] 1.6 Frontend: Yazim tarzi egitimi (ornek tweet'ler, persona)
+- [x] 1.7 Frontend: Paylasim gecmisi goruntuleme
+
+### FAZ 2: TARA SAYFASI (TAMAMLANDI - 2026-03-06)
+Streamlit: `pages/1_Tara.py` -> Next.js: `xcom-aktif/frontend/src/app/tara/page.tsx`
+Backend: `xcom-aktif/backend/api/scanner.py`
+
+- [x] 2.1 Frontend: Gelismis filtreler (min like/RT/takipci, ozel sorgu)
+- [x] 2.2 Frontend: Arama motoru secimi (DuckDuckGo/Grok)
+- [x] 2.3 Frontend: Kesfet tab'i (AI Gelismeler, GitHub Repos, Trending)
+- [x] 2.4 Frontend: Hesap bazli gorunum
+- [x] 2.5 Frontend: Kategori filtrelerini genislet (10 kategori)
+- [x] 2.6 Frontend: Quote Tweet butonu ve akisi
+- [x] 2.7 Backend: Grok arama endpoint'i
+- [x] 2.8 Backend: Kesfet endpoint'leri
+
+### FAZ 3: YAZ SAYFASI (TAMAMLANDI - 2026-03-06)
+Streamlit: `pages/2_Yaz.py` -> Next.js: `xcom-aktif/frontend/src/app/yaz/page.tsx`
+Backend: `xcom-aktif/backend/api/generator.py`
+
+- [x] 3.1 Frontend: Tweet scoring/kalite gostergesi (ScoreBar component)
+- [x] 3.2 Frontend: Media bulma (gorsel/video arama - X/Web/Both)
+- [x] 3.3 Frontend: Vision analiz (gorsel caption)
+- [x] 3.4 Frontend: Agentic Mode (standard/grok toggle)
+- [x] 3.5 Frontend: Persona/stil egitimi entegrasyonu (8 stil + 6 format)
+- [x] 3.6 Frontend: Claim verification / fact-checking (claim-by-claim display)
+- [x] 3.7 Backend: Media bulma endpoint'i (/find-media)
+- [x] 3.8 Backend: Score endpoint'i (/score)
+- [x] 3.9 Backend: Styles/formats endpoint'i (/styles)
+- [x] 3.10 Frontend: 3 tab layout (Tweet Yaz, Quote Tweet, Hizli Reply)
+- [x] 3.11 Frontend: Arama motoru secimi (DuckDuckGo/Grok)
+- [x] 3.12 Frontend: Quote Tweet tab (arastirma + deep verify)
+
+### FAZ 4: ANALIZ SAYFASI (TAMAMLANDI - 2026-03-06)
+Streamlit: `pages/4_Analiz.py` -> Next.js: `xcom-aktif/frontend/src/app/analiz/page.tsx`
+Backend: `xcom-aktif/backend/api/analytics.py`
+
+- [x] 4.1 Frontend: 5 tab layout (Yeni Analiz, Kayitli, Takipci, Havuz, Export)
+- [x] 4.2 Frontend: Coklu hesap analizi (virgul ile ayirma)
+- [x] 4.3 Frontend: Stil DNA detaylari (hook ornekleri, imza kelimeleri/kaliplari, kapanis)
+- [x] 4.4 Frontend: Uzunluk + Soru/Beyan analizi
+- [x] 4.5 Frontend: Zaman analizi (en iyi saatler)
+- [x] 4.6 Frontend: Hashtag + keyword analizi
+- [x] 4.7 Frontend: Top tweet'ler siralama ile
+- [x] 4.8 Frontend: Kayitli analizler (training context preview, silme)
+- [x] 4.9 Frontend: Takipci kesfeti (onayli filtre, kayitli listeler)
+- [x] 4.10 Frontend: Tweet havuzu (hesap yonetimi, cekme, DNA, onizleme)
+- [x] 4.11 Frontend: Export/Import (JSON download + file upload)
+- [x] 4.12 Backend: analyze-multi, saved, delete, training-context
+- [x] 4.13 Backend: export/import endpoints
+- [x] 4.14 Backend: Follower fetch/list/delete endpoints
+- [x] 4.15 Backend: Pool accounts/fetch/stats/DNA/preview endpoints
+
+### FAZ 5: ICERIK SAYFASI (TAMAMLANDI - 2026-03-06)
+Streamlit: `pages/6_Icerik.py` -> Next.js: `xcom-aktif/frontend/src/app/icerik/page.tsx`
+Backend: `xcom-aktif/backend/api/generator.py`
+
+- [x] 5.1 Frontend: 2 tab layout (Konu Kesfet + Icerik Uret)
+- [x] 5.2 Frontend: Konu Kesfet (odak alani, motor secimi, konu kartlari)
+- [x] 5.3 Frontend: Icerik tarzi secimi (5 tarz: deneyim, egitici, karsilastirma, analiz, hikaye)
+- [x] 5.4 Frontend: Format secimi (6 format: micro-mega)
+- [x] 5.5 Frontend: Arastirma ayarlari (mod, motor, agentic toggle)
+- [x] 5.6 Frontend: Kalite skoru gostergesi (ScoreBar)
+- [x] 5.7 Frontend: Media bulma entegrasyonu (X/Web/Both)
+- [x] 5.8 Frontend: Paylasilan ContentDisplay componenti
+- [x] 5.9 Backend: POST /discover-topics endpoint
+- [x] 5.10 Backend: CONTENT_STYLES sabiti + styles endpoint guncelleme
+
+### FAZ 6: TAKVIM SAYFASI (TAMAMLANDI - 2026-03-06)
+Streamlit: `pages/7_Takvim.py` -> Next.js: `xcom-aktif/frontend/src/app/takvim/page.tsx`
+Backend: `xcom-aktif/backend/api/calendar.py`
+
+- [x] 6.1 Frontend: Slot detaylari (post turu, aciklama, best practices)
+- [x] 6.2 Frontend: Paylasim kaydetme formu (type, media, self-reply, URL)
+- [x] 6.3 Frontend: Gunluk algoritma checklist (6 madde)
+- [x] 6.4 Frontend: Haftalik ozet (istatistikler)
+- [x] 6.5 Frontend: Paylasim gecmisi gorunumu
+- [x] 6.6 Frontend: Strateji rehberi
+- [x] 6.7 Backend: Checklist GET/POST + weekly-summary + history endpoint'leri
+
+### FAZ 7: DASHBOARD (TAMAMLANDI - 2026-03-06)
+Streamlit: `streamlit_app.py` -> Next.js: `xcom-aktif/frontend/src/app/page.tsx`
+
+- [x] 7.1 Frontend: Gunluk takvim karti (slot gorunumu + geri sayim + takvime link)
+- [x] 7.2 Frontend: Nasil kullanilir rehberi (5 adim, sayfa linkleri)
+- [x] 7.3 Frontend: API anahtari uyarisi (detayli: hangi anahtarlar eksik)
+
+### ILERLEME DURUMU
+| Faz | Sayfa | Durum | Tamamlanma |
+|-----|-------|-------|------------|
+| 1 | Ayarlar | TAMAMLANDI | %100 |
+| 2 | Tara | TAMAMLANDI | %100 |
+| 3 | Yaz | TAMAMLANDI | %100 |
+| 4 | Analiz | TAMAMLANDI | %100 |
+| 5 | Icerik | TAMAMLANDI | %100 |
+| 6 | Takvim | TAMAMLANDI | %100 |
+| 7 | Dashboard | TAMAMLANDI | %100 |
+
+---
+
 ### 2026-03-05 (Async Transport Fix)
 - **fix**: `twikit_client.py` — sniffio `AsyncLibraryNotFoundError` düzeltildi: `_ensure_sniffio_asyncio()` wrapper ile background loop task'larında sniffio cvar set ediliyor
 - **fix**: `twikit_client.py` — Transport hataları (weak reference, async library) artık re-auth tetiklemiyor; gereksiz login döngüsü önlendi
