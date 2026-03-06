@@ -1,6 +1,4 @@
-const API_BASE = typeof window !== "undefined"
-  ? `${window.location.protocol}//${window.location.hostname}:8000`
-  : "http://localhost:8000";
+const API_BASE = "";
 
 function getToken(): string | null {
   return localStorage.getItem("xcom_token");
