@@ -1,9 +1,11 @@
 """
 Generator API - Tweet/thread uretimi, arastirma, scoring, media, fact-check
 """
+import logging
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -161,12 +163,25 @@ async def generate_long_content(request: GenerateRequest):
 async def do_research_endpoint(request: ResearchRequest):
     """Konu hakkinda derin arastirma yap"""
     try:
-        from backend.api.helpers import get_ai_provider
+        # Build AI client (optional - needed for agentic mode)
+        ai_client = None
+        ai_model = None
+        ai_provider = "minimax"
+        try:
+            from backend.api.helpers import get_ai_provider
+            ai_provider, api_key, ai_model = get_ai_provider()
+            if ai_provider == "anthropic":
+                import anthropic
+                ai_client = anthropic.Anthropic(api_key=api_key)
+            elif ai_provider in ("openai", "minimax"):
+                from openai import OpenAI
+                base_url = "https://api.minimaxi.chat/v1" if ai_provider == "minimax" else None
+                ai_client = OpenAI(api_key=api_key, base_url=base_url)
+        except Exception:
+            pass  # AI client is optional, research can work without it
 
-        provider, api_key, _ = get_ai_provider()
-
-        # Grok agentic research
-        if request.engine == "grok" or request.agentic:
+        # Grok research (only when engine is explicitly grok)
+        if request.engine == "grok":
             try:
                 from backend.modules.grok_client import grok_agentic_research
                 from backend.config import get_settings
@@ -186,33 +201,54 @@ async def do_research_endpoint(request: ResearchRequest):
                             sources=[],
                             media_urls=[],
                         )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Grok research failed: %s", e)
+                # Fall through to DuckDuckGo
 
+        # DuckDuckGo / standard research
         from backend.modules.deep_research import research_topic as do_research
+
         result = do_research(
             tweet_text=request.topic,
             engine=request.engine if request.engine != "default" else "standard",
             use_agentic=request.agentic,
+            ai_client=ai_client,
+            ai_model=ai_model,
+            ai_provider=ai_provider,
         )
 
+        # ResearchResult dataclass -> ResearchResponse
         if hasattr(result, "summary"):
+            summary = result.synthesized_brief or result.summary or ""
+
+            # Build key_points from web_results
+            key_points = []
+            for wr in getattr(result, "web_results", [])[:5]:
+                title = wr.get("title", "")
+                body = wr.get("body", "")
+                if title:
+                    key_points.append(f"{title}: {body[:100]}" if body else title)
+
+            # Build sources from deep_articles
+            sources = []
+            for art in getattr(result, "deep_articles", [])[:5]:
+                sources.append({
+                    "title": art.get("title", ""),
+                    "url": art.get("url", ""),
+                    "body": art.get("content", "")[:200] if art.get("content") else "",
+                })
+
             return ResearchResponse(
-                summary=result.summary or "",
-                key_points=result.key_points if hasattr(result, "key_points") else [],
-                sources=result.sources if hasattr(result, "sources") else [],
-                media_urls=result.media_urls if hasattr(result, "media_urls") else [],
+                summary=summary,
+                key_points=key_points,
+                sources=sources,
+                media_urls=getattr(result, "media_urls", []) or [],
             )
-        elif isinstance(result, dict):
-            return ResearchResponse(
-                summary=result.get("summary", ""),
-                key_points=result.get("key_points", []),
-                sources=result.get("sources", []),
-                media_urls=result.get("media_urls", []),
-            )
+
         return ResearchResponse(summary=str(result), key_points=[], sources=[])
 
     except Exception as e:
+        logger.exception("Research endpoint error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
