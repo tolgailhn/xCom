@@ -1,6 +1,7 @@
 """
 Generator API - Tweet/thread uretimi, arastirma, scoring, media, fact-check
 """
+import asyncio
 import logging
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -119,7 +120,8 @@ async def generate_tweet(request: GenerateRequest):
         generator = create_generator(topic=request.topic)
 
         if request.thread:
-            parts = generator.generate_thread(
+            parts = await asyncio.to_thread(
+                generator.generate_thread,
                 topic_text=request.topic,
                 style=request.style,
                 additional_context=request.research_context,
@@ -127,7 +129,8 @@ async def generate_tweet(request: GenerateRequest):
             full_text = "\n\n---\n\n".join(parts) if parts else ""
             return GenerateResponse(text=full_text, thread_parts=parts or [], score=_score_text(full_text))
         else:
-            text = generator.generate_tweet(
+            text = await asyncio.to_thread(
+                generator.generate_tweet,
                 topic_text=request.topic,
                 style=request.style,
                 additional_context=request.research_context,
@@ -146,7 +149,8 @@ async def generate_long_content(request: GenerateRequest):
 
     try:
         generator = create_generator(topic=request.topic)
-        text = generator.generate_long_content(
+        text = await asyncio.to_thread(
+            generator.generate_long_content,
             topic=request.topic,
             research_context=request.research_context,
             style=request.style,
@@ -187,7 +191,8 @@ async def do_research_endpoint(request: ResearchRequest):
                 from backend.config import get_settings
                 s = get_settings()
                 if s.xai_api_key:
-                    summary = grok_agentic_research(
+                    summary = await asyncio.to_thread(
+                        grok_agentic_research,
                         tweet_text=request.topic,
                         api_key=s.xai_api_key,
                     )
@@ -205,10 +210,11 @@ async def do_research_endpoint(request: ResearchRequest):
                 logger.warning("Grok research failed: %s", e)
                 # Fall through to DuckDuckGo
 
-        # DuckDuckGo / standard research
+        # DuckDuckGo / standard research (run in thread to avoid blocking event loop)
         from backend.modules.deep_research import research_topic as do_research
 
-        result = do_research(
+        result = await asyncio.to_thread(
+            do_research,
             tweet_text=request.topic,
             engine=request.engine if request.engine != "default" else "standard",
             use_agentic=request.agentic,
@@ -280,7 +286,8 @@ async def find_media_endpoint(request: MediaRequest):
                 pass
 
         source_map = {"both": "all", "x": "x", "web": "web"}
-        search_result = do_find_media(
+        search_result = await asyncio.to_thread(
+            do_find_media,
             topic_text=request.topic,
             source=source_map.get(request.source, request.source),
             twikit_client=twikit_client,
@@ -326,7 +333,8 @@ async def fact_check(request: FactCheckRequest):
             base_url = "https://api.minimaxi.chat/v1" if provider == "minimax" else None
             ai_client = OpenAI(api_key=api_key, base_url=base_url)
 
-        claims = ai_fact_check_draft(
+        claims = await asyncio.to_thread(
+            ai_fact_check_draft,
             draft_tweet=request.text,
             original_tweet=request.topic,
             research_context="",
@@ -337,7 +345,7 @@ async def fact_check(request: FactCheckRequest):
         if not claims:
             return {"verified": True, "claims": [], "context": "Dogrulanacak iddia bulunamadi."}
 
-        verifications = verify_claims(claims)
+        verifications = await asyncio.to_thread(verify_claims, claims)
         context = compile_verification_context(verifications)
 
         return {
@@ -398,7 +406,8 @@ async def discover_topics_endpoint(request: DiscoverRequest):
         except Exception:
             pass
 
-        topics = discover_topics(
+        topics = await asyncio.to_thread(
+            discover_topics,
             ai_client=ai_client,
             ai_model=model,
             ai_provider=provider,
