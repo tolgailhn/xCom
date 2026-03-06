@@ -1,19 +1,25 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import Sidebar from "@/components/Sidebar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
-  const pathname = usePathname();
+  const [pathname, setPathname] = useState("");
 
   useEffect(() => {
-    if (!isAuthenticated && pathname !== "/login") {
+    setPathname(window.location.pathname);
+  }, []);
+
+  useEffect(() => {
+    if (pathname && !isAuthenticated && pathname !== "/login") {
       window.location.href = "/login";
     }
   }, [isAuthenticated, pathname]);
+
+  // Wait for pathname to be set
+  if (!pathname) return null;
 
   // Login page — no sidebar, no guard
   if (pathname === "/login") {
