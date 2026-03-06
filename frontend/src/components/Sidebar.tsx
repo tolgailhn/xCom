@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { useEffect, useState } from "react";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: "home" },
@@ -27,8 +26,12 @@ const iconMap: Record<string, string> = {
 };
 
 export default function Sidebar() {
-  const pathname = usePathname();
+  const [pathname, setPathname] = useState("");
   const { logout } = useAuth();
+
+  useEffect(() => {
+    setPathname(window.location.pathname);
+  }, []);
 
   return (
     <>
@@ -39,7 +42,7 @@ export default function Sidebar() {
           {/* Mobile nav scroll */}
           <div className="flex gap-2 overflow-x-auto">
             {navItems.map((item) => (
-              <Link
+              <a
                 key={item.href}
                 href={item.href}
                 className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all ${
@@ -49,7 +52,7 @@ export default function Sidebar() {
                 }`}
               >
                 {item.label}
-              </Link>
+              </a>
             ))}
           </div>
         </div>
@@ -70,7 +73,7 @@ export default function Sidebar() {
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
-              <Link
+              <a
                 key={item.href}
                 href={item.href}
                 className={`nav-item ${isActive ? "active" : ""}`}
@@ -89,7 +92,7 @@ export default function Sidebar() {
                   />
                 </svg>
                 <span className="text-sm font-medium">{item.label}</span>
-              </Link>
+              </a>
             );
           })}
         </nav>
