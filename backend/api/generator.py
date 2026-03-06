@@ -184,7 +184,11 @@ async def do_research_endpoint(request: ResearchRequest):
                 pass
 
         from backend.modules.deep_research import research_topic as do_research
-        result = await do_research(topic=request.topic, api_key=api_key, provider=provider)
+        result = do_research(
+            tweet_text=request.topic,
+            engine=request.engine if request.engine != "default" else "standard",
+            use_agentic=request.agentic,
+        )
 
         if hasattr(result, "summary"):
             return ResearchResponse(
