@@ -128,6 +128,158 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 
 ---
 
+## SUNUCU KURULUM VE GUNLUK KULLANIM REHBERI
+
+### ADIM 1: Sunucuda Kodu Guncelle
+Her degisiklikten sonra sunucuya baglanip kodu cek:
+```bash
+cd /home/user/xCom
+git pull origin claude/connect-github-xcom-VfFR0
+```
+
+### ADIM 2: Backend Baslat
+```bash
+cd /home/user/xCom/backend
+pip install -r ../requirements.txt   # sadece ilk sefer veya yeni paket eklendiginde
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+Backend http://localhost:8000 adresinde calisir. `--reload` ile dosya degisikliklerini otomatik algilar.
+
+### ADIM 3: Frontend Baslat
+```bash
+cd /home/user/xCom/frontend
+npm install         # sadece ilk sefer veya yeni paket eklendiginde
+rm -rf .next        # stale cache temizligi (hata alirsan yap)
+npm run dev -- --hostname 0.0.0.0 --port 3000
+```
+Frontend http://sunucu-ip:3000 adresinde calisir.
+
+### ADIM 4: Ilk Kurulumda API Anahtarlarini Gir
+Tarayicidan `http://sunucu-ip:3000/ayarlar` sayfasina git ve sirayla:
+1. **Twitter API** - API Key, API Secret, Access Token, Access Secret
+2. **Twikit Cookie** - Twitter cookie (ucretsiz arama icin)
+3. **AI Anahtarlari** - MiniMax / Anthropic (Claude) / OpenAI anahtarindan en az birini gir
+4. **Grok (xAI)** - Opsiyonel: X arama ve web arama icin xAI API key
+5. **Telegram** - Opsiyonel: Bot token + Chat ID (bildirim icin)
+6. Her anahtari girdikten sonra "Test" butonuna basip calistigini dogrula
+
+### ADIM 5: Stil Egitimi Yap (Onemli!)
+Ayarlar sayfasinda "Yazim Tarzi" bolumune git:
+1. **Ornek Tweetler** - Kendi tarzinda yazdigin 5-10 ornek tweet ekle
+2. **Persona** - Kendini 2-3 cumleyle tanimla (orn: "AI ve teknoloji uzerine yazan yazilimci")
+3. Bu bilgiler tweet uretiminde kullanilir, ne kadar iyi egitirsen o kadar dogal tweet cikar
+
+### ADIM 6: Hesap Analizi ve Tweet Havuzu (Opsiyonel ama Onerilen)
+`/analiz` sayfasina git:
+1. **Yeni Analiz** tab'inda begendigin 3-5 X hesabini analiz et (orn: `@kaboragames,@ai_for_success`)
+2. Analizleri kaydet - stil DNA'si tweet uretiminde kullanilacak
+3. **Tweet Havuzu** tab'inda bu hesaplarin tweetlerini cek - daha iyi egitim icin
+
+---
+
+## GUNLUK KULLANIM AKISI (ADIM ADIM)
+
+### Her Gun Yapilacaklar
+
+#### 1. Dashboard'u Kontrol Et (`/`)
+- Gunun takvimini gor (4 post slotu)
+- Hangi slotun ne zaman oldugunu kontrol et
+- Eksik API anahtari uyarisi varsa tamamla
+
+#### 2. Konu Tara (`/tara`)
+- "Tara" butonuna bas - AI haberleri otomatik taranir
+- Filtreler: kategori (LLM, Vision, Robotics vb.), min like/RT
+- Arama motoru: DuckDuckGo (ucretsiz) veya Grok (daha kapsamli)
+- **Kesfet** tab'i: AI gelismeleri, GitHub repos, trending konulari kesfet
+- Ilginc bir konu buldugunda "Tweet Yaz" butonuna tikla → Yaz sayfasina gider
+
+#### 3. Tweet Yaz (`/yaz`)
+3 tab var:
+
+**Tab 1: Tweet Yaz**
+- Konu gir (veya Tara'dan gelen konu otomatik gelir)
+- Stil sec (8 secenek: bilgilendirici, provoke edici, teknik, vb.)
+- Format sec (6 secenek: micro tweet'ten mega thread'e)
+- Arastirma modu: Standard (hizli) veya Deep (kapsamli)
+- Agentic toggle: Grok ile derin arastirma
+- "Uret" butonuna bas
+- Uretilen tweet'i oku, begendiysen "Paylas" butonuna bas
+- Kalite skoru 70+ ise iyi, 80+ mukemmel
+- Gorsel/Video Bul: Tweet'e medya eklemek istersen
+
+**Tab 2: Quote Tweet**
+- Alintilamak istedigin tweet URL'sini yapistir
+- Arastirma + dogrulama yapilir
+- Quote tweet uretilir
+
+**Tab 3: Hizli Reply**
+- Bir tweet'e hizli yanit uret
+
+#### 4. Uzun Icerik Uret (`/icerik`)
+Thread veya uzun post icin:
+
+**Tab 1: Konu Kesfet**
+- Odak alani gir (orn: "AI agents", "LLM benchmarks")
+- Konu onerileri gelir, birini sec
+
+**Tab 2: Icerik Uret**
+- 5 icerik tarzi: Deneyim, Egitici, Karsilastirma, Analiz, Hikaye
+- 6 format: Micro (1 tweet) → Mega (10+ tweet thread)
+- Arastirma ayarlarini sec
+- "Uret" butonuna bas
+- Cikan icerigi oku, paylas
+
+#### 5. Takvimi Takip Et (`/takvim`)
+- Her post sonrasi takvimde ilgili slotu kaydet
+- Gunluk checklist'i tamamla (6 madde):
+  - [ ] 15+ dakika timeline'da gezin, begeni/RT yapin
+  - [ ] 3-5 tweet'e anlamli yanit yazip etkilesin
+  - [ ] 1 quote tweet atilsin
+  - [ ] Trend konularda en az 1 tweet yazilsin
+  - [ ] DM'lere ve mention'lara yanit verilsin
+  - [ ] En iyi performans gosteren tweet'e self-reply atilsin
+- Haftalik ozeti kontrol et
+
+#### 6. Taslak Kaydet (`/taslaklarim`)
+- Simdi paylasmak istemedigin tweet'leri taslak olarak kaydet
+- Daha sonra duzenle ve paylas
+
+---
+
+## HATA DURUMUNDA YAPILACAKLAR
+
+### "Failed to find Server Action" Hatasi
+```bash
+cd /home/user/xCom/frontend
+rm -rf .next
+npm run dev -- --hostname 0.0.0.0 --port 3000
+```
+
+### Backend Baslamisor / Port Mesgul
+```bash
+lsof -i :8000          # portu kullanan process'i bul
+kill -9 <PID>           # process'i kapat
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+### Frontend Baslamisor / Port Mesgul
+```bash
+lsof -i :3000
+kill -9 <PID>
+cd /home/user/xCom/frontend && npm run dev -- --hostname 0.0.0.0 --port 3000
+```
+
+### DuckDuckGo Rate Limit
+Otomatik olarak fallback zinciri calisir (day→week→month). Cok fazla arama yaparsan 1-2 dk bekle.
+
+### Grok 502 Bad Gateway
+xAI sunucu hatasi - bizim tarafimizda yapilacak bir sey yok. Birkaç dakika sonra tekrar dene veya DuckDuckGo'ya gec.
+
+### Cookie / Twikit Hatasi
+Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
+
+---
+
 ## Değişiklik Günlüğü
 
 ---
