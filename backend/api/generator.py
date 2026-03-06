@@ -2,8 +2,11 @@
 Generator API - Tweet/thread uretimi, arastirma, scoring, media, fact-check
 """
 import asyncio
+import json
 import logging
+import queue
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -256,6 +259,129 @@ async def do_research_endpoint(request: ResearchRequest):
     except Exception as e:
         logger.exception("Research endpoint error")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Research Stream (SSE) ──────────────────────────────
+
+@router.post("/research-stream")
+async def research_stream(request: ResearchRequest):
+    """Arastirma yap ve asamalari canli olarak stream et (SSE)"""
+    progress_queue: queue.Queue = queue.Queue()
+
+    def progress_callback(msg: str):
+        progress_queue.put(msg)
+
+    def _run_research():
+        """Run research in thread, returns ResearchResult or dict."""
+        # Build AI client
+        ai_client = None
+        ai_model = None
+        ai_provider = "minimax"
+        try:
+            from backend.api.helpers import get_ai_provider
+            ai_provider, api_key, ai_model = get_ai_provider()
+            if ai_provider == "anthropic":
+                import anthropic
+                ai_client = anthropic.Anthropic(api_key=api_key)
+            elif ai_provider in ("openai", "minimax"):
+                from openai import OpenAI
+                base_url = "https://api.minimaxi.chat/v1" if ai_provider == "minimax" else None
+                ai_client = OpenAI(api_key=api_key, base_url=base_url)
+        except Exception:
+            pass
+
+        # Grok path
+        if request.engine == "grok":
+            try:
+                from backend.modules.grok_client import grok_agentic_research
+                from backend.config import get_settings
+                s = get_settings()
+                if s.xai_api_key:
+                    progress_callback("Grok ile arastirma baslatiliyor...")
+                    summary = grok_agentic_research(
+                        tweet_text=request.topic,
+                        api_key=s.xai_api_key,
+                        progress_callback=progress_callback,
+                    )
+                    if summary:
+                        return {"_type": "grok", "summary": summary}
+            except Exception as e:
+                progress_callback(f"Grok hatasi, DuckDuckGo'ya geciliyor: {e}")
+
+        # DuckDuckGo / standard
+        from backend.modules.deep_research import research_topic as do_research
+        return do_research(
+            tweet_text=request.topic,
+            engine=request.engine if request.engine != "default" else "standard",
+            use_agentic=request.agentic,
+            ai_client=ai_client,
+            ai_model=ai_model,
+            ai_provider=ai_provider,
+            progress_callback=progress_callback,
+        )
+
+    async def event_generator():
+        loop = asyncio.get_event_loop()
+        future = loop.run_in_executor(None, _run_research)
+
+        while not future.done():
+            try:
+                msg = progress_queue.get(timeout=0.3)
+                yield f"data: {json.dumps({'type': 'progress', 'message': msg}, ensure_ascii=False)}\n\n"
+            except queue.Empty:
+                pass
+
+        # Drain remaining progress messages
+        while not progress_queue.empty():
+            msg = progress_queue.get_nowait()
+            yield f"data: {json.dumps({'type': 'progress', 'message': msg}, ensure_ascii=False)}\n\n"
+
+        # Get result
+        try:
+            result = future.result()
+
+            if isinstance(result, dict) and result.get("_type") == "grok":
+                summary = result["summary"]
+                lines = [l.strip() for l in summary.split("\n") if l.strip()]
+                key_points = [l.lstrip("•-* ") for l in lines[1:]
+                              if l.startswith(("•", "-", "*", "1", "2", "3", "4", "5"))]
+                data = {
+                    "summary": summary,
+                    "key_points": key_points[:10],
+                    "sources": [],
+                    "media_urls": [],
+                }
+            elif hasattr(result, "summary"):
+                summary = result.synthesized_brief or result.summary or ""
+                key_points = []
+                for wr in getattr(result, "web_results", [])[:5]:
+                    title = wr.get("title", "")
+                    body = wr.get("body", "")
+                    if title:
+                        key_points.append(f"{title}: {body[:100]}" if body else title)
+                sources = []
+                for art in getattr(result, "deep_articles", [])[:5]:
+                    sources.append({
+                        "title": art.get("title", ""),
+                        "url": art.get("url", ""),
+                        "body": art.get("content", "")[:200] if art.get("content") else "",
+                    })
+                data = {
+                    "summary": summary,
+                    "key_points": key_points,
+                    "sources": sources,
+                    "media_urls": getattr(result, "media_urls", []) or [],
+                }
+            else:
+                data = {"summary": str(result), "key_points": [], "sources": [], "media_urls": []}
+
+            yield f"data: {json.dumps({'type': 'result', 'data': data}, ensure_ascii=False)}\n\n"
+
+        except Exception as e:
+            logger.exception("Research stream error")
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 # ── Score ───────────────────────────────────────────────

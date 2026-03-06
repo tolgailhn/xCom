@@ -90,6 +90,60 @@ export function researchTopic(params: {
   });
 }
 
+// Research Stream (SSE - live progress)
+export async function researchTopicStream(
+  params: { topic: string; engine?: string; agentic?: boolean },
+  onProgress: (message: string) => void,
+): Promise<{ summary: string; key_points: string[]; sources: { title: string; url?: string; body?: string }[]; media_urls: string[] }> {
+  const token = getToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}/api/generator/research-stream`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(params),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.detail || `API hatasi: ${res.status}`);
+  }
+
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let resultData: ReturnType<typeof JSON.parse> = null;
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      try {
+        const event = JSON.parse(line.slice(6));
+        if (event.type === "progress") {
+          onProgress(event.message);
+        } else if (event.type === "result") {
+          resultData = event.data;
+        } else if (event.type === "error") {
+          throw new Error(event.message);
+        }
+      } catch (e) {
+        if (e instanceof Error && e.message !== line.slice(6)) throw e;
+      }
+    }
+  }
+
+  if (!resultData) throw new Error("Arastirma sonucu alinamadi");
+  return resultData;
+}
+
 // Score
 export function scoreTweet(text: string) {
   return apiFetch("/api/generator/score", {

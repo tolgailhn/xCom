@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import {
   generateTweet,
   researchTopic,
+  researchTopicStream,
   publishTweet,
   addDraft,
   scoreTweet,
@@ -201,6 +202,7 @@ function TabTweetYaz({
   const [publishResult, setPublishResult] = useState<string | null>(null);
   const [draftSaved, setDraftSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progressMessages, setProgressMessages] = useState<string[]>([]);
 
   /* Media */
   const [mediaResults, setMediaResults] = useState<MediaItem[]>([]);
@@ -219,12 +221,12 @@ function TabTweetYaz({
     if (!topic.trim()) return;
     setResearching(true);
     setError(null);
+    setProgressMessages([]);
     try {
-      const result = (await researchTopic({
-        topic,
-        engine,
-        agentic,
-      })) as { summary: string; key_points: string[] };
+      const result = await researchTopicStream(
+        { topic, engine, agentic },
+        (msg) => setProgressMessages((prev) => [...prev, msg]),
+      );
       setResearchContext(
         `${result.summary}\n\nKey Points:\n${result.key_points.join("\n")}`
       );
@@ -448,6 +450,34 @@ function TabTweetYaz({
           </button>
         </div>
       </div>
+
+      {/* Live progress for Tweet Yaz research */}
+      {researching && progressMessages.length > 0 && (
+        <div className="glass-card border-[var(--accent-cyan)]/30">
+          <h4 className="text-sm font-semibold text-[var(--accent-cyan)] mb-2">
+            Arastirma Asamalari
+          </h4>
+          <div className="max-h-48 overflow-y-auto space-y-1">
+            {progressMessages.map((msg, i) => (
+              <div
+                key={i}
+                className={`text-xs flex items-start gap-2 ${
+                  i === progressMessages.length - 1
+                    ? "text-[var(--text-primary)]"
+                    : "text-[var(--text-secondary)] opacity-60"
+                }`}
+              >
+                {i === progressMessages.length - 1 ? (
+                  <span className="inline-block w-2 h-2 mt-1 rounded-full bg-[var(--accent-cyan)] animate-pulse flex-shrink-0" />
+                ) : (
+                  <span className="inline-block w-2 h-2 mt-1 rounded-full bg-[var(--text-secondary)]/30 flex-shrink-0" />
+                )}
+                <span>{msg}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Research context */}
       {researchContext && (
@@ -691,6 +721,7 @@ function TabQuoteTweet({
   const [publishResult, setPublishResult] = useState<string | null>(null);
   const [draftSaved, setDraftSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progressMessages, setProgressMessages] = useState<string[]>([]);
 
   /* Fact check */
   const [factResult, setFactResult] = useState<{
@@ -706,15 +737,15 @@ function TabQuoteTweet({
     setError(null);
     setGeneratedText("");
     setFactResult(null);
+    setProgressMessages([]);
 
     try {
-      // Step 1: Research the topic from the URL
-      const topicFromUrl = quoteUrl; // Backend will extract tweet text
-      const research = (await researchTopic({
-        topic: topicFromUrl,
-        engine,
-        agentic,
-      })) as { summary: string; key_points: string[]; sources: { title: string; body?: string }[] };
+      // Step 1: Research the topic from the URL (with live progress)
+      const topicFromUrl = quoteUrl;
+      const research = await researchTopicStream(
+        { topic: topicFromUrl, engine, agentic },
+        (msg) => setProgressMessages((prev) => [...prev, msg]),
+      );
       setResearchResult(research);
 
       // Step 2: Generate quote tweet using research
@@ -895,6 +926,34 @@ function TabQuoteTweet({
               : "Arastir ve Quote Tweet Yaz"}
         </button>
       </div>
+
+      {/* Live progress messages */}
+      {researching && progressMessages.length > 0 && (
+        <div className="glass-card border-[var(--accent-purple)]/30">
+          <h4 className="text-sm font-semibold text-[var(--accent-purple)] mb-2">
+            Arastirma Asamalari
+          </h4>
+          <div className="max-h-48 overflow-y-auto space-y-1">
+            {progressMessages.map((msg, i) => (
+              <div
+                key={i}
+                className={`text-xs flex items-start gap-2 ${
+                  i === progressMessages.length - 1
+                    ? "text-[var(--text-primary)]"
+                    : "text-[var(--text-secondary)] opacity-60"
+                }`}
+              >
+                {i === progressMessages.length - 1 ? (
+                  <span className="inline-block w-2 h-2 mt-1 rounded-full bg-[var(--accent-purple)] animate-pulse flex-shrink-0" />
+                ) : (
+                  <span className="inline-block w-2 h-2 mt-1 rounded-full bg-[var(--text-secondary)]/30 flex-shrink-0" />
+                )}
+                <span>{msg}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="glass-card border-[var(--accent-red)]/50">
