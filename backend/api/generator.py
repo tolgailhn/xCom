@@ -168,17 +168,23 @@ async def do_research_endpoint(request: ResearchRequest):
         # Grok agentic research
         if request.engine == "grok" or request.agentic:
             try:
-                from backend.modules.grok_client import grok_research_topic
+                from backend.modules.grok_client import grok_agentic_research
                 from backend.config import get_settings
                 s = get_settings()
                 if s.xai_api_key:
-                    result = grok_research_topic(request.topic)
-                    if result:
+                    summary = grok_agentic_research(
+                        tweet_text=request.topic,
+                        api_key=s.xai_api_key,
+                    )
+                    if summary:
+                        lines = [l.strip() for l in summary.split("\n") if l.strip()]
+                        key_points = [l.lstrip("•-* ") for l in lines[1:]
+                                      if l.startswith(("•", "-", "*", "1", "2", "3", "4", "5"))]
                         return ResearchResponse(
-                            summary=result.get("summary", ""),
-                            key_points=result.get("key_points", []),
-                            sources=result.get("sources", []),
-                            media_urls=result.get("media_urls", []),
+                            summary=summary,
+                            key_points=key_points[:10],
+                            sources=[],
+                            media_urls=[],
                         )
             except Exception:
                 pass
@@ -221,27 +227,41 @@ async def score_tweet_endpoint(request: ScoreRequest):
 # ── Media Finder ────────────────────────────────────────
 
 @router.post("/find-media")
-async def find_media(request: MediaRequest):
+async def find_media_endpoint(request: MediaRequest):
     """Konuyla ilgili gorsel/video bul"""
     try:
-        from backend.modules.media_finder import MediaFinder
-        from backend.config import get_settings
+        from backend.modules.media_finder import find_media as do_find_media
 
-        s = get_settings()
-        finder = MediaFinder(
-            twikit_username=s.twikit_username,
-            twikit_password=s.twikit_password,
-            twikit_email=s.twikit_email,
+        # Get twikit client for X search
+        twikit_client = None
+        if request.source in ("x", "both"):
+            try:
+                from backend.modules.twikit_client import TwikitSearchClient
+                twikit_client = TwikitSearchClient()
+                if not twikit_client.authenticate():
+                    twikit_client = None
+            except Exception:
+                pass
+
+        source_map = {"both": "all", "x": "x", "web": "web"}
+        search_result = do_find_media(
+            topic_text=request.topic,
+            source=source_map.get(request.source, request.source),
+            twikit_client=twikit_client,
         )
 
+        # Convert MediaItem dataclasses to dicts
         results = []
-        if request.source in ("x", "both"):
-            x_results = finder.search_x_media(request.topic)
-            results.extend(x_results)
-
-        if request.source in ("web", "both"):
-            web_results = finder.search_web_images(request.topic)
-            results.extend(web_results)
+        for item in search_result.images + search_result.videos:
+            results.append({
+                "url": item.url,
+                "thumbnail_url": item.thumbnail_url,
+                "source": item.source,
+                "media_type": item.media_type,
+                "title": item.title,
+                "source_url": item.source_url,
+                "author": item.author,
+            })
 
         return {"media": results[:12], "total": len(results)}
 
@@ -258,8 +278,26 @@ async def fact_check(request: FactCheckRequest):
         from backend.modules.deep_research import ai_fact_check_draft, verify_claims, compile_verification_context
         from backend.api.helpers import get_ai_provider
 
-        provider, api_key, _ = get_ai_provider()
-        claims = ai_fact_check_draft(request.text, api_key, provider)
+        provider, api_key, model = get_ai_provider()
+
+        # Build AI client
+        ai_client = None
+        if provider == "anthropic":
+            import anthropic
+            ai_client = anthropic.Anthropic(api_key=api_key)
+        elif provider in ("openai", "minimax"):
+            from openai import OpenAI
+            base_url = "https://api.minimaxi.chat/v1" if provider == "minimax" else None
+            ai_client = OpenAI(api_key=api_key, base_url=base_url)
+
+        claims = ai_fact_check_draft(
+            draft_tweet=request.text,
+            original_tweet=request.topic,
+            research_context="",
+            ai_client=ai_client,
+            ai_model=model,
+            provider=provider,
+        )
         if not claims:
             return {"verified": True, "claims": [], "context": "Dogrulanacak iddia bulunamadi."}
 
