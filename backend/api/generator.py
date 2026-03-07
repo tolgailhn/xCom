@@ -70,6 +70,18 @@ class FactCheckRequest(BaseModel):
     topic: str = ""
 
 
+class ReplyRequest(BaseModel):
+    original_tweet: str
+    original_author: str = ""
+    style: str = "reply"
+    additional_context: str = ""
+
+
+class ImageAnalysisRequest(BaseModel):
+    url: str
+    context: str = ""
+
+
 class DiscoverRequest(BaseModel):
     focus_area: str = ""
     engine: str = "default"
@@ -227,6 +239,46 @@ async def generate_quote_tweet_endpoint(request: QuoteTweetRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/reply", response_model=GenerateResponse)
+async def generate_reply_endpoint(request: ReplyRequest):
+    """Reply tweet uret — orijinal tweet'e yanit"""
+    from backend.api.helpers import create_generator
+
+    try:
+        generator = create_generator(topic=request.original_tweet)
+
+        text = await asyncio.to_thread(
+            generator.generate_reply,
+            original_tweet=request.original_tweet,
+            original_author=request.original_author,
+            style=request.style,
+            additional_context=request.additional_context,
+        )
+        return GenerateResponse(text=text, score=_score_text(text))
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/analyze-image")
+async def analyze_image_endpoint(request: ImageAnalysisRequest):
+    """Gorsel analiz et — AI ile gorsel aciklama uret"""
+    from backend.api.helpers import create_generator
+
+    try:
+        generator = create_generator()
+
+        caption = await asyncio.to_thread(
+            generator.analyze_image,
+            image_url=request.url,
+            context=request.context,
+        )
+        return {"caption": caption, "success": True}
+
+    except Exception as e:
+        return {"caption": "", "success": False, "error": str(e)}
 
 
 @router.post("/long-content", response_model=GenerateResponse)

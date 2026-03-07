@@ -77,6 +77,27 @@ export function generateTweet(params: {
   });
 }
 
+// Reply Generation
+export function generateReply(params: {
+  original_tweet: string;
+  original_author?: string;
+  style?: string;
+  additional_context?: string;
+}) {
+  return apiFetch("/api/generator/reply", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+// Image Analysis (Vision)
+export function analyzeImage(url: string, context: string = "") {
+  return apiFetch("/api/generator/analyze-image", {
+    method: "POST",
+    body: JSON.stringify({ url, context }),
+  });
+}
+
 // Research
 export function researchTopic(params: {
   topic: string;
@@ -224,6 +245,7 @@ export function publishTweet(params: {
   text: string;
   thread_parts?: string[];
   quote_tweet_id?: string;
+  reply_to_id?: string;
 }) {
   return apiFetch("/api/publish/tweet", {
     method: "POST",

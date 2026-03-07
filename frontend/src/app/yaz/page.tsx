@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import {
   generateTweet,
   generateQuoteTweet,
+  generateReply,
   extractTweet,
   researchTopic,
   researchTopicStream,
@@ -1285,12 +1286,11 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
     if (!selectedTweet) return;
     setGenerating(true);
     try {
-      const result = (await generateTweet({
-        topic: `Reply to @${selectedTweet.author}: ${selectedTweet.text}`,
+      const result = (await generateReply({
+        original_tweet: selectedTweet.text,
+        original_author: selectedTweet.author,
         style: replyStyle,
-        research_context: replyExtra
-          ? `Additional instructions: ${replyExtra}`
-          : "",
+        additional_context: replyExtra || "",
       })) as { text: string };
       setGeneratedReply(result.text);
     } catch (e) {
@@ -1304,8 +1304,10 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
     if (!generatedReply || !selectedTweet) return;
     setPublishing(true);
     try {
-      const { publishTweet } = await import("@/lib/api");
-      const result = (await publishTweet({ text: generatedReply })) as {
+      const result = (await publishTweet({
+        text: generatedReply,
+        reply_to_id: selectedTweet.id,
+      })) as {
         success: boolean;
         url: string;
         error: string;

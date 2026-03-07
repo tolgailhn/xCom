@@ -65,6 +65,17 @@ async def publish_tweet(request: PublishRequest):
                 url=first.get("url", ""),
                 error=first.get("error", ""),
             )
+        elif request.reply_to_id:
+            # Reply to tweet
+            result = publisher.post_reply(request.text, request.reply_to_id)
+            if result.get("success"):
+                add_to_post_history({
+                    "text": request.text,
+                    "url": result.get("url", ""),
+                    "type": "reply",
+                    "reply_to_id": request.reply_to_id,
+                })
+            return PublishResponse(**result)
         elif request.quote_tweet_id:
             # Quote tweet
             result = publisher.post_quote_tweet(request.text, request.quote_tweet_id)
