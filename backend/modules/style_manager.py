@@ -277,6 +277,56 @@ def load_daily_checklist(date_str: str = "") -> dict:
     return {}
 
 
+# --- Scheduled Posts ---
+
+def load_scheduled_posts() -> list[dict]:
+    """Load scheduled posts (pending + completed)"""
+    path = DATA_DIR / "scheduled_posts.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+
+def save_scheduled_posts(posts: list[dict]):
+    """Save scheduled posts"""
+    path = DATA_DIR / "scheduled_posts.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(posts, f, ensure_ascii=False, indent=2)
+
+
+def add_scheduled_post(post: dict) -> dict:
+    """Add a new scheduled post, returns the post with generated id"""
+    posts = load_scheduled_posts()
+    post["id"] = datetime.datetime.now().strftime("%Y%m%d%H%M%S") + f"_{len(posts)}"
+    post["status"] = "pending"
+    post["created_at"] = datetime.datetime.now(TZ_TR).isoformat()
+    posts.insert(0, post)
+    save_scheduled_posts(posts)
+    return post
+
+
+def update_scheduled_post(post_id: str, updates: dict):
+    """Update a scheduled post by id"""
+    posts = load_scheduled_posts()
+    for p in posts:
+        if p.get("id") == post_id:
+            p.update(updates)
+            break
+    save_scheduled_posts(posts)
+
+
+def delete_scheduled_post(post_id: str) -> bool:
+    """Delete a scheduled post by id"""
+    posts = load_scheduled_posts()
+    new_posts = [p for p in posts if p.get("id") != post_id]
+    if len(new_posts) == len(posts):
+        return False
+    save_scheduled_posts(new_posts)
+    return True
+
+
 def save_daily_checklist(checklist: dict, date_str: str = ""):
     """Save daily algorithm checklist"""
     path = DATA_DIR / "daily_checklists.json"

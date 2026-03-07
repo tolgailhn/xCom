@@ -23,6 +23,7 @@ from backend.api.settings import router as settings_router
 from backend.api.analytics import router as analytics_router
 from backend.api.calendar import router as calendar_router
 from backend.api.drafts import router as drafts_router
+from backend.api.scheduler import router as scheduler_router
 
 app = FastAPI(
     title="X AI Otomasyon API",
@@ -51,6 +52,19 @@ app.include_router(settings_router, prefix="/api/settings", tags=["settings"])
 app.include_router(analytics_router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(calendar_router, prefix="/api/calendar", tags=["calendar"])
 app.include_router(drafts_router, prefix="/api/drafts", tags=["drafts"])
+app.include_router(scheduler_router, prefix="/api/scheduler", tags=["scheduler"])
+
+
+@app.on_event("startup")
+async def startup_event():
+    from backend.scheduler_worker import start_scheduler
+    start_scheduler()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    from backend.scheduler_worker import stop_scheduler
+    stop_scheduler()
 
 
 @app.get("/api/health")
