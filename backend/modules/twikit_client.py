@@ -698,6 +698,23 @@ class TwikitSearchClient:
             'media_urls': media_urls,
         }
 
+    def get_tweet_by_id(self, tweet_id: str) -> dict | None:
+        """Fetch a specific tweet by its ID using twikit."""
+        if not self._authenticated:
+            return None
+        return self._run(self._get_tweet_by_id_async(tweet_id))
+
+    async def _get_tweet_by_id_async(self, tweet_id: str) -> dict | None:
+        try:
+            self._bypass_client_transaction(silent=True)
+            client = self._get_client_sync()
+            tweet = await client.get_tweet_by_id(tweet_id)
+            if tweet:
+                return self._tweet_to_dict(tweet)
+        except Exception as e:
+            print(f"Twikit get_tweet_by_id error: {type(e).__name__}: {e}")
+        return None
+
     def get_user_info(self, username: str) -> dict | None:
         """Get user profile info. Returns dict with user data."""
         if not self._authenticated:

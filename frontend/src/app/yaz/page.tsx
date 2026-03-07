@@ -833,9 +833,9 @@ function TabQuoteTweet({
 
   /* Research sources */
   const [srcX, setSrcX] = useState(true);
-  const [srcWeb, setSrcWeb] = useState(false);
+  const [srcWeb, setSrcWeb] = useState(true);
   const [srcReddit, setSrcReddit] = useState(false);
-  const [srcNews, setSrcNews] = useState(false);
+  const [srcNews, setSrcNews] = useState(true);
 
   /* Original tweet info */
   const [tweetId, setTweetId] = useState("");
@@ -872,6 +872,11 @@ function TabQuoteTweet({
     context: string;
   } | null>(null);
   const [factLoading, setFactLoading] = useState(false);
+
+  /* Media */
+  const [mediaResults, setMediaResults] = useState<MediaItem[]>([]);
+  const [mediaSource, setMediaSource] = useState("x");
+  const [mediaLoading, setMediaLoading] = useState(false);
 
   /* Extract tweet when URL changes (debounced) */
   useEffect(() => {
@@ -1020,6 +1025,21 @@ function TabQuoteTweet({
     const cleanText = generatedText.replace(new RegExp(`status/${tweetId}\\S*`, "g"), "").trim();
     const intentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(cleanText)}&attachment_url=${encodeURIComponent(quoteUrlForX)}`;
     window.open(intentUrl, "_blank");
+  };
+
+  const handleFindMedia = async () => {
+    setMediaLoading(true);
+    try {
+      const searchTopic = originalTweet?.text || quoteUrl;
+      const res = (await findMedia(searchTopic, mediaSource)) as {
+        media: MediaItem[];
+      };
+      setMediaResults(res.media || []);
+    } catch {
+      /* ignore */
+    } finally {
+      setMediaLoading(false);
+    }
   };
 
   return (
@@ -1333,6 +1353,62 @@ function TabQuoteTweet({
             <p className="text-xs text-[var(--text-secondary)]">Dogrulama yapiliyor...</p>
           )}
 
+          {/* Media finder */}
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={mediaSource}
+              onChange={(e) => setMediaSource(e.target.value)}
+              className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
+            >
+              <option value="x">X</option>
+              <option value="web">Web</option>
+              <option value="both">Her ikisi</option>
+            </select>
+            <button
+              onClick={handleFindMedia}
+              disabled={mediaLoading}
+              className="btn-secondary text-xs"
+            >
+              {mediaLoading ? "Araniyor..." : "Gorsel/Video Bul"}
+            </button>
+          </div>
+
+          {/* Media results */}
+          {mediaResults.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-[var(--accent-cyan)]">
+                Bulunan Medya ({mediaResults.length})
+              </h4>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {mediaResults.map((m, i) => (
+                  <a
+                    key={i}
+                    href={m.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block bg-[var(--bg-primary)] rounded-lg p-2 hover:ring-1 ring-[var(--accent-blue)] transition-all"
+                  >
+                    {m.preview ? (
+                      <img
+                        src={m.preview}
+                        alt=""
+                        className="w-full h-20 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-full h-20 flex items-center justify-center text-xs text-[var(--text-secondary)]">
+                        {m.type === "video" ? "Video" : "Gorsel"}
+                      </div>
+                    )}
+                    <div className="text-[10px] text-[var(--text-secondary)] mt-1 truncate">
+                      {m.source}
+                      {m.author ? ` @${m.author}` : ""}
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
           {publishResult && (
             <div className="bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/30 rounded-lg p-3">
               <span className="text-sm text-[var(--accent-green)]">
@@ -1345,6 +1421,14 @@ function TabQuoteTweet({
           )}
 
           <div className="flex flex-wrap gap-3">
+            {tweetId && (
+              <button onClick={handleOpenInX} className="btn-primary text-sm">
+                X&apos;te Ac ve Paylas
+              </button>
+            )}
+            <button onClick={handlePublish} disabled={publishing} className="btn-secondary text-sm">
+              {publishing ? "Paylasiliyor..." : "API ile Paylas"}
+            </button>
             <button
               onClick={async () => {
                 setDraftSaved(false);
@@ -1356,14 +1440,6 @@ function TabQuoteTweet({
             >
               {draftSaved ? "Kaydedildi!" : "Taslak Kaydet"}
             </button>
-            <button onClick={handlePublish} disabled={publishing} className="btn-primary text-sm">
-              {publishing ? "Paylasiliyor..." : "X'e Paylas"}
-            </button>
-            {tweetId && (
-              <button onClick={handleOpenInX} className="btn-secondary text-sm">
-                X&apos;te Ac
-              </button>
-            )}
           </div>
         </div>
       )}

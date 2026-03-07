@@ -463,12 +463,12 @@ async def research_stream(request: ResearchRequest):
                 from backend.modules.twitter_scanner import TwitterScanner
                 from backend.config import get_settings
                 s = get_settings()
-                if s.twitter_bearer_token or s.twikit_ct0:
+                if s.twitter_bearer_token or s.twikit_ct0 or s.twikit_auth_token or s.twikit_username:
                     scanner = TwitterScanner(
                         bearer_token=s.twitter_bearer_token or "",
-                        twikit_username=getattr(s, "twikit_username", ""),
-                        twikit_password=getattr(s, "twikit_password", ""),
-                        twikit_email=getattr(s, "twikit_email", ""),
+                        twikit_username=s.twikit_username or "",
+                        twikit_password=s.twikit_password or "",
+                        twikit_email=s.twikit_email or "",
                     )
             except Exception:
                 pass
@@ -584,23 +584,58 @@ async def extract_tweet_endpoint(request: ExtractTweetRequest):
 
         # Try to fetch tweet details
         tweet_data = None
-        try:
-            from backend.modules.twitter_scanner import TwitterScanner
-            from backend.config import get_settings
-            s = get_settings()
-            if s.twitter_bearer_token:
+        from backend.config import get_settings
+        s = get_settings()
+
+        # Method 1: Twitter API v2 (bearer token)
+        if s.twitter_bearer_token:
+            try:
+                from backend.modules.twitter_scanner import TwitterScanner
                 scanner = TwitterScanner(bearer_token=s.twitter_bearer_token)
-                tweet_data = await asyncio.to_thread(scanner.get_tweet_by_id, tweet_id)
-        except Exception:
-            pass
+                result = await asyncio.to_thread(scanner.get_tweet_by_id, tweet_id)
+                if result:
+                    # TwitterScanner returns AITopic object
+                    tweet_data = {
+                        "text": getattr(result, "text", ""),
+                        "author_username": getattr(result, "author_username", ""),
+                        "author_name": getattr(result, "author_name", ""),
+                        "like_count": getattr(result, "like_count", 0),
+                        "retweet_count": getattr(result, "retweet_count", 0),
+                        "reply_count": getattr(result, "reply_count", 0),
+                    }
+            except Exception as e:
+                logger.warning(f"Bearer token tweet fetch failed: {e}")
+
+        # Method 2: Twikit (cookie-based, free)
+        if not tweet_data and (s.twikit_ct0 or s.twikit_auth_token or s.twikit_username):
+            try:
+                from backend.modules.twikit_client import TwikitSearchClient
+                twikit = TwikitSearchClient(
+                    username=s.twikit_username or "",
+                    password=s.twikit_password or "",
+                    email=s.twikit_email or "",
+                )
+                if twikit.authenticate():
+                    result = await asyncio.to_thread(twikit.get_tweet_by_id, tweet_id)
+                    if result:
+                        tweet_data = {
+                            "text": result.get("text", ""),
+                            "author_username": result.get("author_username", ""),
+                            "author_name": result.get("author_name", ""),
+                            "like_count": result.get("like_count", 0),
+                            "retweet_count": result.get("retweet_count", 0),
+                            "reply_count": result.get("reply_count", 0),
+                        }
+            except Exception as e:
+                logger.warning(f"Twikit tweet fetch failed: {e}")
 
         if tweet_data:
             return {
                 "success": True,
                 "tweet_id": tweet_id,
                 "text": tweet_data.get("text", ""),
-                "author": tweet_data.get("author", {}).get("username", ""),
-                "author_name": tweet_data.get("author", {}).get("name", ""),
+                "author": tweet_data.get("author_username", ""),
+                "author_name": tweet_data.get("author_name", ""),
                 "like_count": tweet_data.get("like_count", 0),
                 "retweet_count": tweet_data.get("retweet_count", 0),
                 "reply_count": tweet_data.get("reply_count", 0),
