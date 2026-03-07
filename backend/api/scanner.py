@@ -135,49 +135,36 @@ def _topic_to_item(t) -> TopicItem:
 @router.post("/scan", response_model=ScanResponse)
 async def scan_topics(request: ScanRequest):
     """AI konularini tara (gelismis filtreler dahil)"""
+    import datetime as _dt
     from backend.modules.style_manager import load_monitored_accounts
+    from backend.modules.twitter_scanner import AITopic
 
     try:
-        scanner = _create_scanner()
         hours = _parse_hours(request.time_range)
         custom_accounts = load_monitored_accounts()
+        errors: list[str] = []
 
-        # Build custom queries
-        custom_queries = []
-        if request.custom_query and request.engine != "grok":
-            custom_queries.append(f"{request.custom_query} -is:retweet")
+        if request.engine == "grok":
+            # ── Grok engine: use xAI API directly (no Twikit) ──
+            ai_topics = await _grok_scan(
+                custom_query=request.custom_query,
+                max_results=request.max_results,
+            )
+        else:
+            # ── Default engine: use Twikit/Bearer Token ──
+            scanner = _create_scanner()
 
-        # Scan
-        ai_topics = scanner.scan_ai_topics(
-            time_range_hours=hours,
-            max_results_per_query=request.max_results,
-            custom_accounts=custom_accounts,
-            custom_queries=custom_queries,
-        )
+            custom_queries = []
+            if request.custom_query:
+                custom_queries.append(f"{request.custom_query} -is:retweet")
 
-        # Grok custom query (if engine is grok and query exists)
-        if request.engine == "grok" and request.custom_query:
-            try:
-                from backend.modules.grok_client import grok_scan_topics
-                from backend.modules.twitter_scanner import AITopic
-                grok_results = grok_scan_topics(request.custom_query)
-                for gr in grok_results:
-                    grok_topic = AITopic(
-                        id=f"grok_{hash(gr.get('text', '')[:50])}",
-                        text=gr.get("text", ""),
-                        author_name=gr.get("author_name", ""),
-                        author_username=gr.get("author_username", ""),
-                        author_profile_image="",
-                        created_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
-                        like_count=gr.get("like_count", 0),
-                        retweet_count=gr.get("retweet_count", 0),
-                        reply_count=gr.get("reply_count", 0),
-                        url=gr.get("url", ""),
-                        category=gr.get("category", "Grok Arama"),
-                    )
-                    ai_topics.append(grok_topic)
-            except Exception:
-                pass
+            ai_topics = scanner.scan_ai_topics(
+                time_range_hours=hours,
+                max_results_per_query=request.max_results,
+                custom_accounts=custom_accounts,
+                custom_queries=custom_queries,
+            )
+            errors = getattr(scanner, "search_errors", [])
 
         # Apply filters
         if request.category and request.category not in ("all", "Tumu"):
@@ -193,13 +180,64 @@ async def scan_topics(request: ScanRequest):
             ai_topics = [t for t in ai_topics
                          if t.author_followers_count == 0 or t.author_followers_count >= request.min_followers]
 
-        errors = getattr(scanner, "search_errors", [])
-
         topics = [_topic_to_item(t) for t in ai_topics]
         return ScanResponse(topics=topics, total_scanned=len(ai_topics), errors=errors[:5])
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Default AI queries for Grok scanning (when no custom_query is provided)
+_GROK_DEFAULT_QUERIES = [
+    "latest AI model releases and updates today",
+    "trending AI news and breakthroughs",
+    "new open source AI tools and models",
+    "AI agents and LLM developments",
+]
+
+
+async def _grok_scan(custom_query: str = "", max_results: int = 20) -> list:
+    """Scan using Grok xAI API — either custom query or default AI queries."""
+    import datetime as _dt
+    from backend.modules.twitter_scanner import AITopic
+
+    try:
+        from backend.modules.grok_client import grok_scan_topics
+    except ImportError:
+        return []
+
+    queries = [custom_query] if custom_query else _GROK_DEFAULT_QUERIES
+    ai_topics: list = []
+    seen_texts: set[str] = set()
+
+    for q in queries:
+        try:
+            grok_results = grok_scan_topics(q)
+        except Exception:
+            continue
+
+        for gr in grok_results:
+            text = gr.get("text", "")
+            text_key = text[:80].lower()
+            if text_key in seen_texts:
+                continue
+            seen_texts.add(text_key)
+
+            ai_topics.append(AITopic(
+                id=f"grok_{hash(text[:50])}",
+                text=text,
+                author_name=gr.get("author_name", ""),
+                author_username=gr.get("author_username", ""),
+                author_profile_image="",
+                created_at=_dt.datetime.now(_dt.timezone.utc),
+                like_count=gr.get("like_count", 0),
+                retweet_count=gr.get("retweet_count", 0),
+                reply_count=gr.get("reply_count", 0),
+                url=gr.get("url", ""),
+                category=gr.get("category", "Grok Arama"),
+            ))
+
+    return ai_topics
 
 
 # ── Discover Endpoint ───────────────────────────────────
