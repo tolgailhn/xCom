@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from backend.config import get_settings
-from backend.modules.style_manager import add_to_post_history
+from backend.modules.style_manager import add_to_post_history, add_tweet_metric
 
 router = APIRouter()
 
@@ -63,6 +63,22 @@ def _create_publisher():
     )
 
 
+def _register_metric(tweet_id: str, text: str, url: str):
+    """Paylasilan tweet'i otomatik metrik takibine ekle."""
+    import datetime
+    from zoneinfo import ZoneInfo
+    now = datetime.datetime.now(ZoneInfo("Europe/Istanbul")).isoformat()
+    add_tweet_metric({
+        "tweet_id": tweet_id,
+        "text": text[:200],
+        "url": url,
+        "metrics": {},
+        "last_checked": now,
+        "first_tracked": now,
+        "source": "publish",
+    })
+
+
 @router.post("/tweet", response_model=PublishResponse)
 async def publish_tweet(request: PublishRequest):
     """Tweet veya thread paylas"""
@@ -85,6 +101,8 @@ async def publish_tweet(request: PublishRequest):
                     "parts": len(request.thread_parts),
                     "thread_urls": urls,
                 })
+                if first.get("tweet_id"):
+                    _register_metric(first["tweet_id"], request.text, first.get("url", ""))
 
             return PublishResponse(
                 success=first.get("success", False),
@@ -114,6 +132,8 @@ async def publish_tweet(request: PublishRequest):
                     "type": "reply",
                     "reply_to_id": request.reply_to_id,
                 })
+                if result.get("tweet_id"):
+                    _register_metric(result["tweet_id"], request.text, result.get("url", ""))
             return PublishResponse.from_result(result)
         elif request.quote_tweet_id:
             # Quote tweet
@@ -124,6 +144,8 @@ async def publish_tweet(request: PublishRequest):
                     "url": result.get("url", ""),
                     "type": "quote_tweet",
                 })
+                if result.get("tweet_id"):
+                    _register_metric(result["tweet_id"], request.text, result.get("url", ""))
             return PublishResponse.from_result(result)
         else:
             # Single tweet
@@ -134,6 +156,8 @@ async def publish_tweet(request: PublishRequest):
                     "url": result.get("url", ""),
                     "type": "tweet",
                 })
+                if result.get("tweet_id"):
+                    _register_metric(result["tweet_id"], request.text, result.get("url", ""))
             return PublishResponse.from_result(result)
 
     except HTTPException:

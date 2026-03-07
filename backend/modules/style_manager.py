@@ -327,6 +327,58 @@ def delete_scheduled_post(post_id: str) -> bool:
     return True
 
 
+# ── Tweet Metrics (Performans Takibi) ────────────────────────
+
+def load_tweet_metrics() -> list[dict]:
+    """Load tracked tweet metrics"""
+    path = DATA_DIR / "tweet_metrics.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+
+def save_tweet_metrics(metrics: list[dict]):
+    """Save tweet metrics"""
+    path = DATA_DIR / "tweet_metrics.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(metrics, f, ensure_ascii=False, indent=2)
+
+
+def add_tweet_metric(entry: dict):
+    """Add or update a tweet metric entry by tweet_id"""
+    metrics = load_tweet_metrics()
+    tweet_id = entry.get("tweet_id", "")
+    if not tweet_id:
+        return
+
+    # Update existing or add new
+    for i, m in enumerate(metrics):
+        if m.get("tweet_id") == tweet_id:
+            metrics[i] = {**m, **entry}
+            save_tweet_metrics(metrics)
+            return
+
+    metrics.insert(0, entry)
+    # Keep last 200
+    metrics = metrics[:200]
+    save_tweet_metrics(metrics)
+
+
+def update_tweet_metric(tweet_id: str, updates: dict):
+    """Update metrics for a specific tweet_id"""
+    metrics = load_tweet_metrics()
+    for i, m in enumerate(metrics):
+        if m.get("tweet_id") == tweet_id:
+            metrics[i] = {**m, **updates}
+            save_tweet_metrics(metrics)
+            return
+    # Not found — create new entry
+    metrics.insert(0, {"tweet_id": tweet_id, **updates})
+    save_tweet_metrics(metrics)
+
+
 def save_daily_checklist(checklist: dict, date_str: str = ""):
     """Save daily algorithm checklist"""
     path = DATA_DIR / "daily_checklists.json"

@@ -156,6 +156,15 @@ def _send_telegram_notification(post: dict, result: dict):
         pass  # Telegram hatasi kritik degil
 
 
+def _check_metrics():
+    """Her 30 dakikada bir tweet metriklerini guncelle."""
+    try:
+        from backend.api.performance import check_and_update_metrics
+        check_and_update_metrics()
+    except Exception:
+        logger.exception("Metrics auto-check error")
+
+
 def start_scheduler():
     """Scheduler'i baslat — FastAPI startup'ta cagirilir."""
     if not scheduler.running:
@@ -166,8 +175,15 @@ def start_scheduler():
             id="scheduled_publisher",
             replace_existing=True,
         )
+        scheduler.add_job(
+            _check_metrics,
+            "interval",
+            minutes=30,
+            id="metrics_checker",
+            replace_existing=True,
+        )
         scheduler.start()
-        logger.info("Scheduler started — checking every 1 minute")
+        logger.info("Scheduler started — publish check every 1 min, metrics check every 30 min")
 
 
 def stop_scheduler():
