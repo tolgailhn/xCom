@@ -478,6 +478,14 @@ class TwikitSearchClient:
                     "Uygulamayı yeniden başlatmayı deneyin."
                 )
                 print(f"Twikit search transport error: {err_name}: {e}")
+            elif err_name == "Forbidden" or "403" in err_str:
+                # Search 403 is NOT an auth issue — it's an IP/endpoint restriction.
+                # Do NOT re-auth (it destroys working cookies for other operations).
+                self.last_error = (
+                    "Erişim reddedildi (403). Twitter arama bu IP'den kısıtlanmış olabilir. "
+                    "Grok motorunu kullanmayı deneyin."
+                )
+                print(f"Twikit search 403 — NOT re-authing (preserving cookies): {e}")
             else:
                 print(f"Twikit search {err_name}, attempting re-auth...")
                 self.last_error = f"Arama hatası ({err_name}): {e}"
