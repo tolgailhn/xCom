@@ -104,6 +104,7 @@ STYLES = [
     {"id": "haber", "name": "Haber / Bilgi Paylasimi", "desc": "Detayli AI haber paylasimi — bilgi + kisisel yorum"},
     {"id": "agresif", "name": "Agresif / Enerjik", "desc": "Direkt, enerjik, firsat odakli — guclu ton"},
     {"id": "quote_tweet", "name": "Quote Tweet / Yorum", "desc": "Tweet'e kendi yorumunu ekle, dogal ve samimi"},
+    {"id": "tolga", "name": "Tolga Style", "desc": "Gelismeyi detaylariyla aktaran, bilgi yogun, pratik deger sunan format"},
 ]
 
 FORMATS = [
