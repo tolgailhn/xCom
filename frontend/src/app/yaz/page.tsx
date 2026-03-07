@@ -1479,10 +1479,18 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
 
       setScanResults(mapped);
       if (mapped.length === 0) {
-        const errMsgs = result.errors?.length ? `\n${result.errors.join(", ")}` : "";
-        setError(
-          `Son ${timeHours} saatte tweet bulunamadi. Zaman araligini artirin veya farkli motor deneyin.${errMsgs}`
-        );
+        const errs = result.errors || [];
+        const has403 = errs.some((e: string) => e.includes("403") || e.includes("reddedildi"));
+        if (has403) {
+          setError(
+            "Twikit 403 hatasi — cookie suresi dolmus olabilir. Ayarlar sayfasindan cookie'yi yenileyin veya Grok motorunu secin."
+          );
+        } else {
+          const errMsgs = errs.length ? `\n${errs.join(", ")}` : "";
+          setError(
+            `Son ${timeHours} saatte tweet bulunamadi. Zaman araligini artirin veya farkli motor deneyin.${errMsgs}`
+          );
+        }
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Tarama hatasi");

@@ -656,7 +656,8 @@ class TwitterScanner:
                        max_results: int) -> list[AITopic]:
         """Search tweets using Twikit (primary) or Twitter API v2 (fallback)"""
         # Try Twikit first (free, no API cost)
-        if self.use_twikit and self.twikit_client:
+        # Skip if Twikit already failed with 403 in this scan session
+        if self.use_twikit and self.twikit_client and not getattr(self, '_twikit_disabled', False):
             try:
                 since_date = start_time.strftime("%Y-%m-%d")
                 results = self.twikit_client.search_tweets(
@@ -667,6 +668,9 @@ class TwitterScanner:
                     # Only add unique errors (avoid flooding with same message)
                     if err not in self.search_errors:
                         self.search_errors.append(err)
+                    # If 403/Forbidden, disable Twikit for remaining queries in this session
+                    if "403" in err or "reddedildi" in err.lower():
+                        self._twikit_disabled = True
                 topics = []
                 for d in results:
                     if d.get('created_at') and d['created_at'] >= start_time:
@@ -676,6 +680,9 @@ class TwitterScanner:
                 err_msg = f"Twikit arama hatası: {type(e).__name__}: {e}"
                 if err_msg not in self.search_errors:
                     self.search_errors.append(err_msg)
+                # Disable Twikit on 403/Forbidden to avoid repeating for all queries
+                if "403" in str(e) or "Forbidden" in type(e).__name__:
+                    self._twikit_disabled = True
 
         # Fallback: Twitter API v2
         if not self.client:
@@ -753,18 +760,26 @@ class TwitterScanner:
                          max_results: int) -> list[AITopic]:
         """Get recent tweets using Twikit (primary) or Twitter API v2 (fallback)"""
         # Try Twikit first (free, no API cost)
-        if self.use_twikit and self.twikit_client:
+        if self.use_twikit and self.twikit_client and not getattr(self, '_twikit_disabled', False):
             try:
                 results = self.twikit_client.get_user_tweets(username, count=max_results)
                 if not results and self.twikit_client.last_error:
-                    self.search_errors.append(self.twikit_client.last_error)
+                    err = self.twikit_client.last_error
+                    if err not in self.search_errors:
+                        self.search_errors.append(err)
+                    if "403" in err or "reddedildi" in err.lower():
+                        self._twikit_disabled = True
                 topics = []
                 for d in results:
                     if d.get('created_at') and d['created_at'] >= start_time:
                         topics.append(self._dict_to_topic(d))
                 return topics
             except Exception as e:
-                self.search_errors.append(f"Twikit kullanıcı tweet hatası (@{username}): {e}")
+                err_msg = f"Twikit kullanıcı tweet hatası (@{username}): {e}"
+                if err_msg not in self.search_errors:
+                    self.search_errors.append(err_msg)
+                if "403" in str(e) or "Forbidden" in type(e).__name__:
+                    self._twikit_disabled = True
 
         # Fallback: Twitter API v2
         if not self.client:
