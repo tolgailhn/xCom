@@ -293,6 +293,20 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 
 ## Değişiklik Günlüğü
 
+### 2026-03-07 (Faz 1: Thread Paylaşımı)
+- **fix**: `publish.py` — Twitter API credential'ları düzeltildi: cookie değerleri yerine doğru API key/secret kullanılıyor
+- **feat**: `publish.py` — Thread paylaşımı tüm tweet sonuçlarını döndürüyor (`thread_results` array)
+- **feat**: `yaz/page.tsx` — Thread parçaları düzenlenebilir (textarea + karakter sayacı)
+- **feat**: `yaz/page.tsx` — "API ile Paylaş" butonu: backend API üzerinden tweet/thread paylaşımı
+- **feat**: `yaz/page.tsx` — Thread paylaşımında her tweet'in sonucu ayrı gösteriliyor (URL + başarı/hata)
+- **feat**: `yaz/page.tsx` — Quote Tweet tab'ında da API publish eklendi
+- **feat**: `api.ts` — `PublishResult` tipi eklendi (`thread_results` desteği)
+
+### BEKLEYEN FAZLAR (HAFIZADA)
+- **Faz 2**: Otomatik Zamanlı Paylaşım (APScheduler + Schedule UI)
+- **Faz 3**: Paylaşım Sonrası Performans Takibi (Tweet metrikleri)
+- **Küçük İyileştirmeler (Sonra)**: En iyi paylaşım saati analizi, rakip analizi
+
 ---
 
 ## MIGRATION PLANI: Streamlit -> Next.js + FastAPI (AKTIF)
