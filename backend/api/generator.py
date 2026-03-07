@@ -105,6 +105,7 @@ STYLES = [
     {"id": "agresif", "name": "Agresif / Enerjik", "desc": "Direkt, enerjik, firsat odakli — guclu ton"},
     {"id": "quote_tweet", "name": "Quote Tweet / Yorum", "desc": "Tweet'e kendi yorumunu ekle, dogal ve samimi"},
     {"id": "tolga", "name": "Tolga Style", "desc": "Gelismeyi detaylariyla aktaran, bilgi yogun, pratik deger sunan format"},
+    {"id": "hurricane", "name": "Hurricane Style", "desc": "Provokasyon, kontrast, kisa-vurucu, konusma dili — viral odakli"},
 ]
 
 FORMATS = [
