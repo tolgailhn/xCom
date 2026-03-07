@@ -52,9 +52,28 @@ def get_available_providers() -> list[dict]:
     return providers
 
 
+def _ensure_pool_populated():
+    """Pool boşsa analiz dosyalarından otomatik doldur (bir kere)."""
+    try:
+        from backend.modules.tweet_pool import load_pool, import_from_analyses
+        pool = load_pool()
+        if not pool.get("pool"):
+            # Pool boş — analiz dosyalarından aktar
+            results = import_from_analyses(min_engagement=50)
+            if results:
+                total = sum(r.get("added", 0) for r in results)
+                if total > 0:
+                    print(f"[Pool] Analiz dosyalarından {total} tweet havuza aktarıldı")
+    except Exception:
+        pass
+
+
 def create_generator(topic: str = "", preferred_provider: str = "") -> ContentGenerator:
     """Create a ContentGenerator with config-based provider and training context."""
     provider, api_key, model = get_ai_provider(preferred=preferred_provider)
+
+    # Pool boşsa analiz dosyalarından otomatik doldur
+    _ensure_pool_populated()
 
     # Load persona and training context
     custom_persona = load_custom_persona() or None

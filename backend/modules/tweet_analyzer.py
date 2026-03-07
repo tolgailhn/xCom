@@ -717,50 +717,64 @@ def build_training_context(analyses: list[dict], max_examples: int = 50, topic: 
                 )
 
         # --- SECTION 2: CURATED TWEET EXAMPLES (style training) ---
-        # Havuz varsa bu bölüm atlanır, havuz örnekleri for döngüsünden sonra eklenir
+        # Havuz dolu olsa bile, analiz örnekleri her zaman eklenir (çeşitlilik için)
         all_originals = analysis.get("all_original_tweets", [])
 
-        _pool_used = False
-        try:
-            from backend.modules.tweet_pool import load_pool, select_examples, build_pool_training_context
-            _pool_data = load_pool()
-            if _pool_data.get("pool") and len(_pool_data["pool"]) >= 10:
-                _pool_used = True
-        except Exception:
-            pass
+        if all_originals:
+            import random as _rnd
 
-        if not _pool_used:
+            # Tüm orijinal tweet'lerden akıllı seçim:
+            # - Top %20 engagement (en iyi performans)
+            # - Mid %30-60 arası (orta segment, doğal ton)
+            # - Rastgele %20 (çeşitlilik, tekrar önleme)
+            # - Son 10 tweet (güncel tarz)
+            sorted_by_score = sorted(all_originals, key=lambda x: x.get("engagement_score", 0), reverse=True)
 
-            if all_originals:
-                sorted_by_score = sorted(all_originals, key=lambda x: x.get("engagement_score", 0), reverse=True)
+            n = len(sorted_by_score)
+            top_count = max(8, n // 5)        # en az 8, toplam %20
+            mid_start = n // 3
+            mid_end = (n * 2) // 3
+            mid_count = max(8, n // 5)
 
-                top_examples = sorted_by_score[:10]
-                mid_start = len(sorted_by_score) // 3
-                mid_examples = sorted_by_score[mid_start:mid_start + 10]
-                sorted_by_date = sorted(
-                    all_originals,
-                    key=lambda x: x.get("created_at", ""),
-                    reverse=True
+            top_examples = sorted_by_score[:top_count]
+            mid_pool = sorted_by_score[mid_start:mid_end]
+            mid_examples = _rnd.sample(mid_pool, min(mid_count, len(mid_pool))) if mid_pool else []
+
+            # Son tweet'ler (güncel tarz)
+            sorted_by_date = sorted(
+                all_originals,
+                key=lambda x: x.get("created_at", ""),
+                reverse=True
+            )
+            recent_examples = sorted_by_date[:8]
+
+            # Rastgele seçim (her çağrıda farklı kombinasyon)
+            remaining = [t for t in all_originals
+                         if t not in top_examples and t not in recent_examples]
+            random_count = max(6, n // 10)
+            random_examples = _rnd.sample(remaining, min(random_count, len(remaining))) if remaining else []
+
+            seen_texts = set()
+            curated = []
+            for t in top_examples + mid_examples + recent_examples + random_examples:
+                text = t.get("text", "").strip()
+                if text and len(text) > 30 and text[:100] not in seen_texts:
+                    seen_texts.add(text[:100])
+                    display_text = text[:500] + "..." if len(text) > 500 else text
+                    curated.append(f'"{display_text}"')
+
+            # Karıştır ki AI sıralama etkisine kapılmasın
+            _rnd.shuffle(curated)
+
+            if curated:
+                context_parts.append(
+                    f"### @{username} - YAZIM TARZI ÖRNEKLERİ "
+                    f"({len(curated)} seçilmiş tweet / toplam {len(all_originals)} orijinal):\n"
+                    f"Bu tweet'lerin TONUNU, CÜMLE YAPISINI, KELİME SEÇİMİNİ "
+                    f"ve YAZIM TARZINI birebir model al. Her tweet üretiminde "
+                    f"FARKLI örneklerden ilham al, aynı kalıpları TEKRARLAMA:\n\n"
+                    + "\n---\n".join(curated)
                 )
-                recent_examples = sorted_by_date[:10]
-
-                seen_texts = set()
-                curated = []
-                for t in top_examples + mid_examples + recent_examples:
-                    text = t.get("text", "").strip()
-                    if text and len(text) > 30 and text[:100] not in seen_texts:
-                        seen_texts.add(text[:100])
-                        display_text = text[:500] + "..." if len(text) > 500 else text
-                        curated.append(f'"{display_text}"')
-
-                if curated:
-                    context_parts.append(
-                        f"### @{username} - YAZIM TARZI ÖRNEKLERİ "
-                        f"({len(curated)} seçilmiş tweet / toplam {len(all_originals)} orijinal):\n"
-                        f"Bu tweet'lerin TONUNU, CÜMLE YAPISINI, KELİME SEÇİMİNİ "
-                        f"ve YAZIM TARZINI birebir model al:\n\n"
-                        + "\n---\n".join(curated)
-                    )
 
         # --- SECTION 3: ENGAGEMENT STRATEGY ---
         top_tweets = analysis.get("top_tweets", [])
@@ -974,4 +988,8 @@ KRİTİK KURALLAR:
 5. ASLA "şu tweet'teki", "örnekteki" gibi referans verme — kendi orijinal içeriğini yaz.
 6. Bilgiyi KENDİ DENEYİMİN ve BİLGİN gibi yaz — sanki sen araştırdın, sen test ettin.
 7. Robotik ve yapay ifadeler YASAK — doğal, samimi, insan gibi yaz.
+8. TEKRAR YASAĞI: Yukarıdaki örnek tweet'lerin cümlelerini, kalıplarını BİREBİR kullanma.
+   Her seferinde FARKLI açılış (hook), FARKLI geçiş ve FARKLI kapanış kullan.
+   Aynı imza kelimelerini bile farklı bağlamlarda ve farklı kombinasyonlarda kullan.
+   Monotonluktan kaçın — bazı tweet'ler kısa ve keskin, bazıları uzun ve detaylı olsun.
 """
