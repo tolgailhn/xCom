@@ -314,8 +314,18 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 - **feat**: `yaz/page.tsx` — "Zamanla" butonu: tarih/saat seçici ile tweet zamanlama
 - **feat**: `takvim/page.tsx` — "Zamanlanmış Postlar" bölümü: bekleyen/tüm filtre + iptal butonu
 
-### BEKLEYEN FAZLAR (HAFIZADA)
-- **Faz 3**: Paylaşım Sonrası Performans Takibi (Tweet metrikleri)
+### 2026-03-07 (Faz 3A: Performance Tracking Backend)
+- **feat**: `api/performance.py` — Yeni API: /stats, /track, /refresh-all, /auto-register endpoint'leri
+- **feat**: `style_manager.py` — Tweet metrics CRUD (load, save, add, update) — `data/tweet_metrics.json`
+- **feat**: `scheduler_worker.py` — Her 30 dakikada bir son 48 saatteki tweet metriklerini otomatik güncelle
+- **feat**: `publish.py` — Başarılı publish sonrası tweet_id otomatik metrik takibine eklenir
+- **feat**: `main.py` — Performance router kaydı
+
+### 2026-03-07 (Faz 3B: Performance Tracking Frontend)
+- **feat**: `api.ts` — Performance API fonksiyonları (getPerformanceStats, refreshAllMetrics, autoRegisterMetrics, trackTweet)
+- **feat**: `takvim/page.tsx` — "Performans Takibi" bölümü: özet istatistikler, en iyi tweet, son tweet metrikleri, "Gecmisten Ekle" ve "Metrikleri Guncelle" butonları
+
+### BEKLEYEN IYILESTIRMELER (HAFIZADA)
 - **Küçük İyileştirmeler (Sonra)**: En iyi paylaşım saati analizi, rakip analizi
 
 ---
