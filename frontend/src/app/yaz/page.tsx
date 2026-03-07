@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   generateTweet,
@@ -1432,6 +1432,7 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
   const [maxPerAccount, setMaxPerAccount] = useState(5);
   const [minEngagement, setMinEngagement] = useState(0);
   const [engine, setEngine] = useState("default");
+  const [maxResults, setMaxResults] = useState(30);
 
   const [scanResults, setScanResults] = useState<
     {
@@ -1444,10 +1445,13 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
       replies: number;
       engagement: number;
       url: string;
+      created_at: string;
     }[]
   >([]);
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const replyRef = useRef<HTMLDivElement>(null);
 
   /* Selected tweet for reply */
   const [selectedTweet, setSelectedTweet] = useState<(typeof scanResults)[0] | null>(null);
@@ -1478,6 +1482,7 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
           reply_count?: number;
           engagement_score?: number;
           url?: string;
+          created_at?: string;
         }[];
         errors?: string[];
       };
@@ -1492,6 +1497,7 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
         replies: t.reply_count || 0,
         engagement: t.engagement_score || 0,
         url: t.url || "",
+        created_at: t.created_at || "",
       }));
 
       setScanResults(mapped);
@@ -1621,6 +1627,23 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
               <option value={500}>500+</option>
             </select>
           </div>
+
+          <div>
+            <label className="text-xs text-[var(--text-secondary)] block mb-1">
+              Gosterilecek Adet
+            </label>
+            <select
+              value={maxResults}
+              onChange={(e) => setMaxResults(Number(e.target.value))}
+              className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm"
+            >
+              <option value={10}>10 tweet</option>
+              <option value={20}>20 tweet</option>
+              <option value={30}>30 tweet</option>
+              <option value={50}>50 tweet</option>
+              <option value={100}>100 tweet</option>
+            </select>
+          </div>
         </div>
 
         <button
@@ -1642,10 +1665,12 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
       {scanResults.length > 0 && (
         <div className="glass-card space-y-3">
           <h4 className="text-sm font-semibold text-[var(--accent-green)]">
-            {scanResults.length} tweet bulundu
+            {scanResults.length > maxResults
+              ? `${maxResults} / ${scanResults.length} tweet gosteriliyor`
+              : `${scanResults.length} tweet bulundu`}
           </h4>
 
-          {scanResults.slice(0, 30).map((tw, i) => (
+          {scanResults.slice(0, maxResults).map((tw, i) => (
             <div
               key={i}
               className="bg-[var(--bg-primary)] rounded-lg p-3 border-l-3 border-[var(--accent-green)]"
@@ -1659,9 +1684,21 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
                     {tw.author_name}
                   </span>
                 </div>
-                <span className="text-[10px] text-[var(--text-secondary)]">
-                  {tw.likes} likes | {tw.retweets} RT | {tw.replies} replies
-                </span>
+                <div className="text-right">
+                  <span className="text-[10px] text-[var(--text-secondary)]">
+                    {tw.likes} likes | {tw.retweets} RT | {tw.replies} replies
+                  </span>
+                  {tw.created_at && (
+                    <div className="text-[10px] text-[var(--text-secondary)]">
+                      {new Date(tw.created_at).toLocaleString("tr-TR", {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
               <p className="text-sm text-[var(--text-primary)] mb-2">
                 {tw.text.length > 400
@@ -1673,6 +1710,9 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
                   onClick={() => {
                     setSelectedTweet(tw);
                     setGeneratedReply("");
+                    setTimeout(() => {
+                      replyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 100);
                   }}
                   className="btn-secondary text-xs"
                 >
@@ -1696,7 +1736,7 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
 
       {/* Selected tweet: generate reply */}
       {selectedTweet && (
-        <div className="glass-card space-y-4">
+        <div ref={replyRef} className="glass-card space-y-4">
           <div className="bg-[var(--accent-purple)]/10 border border-[var(--accent-purple)]/30 rounded-lg p-3">
             <p className="text-xs font-medium text-[var(--accent-purple)] mb-1">
               Reply yazilacak tweet - @{selectedTweet.author}

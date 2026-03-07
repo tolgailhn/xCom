@@ -41,6 +41,7 @@ class TopicItem(BaseModel):
     url: str = ""
     content_summary: str = ""
     media_urls: list[str] = []
+    created_at: str = ""
 
 
 class ScanResponse(BaseModel):
@@ -127,6 +128,7 @@ def _topic_to_item(t) -> TopicItem:
         url=t.url,
         content_summary=t.content_summary,
         media_urls=t.media_urls if t.media_urls else [],
+        created_at=t.created_at.isoformat() if t.created_at else "",
     )
 
 
