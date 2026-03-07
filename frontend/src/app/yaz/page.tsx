@@ -731,29 +731,76 @@ function TabTweetYaz({
             </div>
           )}
 
-          {/* Action buttons */}
-          <div className="flex gap-3">
-            <button onClick={handleGenerate} className="btn-secondary text-sm">
-              Yeniden Uret
-            </button>
-            <button
-              onClick={async () => {
-                setDraftSaved(false);
-                await addDraft({ text: generatedText, topic, style });
-                setDraftSaved(true);
-                setTimeout(() => setDraftSaved(false), 3000);
-              }}
-              className="btn-secondary text-sm"
-            >
-              {draftSaved ? "Kaydedildi!" : "Taslak Kaydet"}
-            </button>
-            <button
-              onClick={handlePublish}
-              disabled={publishing}
-              className="btn-primary text-sm"
-            >
-              {publishing ? "Paylasiliyor..." : "Paylas"}
-            </button>
+          {/* Regenerate with different style */}
+          <div className="border-t border-[var(--border)] pt-4 space-y-3">
+            <div className="flex flex-wrap gap-3 items-end">
+              <div>
+                <label className="text-xs text-[var(--text-secondary)] block mb-1">
+                  Yazim Tarzi
+                </label>
+                <select
+                  value={style}
+                  onChange={(e) => setStyle(e.target.value)}
+                  className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
+                >
+                  {styles.length > 0
+                    ? styles.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))
+                    : ["Samimi", "Profesyonel", "Analitik"].map((s) => (
+                        <option key={s.toLowerCase()} value={s.toLowerCase()}>
+                          {s}
+                        </option>
+                      ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-[var(--text-secondary)] block mb-1">
+                  Format
+                </label>
+                <select
+                  value={contentFormat}
+                  onChange={(e) => setContentFormat(e.target.value)}
+                  className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
+                >
+                  <option value="">Otomatik</option>
+                  {formats.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={handleGenerate}
+                disabled={loading}
+                className="btn-secondary text-sm"
+              >
+                {loading ? "Uretiliyor..." : "Yeniden Uret"}
+              </button>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={async () => {
+                  setDraftSaved(false);
+                  await addDraft({ text: generatedText, topic, style });
+                  setDraftSaved(true);
+                  setTimeout(() => setDraftSaved(false), 3000);
+                }}
+                className="btn-secondary text-sm"
+              >
+                {draftSaved ? "Kaydedildi!" : "Taslak Kaydet"}
+              </button>
+              <button
+                onClick={handlePublish}
+                disabled={publishing}
+                className="btn-primary text-sm"
+              >
+                {publishing ? "Paylasiliyor..." : "X'e Paylas"}
+              </button>
+            </div>
           </div>
         </div>
       )}

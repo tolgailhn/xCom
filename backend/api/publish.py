@@ -23,6 +23,16 @@ class PublishResponse(BaseModel):
     url: str = ""
     error: str = ""
 
+    @classmethod
+    def from_result(cls, result: dict) -> "PublishResponse":
+        """TweetPublisher sonucunu PublishResponse'a cevir (None -> '')"""
+        return cls(
+            success=result.get("success", False),
+            tweet_id=result.get("tweet_id") or "",
+            url=result.get("url") or "",
+            error=result.get("error") or "",
+        )
+
 
 @router.post("/tweet", response_model=PublishResponse)
 async def publish_tweet(request: PublishRequest):
@@ -59,12 +69,7 @@ async def publish_tweet(request: PublishRequest):
                     "type": "thread",
                     "parts": len(request.thread_parts),
                 })
-            return PublishResponse(
-                success=first.get("success", False),
-                tweet_id=first.get("tweet_id", ""),
-                url=first.get("url", ""),
-                error=first.get("error", ""),
-            )
+            return PublishResponse.from_result(first)
         elif request.reply_to_id:
             # Reply to tweet
             result = publisher.post_reply(request.text, request.reply_to_id)
@@ -75,7 +80,7 @@ async def publish_tweet(request: PublishRequest):
                     "type": "reply",
                     "reply_to_id": request.reply_to_id,
                 })
-            return PublishResponse(**result)
+            return PublishResponse.from_result(result)
         elif request.quote_tweet_id:
             # Quote tweet
             result = publisher.post_quote_tweet(request.text, request.quote_tweet_id)
@@ -85,7 +90,7 @@ async def publish_tweet(request: PublishRequest):
                     "url": result.get("url", ""),
                     "type": "quote_tweet",
                 })
-            return PublishResponse(**result)
+            return PublishResponse.from_result(result)
         else:
             # Single tweet
             result = publisher.post_tweet(request.text)
@@ -95,7 +100,7 @@ async def publish_tweet(request: PublishRequest):
                     "url": result.get("url", ""),
                     "type": "tweet",
                 })
-            return PublishResponse(**result)
+            return PublishResponse.from_result(result)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
