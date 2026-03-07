@@ -803,30 +803,36 @@ function TabQuoteTweet({
     return () => clearTimeout(timer);
   }, [quoteUrl]);
 
-  const handleResearchAndGenerate = async () => {
+  const handleResearch = async () => {
     if (!quoteUrl.trim()) return;
     setResearching(true);
     setError(null);
     setGeneratedText("");
     setFactResult(null);
+    setScoreResult(null);
     setProgressMessages([]);
 
     try {
-      // Use original tweet text as research topic if available
       const researchTopic = originalTweet?.text || quoteUrl;
-
-      // Step 1: Research (with live progress)
       const research = await researchTopicStream(
         { topic: researchTopic, engine, agentic },
         (msg) => setProgressMessages((prev) => [...prev, msg]),
       );
       setResearchResult(research);
-
-      // Step 2: Generate quote tweet using the proper endpoint
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Arastirma hatasi");
+    } finally {
       setResearching(false);
-      setGenerating(true);
+    }
+  };
 
-      const researchSummary = `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}`;
+  const handleGenerate = async () => {
+    if (!researchResult) return;
+    setGenerating(true);
+    setError(null);
+
+    try {
+      const researchSummary = `${researchResult.summary}\n\nKey Points:\n${researchResult.key_points.join("\n")}`;
       const tweetText = originalTweet?.text || quoteUrl;
       const tweetAuthor = originalTweet?.author || "";
 
@@ -840,11 +846,9 @@ function TabQuoteTweet({
       })) as { text: string; score: ScoreResult | null };
       setGeneratedText(result.text);
       setScoreResult(result.score || null);
-
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Arastirma/uretim hatasi");
+      setError(e instanceof Error ? e.message : "Tweet uretim hatasi");
     } finally {
-      setResearching(false);
       setGenerating(false);
     }
   };
@@ -885,7 +889,7 @@ function TabQuoteTweet({
     <div className="space-y-5">
       <div className="glass-card p-4 border-l-4 border-[var(--accent-purple)]">
         <p className="text-sm text-[var(--text-secondary)]">
-          Tweet URL girin &rarr; Tweet cekilir &rarr; Arastirilir &rarr; Quote tweet yazilir &rarr; Dogrulanir &rarr; Paylasilir
+          Tweet URL girin &rarr; Tweet cekilir &rarr; Arastir &rarr; Sonuclari incele &rarr; Tarz sec &rarr; Tweet uret &rarr; Paylas
         </p>
       </div>
 
@@ -950,10 +954,10 @@ function TabQuoteTweet({
           </div>
         )}
 
-        {/* Research settings */}
+        {/* Step 1: Research settings + button */}
         <div className="bg-[var(--bg-primary)] rounded-lg p-3 space-y-3">
           <p className="text-xs font-medium text-[var(--text-secondary)]">
-            Arastirma Ayarlari
+            Adim 1: Arastirma
           </p>
 
           {/* Sources */}
@@ -977,42 +981,6 @@ function TabQuoteTweet({
           </div>
 
           <div className="flex flex-wrap gap-4">
-            {/* Style */}
-            <div>
-              <label className="text-xs text-[var(--text-secondary)] block mb-1">Tarz</label>
-              <select
-                value={style}
-                onChange={(e) => setStyle(e.target.value)}
-                className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
-              >
-                {styles.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Format */}
-            <div>
-              <label className="text-xs text-[var(--text-secondary)] block mb-1">Format</label>
-              <select
-                value={contentFormat}
-                onChange={(e) => setContentFormat(e.target.value)}
-                className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
-              >
-                {formats.length > 0 ? formats.filter(f => f.id !== "thread").map((f) => (
-                  <option key={f.id} value={f.id}>{f.name}</option>
-                )) : (
-                  <>
-                    <option value="micro">Micro (0-140)</option>
-                    <option value="punch">Punch (140-280)</option>
-                    <option value="spark">Spark (400-600)</option>
-                    <option value="storm">Storm (700-1000)</option>
-                    <option value="thunder">Thunder (1200-1500)</option>
-                  </>
-                )}
-              </select>
-            </div>
-
             {/* Engine */}
             <div>
               <label className="text-xs text-[var(--text-secondary)] block mb-1">Motor</label>
@@ -1031,25 +999,17 @@ function TabQuoteTweet({
                 <input type="checkbox" checked={agentic} onChange={(e) => setAgentic(e.target.checked)} className="rounded" />
                 Agentic
               </label>
-              <label className="flex items-center gap-1 text-xs cursor-pointer">
-                <input type="checkbox" checked={deepVerify} onChange={(e) => setDeepVerify(e.target.checked)} className="rounded" />
-                Dogrulama
-              </label>
             </div>
           </div>
-        </div>
 
-        <button
-          onClick={handleResearchAndGenerate}
-          disabled={researching || generating || !quoteUrl.trim()}
-          className="btn-primary w-full"
-        >
-          {researching
-            ? "Arastiriliyor..."
-            : generating
-              ? "Tweet yaziliyor..."
-              : "Arastir ve Quote Tweet Yaz"}
-        </button>
+          <button
+            onClick={handleResearch}
+            disabled={researching || !quoteUrl.trim()}
+            className="btn-primary w-full"
+          >
+            {researching ? "Arastiriliyor..." : "Arastir"}
+          </button>
+        </div>
       </div>
 
       {/* Live progress messages */}
@@ -1115,6 +1075,68 @@ function TabQuoteTweet({
         </div>
       )}
 
+      {/* Step 2: Style/Format selection + Generate button (shown after research) */}
+      {researchResult && !generatedText && (
+        <div className="glass-card space-y-4">
+          <p className="text-xs font-medium text-[var(--accent-blue)]">
+            Adim 2: Tarz ve Format Sec, Tweet Uret
+          </p>
+
+          <div className="flex flex-wrap gap-4">
+            {/* Style */}
+            <div>
+              <label className="text-xs text-[var(--text-secondary)] block mb-1">Tarz</label>
+              <select
+                value={style}
+                onChange={(e) => setStyle(e.target.value)}
+                className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
+              >
+                {styles.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Format */}
+            <div>
+              <label className="text-xs text-[var(--text-secondary)] block mb-1">Format</label>
+              <select
+                value={contentFormat}
+                onChange={(e) => setContentFormat(e.target.value)}
+                className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
+              >
+                {formats.length > 0 ? formats.filter(f => f.id !== "thread").map((f) => (
+                  <option key={f.id} value={f.id}>{f.name}</option>
+                )) : (
+                  <>
+                    <option value="micro">Micro (0-140)</option>
+                    <option value="punch">Punch (140-280)</option>
+                    <option value="spark">Spark (400-600)</option>
+                    <option value="storm">Storm (700-1000)</option>
+                    <option value="thunder">Thunder (1200-1500)</option>
+                  </>
+                )}
+              </select>
+            </div>
+
+            <div className="flex items-end">
+              <label className="flex items-center gap-1 text-xs cursor-pointer">
+                <input type="checkbox" checked={deepVerify} onChange={(e) => setDeepVerify(e.target.checked)} className="rounded" />
+                Dogrulama
+              </label>
+            </div>
+          </div>
+
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="btn-primary w-full"
+          >
+            {generating ? "Tweet yaziliyor..." : "Quote Tweet Uret"}
+          </button>
+        </div>
+      )}
+
       {/* Generated quote tweet */}
       {generatedText && (
         <div className="glass-card space-y-4">
@@ -1169,8 +1191,8 @@ function TabQuoteTweet({
           )}
 
           <div className="flex flex-wrap gap-3">
-            <button onClick={handleResearchAndGenerate} className="btn-secondary text-sm">
-              Yeniden Uret
+            <button onClick={handleGenerate} disabled={generating} className="btn-secondary text-sm">
+              {generating ? "Yaziliyor..." : "Yeniden Uret"}
             </button>
             <button
               onClick={async () => {
