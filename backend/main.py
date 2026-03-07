@@ -1,6 +1,15 @@
 """
 X AI Otomasyon - FastAPI Backend
 """
+import sys
+from pathlib import Path
+
+# Ensure project root is in sys.path so 'backend.xxx' imports work
+# regardless of which directory uvicorn is started from
+_project_root = str(Path(__file__).parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
