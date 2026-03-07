@@ -79,6 +79,8 @@ def web_search(query: str, max_results: int = 8, timelimit: str = "w") -> list[d
         max_results: Maximum results to return
         timelimit: Time filter - "d" (day), "w" (week), "m" (month), None (all time)
     """
+    if not query or not query.strip():
+        return []
     results = []
     try:
         with DDGS() as ddgs:
@@ -116,6 +118,8 @@ def web_search_news(query: str, max_results: int = 6, timelimit: str = "w") -> l
         max_results: Maximum results to return
         timelimit: Time filter - "d" (day), "w" (week), "m" (month), None (all time)
     """
+    if not query or not query.strip():
+        return []
     results = []
     # Fallback chain: day → week → month
     time_chain = [timelimit] if timelimit else [None]

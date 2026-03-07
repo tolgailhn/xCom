@@ -351,7 +351,14 @@ async def fetch_pool_tweets(request: PoolFetchRequest):
         tweet_count=request.tweet_count,
     )
     total_added = sum(r.get("added", 0) for r in results if not r.get("error"))
-    return {"results": results, "total_added": total_added}
+
+    # Auto-regenerate DNA after adding tweets
+    dna_result = {}
+    if total_added > 0:
+        from backend.modules.tweet_pool import regenerate_pool_dna
+        dna_result = regenerate_pool_dna()
+
+    return {"results": results, "total_added": total_added, "dna_regenerated": bool(dna_result.get("dna"))}
 
 
 @router.post("/pool/import-analyses")
@@ -360,7 +367,14 @@ async def import_from_analyses_api(request: PoolImportRequest):
     from backend.modules.tweet_pool import import_from_analyses
     results = import_from_analyses(min_engagement=request.min_engagement)
     total_added = sum(r.get("added", 0) for r in results if not r.get("error"))
-    return {"results": results, "total_added": total_added}
+
+    # Auto-regenerate DNA after importing
+    dna_result = {}
+    if total_added > 0:
+        from backend.modules.tweet_pool import regenerate_pool_dna
+        dna_result = regenerate_pool_dna()
+
+    return {"results": results, "total_added": total_added, "dna_regenerated": bool(dna_result.get("dna"))}
 
 
 @router.get("/pool/dna")
