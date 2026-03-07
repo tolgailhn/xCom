@@ -9,7 +9,6 @@ import {
   extractTweet,
   researchTopic,
   researchTopicStream,
-  publishTweet,
   addDraft,
   scoreTweet,
   findMedia,
@@ -1412,9 +1411,10 @@ function TabQuoteTweet({
    ══════════════════════════════════════════════════════════ */
 
 function TabQuickReply({ styles }: { styles: StyleOption[] }) {
-  const [timeHours, setTimeHours] = useState(12);
+  const [timeHours, setTimeHours] = useState(24);
   const [maxPerAccount, setMaxPerAccount] = useState(5);
-  const [minEngagement, setMinEngagement] = useState(50);
+  const [minEngagement, setMinEngagement] = useState(0);
+  const [engine, setEngine] = useState("default");
 
   const [scanResults, setScanResults] = useState<
     {
@@ -1436,22 +1436,20 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
   const [selectedTweet, setSelectedTweet] = useState<(typeof scanResults)[0] | null>(null);
   const [replyExtra, setReplyExtra] = useState("");
   const [generatedReply, setGeneratedReply] = useState("");
-  const [replyStyle, setReplyStyle] = useState("samimi");
+  const [replyStyle, setReplyStyle] = useState("reply");
   const [generating, setGenerating] = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  const [publishResult, setPublishResult] = useState<string | null>(null);
 
   const handleScan = async () => {
     setScanning(true);
     setError(null);
     setScanResults([]);
     try {
-      // Use scanner API to find recent tweets from monitored accounts
       const { scanTopics } = await import("@/lib/api");
       const result = (await scanTopics({
         time_range: `${timeHours}h`,
         max_results: maxPerAccount * 10,
         min_likes: minEngagement > 0 ? minEngagement : undefined,
+        engine,
       })) as {
         topics: {
           id?: string;
@@ -1464,6 +1462,7 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
           engagement_score?: number;
           url?: string;
         }[];
+        errors?: string[];
       };
 
       const mapped = (result.topics || []).map((t) => ({
@@ -1480,8 +1479,9 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
 
       setScanResults(mapped);
       if (mapped.length === 0) {
+        const errMsgs = result.errors?.length ? `\n${result.errors.join(", ")}` : "";
         setError(
-          `Son ${timeHours} saatte tweet bulunamadi. Zaman araligini artirmayi deneyin.`
+          `Son ${timeHours} saatte tweet bulunamadi. Zaman araligini artirin veya farkli motor deneyin.${errMsgs}`
         );
       }
     } catch (e) {
@@ -1494,6 +1494,7 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
   const handleGenerateReply = async () => {
     if (!selectedTweet) return;
     setGenerating(true);
+    setError(null);
     try {
       const result = (await generateReply({
         original_tweet: selectedTweet.text,
@@ -1501,7 +1502,11 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
         style: replyStyle,
         additional_context: replyExtra || "",
       })) as { text: string };
-      setGeneratedReply(result.text);
+      if (!result.text || result.text.trim() === "") {
+        setError("Reply uretilemedi — AI bos yanit dondu. Tekrar deneyin.");
+      } else {
+        setGeneratedReply(result.text);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Reply uretim hatasi");
     } finally {
@@ -1509,42 +1514,40 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
     }
   };
 
-  const handlePublishReply = async () => {
+  const handleOpenReplyInX = () => {
     if (!generatedReply || !selectedTweet) return;
-    setPublishing(true);
-    try {
-      const result = (await publishTweet({
-        text: generatedReply,
-        reply_to_id: selectedTweet.id,
-      })) as {
-        success: boolean;
-        url: string;
-        error: string;
-      };
-      if (result.success) {
-        setPublishResult(result.url);
-      } else {
-        setError(result.error || "Gonderim hatasi");
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Gonderim hatasi");
-    } finally {
-      setPublishing(false);
-    }
+    // Open X with reply pre-filled — user clicks Reply on X
+    const tweetUrl = selectedTweet.url || `https://x.com/i/status/${selectedTweet.id}`;
+    // X intent doesn't support reply directly, so open tweet + copy reply
+    navigator.clipboard.writeText(generatedReply);
+    window.open(tweetUrl, "_blank");
   };
 
   return (
     <div className="space-y-5">
       <div className="glass-card p-4 border-l-4 border-[var(--accent-green)]">
         <p className="text-sm text-[var(--text-secondary)]">
-          AI hesaplarini tara &rarr; En iyi tweetleri bul &rarr; AI ile reply
-          yaz &rarr; Direkt gonder
+          Motor sec &rarr; Tara &rarr; Tweet sec &rarr; Reply uret &rarr; X&apos;te ac ve yapistr
         </p>
       </div>
 
       {/* Scan settings */}
       <div className="glass-card space-y-4">
         <div className="flex flex-wrap gap-4">
+          <div>
+            <label className="text-xs text-[var(--text-secondary)] block mb-1">
+              Arama Motoru
+            </label>
+            <select
+              value={engine}
+              onChange={(e) => setEngine(e.target.value)}
+              className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="default">DuckDuckGo (Twikit - Ucretsiz)</option>
+              <option value="grok">Grok (xAI - Ucretli)</option>
+            </select>
+          </div>
+
           <div>
             <label className="text-xs text-[var(--text-secondary)] block mb-1">
               Zaman Araligi
@@ -1557,6 +1560,7 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
               <option value={6}>Son 6 saat</option>
               <option value={12}>Son 12 saat</option>
               <option value={24}>Son 24 saat</option>
+              <option value={48}>Son 48 saat</option>
             </select>
           </div>
 
@@ -1597,7 +1601,7 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
           disabled={scanning}
           className="btn-primary w-full"
         >
-          {scanning ? "Taraniyor..." : "X'te Tara"}
+          {scanning ? "Taraniyor..." : "Tweetleri Tara"}
         </button>
       </div>
 
@@ -1735,29 +1739,18 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
                 {generatedReply.length} karakter
               </p>
 
-              {publishResult && (
-                <div className="bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/30 rounded-lg p-3">
-                  <span className="text-sm text-[var(--accent-green)]">
-                    Gonderildi!{" "}
-                    <a
-                      href={publishResult}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline"
-                    >
-                      Goruntule
-                    </a>
-                  </span>
-                </div>
-              )}
+              <div className="bg-[var(--accent-blue)]/10 border border-[var(--accent-blue)]/30 rounded-lg p-3">
+                <p className="text-xs text-[var(--accent-blue)]">
+                  &quot;X&apos;te Ac&quot; butonuna basinca reply kopyalanir ve tweet acilir. X&apos;te reply kutusuna yapistiriniz.
+                </p>
+              </div>
 
               <div className="flex gap-3">
                 <button
-                  onClick={handlePublishReply}
-                  disabled={publishing}
+                  onClick={handleOpenReplyInX}
                   className="btn-primary text-sm"
                 >
-                  {publishing ? "Gonderiliyor..." : "Reply Gonder"}
+                  X&apos;te Ac (Kopyala + Ac)
                 </button>
                 <button
                   onClick={handleGenerateReply}
