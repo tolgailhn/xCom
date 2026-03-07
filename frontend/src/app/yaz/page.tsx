@@ -223,8 +223,6 @@ function TabTweetYaz({
 
   const [loading, setLoading] = useState(false);
   const [researching, setResearching] = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  const [publishResult, setPublishResult] = useState<string | null>(null);
   const [draftSaved, setDraftSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progressMessages, setProgressMessages] = useState<string[]>([]);
@@ -288,9 +286,13 @@ function TabTweetYaz({
         thread_parts: string[];
         score: ScoreResult | null;
       };
-      setGeneratedText(result.text);
-      setThreadParts(result.thread_parts || []);
-      setScoreResult(result.score || null);
+      if (!result.text || result.text.trim() === "") {
+        setError("Tweet uretilemedi — AI bos yanit dondu. Farkli bir stil veya AI model deneyin.");
+      } else {
+        setGeneratedText(result.text);
+        setThreadParts(result.thread_parts || []);
+        setScoreResult(result.score || null);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Uretim hatasi");
     } finally {
@@ -329,25 +331,10 @@ function TabTweetYaz({
     }
   };
 
-  const handlePublish = async () => {
+  const handleOpenInXTab1 = () => {
     if (!generatedText) return;
-    setPublishing(true);
-    setPublishResult(null);
-    try {
-      const result = (await publishTweet({
-        text: generatedText,
-        thread_parts: threadParts.length > 0 ? threadParts : undefined,
-      })) as { success: boolean; url: string; error: string };
-      if (result.success) {
-        setPublishResult(result.url);
-      } else {
-        setError(result.error || "Paylasim hatasi");
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Paylasim hatasi");
-    } finally {
-      setPublishing(false);
-    }
+    const intentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(generatedText)}`;
+    window.open(intentUrl, "_blank");
   };
 
   const handleReScore = async () => {
@@ -616,22 +603,6 @@ function TabTweetYaz({
             </div>
           )}
 
-          {publishResult && (
-            <div className="bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/30 rounded-lg p-3">
-              <span className="text-sm text-[var(--accent-green)]">
-                Paylasildi!{" "}
-                <a
-                  href={publishResult}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
-                  Goruntule
-                </a>
-              </span>
-            </div>
-          )}
-
           {/* Tools: Media + Fact check */}
           <div className="flex flex-wrap gap-3">
             <div className="flex items-center gap-2">
@@ -804,11 +775,10 @@ function TabTweetYaz({
                 {draftSaved ? "Kaydedildi!" : "Taslak Kaydet"}
               </button>
               <button
-                onClick={handlePublish}
-                disabled={publishing}
+                onClick={handleOpenInXTab1}
                 className="btn-primary text-sm"
               >
-                {publishing ? "Paylasiliyor..." : "X'e Paylas"}
+                X&apos;te Paylas
               </button>
             </div>
           </div>
@@ -994,8 +964,12 @@ function TabQuoteTweet({
         length_preference: contentFormat,
         deep_verify: deepVerify,
       })) as { text: string; score: ScoreResult | null };
-      setGeneratedText(result.text);
-      setScoreResult(result.score || null);
+      if (!result.text || result.text.trim() === "") {
+        setError("Tweet uretilemedi — AI bos yanit dondu. Farkli bir stil veya AI model deneyin.");
+      } else {
+        setGeneratedText(result.text);
+        setScoreResult(result.score || null);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Tweet uretim hatasi");
     } finally {

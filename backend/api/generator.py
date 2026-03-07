@@ -149,6 +149,7 @@ async def generate_tweet(request: GenerateRequest):
 
     try:
         generator = create_generator(topic=request.topic, preferred_provider=request.provider)
+        logger.info(f"Generating tweet: style={request.style}, provider={generator.provider}, topic={request.topic[:80]}")
 
         if request.thread:
             parts = await asyncio.to_thread(
@@ -158,6 +159,8 @@ async def generate_tweet(request: GenerateRequest):
                 additional_context=request.research_context,
             )
             full_text = "\n\n---\n\n".join(parts) if parts else ""
+            if not full_text.strip():
+                logger.warning(f"Thread generation returned empty: style={request.style}, provider={generator.provider}")
             return GenerateResponse(text=full_text, thread_parts=parts or [], score=_score_text(full_text))
         else:
             text = await asyncio.to_thread(
@@ -167,9 +170,12 @@ async def generate_tweet(request: GenerateRequest):
                 additional_context=request.research_context,
                 content_format=request.content_format,
             )
-            return GenerateResponse(text=text, score=_score_text(text))
+            if not text or not text.strip():
+                logger.warning(f"Tweet generation returned empty: style={request.style}, provider={generator.provider}")
+            return GenerateResponse(text=text or "", score=_score_text(text or ""))
 
     except Exception as e:
+        logger.error(f"Tweet generation error: style={request.style}, error={e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
