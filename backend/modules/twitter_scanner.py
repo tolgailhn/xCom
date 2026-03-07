@@ -815,92 +815,103 @@ class TwitterScanner:
 
         return topics
 
-    def get_tweet_by_id(self, tweet_id: str) -> AITopic | None:
-        """Fetch a specific tweet by its ID"""
-        try:
-            response = self.client.get_tweet(
-                id=tweet_id,
-                tweet_fields=["created_at", "public_metrics", "author_id", "conversation_id", "note_tweet"],
-                user_fields=["name", "username", "profile_image_url"],
-                expansions=["author_id"]
-            )
-
-            if not response.data:
-                return None
-
-            tweet = response.data
-            users = {}
-            if response.includes and "users" in response.includes:
-                for user in response.includes["users"]:
-                    users[user.id] = user
-
-            author = users.get(tweet.author_id)
-            metrics = tweet.public_metrics or {}
-
-            return AITopic(
-                id=str(tweet.id),
-                text=_get_full_text(tweet),
-                author_name=author.name if author else "Unknown",
-                author_username=author.username if author else "unknown",
-                author_profile_image=getattr(author, 'profile_image_url', '') if author else '',
-                created_at=tweet.created_at,
-                like_count=metrics.get("like_count", 0),
-                retweet_count=metrics.get("retweet_count", 0),
-                reply_count=metrics.get("reply_count", 0),
-                impression_count=metrics.get("impression_count", 0),
-                url=f"https://x.com/{author.username if author else 'unknown'}/status/{tweet.id}",
-            )
-        except Exception as e:
-            print(f"Get tweet error: {e}")
+    def _get_tweet_by_id_twikit(self, tweet_id: str) -> AITopic | None:
+        """Fetch tweet by ID using twikit (free, cookie-based)."""
+        if not self.twikit_client or not self.use_twikit:
             return None
+        try:
+            data = self.twikit_client.get_tweet_by_id(tweet_id)
+            if data:
+                return self._dict_to_topic(data)
+        except Exception as e:
+            print(f"Twikit get_tweet_by_id error: {e}")
+        return None
+
+    def get_tweet_by_id(self, tweet_id: str) -> AITopic | None:
+        """Fetch a specific tweet by its ID. Uses bearer token if available, else twikit."""
+        # Method 1: Tweepy (bearer token)
+        if self.client:
+            try:
+                response = self.client.get_tweet(
+                    id=tweet_id,
+                    tweet_fields=["created_at", "public_metrics", "author_id", "conversation_id", "note_tweet"],
+                    user_fields=["name", "username", "profile_image_url"],
+                    expansions=["author_id"]
+                )
+
+                if response.data:
+                    tweet = response.data
+                    users = {}
+                    if response.includes and "users" in response.includes:
+                        for user in response.includes["users"]:
+                            users[user.id] = user
+
+                    author = users.get(tweet.author_id)
+                    metrics = tweet.public_metrics or {}
+
+                    return AITopic(
+                        id=str(tweet.id),
+                        text=_get_full_text(tweet),
+                        author_name=author.name if author else "Unknown",
+                        author_username=author.username if author else "unknown",
+                        author_profile_image=getattr(author, 'profile_image_url', '') if author else '',
+                        created_at=tweet.created_at,
+                        like_count=metrics.get("like_count", 0),
+                        retweet_count=metrics.get("retweet_count", 0),
+                        reply_count=metrics.get("reply_count", 0),
+                        impression_count=metrics.get("impression_count", 0),
+                        url=f"https://x.com/{author.username if author else 'unknown'}/status/{tweet.id}",
+                    )
+            except Exception as e:
+                print(f"Tweepy get_tweet_by_id error: {e}")
+
+        # Method 2: Twikit fallback (free)
+        return self._get_tweet_by_id_twikit(tweet_id)
 
     def get_thread(self, tweet_id: str) -> list[str]:
         """
         Fetch the full thread for a given tweet.
         Returns list of tweet texts in order (oldest first).
+        Uses bearer token if available, else twikit.
         """
-        try:
-            # First get the tweet to find conversation_id and author
-            response = self.client.get_tweet(
-                id=tweet_id,
-                tweet_fields=["conversation_id", "author_id", "created_at", "note_tweet"],
-                expansions=["author_id"]
-            )
-            if not response.data:
-                return []
-
-            tweet = response.data
-            conversation_id = tweet.data.get("conversation_id", tweet_id)
-            author_id = tweet.author_id
-
-            # Search for all tweets in this conversation by the same author
-            query = f"conversation_id:{conversation_id} from:{author_id} -is:retweet"
-            search_response = self.client.search_recent_tweets(
-                query=query,
-                max_results=100,
-                tweet_fields=["created_at", "in_reply_to_user_id", "note_tweet"],
-                sort_order="recency"
-            )
-
-            if not search_response.data:
-                return [_get_full_text(tweet)]
-
-            # Sort by time (oldest first) and collect full texts
-            thread_tweets = sorted(search_response.data, key=lambda t: t.created_at)
-            texts = [_get_full_text(t) for t in thread_tweets]
-
-            # If the original tweet isn't in results, prepend it
-            original_ids = {str(t.id) for t in thread_tweets}
-            if str(tweet_id) not in original_ids and str(conversation_id) not in original_ids:
-                texts.insert(0, _get_full_text(tweet))
-
-            return texts
-
-        except Exception as e:
-            print(f"Get thread error: {e}")
-            # Fallback: return just the single tweet
+        # Method 1: Tweepy (bearer token)
+        if self.client:
             try:
-                single = self.get_tweet_by_id(tweet_id)
-                return [single.text] if single else []
-            except Exception:
-                return []
+                response = self.client.get_tweet(
+                    id=tweet_id,
+                    tweet_fields=["conversation_id", "author_id", "created_at", "note_tweet"],
+                    expansions=["author_id"]
+                )
+                if response.data:
+                    tweet = response.data
+                    conversation_id = tweet.data.get("conversation_id", tweet_id)
+                    author_id = tweet.author_id
+
+                    query = f"conversation_id:{conversation_id} from:{author_id} -is:retweet"
+                    search_response = self.client.search_recent_tweets(
+                        query=query,
+                        max_results=100,
+                        tweet_fields=["created_at", "in_reply_to_user_id", "note_tweet"],
+                        sort_order="recency"
+                    )
+
+                    if not search_response.data:
+                        return [_get_full_text(tweet)]
+
+                    thread_tweets = sorted(search_response.data, key=lambda t: t.created_at)
+                    texts = [_get_full_text(t) for t in thread_tweets]
+
+                    original_ids = {str(t.id) for t in thread_tweets}
+                    if str(tweet_id) not in original_ids and str(conversation_id) not in original_ids:
+                        texts.insert(0, _get_full_text(tweet))
+
+                    return texts
+            except Exception as e:
+                print(f"Tweepy get_thread error: {e}")
+
+        # Method 2: Twikit fallback — get single tweet text
+        twikit_result = self._get_tweet_by_id_twikit(tweet_id)
+        if twikit_result:
+            return [twikit_result.text]
+
+        return []

@@ -29,10 +29,15 @@ interface ScoreResult {
 
 interface MediaItem {
   url: string;
-  type: string;
+  thumbnail_url?: string;
   source: string;
-  preview?: string;
+  media_type?: string;
+  title?: string;
+  source_url?: string;
   author?: string;
+  // legacy aliases
+  type?: string;
+  preview?: string;
 }
 
 interface FactClaim {
@@ -663,34 +668,39 @@ function TabTweetYaz({
           {mediaResults.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-sm font-semibold text-[var(--accent-cyan)]">
-                Bulunan Medya ({mediaResults.length})
+                Bulunan Medya ({mediaResults.length}) — tiklayinca yeni sekmede acilir
               </h4>
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {mediaResults.map((m, i) => (
-                  <a
-                    key={i}
-                    href={m.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block bg-[var(--bg-primary)] rounded-lg p-2 hover:ring-1 ring-[var(--accent-blue)] transition-all"
-                  >
-                    {m.preview ? (
-                      <img
-                        src={m.preview}
-                        alt=""
-                        className="w-full h-20 object-cover rounded"
-                      />
-                    ) : (
-                      <div className="w-full h-20 flex items-center justify-center text-xs text-[var(--text-secondary)]">
-                        {m.type === "video" ? "Video" : "Gorsel"}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {mediaResults.map((m, i) => {
+                  const thumb = m.thumbnail_url || m.preview || m.url;
+                  const isVideo = (m.media_type || m.type) === "video";
+                  return (
+                    <a
+                      key={i}
+                      href={m.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block bg-[var(--bg-primary)] rounded-lg p-2 hover:ring-2 ring-[var(--accent-blue)] transition-all"
+                    >
+                      {thumb ? (
+                        <img
+                          src={thumb}
+                          alt={m.title || ""}
+                          className="w-full h-32 object-cover rounded"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-32 flex items-center justify-center text-xs text-[var(--text-secondary)] bg-[var(--bg-secondary)] rounded">
+                          {isVideo ? "Video" : "Gorsel"}
+                        </div>
+                      )}
+                      <div className="text-[10px] text-[var(--text-secondary)] mt-1 truncate">
+                        {isVideo && "[Video] "}{m.title || m.source || ""}
+                        {m.author ? ` @${m.author}` : ""}
                       </div>
-                    )}
-                    <div className="text-[10px] text-[var(--text-secondary)] mt-1 truncate">
-                      {m.source}
-                      {m.author ? ` @${m.author}` : ""}
-                    </div>
-                  </a>
-                ))}
+                    </a>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -859,8 +869,6 @@ function TabQuoteTweet({
 
   const [researching, setResearching] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  const [publishResult, setPublishResult] = useState<string | null>(null);
   const [draftSaved, setDraftSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progressMessages, setProgressMessages] = useState<string[]>([]);
@@ -995,35 +1003,18 @@ function TabQuoteTweet({
     }
   };
 
-  const handlePublish = async () => {
-    if (!generatedText) return;
-    setPublishing(true);
-    try {
-      const result = (await publishTweet({
-        text: generatedText,
-        quote_tweet_id: tweetId || undefined,
-      })) as {
-        success: boolean;
-        url: string;
-        error: string;
-      };
-      if (result.success) {
-        setPublishResult(result.url);
-      } else {
-        setError(result.error || "Paylasim hatasi");
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Paylasim hatasi");
-    } finally {
-      setPublishing(false);
-    }
-  };
-
   const handleOpenInX = () => {
-    if (!generatedText || !tweetId) return;
-    const quoteUrlForX = `https://x.com/i/status/${tweetId}`;
-    const cleanText = generatedText.replace(new RegExp(`status/${tweetId}\\S*`, "g"), "").trim();
-    const intentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(cleanText)}&attachment_url=${encodeURIComponent(quoteUrlForX)}`;
+    if (!generatedText) return;
+    let intentUrl: string;
+    if (tweetId) {
+      // Quote tweet — attach original tweet
+      const quoteUrlForX = `https://x.com/i/status/${tweetId}`;
+      const cleanText = generatedText.replace(new RegExp(`status/${tweetId}\\S*`, "g"), "").trim();
+      intentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(cleanText)}&attachment_url=${encodeURIComponent(quoteUrlForX)}`;
+    } else {
+      // Normal tweet
+      intentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(generatedText)}`;
+    }
     window.open(intentUrl, "_blank");
   };
 
@@ -1377,57 +1368,52 @@ function TabQuoteTweet({
           {mediaResults.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-sm font-semibold text-[var(--accent-cyan)]">
-                Bulunan Medya ({mediaResults.length})
+                Bulunan Medya ({mediaResults.length}) — tiklayinca yeni sekmede acilir
               </h4>
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {mediaResults.map((m, i) => (
-                  <a
-                    key={i}
-                    href={m.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block bg-[var(--bg-primary)] rounded-lg p-2 hover:ring-1 ring-[var(--accent-blue)] transition-all"
-                  >
-                    {m.preview ? (
-                      <img
-                        src={m.preview}
-                        alt=""
-                        className="w-full h-20 object-cover rounded"
-                      />
-                    ) : (
-                      <div className="w-full h-20 flex items-center justify-center text-xs text-[var(--text-secondary)]">
-                        {m.type === "video" ? "Video" : "Gorsel"}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {mediaResults.map((m, i) => {
+                  const thumb = m.thumbnail_url || m.preview || m.url;
+                  const isVideo = (m.media_type || m.type) === "video";
+                  return (
+                    <a
+                      key={i}
+                      href={m.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block bg-[var(--bg-primary)] rounded-lg p-2 hover:ring-2 ring-[var(--accent-blue)] transition-all"
+                    >
+                      {thumb ? (
+                        <img
+                          src={thumb}
+                          alt={m.title || ""}
+                          className="w-full h-32 object-cover rounded"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-32 flex items-center justify-center text-xs text-[var(--text-secondary)] bg-[var(--bg-secondary)] rounded">
+                          {isVideo ? "Video" : "Gorsel"}
+                        </div>
+                      )}
+                      <div className="text-[10px] text-[var(--text-secondary)] mt-1 truncate">
+                        {isVideo && "[Video] "}{m.title || m.source || ""}
+                        {m.author ? ` @${m.author}` : ""}
                       </div>
-                    )}
-                    <div className="text-[10px] text-[var(--text-secondary)] mt-1 truncate">
-                      {m.source}
-                      {m.author ? ` @${m.author}` : ""}
-                    </div>
-                  </a>
-                ))}
+                    </a>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {publishResult && (
-            <div className="bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/30 rounded-lg p-3">
-              <span className="text-sm text-[var(--accent-green)]">
-                Paylasildi!{" "}
-                <a href={publishResult} target="_blank" rel="noopener noreferrer" className="underline">
-                  Goruntule
-                </a>
-              </span>
-            </div>
-          )}
-
           <div className="flex flex-wrap gap-3">
-            {tweetId && (
-              <button onClick={handleOpenInX} className="btn-primary text-sm">
-                X&apos;te Ac ve Paylas
-              </button>
-            )}
-            <button onClick={handlePublish} disabled={publishing} className="btn-secondary text-sm">
-              {publishing ? "Paylasiliyor..." : "API ile Paylas"}
+            <button onClick={handleOpenInX} className="btn-primary text-sm">
+              X&apos;te Paylas
+            </button>
+            <button
+              onClick={() => navigator.clipboard.writeText(generatedText)}
+              className="btn-secondary text-sm"
+            >
+              Kopyala
             </button>
             <button
               onClick={async () => {
