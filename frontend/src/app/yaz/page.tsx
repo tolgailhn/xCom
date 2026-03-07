@@ -935,8 +935,24 @@ function TabQuoteTweet({
 
     try {
       const researchTopic = originalTweet?.text || quoteUrl;
+      // Build research_sources from checkboxes
+      const sources: string[] = [];
+      if (srcX) sources.push("x");
+      if (srcWeb) sources.push("web");
+      if (srcReddit) sources.push("reddit");
+      if (srcNews) sources.push("news");
+      // If nothing selected, default to all
+      const researchSources = sources.length > 0 ? sources : undefined;
+
       const research = await researchTopicStream(
-        { topic: researchTopic, engine, agentic },
+        {
+          topic: researchTopic,
+          engine,
+          agentic,
+          research_sources: researchSources,
+          tweet_id: tweetId || undefined,
+          tweet_author: originalTweet?.author || undefined,
+        },
         (msg) => setProgressMessages((prev) => [...prev, msg]),
       );
       setResearchResult(research);
@@ -1197,10 +1213,10 @@ function TabQuoteTweet({
       )}
 
       {/* Step 2: Style/Format selection + Generate button (shown after research) */}
-      {researchResult && !generatedText && (
+      {researchResult && (
         <div className="glass-card space-y-4">
           <p className="text-xs font-medium text-[var(--accent-blue)]">
-            Adim 2: Tarz ve Format Sec, Tweet Uret
+            {generatedText ? "Farkli tarz ile yeniden uret" : "Adim 2: Tarz ve Format Sec, Tweet Uret"}
           </p>
 
           <div className="flex flex-wrap gap-4">
@@ -1270,7 +1286,7 @@ function TabQuoteTweet({
             disabled={generating}
             className="btn-primary w-full"
           >
-            {generating ? "Tweet yaziliyor..." : "Quote Tweet Uret"}
+            {generating ? "Tweet yaziliyor..." : generatedText ? "Yeniden Uret" : "Quote Tweet Uret"}
           </button>
         </div>
       )}
@@ -1329,9 +1345,6 @@ function TabQuoteTweet({
           )}
 
           <div className="flex flex-wrap gap-3">
-            <button onClick={handleGenerate} disabled={generating} className="btn-secondary text-sm">
-              {generating ? "Yaziliyor..." : "Yeniden Uret"}
-            </button>
             <button
               onClick={async () => {
                 setDraftSaved(false);
@@ -1344,7 +1357,7 @@ function TabQuoteTweet({
               {draftSaved ? "Kaydedildi!" : "Taslak Kaydet"}
             </button>
             <button onClick={handlePublish} disabled={publishing} className="btn-primary text-sm">
-              {publishing ? "Paylasiliyor..." : "Quote Tweet Paylas"}
+              {publishing ? "Paylasiliyor..." : "X'e Paylas"}
             </button>
             {tweetId && (
               <button onClick={handleOpenInX} className="btn-secondary text-sm">

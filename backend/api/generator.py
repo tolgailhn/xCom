@@ -49,6 +49,9 @@ class ResearchRequest(BaseModel):
     depth: str = "normal"
     engine: str = "default"
     agentic: bool = False
+    research_sources: list[str] = []  # ["web", "reddit", "news", "x"]
+    tweet_id: str = ""  # For thread fetching
+    tweet_author: str = ""
 
 
 class ResearchResponse(BaseModel):
@@ -358,11 +361,14 @@ async def do_research_endpoint(request: ResearchRequest):
         result = await asyncio.to_thread(
             do_research,
             tweet_text=request.topic,
+            tweet_author=request.tweet_author,
+            tweet_id=request.tweet_id,
             engine=request.engine if request.engine != "default" else "standard",
             use_agentic=request.agentic,
             ai_client=ai_client,
             ai_model=ai_model,
             ai_provider=ai_provider,
+            research_sources=request.research_sources if request.research_sources else None,
         )
 
         # ResearchResult dataclass -> ResearchResponse
@@ -449,14 +455,36 @@ async def research_stream(request: ResearchRequest):
 
         # DuckDuckGo / standard
         from backend.modules.deep_research import research_topic as do_research
+
+        # Build scanner for thread fetching if tweet_id provided
+        scanner = None
+        if request.tweet_id:
+            try:
+                from backend.modules.twitter_scanner import TwitterScanner
+                from backend.config import get_settings
+                s = get_settings()
+                if s.twitter_bearer_token or s.twikit_ct0:
+                    scanner = TwitterScanner(
+                        bearer_token=s.twitter_bearer_token or "",
+                        twikit_username=getattr(s, "twikit_username", ""),
+                        twikit_password=getattr(s, "twikit_password", ""),
+                        twikit_email=getattr(s, "twikit_email", ""),
+                    )
+            except Exception:
+                pass
+
         return do_research(
             tweet_text=request.topic,
+            tweet_author=request.tweet_author,
+            tweet_id=request.tweet_id,
+            scanner=scanner,
             engine=request.engine if request.engine != "default" else "standard",
             use_agentic=request.agentic,
             ai_client=ai_client,
             ai_model=ai_model,
             ai_provider=ai_provider,
             progress_callback=progress_callback,
+            research_sources=request.research_sources if request.research_sources else None,
         )
 
     async def event_generator():
