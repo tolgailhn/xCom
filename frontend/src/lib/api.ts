@@ -528,6 +528,75 @@ export function trackTweet(tweetId: string, text: string = "") {
   });
 }
 
+// ── Auto Reply ─────────────────────────────────────────
+
+export interface AutoReplyConfig {
+  enabled: boolean;
+  accounts: string[];
+  check_interval_minutes: number;
+  reply_delay_seconds: number;
+  style: string;
+  additional_context: string;
+  max_replies_per_hour: number;
+  min_likes_to_reply: number;
+  only_original_tweets: boolean;
+  language: string;
+}
+
+export interface AutoReplyLog {
+  id: string;
+  account: string;
+  tweet_id: string;
+  tweet_text: string;
+  reply_text: string;
+  reply_tweet_id?: string;
+  reply_url?: string;
+  status: "published" | "generation_failed" | "publish_failed";
+  error?: string;
+  created_at: string;
+}
+
+export interface AutoReplyStatus {
+  enabled: boolean;
+  accounts_count: number;
+  replies_last_hour: number;
+  max_per_hour: number;
+  last_reply_time: string | null;
+  total_replies: number;
+  total_failures: number;
+}
+
+export function getAutoReplyConfig(): Promise<{ config: AutoReplyConfig }> {
+  return apiFetch("/api/auto-reply/config");
+}
+
+export function updateAutoReplyConfig(config: AutoReplyConfig) {
+  return apiFetch("/api/auto-reply/config", {
+    method: "POST",
+    body: JSON.stringify(config),
+  });
+}
+
+export function getAutoReplyLogs(limit: number = 50): Promise<{ logs: AutoReplyLog[]; total: number }> {
+  return apiFetch(`/api/auto-reply/logs?limit=${limit}`);
+}
+
+export function clearAutoReplyLogs() {
+  return apiFetch("/api/auto-reply/logs", { method: "DELETE" });
+}
+
+export function deleteAutoReplyLog(logId: string) {
+  return apiFetch(`/api/auto-reply/log/${encodeURIComponent(logId)}`, { method: "DELETE" });
+}
+
+export function triggerAutoReplyCheck() {
+  return apiFetch("/api/auto-reply/trigger", { method: "POST" });
+}
+
+export function getAutoReplyStatus(): Promise<AutoReplyStatus> {
+  return apiFetch("/api/auto-reply/status");
+}
+
 // ── Settings ───────────────────────────────────────────
 
 export function getAPIStatus() {

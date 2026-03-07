@@ -165,6 +165,15 @@ def _check_metrics():
         logger.exception("Metrics auto-check error")
 
 
+def _check_auto_replies():
+    """Auto-reply worker — config'deki interval'e gore calisir."""
+    try:
+        from backend.auto_reply_worker import check_and_reply
+        check_and_reply()
+    except Exception:
+        logger.exception("Auto-reply check error")
+
+
 def start_scheduler():
     """Scheduler'i baslat — FastAPI startup'ta cagirilir."""
     if not scheduler.running:
@@ -182,8 +191,15 @@ def start_scheduler():
             id="metrics_checker",
             replace_existing=True,
         )
+        scheduler.add_job(
+            _check_auto_replies,
+            "interval",
+            minutes=5,
+            id="auto_reply_checker",
+            replace_existing=True,
+        )
         scheduler.start()
-        logger.info("Scheduler started — publish check every 1 min, metrics check every 30 min")
+        logger.info("Scheduler started — publish check every 1 min, metrics every 30 min, auto-reply every 5 min")
 
 
 def stop_scheduler():

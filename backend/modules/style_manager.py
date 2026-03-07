@@ -401,3 +401,81 @@ def save_daily_checklist(checklist: dict, date_str: str = ""):
 
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+# ── Auto Reply ────────────────────────────────────────────
+
+
+def load_auto_reply_config() -> dict:
+    """Load auto-reply configuration"""
+    path = DATA_DIR / "auto_reply_config.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {
+        "enabled": False,
+        "accounts": [],
+        "check_interval_minutes": 5,
+        "reply_delay_seconds": 60,
+        "style": "reply",
+        "additional_context": "",
+        "max_replies_per_hour": 5,
+        "min_likes_to_reply": 0,
+        "only_original_tweets": True,
+        "language": "tr",
+    }
+
+
+def save_auto_reply_config(config: dict):
+    """Save auto-reply configuration"""
+    path = DATA_DIR / "auto_reply_config.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(config, f, ensure_ascii=False, indent=2)
+
+
+def load_auto_reply_logs() -> list[dict]:
+    """Load auto-reply logs (newest first)"""
+    path = DATA_DIR / "auto_reply_logs.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+
+def save_auto_reply_logs(logs: list[dict]):
+    """Save auto-reply logs"""
+    path = DATA_DIR / "auto_reply_logs.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(logs, f, ensure_ascii=False, indent=2)
+
+
+def add_auto_reply_log(entry: dict):
+    """Add a new auto-reply log entry"""
+    logs = load_auto_reply_logs()
+    entry["id"] = datetime.datetime.now().strftime("%Y%m%d%H%M%S") + f"_{len(logs)}"
+    entry["created_at"] = datetime.datetime.now(TZ_TR).isoformat()
+    logs.insert(0, entry)
+    # Keep last 500
+    logs = logs[:500]
+    save_auto_reply_logs(logs)
+    return entry
+
+
+def load_auto_reply_seen() -> set:
+    """Load set of already-replied tweet IDs"""
+    path = DATA_DIR / "auto_reply_seen.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return set(json.load(f))
+    return set()
+
+
+def save_auto_reply_seen(seen: set):
+    """Save set of already-replied tweet IDs (keep last 2000)"""
+    path = DATA_DIR / "auto_reply_seen.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    seen_list = list(seen)[-2000:]
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(seen_list, f)
