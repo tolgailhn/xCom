@@ -472,6 +472,62 @@ export function cancelScheduledPost(postId: string) {
   });
 }
 
+// ── Performance ────────────────────────────────────────
+
+export interface TweetMetric {
+  tweet_id: string;
+  text: string;
+  url: string;
+  metrics: {
+    likes: number;
+    retweets: number;
+    replies: number;
+    impressions: number;
+    bookmarks: number;
+    quotes: number;
+  };
+  last_checked: string;
+  first_tracked: string;
+}
+
+export interface PerformanceStats {
+  summary: {
+    tracked_count: number;
+    total_likes: number;
+    total_retweets: number;
+    total_replies: number;
+    total_impressions: number;
+    avg_likes: number;
+    avg_retweets: number;
+  };
+  best_tweet: {
+    tweet_id: string;
+    text: string;
+    url: string;
+    metrics: TweetMetric["metrics"];
+  } | null;
+  tweets: TweetMetric[];
+}
+
+export function getPerformanceStats(): Promise<PerformanceStats> {
+  return apiFetch("/api/performance/stats");
+}
+
+export function refreshAllMetrics() {
+  return apiFetch("/api/performance/refresh-all", { method: "POST" });
+}
+
+export function autoRegisterMetrics() {
+  return apiFetch("/api/performance/auto-register", { method: "POST" });
+}
+
+export function trackTweet(tweetId: string, text: string = "") {
+  return apiFetch("/api/performance/track", {
+    method: "POST",
+    body: JSON.stringify({ tweet_id: tweetId, text }),
+  });
+}
+
 // ── Settings ───────────────────────────────────────────
 
 export function getAPIStatus() {

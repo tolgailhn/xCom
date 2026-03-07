@@ -10,8 +10,11 @@ import {
   getCalendarHistory,
   getAllScheduledPosts,
   cancelScheduledPost,
+  getPerformanceStats,
+  refreshAllMetrics,
+  autoRegisterMetrics,
 } from "@/lib/api";
-import type { ScheduledPost } from "@/lib/api";
+import type { ScheduledPost, PerformanceStats } from "@/lib/api";
 
 /* ── Types ─────────────────────────────────────── */
 
@@ -260,6 +263,36 @@ export default function TakvimPage() {
     finally { setCancellingId(null); }
   };
 
+  /* Performance */
+  const [perfStats, setPerfStats] = useState<PerformanceStats | null>(null);
+  const [perfRefreshing, setPerfRefreshing] = useState(false);
+  const [perfRegistering, setPerfRegistering] = useState(false);
+
+  const loadPerformance = useCallback(async () => {
+    try {
+      const stats = await getPerformanceStats();
+      setPerfStats(stats);
+    } catch { /* ignore */ }
+  }, []);
+
+  const handleRefreshMetrics = async () => {
+    setPerfRefreshing(true);
+    try {
+      await refreshAllMetrics();
+      await loadPerformance();
+    } catch { /* ignore */ }
+    finally { setPerfRefreshing(false); }
+  };
+
+  const handleAutoRegister = async () => {
+    setPerfRegistering(true);
+    try {
+      await autoRegisterMetrics();
+      await loadPerformance();
+    } catch { /* ignore */ }
+    finally { setPerfRegistering(false); }
+  };
+
   const loadAll = useCallback(async () => {
     try {
       const [sched, sum, hist] = await Promise.all([
@@ -285,7 +318,8 @@ export default function TakvimPage() {
   useEffect(() => {
     loadAll();
     loadScheduledPosts();
-  }, [loadAll, loadScheduledPosts]);
+    loadPerformance();
+  }, [loadAll, loadScheduledPosts, loadPerformance]);
 
   const handleChecklistToggle = async (key: string, checked: boolean) => {
     if (!schedule) return;
@@ -586,6 +620,93 @@ export default function TakvimPage() {
             </div>
           );
         })()}
+      </div>
+
+      {/* Performance Tracking */}
+      <div>
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-lg font-semibold">Performans Takibi</h3>
+          <div className="flex gap-2">
+            <button
+              onClick={handleAutoRegister}
+              disabled={perfRegistering}
+              className="text-xs text-[var(--accent-blue)] hover:underline"
+            >
+              {perfRegistering ? "..." : "Gecmisten Ekle"}
+            </button>
+            <button
+              onClick={handleRefreshMetrics}
+              disabled={perfRefreshing}
+              className="text-xs text-[var(--accent-blue)] hover:underline"
+            >
+              {perfRefreshing ? "Guncelleniyor..." : "Metrikleri Guncelle"}
+            </button>
+          </div>
+        </div>
+
+        {perfStats && perfStats.summary.tracked_count > 0 ? (
+          <div className="space-y-3">
+            {/* Summary stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <StatBox value={perfStats.summary.tracked_count} label="Takip Edilen" />
+              <StatBox value={perfStats.summary.total_likes} label="Toplam Like" />
+              <StatBox value={perfStats.summary.total_retweets} label="Toplam RT" />
+              <StatBox value={perfStats.summary.total_impressions} label="Toplam Goruntulenme" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <StatBox value={perfStats.summary.avg_likes} label="Ort. Like" />
+              <StatBox value={perfStats.summary.avg_retweets} label="Ort. RT" />
+            </div>
+
+            {/* Best tweet */}
+            {perfStats.best_tweet && (
+              <div className="glass-card" style={{ borderLeft: "4px solid var(--accent-green)" }}>
+                <div className="text-xs text-[var(--text-secondary)] mb-1 font-semibold">En Iyi Tweet</div>
+                <p className="text-sm mb-2">{perfStats.best_tweet.text}</p>
+                <div className="flex flex-wrap gap-3 text-xs text-[var(--text-secondary)]">
+                  <span>{perfStats.best_tweet.metrics.likes} like</span>
+                  <span>{perfStats.best_tweet.metrics.retweets} RT</span>
+                  <span>{perfStats.best_tweet.metrics.replies} reply</span>
+                  <span>{perfStats.best_tweet.metrics.impressions} goruntulenme</span>
+                  {perfStats.best_tweet.url && (
+                    <a href={perfStats.best_tweet.url} target="_blank" rel="noopener noreferrer" className="text-[var(--accent-blue)] hover:underline">
+                      Gor
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Recent tweets metrics */}
+            <div className="glass-card">
+              <div className="text-xs font-semibold text-[var(--text-secondary)] mb-2">Son Tweetler</div>
+              <div className="space-y-2">
+                {perfStats.tweets.slice(0, 10).map((tw) => (
+                  <div key={tw.tweet_id} className="flex justify-between items-start gap-3 text-xs border-b border-[var(--border)] pb-2 last:border-0 last:pb-0">
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate">{tw.text || tw.tweet_id}</p>
+                    </div>
+                    <div className="flex gap-2 text-[var(--text-secondary)] whitespace-nowrap">
+                      <span>{tw.metrics?.likes || 0} L</span>
+                      <span>{tw.metrics?.retweets || 0} RT</span>
+                      <span>{tw.metrics?.replies || 0} R</span>
+                      {tw.url && (
+                        <a href={tw.url} target="_blank" rel="noopener noreferrer" className="text-[var(--accent-blue)]">
+                          🔗
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="glass-card text-center text-[var(--text-secondary)] text-sm py-6">
+            Henuz takip edilen tweet yok. Tweet paylasinca otomatik eklenir veya &quot;Gecmisten Ekle&quot; ile mevcut tweetleri iceri aktar.
+          </div>
+        )}
       </div>
 
       {/* Algorithm Checklist */}
