@@ -8,7 +8,10 @@ import {
   updateChecklist,
   getWeeklySummary,
   getCalendarHistory,
+  getAllScheduledPosts,
+  cancelScheduledPost,
 } from "@/lib/api";
+import type { ScheduledPost } from "@/lib/api";
 
 /* ── Types ─────────────────────────────────────── */
 
@@ -236,6 +239,27 @@ export default function TakvimPage() {
   const [loading, setLoading] = useState(true);
   const [showStrategy, setShowStrategy] = useState(false);
 
+  /* Scheduled posts */
+  const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([]);
+  const [scheduledFilter, setScheduledFilter] = useState<"all" | "pending">("pending");
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  const loadScheduledPosts = useCallback(async () => {
+    try {
+      const res = await getAllScheduledPosts();
+      setScheduledPosts(res.posts || []);
+    } catch { /* ignore */ }
+  }, []);
+
+  const handleCancelScheduled = async (postId: string) => {
+    setCancellingId(postId);
+    try {
+      await cancelScheduledPost(postId);
+      await loadScheduledPosts();
+    } catch { /* ignore */ }
+    finally { setCancellingId(null); }
+  };
+
   const loadAll = useCallback(async () => {
     try {
       const [sched, sum, hist] = await Promise.all([
@@ -260,7 +284,8 @@ export default function TakvimPage() {
 
   useEffect(() => {
     loadAll();
-  }, [loadAll]);
+    loadScheduledPosts();
+  }, [loadAll, loadScheduledPosts]);
 
   const handleChecklistToggle = async (key: string, checked: boolean) => {
     if (!schedule) return;
@@ -456,6 +481,112 @@ export default function TakvimPage() {
           </div>
         </>
       )}
+
+      {/* Scheduled Posts */}
+      <div>
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-lg font-semibold">Zamanlanmis Postlar</h3>
+          <div className="flex gap-1 bg-[var(--bg-secondary)] rounded-lg p-0.5">
+            <button
+              onClick={() => setScheduledFilter("pending")}
+              className={`px-3 py-1 rounded text-xs font-medium transition-all ${scheduledFilter === "pending" ? "bg-[var(--accent-blue)] text-white" : "text-[var(--text-secondary)]"}`}
+            >
+              Bekleyen
+            </button>
+            <button
+              onClick={() => setScheduledFilter("all")}
+              className={`px-3 py-1 rounded text-xs font-medium transition-all ${scheduledFilter === "all" ? "bg-[var(--accent-blue)] text-white" : "text-[var(--text-secondary)]"}`}
+            >
+              Tumu
+            </button>
+          </div>
+        </div>
+
+        {(() => {
+          const filtered = scheduledFilter === "pending"
+            ? scheduledPosts.filter((p) => p.status === "pending")
+            : scheduledPosts;
+          if (filtered.length === 0) {
+            return (
+              <div className="glass-card text-center text-[var(--text-secondary)] text-sm py-6">
+                {scheduledFilter === "pending"
+                  ? "Bekleyen zamanlanmis post yok. Yaz sayfasindan 'Zamanla' butonuyla ekleyebilirsin."
+                  : "Henuz zamanlanmis post yok."}
+              </div>
+            );
+          }
+          return (
+            <div className="space-y-2">
+              {filtered.map((post) => {
+                const statusColor =
+                  post.status === "published"
+                    ? "var(--accent-green)"
+                    : post.status === "failed"
+                      ? "var(--accent-red)"
+                      : "#f59e0b";
+                const statusLabel =
+                  post.status === "published"
+                    ? "Paylasild"
+                    : post.status === "failed"
+                      ? "Basarisiz"
+                      : "Bekliyor";
+                const dt = new Date(post.scheduled_time);
+                const dateStr = dt.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
+                const timeStr = dt.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+
+                return (
+                  <div
+                    key={post.id}
+                    className="glass-card"
+                    style={{ borderLeft: `4px solid ${statusColor}` }}
+                  >
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-semibold" style={{ color: statusColor }}>
+                            {statusLabel}
+                          </span>
+                          <span className="text-xs text-[var(--text-secondary)]">
+                            {dateStr} {timeStr}
+                          </span>
+                          {post.thread_parts && post.thread_parts.length > 0 && (
+                            <span className="text-xs bg-[var(--bg-secondary)] px-2 py-0.5 rounded">
+                              Thread ({post.thread_parts.length})
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm line-clamp-2">{post.text}</p>
+                        {post.error && (
+                          <p className="text-xs text-[var(--accent-red)] mt-1">{post.error}</p>
+                        )}
+                        {post.tweet_url && (
+                          <a
+                            href={post.tweet_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-[var(--accent-blue)] hover:underline mt-1 inline-block"
+                          >
+                            Tweet&apos;i gor
+                          </a>
+                        )}
+                      </div>
+                      {post.status === "pending" && (
+                        <button
+                          onClick={() => handleCancelScheduled(post.id)}
+                          disabled={cancellingId === post.id}
+                          className="text-xs text-[var(--accent-red)] hover:underline whitespace-nowrap"
+                        >
+                          {cancellingId === post.id ? "..." : "Iptal"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+      </div>
 
       {/* Algorithm Checklist */}
       <div>

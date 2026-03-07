@@ -16,6 +16,7 @@ import {
   getStyles,
   getProviders,
   publishTweet,
+  schedulePost,
 } from "@/lib/api";
 import type { PublishResult } from "@/lib/api";
 
@@ -264,6 +265,13 @@ function TabTweetYaz({
   const [publishing, setPublishing] = useState(false);
   const [publishResult, setPublishResult] = useState<PublishResult | null>(null);
 
+  /* Schedule */
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [scheduling, setScheduling] = useState(false);
+  const [scheduleResult, setScheduleResult] = useState<{ success: boolean; error?: string; scheduled_time?: string } | null>(null);
+
   const handleResearch = async () => {
     if (!topic.trim()) return;
     setResearching(true);
@@ -402,6 +410,28 @@ function TabTweetYaz({
     if (!generatedText) return;
     const intentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(generatedText)}`;
     window.open(intentUrl, "_blank");
+  };
+
+  const handleScheduleTab1 = async () => {
+    if (!generatedText || !scheduleDate || !scheduleTime) return;
+    setScheduling(true);
+    setScheduleResult(null);
+    try {
+      const scheduledTime = `${scheduleDate}T${scheduleTime}:00`;
+      const res = await schedulePost({
+        text: generatedText,
+        scheduled_time: scheduledTime,
+        thread_parts: threadParts.length > 0 ? threadParts : undefined,
+      }) as { success: boolean; error?: string; scheduled_time?: string };
+      setScheduleResult(res);
+      if (res.success) {
+        setShowScheduleForm(false);
+      }
+    } catch (e) {
+      setScheduleResult({ success: false, error: e instanceof Error ? e.message : "Zamanlama hatasi" });
+    } finally {
+      setScheduling(false);
+    }
   };
 
   const handleReScore = async () => {
@@ -877,7 +907,57 @@ function TabTweetYaz({
               >
                 X&apos;te Ac
               </button>
+              <button
+                onClick={() => setShowScheduleForm(!showScheduleForm)}
+                className="btn-secondary text-sm"
+              >
+                Zamanla
+              </button>
             </div>
+
+            {/* Schedule form */}
+            {showScheduleForm && (
+              <div className="mt-3 p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] space-y-3">
+                <div className="text-xs font-semibold text-[var(--text-secondary)]">Zamanlama Ayarlari</div>
+                <div className="flex flex-wrap gap-3">
+                  <div>
+                    <label className="text-xs text-[var(--text-secondary)] block mb-1">Tarih</label>
+                    <input
+                      type="date"
+                      value={scheduleDate}
+                      onChange={(e) => setScheduleDate(e.target.value)}
+                      min={new Date().toISOString().split("T")[0]}
+                      className="bg-[var(--bg-primary)] border border-[var(--border)] rounded px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-[var(--text-secondary)] block mb-1">Saat</label>
+                    <input
+                      type="time"
+                      value={scheduleTime}
+                      onChange={(e) => setScheduleTime(e.target.value)}
+                      className="bg-[var(--bg-primary)] border border-[var(--border)] rounded px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      onClick={handleScheduleTab1}
+                      disabled={scheduling || !scheduleDate || !scheduleTime}
+                      className="btn-primary text-sm"
+                    >
+                      {scheduling ? "Zamanlaniyor..." : "Zamanla"}
+                    </button>
+                  </div>
+                </div>
+                {scheduleResult && (
+                  <div className={`text-xs p-2 rounded ${scheduleResult.success ? "bg-[var(--accent-green)]/10 text-[var(--accent-green)]" : "bg-[var(--accent-red)]/10 text-[var(--accent-red)]"}`}>
+                    {scheduleResult.success
+                      ? `Zamanland! ${scheduleResult.scheduled_time || ""}`
+                      : scheduleResult.error || "Zamanlama basarisiz"}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Publish result */}

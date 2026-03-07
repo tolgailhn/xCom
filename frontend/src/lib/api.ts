@@ -429,6 +429,49 @@ export function getCalendarHistory(limit: number = 30) {
   return apiFetch(`/api/calendar/history?limit=${limit}`);
 }
 
+// ── Scheduler ──────────────────────────────────────────
+
+export interface ScheduledPost {
+  id: string;
+  text: string;
+  scheduled_time: string;
+  thread_parts: string[];
+  quote_tweet_id: string;
+  status: "pending" | "published" | "failed";
+  created_at: string;
+  published_at?: string;
+  failed_at?: string;
+  tweet_id?: string;
+  tweet_url?: string;
+  error?: string;
+}
+
+export function schedulePost(params: {
+  text: string;
+  scheduled_time: string;
+  thread_parts?: string[];
+  quote_tweet_id?: string;
+}) {
+  return apiFetch("/api/scheduler/add", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+export function getPendingPosts(): Promise<{ posts: ScheduledPost[]; total: number }> {
+  return apiFetch("/api/scheduler/pending");
+}
+
+export function getAllScheduledPosts(): Promise<{ posts: ScheduledPost[]; total: number }> {
+  return apiFetch("/api/scheduler/all");
+}
+
+export function cancelScheduledPost(postId: string) {
+  return apiFetch(`/api/scheduler/cancel/${encodeURIComponent(postId)}`, {
+    method: "DELETE",
+  });
+}
+
 // ── Settings ───────────────────────────────────────────
 
 export function getAPIStatus() {
