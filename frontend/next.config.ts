@@ -6,19 +6,6 @@ const nextConfig: NextConfig = {
   experimental: {
     proxyTimeout: 300_000, // 5 minutes
   },
-  webpack: (config) => {
-    config.watchOptions = {
-      ...config.watchOptions,
-      ignored: [
-        "**/node_modules/**",
-        "**/.git/**",
-        "**/System Volume Information/**",
-        "**/pagefile.sys",
-        "**/$Recycle.Bin/**",
-      ],
-    };
-    return config;
-  },
   async rewrites() {
     return [
       {
