@@ -246,12 +246,26 @@ export function extractTweet(url: string) {
 }
 
 // Publish
+export interface PublishResult {
+  success: boolean;
+  tweet_id: string;
+  url: string;
+  error: string;
+  thread_results: {
+    index: number;
+    success: boolean;
+    tweet_id: string;
+    url: string;
+    error: string;
+  }[];
+}
+
 export function publishTweet(params: {
   text: string;
   thread_parts?: string[];
   quote_tweet_id?: string;
   reply_to_id?: string;
-}) {
+}): Promise<PublishResult> {
   return apiFetch("/api/publish/tweet", {
     method: "POST",
     body: JSON.stringify(params),

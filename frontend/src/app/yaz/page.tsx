@@ -15,7 +15,9 @@ import {
   factCheck,
   getStyles,
   getProviders,
+  publishTweet,
 } from "@/lib/api";
+import type { PublishResult } from "@/lib/api";
 
 /* ── Types ─────────────────────────────────────────────── */
 
@@ -258,6 +260,10 @@ function TabTweetYaz({
 
   const [researchSources, setResearchSources] = useState<{ title: string; url?: string; body?: string }[]>([]);
 
+  /* Publish */
+  const [publishing, setPublishing] = useState(false);
+  const [publishResult, setPublishResult] = useState<PublishResult | null>(null);
+
   const handleResearch = async () => {
     if (!topic.trim()) return;
     setResearching(true);
@@ -344,6 +350,51 @@ function TabTweetYaz({
       /* ignore */
     } finally {
       setFactLoading(false);
+    }
+  };
+
+  const handlePublishTab1 = async () => {
+    if (!generatedText) return;
+
+    // Thread varsa API ile paylas, yoksa X intent ile ac
+    if (threadParts.length > 0) {
+      setPublishing(true);
+      setPublishResult(null);
+      try {
+        const result = await publishTweet({
+          text: generatedText,
+          thread_parts: threadParts,
+        });
+        setPublishResult(result);
+      } catch (e) {
+        setPublishResult({
+          success: false,
+          tweet_id: "",
+          url: "",
+          error: e instanceof Error ? e.message : "Paylasim hatasi",
+          thread_results: [],
+        });
+      } finally {
+        setPublishing(false);
+      }
+    } else {
+      // Tek tweet — API ile paylas
+      setPublishing(true);
+      setPublishResult(null);
+      try {
+        const result = await publishTweet({ text: generatedText });
+        setPublishResult(result);
+      } catch (e) {
+        setPublishResult({
+          success: false,
+          tweet_id: "",
+          url: "",
+          error: e instanceof Error ? e.message : "Paylasim hatasi",
+          thread_results: [],
+        });
+      } finally {
+        setPublishing(false);
+      }
     }
   };
 
@@ -601,19 +652,36 @@ function TabTweetYaz({
           {/* Score bar */}
           <ScoreBar score={scoreResult} />
 
-          {/* Thread parts */}
+          {/* Thread parts — editable */}
           {threadParts.length > 0 && (
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold">Thread Parcalari</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold">Thread Parcalari ({threadParts.length} tweet)</h4>
+                <span className="text-xs text-[var(--text-secondary)]">Her parcayi duzenleyebilirsiniz</span>
+              </div>
               {threadParts.map((part, i) => (
                 <div
                   key={i}
                   className="bg-[var(--bg-primary)] rounded-lg p-3 text-sm"
                 >
-                  <span className="text-[var(--accent-blue)] font-bold mr-2">
-                    {i + 1}/{threadParts.length}
-                  </span>
-                  <span className="whitespace-pre-line">{part}</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[var(--accent-blue)] font-bold text-xs">
+                      {i + 1}/{threadParts.length}
+                    </span>
+                    <span className={`text-[10px] ${part.length > 280 ? "text-[var(--accent-red)]" : "text-[var(--text-secondary)]"}`}>
+                      {part.length}/280
+                    </span>
+                  </div>
+                  <textarea
+                    value={part}
+                    onChange={(e) => {
+                      const updated = [...threadParts];
+                      updated[i] = e.target.value;
+                      setThreadParts(updated);
+                    }}
+                    rows={Math.max(2, Math.ceil(part.length / 70))}
+                    className="w-full bg-transparent border border-[var(--border)] rounded px-2 py-1 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)]"
+                  />
                 </div>
               ))}
             </div>
@@ -778,7 +846,7 @@ function TabTweetYaz({
                 {loading ? "Uretiliyor..." : "Yeniden Uret"}
               </button>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <button
                 onClick={async () => {
                   setDraftSaved(false);
@@ -791,13 +859,63 @@ function TabTweetYaz({
                 {draftSaved ? "Kaydedildi!" : "Taslak Kaydet"}
               </button>
               <button
-                onClick={handleOpenInXTab1}
+                onClick={handlePublishTab1}
+                disabled={publishing}
                 className="btn-primary text-sm"
               >
-                X&apos;te Paylas
+                {publishing
+                  ? threadParts.length > 0
+                    ? "Thread Paylasiliyor..."
+                    : "Paylasiliyor..."
+                  : threadParts.length > 0
+                    ? `Thread Paylas (${threadParts.length} tweet)`
+                    : "API ile Paylas"}
+              </button>
+              <button
+                onClick={handleOpenInXTab1}
+                className="btn-secondary text-sm"
+              >
+                X&apos;te Ac
               </button>
             </div>
           </div>
+
+          {/* Publish result */}
+          {publishResult && (
+            <div className={`rounded-lg p-4 text-sm ${publishResult.success ? "bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/30" : "bg-[var(--accent-red)]/10 border border-[var(--accent-red)]/30"}`}>
+              {publishResult.success ? (
+                <div className="space-y-2">
+                  <p className="font-semibold text-[var(--accent-green)]">Basariyla paylasild!</p>
+                  {publishResult.thread_results.length > 0 ? (
+                    <div className="space-y-1">
+                      {publishResult.thread_results.map((tr) => (
+                        <div key={tr.index} className="flex items-center gap-2 text-xs">
+                          <span className={tr.success ? "text-[var(--accent-green)]" : "text-[var(--accent-red)]"}>
+                            {tr.success ? "OK" : "HATA"}
+                          </span>
+                          <span>Tweet {tr.index}</span>
+                          {tr.url && (
+                            <a href={tr.url} target="_blank" rel="noopener noreferrer" className="text-[var(--accent-blue)] hover:underline">
+                              Gor
+                            </a>
+                          )}
+                          {tr.error && <span className="text-[var(--accent-red)]">{tr.error}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    publishResult.url && (
+                      <a href={publishResult.url} target="_blank" rel="noopener noreferrer" className="text-[var(--accent-blue)] hover:underline text-xs">
+                        Tweet&apos;i gor
+                      </a>
+                    )
+                  )}
+                </div>
+              ) : (
+                <p className="text-[var(--accent-red)]">{publishResult.error || "Paylasim basarisiz"}</p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -871,6 +989,10 @@ function TabQuoteTweet({
   const [mediaResults, setMediaResults] = useState<MediaItem[]>([]);
   const [mediaSource, setMediaSource] = useState("x");
   const [mediaLoading, setMediaLoading] = useState(false);
+
+  /* Publish */
+  const [publishingQt, setPublishingQt] = useState(false);
+  const [publishResultQt, setPublishResultQt] = useState<PublishResult | null>(null);
 
   /* Extract tweet when URL changes (debounced) */
   useEffect(() => {
@@ -1396,8 +1518,35 @@ function TabQuoteTweet({
           )}
 
           <div className="flex flex-wrap gap-3">
-            <button onClick={handleOpenInX} className="btn-primary text-sm">
-              X&apos;te Paylas
+            <button
+              onClick={async () => {
+                setPublishingQt(true);
+                setPublishResultQt(null);
+                try {
+                  const result = await publishTweet({
+                    text: generatedText,
+                    quote_tweet_id: tweetId || undefined,
+                  });
+                  setPublishResultQt(result);
+                } catch (e) {
+                  setPublishResultQt({
+                    success: false,
+                    tweet_id: "",
+                    url: "",
+                    error: e instanceof Error ? e.message : "Paylasim hatasi",
+                    thread_results: [],
+                  });
+                } finally {
+                  setPublishingQt(false);
+                }
+              }}
+              disabled={publishingQt}
+              className="btn-primary text-sm"
+            >
+              {publishingQt ? "Paylasiliyor..." : "API ile Paylas"}
+            </button>
+            <button onClick={handleOpenInX} className="btn-secondary text-sm">
+              X&apos;te Ac
             </button>
             <button
               onClick={() => copyText(generatedText)}
@@ -1417,6 +1566,24 @@ function TabQuoteTweet({
               {draftSaved ? "Kaydedildi!" : "Taslak Kaydet"}
             </button>
           </div>
+
+          {/* Publish result */}
+          {publishResultQt && (
+            <div className={`rounded-lg p-3 text-sm ${publishResultQt.success ? "bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/30" : "bg-[var(--accent-red)]/10 border border-[var(--accent-red)]/30"}`}>
+              {publishResultQt.success ? (
+                <div>
+                  <p className="font-semibold text-[var(--accent-green)] text-xs">Basariyla paylasild!</p>
+                  {publishResultQt.url && (
+                    <a href={publishResultQt.url} target="_blank" rel="noopener noreferrer" className="text-[var(--accent-blue)] hover:underline text-xs">
+                      Tweet&apos;i gor
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <p className="text-[var(--accent-red)] text-xs">{publishResultQt.error || "Paylasim basarisiz"}</p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
