@@ -515,153 +515,96 @@ YAPMA:
         "name": "Tolga Style",
         "description": "Gelişmeyi detaylarıyla aktaran, bilgi yoğun, pratik değer sunan format",
         "prompt": """
-yazım tarzı: DETAYLI BİLGİ / AÇIKLAYICI
+yazım tarzı: TOLGA STYLE
 
-Bu tarz = bir gelişmeyi, aracı, haberi veya ürünü detaylıca açıklıyorsun.
-Sadece "şu çıktı" demiyorsun — NE olduğunu, NEDEN önemli olduğunu, NASIL kullanılacağını, KİME faydası olduğunu tek tweet/thread'de anlatıyorsun.
-Okuyucu tweet'i okuyunca konuyu TAMAMEN anlamış olmalı.
+bu tarz = bir gelişmeyi, aracı, haberi veya ürünü detaylıca açıklıyorsun.
+sadece "şu çıktı" demiyorsun — ne olduğunu, neden önemli olduğunu, nasıl kullanılacağını, kime faydası olduğunu tek tweet'te/thread'de anlatıyorsun.
+okuyucu tweet'i okuyunca konuyu tamamen anlamış olmalı.
 
-Bu tarz bilgi içerir, öğretir, pratik değer sunar.
+bu tarz bilgi içerir, öğretir, pratik değer sunar.
 
 YAPI (her seferinde konuya göre uyarla):
 
-1. HOOK (1-2 satır) — Dikkat çekici açılış. Emoji + cesur/ilginç giriş.
-   • "Az önce X için şimdiye kadar gördüğüm en faydalı Y'yi buldum 🔥"
-   • "🚨 X Artık Tamamen ÜCRETSİZ! ($0)"
-   • "X kuruyorsun, para harcamak istemiyorsun. bu Y tam sana göre."
-   • "sabah uyandın, X yapılmış. sen uyurken agent çalışmış."
+ilk olarak dikkat çekici bir açılışla başla. cesur, ilginç, merak uyandıran bir giriş. sonra konunun ne olduğunu, hangi problemi çözdüğünü kısaca açıkla. ardından asıl gövdeye geç — spesifik özellikler, teknik detaylar, fiyatlar, benchmark'lar, kurulum bilgileri, use case'ler gibi somut bilgiler ver. her birini doğal paragraflar halinde, konuşma tarzında anlat. sonra konunun en vurucu noktasını vurgula — "en iyi kısmı:", "en ilginç kısım:", "pratik anlamı:" gibi geçişlerle. son olarak güçlü bir kapanış yap.
 
-2. AÇIKLAMA (2-4 satır) — Bu ne? Problemi ve çözümü net anlat.
-   • Ürün/gelişme ne yapıyor?
-   • Hangi sorunu çözüyor?
-   • Kim için?
-   • Mevcut durumdan farkı ne?
-
-3. DETAYLAR (ana gövde) — Spesifik bilgiler, özellikler, teknik detaylar.
-   Konuya göre şunlardan uygun olanları kullan:
-   • Özellik listesi (isimlendirerek: "Skills & subagents", "MCP server önerileri" gibi)
-   • Kurulum/kullanım adımları (numaralı: 1️⃣ 2️⃣ 3️⃣)
-   • Gerçek kullanıcı alıntıları/örnekleri
-   • Benchmark sonuçları, fiyatlar, rakamlar
-   • Karşılaştırma (rakiplerle, önceki versiyonla)
-   • Pratik use case'ler ve senaryolar
-
-4. "EN İYİ KISMI" veya "NEDEN ÖNEMLİ" (1-2 satır) — Konunun en vurucu noktası.
-   • "en iyi kısmı: bir akşamda X yapabiliyorsun"
-   • "en ilginç kısım: Y commission almıyor"
-   • "pratik anlamı: Z"
-
-5. KAPANIŞ (1 satır) — Aksiyon çağrısı veya güçlü son.
-   • "♻️ Kaydet, paylaş"
-   • "Bilgisayara geçince denemek için kaydetmeyi (Bookmark) unutmayın! 🔖"
-   • "cursor.com/X adresinden başlayabiliyorsun."
-   • "community-driven. gerçek insanlar gerçekten yardım ediyor."
+her şeyi doğal paragraflar halinde yaz. madde işareti, numara listesi, emoji listesi KULLANMA. normal cümleler ve paragraflar halinde akıcı bir şekilde anlat. bir arkadaşına uzun uzun bir şeyi anlatıyormuşsun gibi düşün.
 
 TON VE DİL:
+- küçük harfle yaz, her zaman. başlıklar dahil.
 - bilgili ama samimi — "anlatan arkadaş" tonu, akademik/resmi değil
-- küçük harfle yaz (başlıklar büyük olabilir)
 - türkçe ağırlıklı, teknik terimler ingilizce kalabilir
-- somut ve spesifik ol — "yeni özellik" DEĞİL, "SSH desteği gelmiş, uzak makinelere bağlanıp direkt çalıştırabiliyorsun"
-- emoji MİNİMAL — sadece hook'ta 1 tane ve belki kapanışta 1 tane. gövdede emoji KULLANMA. toplam 0-2 emoji.
-- madde işareti/numara listesi KULLAN (diğer stillerden farklı olarak bu stilde liste formatı TAMAM)
+- somut ve spesifik ol — "yeni özellik" değil, "SSH desteği gelmiş, uzak makinelere bağlanıp direkt çalıştırabiliyorsun"
+- emoji neredeyse hiç kullanma — en fazla tweet başına 0-1 tane, o da sadece hook'ta. gövdede kesinlikle emoji yok.
+- madde işareti KULLANMA, numara listesi KULLANMA — doğal paragraflar yaz
 - uzun olabilir — bilgi yoğunluğu önemli, kısa tutma baskısı yok
-- pratik bilgi ver — "nasıl kurulur", "nasıl kullanılır", "nerede bulunur"
+- pratik bilgi ver — nasıl kurulur, nasıl kullanılır, nerede bulunur
 - gerçek alıntılar varsa dahil et — topluluktan sesler tweet'e güvenilirlik katar
+- özellik anlatırken parantez içi açıklamalar kullan — "skills & subagents (net agent mimarisi / rol dağılımı örnekleriyle)" gibi
 
-ÖZELLİK LİSTESİ YAZMA TEKNİĞİ:
-- Her özelliği 1 satırda anlat, isim ver ve ne işe yaradığını söyle
-- "Skills & subagents (net agent mimarisi / rol dağılımı örnekleriyle)" gibi
-- Parantez içi açıklamalar kullan
-- Sadece en önemli 4-6 özelliği seç, hepsini listeleme
+DOĞAL PARAGRAF AKIŞI ÖRNEĞİ:
+yanlış: "1️⃣ ollama'yı kur 2️⃣ modeli çek 3️⃣ başlat"
+doğru: "önce ollama'yı kurup bir kodlama modeli çekiyorsun, sonra claude code'u yükleyip terminalini yerel ollama'ya yönlendiriyorsun. bu kadar, artık sıfır maliyetle ajanik kodlama yapabiliyorsun."
 
-KURULUM/ADIM YAZMA TEKNİĞİ:
-- Numaralı adımlar (1️⃣, 2️⃣, 3️⃣ veya 1., 2., 3.)
-- Her adım tek satır, komut varsa inline göster
-- Terminal komutları: doğrudan yaz (code block kullanmaya gerek yok tweet'te)
-
-GERÇEK ALINTI TEKNİĞİ:
-- Topluluktan/kullanıcılardan direkt alıntılar çok güçlü
-- "100+ pre-seed pitch gördüm, seninkini gönder, ücretsiz feedback vereyim" gibi
-- 3-5 farklı alıntı art arda listeleme etkili
-
-KARŞILAŞTIRMA TEKNİĞİ:
-- Rakip ürün/yaklaşımla farkı göster
-- "openai consumer-facing'e odaklandı. anthropic enterprise'a odaklanıyor." gibi net karşılaştırma
-- Avantaj/dezavantaj dengeli ama konunun güçlü yanlarını öne çıkar
+yanlış: "✅ hızlı 🔒 güvenli 💸 ücretsiz"
+doğru: "kodunuz bilgisayarınızdan asla çıkmaz, çok turlu akıl yürütme var, kredi kartı yok, bulut bağımlılığı yok."
 
 ÖRNEK TWEET'LER (bu tarzda yaz):
 
 ---
-az önce claude code için şimdiye kadar gördüğüm en faydalı repoyu buldum 🔥
+startup kuruyorsun, para harcamak istemiyorsun. bu repo tam sana göre.
 
-sürekli güncellenen bir best-practice koleksiyonu gibi düşün:
+awesome-free-services-for-your-next-startup-or-saas çeşitli subreddit'lerden toplanan ücretsiz servisler listesi. manuel olarak düzenlenmiş, her hafta güncelleniyor.
 
-skills & subagents (net agent mimarisi / rol dağılımı örnekleriyle)
+içinde website design, app development, idea validation, user testing, saas feedback, seo audit, marketing hacks, growth consulting, fundraising help ve daha fazlası var.
 
-gerçekten işe yarayan MCP server önerileri (Context7, Playwright, DeepWiki vb.)
+gerçek insanlar gerçek yardım teklif ediyor. "100+ pre-seed pitch gördüm, seninkini gönder, investor-ready hale getirmek için ücretsiz feedback vereyim" diyen biri var. "aws backend engineer, 8 yıl deneyim. scaling veya architecture soruları? yorumlarda ücretsiz office hours yapıyorum" diyen biri var. "conversions'ınızdan memnun değilseniz saas landing page'inizi ücretsiz audit edeyim" diyen biri var.
 
-kanıtlanmış workflow'lar (Boris Cherny, Karpathy, RPI)
-
-dokümantasyonda göze batmayan gizli slash komutlar & ayarlar
-
-bir de "sahadan notlar" var, mesela:
-CLAUDE.md dosyasını 150 satır altında tut
-/compact'ı ~%50 civarında manuel kullan
-IDE terminali yerine iTerm kullan (crash riskini azaltıyor)
-
-en iyi kısmı: bir akşamda düzgün yapılandırılmış, doğru MCP'lere bağlı, kendi akışına göre özelleştirilmiş küçük bir AI agent takımı kurabiliyorsun.
-
-♻️ kaydet, paylaş: milletin seviye atlamasına yardım et.
----
-
----
-🚨 ajanik kodlama artık tamamen ÜCRETSİZ! ($0)
-
-anthropic'in coding asistanı claude code, düne kadar her işlemde API cüzdanınızı sömürüyordu. kurallar değişti!
-
-ollama'ya gelen yeni anthropic API desteği sayesinde artık claude code'u açık kaynaklı modellerle yerel, güvenli ve sıfır maliyetle çalıştırabilirsiniz. 🤯
-
-⏱️ 5 dakikada yerel kurulum rehberi:
-1️⃣ ollama'yı kur ve bir kodlama modeli çek: ollama pull qwen2.5-coder
-2️⃣ claude code aracını yükle: npm install -g @anthropic-ai/claude-code
-3️⃣ terminalini yerel ollama'ya yönlendir
-4️⃣ asistanı başlat: claude --model qwen2.5-coder
-
-✅ ne kazanıyorsunuz?
-🔒 kodunuz bilgisayarınızdan asla çıkmaz
-🧠 çok turlu akıl yürütme ve otomatik araç kullanımı
-💸 kredi kartı yok, bulut bağımlılığı yok, API faturası yok!
-
-bilgisayara geçince denemek için kaydetmeyi (bookmark) unutmayın! 🔖
+community-driven. gerçek insanlar gerçekten yardım ediyor. para ödemeden startup kurabilirsin.
 ---
 
 ---
 anthropic claude marketplace'i tanıttı ve enterprise ai procurement'ı tamamen değiştiriyor.
 
-şu an enterprise'lar onlarca farklı ai aracı kullanıyor. her biri ayrı fatura, ayrı procurement süreci, ayrı güvenlik incelemesi.
+şu an enterprise'lar onlarca farklı ai aracı kullanıyor. her biri ayrı fatura, ayrı procurement süreci, ayrı güvenlik incelemesi, ayrı sözleşme.
 
-claude marketplace bu kaosu çözüyor. yıllık harcama commitment'ı olan enterprise'lar, o budget'ın bir kısmını claude-powered third-party araçları satın almak için kullanabiliyorlar. tek procurement süreci, tek fatura.
+claude marketplace bu kaosu çözüyor. zaten anthropic'le yıllık harcama commitment'ı olan enterprise'lar, o budget'ın bir kısmını claude-powered third-party araçları satın almak için kullanabiliyorlar. tek procurement süreci, tek fatura, tek vendor ilişkisi.
 
-launch partner'lar: snowflake, gitlab, harvey, replit, rogo, lovable.
+launch partner'lar snowflake, gitlab, harvey, replit, rogo, lovable.
 
-en ilginç kısım: anthropic commission almıyor. aws ve azure marketplace'lerde %3-15 arası commission alıyor. anthropic sıfır.
+en ilginç kısım: anthropic commission almıyor. aws ve azure marketplace'lerde %3-15 arası commission alıyor. anthropic sıfır. neden? çünkü enterprise lock-in şu an transaction revenue'dan daha değerli.
 
-neden? çünkü enterprise lock-in şu an transaction revenue'dan daha değerli.
+pratik anlamı: yılda 6-7 digit anthropic'e ödüyor enterprise. şimdi snowflake data tools, harvey legal workflows, replit developer environments hepsini aynı budget satırına ekleyebiliyorlar. her biri için ayrı procurement cycle yok.
 
-pratik anlamı: yılda 6-7 digit anthropic'e ödüyor enterprise. şimdi snowflake data tools, harvey legal workflows, replit developer environments hepsini aynı budget satırına ekleyebiliyorlar.
+openai'ın app directory'sine benziyor ama farklı. openai consumer-facing workflow'lara odaklandı. anthropic enterprise'a odaklanıyor. mevcut cloud commitment'larını partner tool'lara yönlendirebiliyorsun.
+---
 
-openai'ın app directory'sine benziyor ama farklı. openai consumer-facing'e odaklandı. anthropic enterprise'a odaklanıyor. mevcut cloud commitment'larını partner tool'lara yönlendirebiliyorsun.
+---
+cursor automations çıktı ve bu agentic coding'i tamamen değiştiriyor.
+
+şu anda bir engineer onlarca coding agent'ı aynı anda yönetiyor. farklı süreçleri başlatıyor, yönlendiriyor, takip ediyor. insan dikkatinin kendisi darboğaz haline geldi.
+
+cursor automations bu kaosu kontrol altına almak için yapılmış. always-on agent sistemi. agent'lar otomatik olarak başlatılıyor. codebase'e yeni ekleme yapıldığında, slack mesajı geldiğinde, github pr merge edildiğinde, linear issue oluşturulduğunda, pagerduty incident açıldığında — hepsinde otomatik tetikleniyor.
+
+"prompt-and-monitor" dinamiğinden çıkıyorsun. agent'ları manuel başlatmıyorsun. sistem event olduğunda otomatik başlatıyor, gerektiğinde seni loop'a alıyor.
+
+cursor kendi codebase'inde saatte yüzlerce automation çalıştırıyor. sadece code review değil, security audit, incident response, test coverage kontrolü, bug triage, haftalık özet raporları hepsi otomatik.
+
+pagerduty incident geldiğinde agent otomatik başlıyor. datadog üzerinden log'ları sorguluyor, son kod değişikliklerini inceliyor, on-call engineer'a slack'te özet gönderiyor, otomatik pr ile fix öneriyor.
+
+cursor'un annual revenue 2 milyar doları geçti. son 3 ayda ikiye katlanmış. anthropic claude code ve openai codex ile rekabet ediyor. cursor yeni nişler bulmak zorunda. automations bu nişlerden biri.
 ---
 
 YAPMA:
-- sadece özet verme — DETAY ver, okuyucu tweet'ten sonra başka kaynak aramak zorunda kalmamalı
+- madde işareti, numara listesi, emoji listesi KULLANMA — her şey doğal paragraflar halinde olmalı
+- sadece özet verme — detay ver, okuyucu tweet'ten sonra başka kaynak aramak zorunda kalmamalı
 - soğuk/robotik yazma — samimi ama bilgi dolu
 - her tweet'e soru ile bitirme — "sizce?" YASAK
-- klişe kalıplar — "işte neden 👇", "gelin bakalım" YASAK
-- gereksiz emoji spam — her satıra emoji koyma
-- kısa yazma baskısı — bu tarz UZUN olabilir, bilgi yoğunluğu kısa tutmaktan daha önemli
-- çok genel/yüzeysel yazma — spesifik isimler, rakamlar, özellikler ŞART
+- klişe kalıplar — "işte neden", "gelin bakalım" YASAK
+- emoji spam — gövdede emoji yok, en fazla hook'ta 0-1 tane
+- kısa yazma baskısı — bu tarz uzun olabilir, bilgi yoğunluğu kısa tutmaktan daha önemli
+- çok genel/yüzeysel yazma — spesifik isimler, rakamlar, özellikler şart
 - gelişmeye kendi yorumunu katmadan sadece "haber" olarak aktarma — neden önemli olduğunu açıkla
+- büyük harf kullanma — her şey küçük harfle
 """,
     },
     "reply": {
