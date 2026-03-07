@@ -95,6 +95,23 @@ function ScoreBar({ score }: { score: ScoreResult | null }) {
   );
 }
 
+/* ── Helpers ───────────────────────────────────────────── */
+
+async function copyText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+  }
+}
+
 /* ── Main ──────────────────────────────────────────────── */
 
 export default function YazPage() {
@@ -570,7 +587,7 @@ function TabTweetYaz({
           <div className="flex justify-between items-center">
             <h4 className="font-semibold">Uretilen Tweet</h4>
             <button
-              onClick={() => navigator.clipboard.writeText(generatedText)}
+              onClick={() => copyText(generatedText)}
               className="text-xs text-[var(--accent-blue)] hover:underline"
             >
               Kopyala
@@ -1281,7 +1298,7 @@ function TabQuoteTweet({
           <div className="flex justify-between items-center">
             <h4 className="font-semibold">Quote Tweet</h4>
             <button
-              onClick={() => navigator.clipboard.writeText(generatedText)}
+              onClick={() => copyText(generatedText)}
               className="text-xs text-[var(--accent-blue)] hover:underline"
             >
               Kopyala
@@ -1383,7 +1400,7 @@ function TabQuoteTweet({
               X&apos;te Paylas
             </button>
             <button
-              onClick={() => navigator.clipboard.writeText(generatedText)}
+              onClick={() => copyText(generatedText)}
               className="btn-secondary text-sm"
             >
               Kopyala
@@ -1522,13 +1539,15 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
     }
   };
 
-  const handleOpenReplyInX = () => {
+  const handleOpenReplyInX = async () => {
     if (!generatedReply || !selectedTweet) return;
-    // Open X with reply pre-filled — user clicks Reply on X
     const tweetUrl = selectedTweet.url || `https://x.com/i/status/${selectedTweet.id}`;
-    // X intent doesn't support reply directly, so open tweet + copy reply
-    navigator.clipboard.writeText(generatedReply);
-    window.open(tweetUrl, "_blank");
+    await copyText(generatedReply);
+    const w = window.open(tweetUrl, "_blank");
+    if (!w) {
+      // If popup blocked, navigate directly
+      window.location.href = tweetUrl;
+    }
   };
 
   return (
@@ -1767,7 +1786,7 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
                 </button>
                 <button
                   onClick={() =>
-                    navigator.clipboard.writeText(generatedReply)
+                    copyText(generatedReply)
                   }
                   className="btn-secondary text-sm"
                 >
