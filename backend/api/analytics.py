@@ -338,7 +338,7 @@ async def fetch_pool_tweets(request: PoolFetchRequest):
 
     accounts = load_pool_accounts()
     if not accounts:
-        raise HTTPException(status_code=400, detail="Hesap listesi bos")
+        raise HTTPException(status_code=400, detail="Hesap listesi bos. Once 'Hesap Listesini Kaydet' butonuyla hesap ekleyin.")
 
     twikit = TwikitSearchClient()
     if not twikit.authenticate():

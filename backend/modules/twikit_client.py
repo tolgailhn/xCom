@@ -32,7 +32,7 @@ from twikit.errors import (
 
 LOGIN_TIMEOUT = 30  # seconds — prevents infinite hang on interactive prompts
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
 COOKIES_PATH = DATA_DIR / "twikit_cookies.json"
 
 

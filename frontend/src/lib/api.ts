@@ -70,11 +70,16 @@ export function generateTweet(params: {
   research_context?: string;
   content_format?: string;
   quote_url?: string;
+  provider?: string;
 }) {
   return apiFetch("/api/generator/tweet", {
     method: "POST",
     body: JSON.stringify(params),
   });
+}
+
+export function getProviders() {
+  return apiFetch("/api/generator/providers");
 }
 
 // Reply Generation

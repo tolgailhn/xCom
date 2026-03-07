@@ -15,6 +15,7 @@ import {
   findMedia,
   factCheck,
   getStyles,
+  getProviders,
 } from "@/lib/api";
 
 /* ── Types ─────────────────────────────────────────────── */
@@ -45,6 +46,12 @@ interface StyleOption {
   id: string;
   name: string;
   desc: string;
+}
+
+interface ProviderOption {
+  id: string;
+  name: string;
+  available: boolean;
 }
 
 interface FormatOption {
@@ -107,6 +114,7 @@ function YazContent() {
   /* ── Shared State ───────────────── */
   const [styles, setStyles] = useState<StyleOption[]>([]);
   const [formats, setFormats] = useState<FormatOption[]>([]);
+  const [providers, setProviders] = useState<ProviderOption[]>([]);
 
   useEffect(() => {
     getStyles()
@@ -114,6 +122,9 @@ function YazContent() {
         setStyles(r.styles);
         setFormats(r.formats);
       })
+      .catch(() => {});
+    getProviders()
+      .then((r: { providers: ProviderOption[] }) => setProviders(r.providers))
       .catch(() => {});
   }, []);
 
@@ -160,6 +171,7 @@ function YazContent() {
         <TabTweetYaz
           styles={styles}
           formats={formats}
+          providers={providers}
           initialTopic={searchParams.get("topic") || ""}
         />
       )}
@@ -167,6 +179,7 @@ function YazContent() {
         <TabQuoteTweet
           styles={styles}
           formats={formats}
+          providers={providers}
           initialUrl={searchParams.get("quote_url") || ""}
         />
       )}
@@ -182,10 +195,12 @@ function YazContent() {
 function TabTweetYaz({
   styles,
   formats,
+  providers,
   initialTopic,
 }: {
   styles: StyleOption[];
   formats: FormatOption[];
+  providers: ProviderOption[];
   initialTopic: string;
 }) {
   const [topic, setTopic] = useState(initialTopic);
@@ -194,6 +209,7 @@ function TabTweetYaz({
   const [isThread, setIsThread] = useState(false);
   const [engine, setEngine] = useState("default");
   const [agentic, setAgentic] = useState(false);
+  const [provider, setProvider] = useState("");
 
   const [researchContext, setResearchContext] = useState("");
   const [generatedText, setGeneratedText] = useState("");
@@ -221,19 +237,25 @@ function TabTweetYaz({
   } | null>(null);
   const [factLoading, setFactLoading] = useState(false);
 
+  const [researchSources, setResearchSources] = useState<{ title: string; url?: string; body?: string }[]>([]);
+
   const handleResearch = async () => {
     if (!topic.trim()) return;
     setResearching(true);
     setError(null);
     setProgressMessages([]);
+    setResearchSources([]);
     try {
       const result = await researchTopicStream(
         { topic, engine, agentic },
         (msg) => setProgressMessages((prev) => [...prev, msg]),
       );
-      setResearchContext(
-        `${result.summary}\n\nKey Points:\n${result.key_points.join("\n")}`
-      );
+      const parts = [result.summary];
+      if (result.key_points?.length) {
+        parts.push("\n\nTemel Bulgular:\n" + result.key_points.map((p: string) => `• ${p}`).join("\n"));
+      }
+      setResearchContext(parts.join(""));
+      setResearchSources(result.sources || []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Arastirma hatasi");
     } finally {
@@ -255,6 +277,7 @@ function TabTweetYaz({
         thread: isThread,
         research_context: researchContext,
         content_format: contentFormat || undefined,
+        provider: provider || undefined,
       })) as {
         text: string;
         thread_parts: string[];
@@ -410,6 +433,27 @@ function TabTweetYaz({
             </select>
           </div>
 
+          {/* AI Provider */}
+          {providers.length > 0 && (
+            <div>
+              <label className="text-xs text-[var(--text-secondary)] block mb-1">
+                AI Model
+              </label>
+              <select
+                value={provider}
+                onChange={(e) => setProvider(e.target.value)}
+                className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Otomatik</option>
+                {providers.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Thread toggle */}
           <div className="flex items-end">
             <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -485,13 +529,40 @@ function TabTweetYaz({
 
       {/* Research context */}
       {researchContext && (
-        <div className="glass-card">
-          <h4 className="text-sm font-semibold text-[var(--accent-cyan)] mb-2">
+        <div className="glass-card space-y-3">
+          <h4 className="text-sm font-semibold text-[var(--accent-cyan)]">
             Arastirma Sonucu
           </h4>
           <p className="text-sm text-[var(--text-secondary)] whitespace-pre-line">
             {researchContext}
           </p>
+          {researchSources.length > 0 && (
+            <div className="border-t border-[var(--border)] pt-3">
+              <h5 className="text-xs font-semibold text-[var(--text-secondary)] mb-2">
+                Kaynaklar ({researchSources.length})
+              </h5>
+              <div className="space-y-2">
+                {researchSources.map((src, i) => (
+                  <div key={i} className="bg-[var(--bg-primary)] rounded-lg p-2.5 text-xs">
+                    <div className="font-medium text-[var(--text-primary)]">{src.title}</div>
+                    {src.url && (
+                      <a
+                        href={src.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[var(--accent-blue)] hover:underline break-all"
+                      >
+                        {src.url}
+                      </a>
+                    )}
+                    {src.body && (
+                      <p className="text-[var(--text-secondary)] mt-1">{src.body}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -697,10 +768,12 @@ function TabTweetYaz({
 function TabQuoteTweet({
   styles,
   formats,
+  providers,
   initialUrl,
 }: {
   styles: StyleOption[];
   formats: FormatOption[];
+  providers: ProviderOption[];
   initialUrl: string;
 }) {
   const [quoteUrl, setQuoteUrl] = useState(initialUrl);
@@ -709,6 +782,7 @@ function TabQuoteTweet({
   const [engine, setEngine] = useState("default");
   const [agentic, setAgentic] = useState(false);
   const [deepVerify, setDeepVerify] = useState(false);
+  const [provider, setProvider] = useState("");
 
   /* Research sources */
   const [srcX, setSrcX] = useState(true);
@@ -1118,6 +1192,23 @@ function TabQuoteTweet({
                 )}
               </select>
             </div>
+
+            {/* AI Provider */}
+            {providers.length > 0 && (
+              <div>
+                <label className="text-xs text-[var(--text-secondary)] block mb-1">AI Model</label>
+                <select
+                  value={provider}
+                  onChange={(e) => setProvider(e.target.value)}
+                  className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
+                >
+                  <option value="">Otomatik</option>
+                  {providers.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="flex items-end">
               <label className="flex items-center gap-1 text-xs cursor-pointer">

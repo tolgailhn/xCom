@@ -1,0 +1,2490 @@
+{
+  "username": "SelmanKahyaX",
+  "analyzed_at": "2026-03-05T17:28:21.680628",
+  "analysis": {
+    "total_tweets": 204,
+    "total_likes": 48870,
+    "total_retweets": 9609,
+    "total_replies": 2118,
+    "avg_engagement_score": 1334.8,
+    "top_tweets": [
+      {
+        "text": "RT @ilayderkul: Psikoloji alanında bir sağlık çalışanı olarak, şu anda insanların yaşadığı genel 'sahip olduklarından suçluluk duyma' yani…",
+        "engagement_score": 155900.0,
+        "like_count": 0,
+        "retweet_count": 7795,
+        "reply_count": 0,
+        "impression_count": 0,
+        "created_at": "2023-02-11 21:57:17+00:00"
+      },
+      {
+        "text": "binlerce özgeçmiş inceledim, iş başvurusu değerlendirdim. kişilerin kendini tam anlamıyla sunamaması, deyim yerindeyse kendini pazarlayamaması, basit detaylardan ötürü kendilerine şans verilmiyor olması bir gerçek. iş başvurusu yapıyorsun şunlara dikkat etmeni öneriyorum:",
+        "engagement_score": 16904.9,
+        "like_count": 6424,
+        "retweet_count": 506,
+        "reply_count": 16,
+        "impression_count": 803404,
+        "created_at": "2022-12-31 02:58:48+00:00"
+      },
+      {
+        "text": "sonra okurum diye laptop ve telefonda yuzlerce chrome tab acik. raindrop, pocket falan kullandim, bitiremedim. boyle bir probleminiz varsa siz nasil cozuyorsunuz?",
+        "engagement_score": 5198.45,
+        "like_count": 1234,
+        "retweet_count": 56,
+        "reply_count": 209,
+        "impression_count": 338105,
+        "created_at": "2024-04-01 06:56:17+00:00"
+      },
+      {
+        "text": "günümüzün süper güçleri:\n\n- kendini kontrol edebilme (öz disiplin)\n- düşünce yapını değiştirebilme\n- olayları kişisel algılamama\n- haklı olduğunu kanıtlama ihtiyacı duymama\n- ilişkilerini özenle seçme\n- sakin kalabilme\n- yalnız kalıp yalnız hissetmeme\n- konforsuzlukla barışık olma\n- kendi başına düşünebilme",
+        "engagement_score": 4143.98,
+        "like_count": 1332,
+        "retweet_count": 133,
+        "reply_count": 3,
+        "impression_count": 53100,
+        "created_at": "2026-01-04 19:30:39+00:00"
+      },
+      {
+        "text": "iddia: ai/yapay zekanın etkisi sanayi devriminden binlerce kat büyük olacak.\n\n2025–2035 için olası bir senaryo:",
+        "engagement_score": 2808.11,
+        "like_count": 1207,
+        "retweet_count": 56,
+        "reply_count": 35,
+        "impression_count": 422107,
+        "created_at": "2026-01-07 11:19:12+00:00"
+      },
+      {
+        "text": "işimden istifa ettim! bu cuma son günüm. 4-5 takıma, 20-25 kişiye yöneticilik yapıyor olmak, sürekli artan sorumluluklar baya öğretici tecrübeydi.\n\nfakat ai/llm alanındaki gelişmeler inanılmaz ilgimi çekiyor, şimdi değilse ne zaman dedim. daha fazla vakit kaybetmeyi göze alamadım.\n\nelimde bir fikir, prototip, yatırım vs yok. kendime 1 sene vereceğim ve farklı şeyleri deneyeceğım. bu süreçte youtube'da canlı yayınlarda, videolarda bol bol görüşürüz diye umuyorum 😀",
+        "engagement_score": 2384.99,
+        "like_count": 1451,
+        "retweet_count": 11,
+        "reply_count": 52,
+        "impression_count": 299537,
+        "created_at": "2024-11-25 20:47:10+00:00"
+      },
+      {
+        "text": "ai/yapay zeka meslek tanımlarını inanılmaz bir hızda değiştiriyor.\n\nşu an iyi bir kariyer için tek bir tavsiye verecek olsam şu olurdu: herşeyi bırak, önce 'high agency' biri olmaya çalış.\n\nnasıl:",
+        "engagement_score": 2369.43,
+        "like_count": 968,
+        "retweet_count": 58,
+        "reply_count": 17,
+        "impression_count": 206030,
+        "created_at": "2026-01-08 10:34:27+00:00"
+      },
+      {
+        "text": "RT @SelmanKahyaX: https://t.co/KnB4AAjF2n",
+        "engagement_score": 2185.0,
+        "like_count": 0,
+        "retweet_count": 19,
+        "reply_count": 0,
+        "impression_count": 4,
+        "created_at": "2026-02-21 15:32:46+00:00"
+      },
+      {
+        "text": "her gecen gun daha fazla ikna oluyorum. kodlama ogrenmektense konseptleri kavramak, dusunmeyi ogrenmek, kompleks problemi parcalara bolup, insanlara ve makinelere is yaptirabilmek daha kritik hale geliyor.",
+        "engagement_score": 2080.21,
+        "like_count": 947,
+        "retweet_count": 41,
+        "reply_count": 22,
+        "impression_count": 128630,
+        "created_at": "2025-03-27 19:54:19+00:00"
+      },
+      {
+        "text": "5-10 senede yazılım dünyasının ve geliştiricilerin sorumluluklarının kökten değişeceğine inanıyorum.\n\nhala cursor, v0, windsurf, bolt, devin gibi servisleri kullanarak bir proje geliştirmediyseniz bugün her şeyi bırakın, basit bir proje geliştirin.\n\ngeçtiğimiz 1-2 senedir bu alandaki gelişmeleri değerlendirip, 3-5 seneye neler olacak fikir yürütmeye çalışın.",
+        "engagement_score": 2005.41,
+        "like_count": 1002,
+        "retweet_count": 39,
+        "reply_count": 16,
+        "impression_count": 285094,
+        "created_at": "2024-12-22 08:07:18+00:00"
+      },
+      {
+        "text": "bir yazılımcı yol haritası.\n\nbilgisayar mühendisliği 1. sınıf öğrencisi akrabam ile düzenli görüşüp yazılımcı olma yolunda eforlarını takip edip, destekleyeceğim. hem onu daha motive etmek hem de başkalarının da faydalanması için gidişatı buradan da paylaşayım dedim. #birmuhendis https://t.co/kI9pKICa6F",
+        "engagement_score": 1728.55,
+        "like_count": 776,
+        "retweet_count": 41,
+        "reply_count": 9,
+        "impression_count": 128346,
+        "created_at": "2023-12-08 19:18:57+00:00"
+      },
+      {
+        "text": "olay şuraya gidiyor:\n\nyazılımdan anlamayıp kullanıcı/müşteri problemlerini iyi çözebilen &gt; üründen anlamayan iyi yazılımcı",
+        "engagement_score": 1515.57,
+        "like_count": 687,
+        "retweet_count": 14,
+        "reply_count": 39,
+        "impression_count": 50075,
+        "created_at": "2026-02-22 23:37:00+00:00"
+      },
+      {
+        "text": "yazilim alani icin universite egitimi ve not ortalamasini onemli buluyordum fakat son bir senede fikrim cok degisti. 4 sene universite egitimi o kadar uzun ki, ustelik hocalar genelde birak 1-2 seneyi, 10-20 sene onceki trendlere hakim ve mufredatlar yenilenmiyor. \n\nsuan dusuncem ortalaman 2-2.5 altina dusmesin, her hafta bir uygulama bas. yeni araclari kullanarak eskiden 5 senede gelinen senior seviyesine bir kac senede gel ve mezun oldugunda en kotu mid-level, idealde senior seviyesinde ol. \n\ntabi senior beklentileri de cok yukselecegi icin suanin sr seviyesi ile 4 sene sonra sr denildigine anlasilan da farkli olacak, ama daha iyi bir plan dusunemiyorum.",
+        "engagement_score": 1515.26,
+        "like_count": 680,
+        "retweet_count": 26,
+        "reply_count": 23,
+        "impression_count": 231355,
+        "created_at": "2025-01-21 08:47:12+00:00"
+      },
+      {
+        "text": "\"İçinde bulunduğun durum ya da şirket ne olursa olsun, elinden gelenin en iyisini yap. Onlar için değil, kendin için. Hoşnutsuzluğu kendini geliştirmek için motivasyona dönüştür. Ardından fırsat kendini gösterdiğinde fırsatı değerlendir ve daha iyi tarafa geç.\"\n\nhttps://t.co/eVIgIb7HwD",
+        "engagement_score": 1477.56,
+        "like_count": 540,
+        "retweet_count": 36,
+        "reply_count": 16,
+        "impression_count": 558882,
+        "created_at": "2023-07-25 02:04:19+00:00"
+      },
+      {
+        "text": "isimden istifa edip, tamamen yazilim alaninda ai/llm gelismelerine odaklandigim bu donemde dahi twitter ve diger sosyal aglarda olan icerikleri tukettigimde fomo, yani bir seyleri kacirma korkusu tetikleniyor. ben cozumu tuketmeyi birakip uretmekte buluyorum. benzer hisleri yasiyorsaniz size de bunu tavsiye ediyorum. proje gelistir, bir seyler uret ve surece guven 👍",
+        "engagement_score": 1471.78,
+        "like_count": 791,
+        "retweet_count": 17,
+        "reply_count": 24,
+        "impression_count": 72155,
+        "created_at": "2025-01-03 16:43:50+00:00"
+      },
+      {
+        "text": "\"bir şirket onlarca claude code'u 7x24 çalıştırdığı, claude'in şuankinden 1000 kat daha az insan input'u gerektirdiği bir dünyada, çalıştığım şirket bana ne için para ödüyor olacak?\"",
+        "engagement_score": 1459.72,
+        "like_count": 253,
+        "retweet_count": 8,
+        "reply_count": 77,
+        "impression_count": 67965,
+        "created_at": "2026-01-27 17:16:28+00:00"
+      },
+      {
+        "text": "yazılımcının rolü operatörden (yapan) orkestra şefine (planlayan, yöneten) döndü. \n\nstartup founder'ı olarak şu an beklentim arka planda 7x24 agent çalışacak, kod yazacak. hiç boş durmayacak. \n\nroadmap'i implement etsin. task bitti mi, önerileri de bulunsun. refactor yapsın, test eklesin. bug bulsun, çözsün. \n\nslack, mesaj, telefon araması ile bana ulaşsın, konuşalım, gereksinimleri tartışalım, hep ilerlesin. takıldığında bana ulaşsın.\n\nbinlerce test yazsın, sürekli güncel tutsun. değişiklik yaparken ekran görüntüsü paylaşsın, feedback vereyim.\n\ntech tarafında eng takımı sürekli bunların arkasını toplasın, çıktısını kontrol etsin. agent'ların flowlarını optimize etsin. kaliteden ödün vermeden 1 agent'tan 100'e nasıl çıkarız ona kafa yorsun. \n\nclaude code tarzı bir agent'in çalışmadığı her dakikayı ciddi kayıp olarak görmeye başladım. aylık $200 hiç birşey değil. \n\nşuanki tech (bknz ralph wiggum loop) buna ucundan müsade ediyor, 3 ay sonra akacak. yalnız böyle bir sistem ve codebase'de altyapı oturtması hala sıkıntı.\n\nbunu okuyup sen ne diyosun bro, yok öyle bir dünya diyorsan başını ellerinin arasına al, iyi bir düşün, değerini kaybedeceksin",
+        "engagement_score": 1359.32,
+        "like_count": 495,
+        "retweet_count": 22,
+        "reply_count": 31,
+        "impression_count": 127531,
+        "created_at": "2026-01-13 10:26:08+00:00"
+      },
+      {
+        "text": "AI'a yaptırdığın kod değişikliklerini test ederken baya zaman kazandıran bir yaklaşım:\n\nilk olarak claude chrome extension yükle ve claude code'u chrome a bağla.\n\nsonra claude code'a görev ver: \n- bu yaptığın değişiklikler için test etmem gereken bütün kombinasyonların listesini çıkar\n- 'http://localhost:3000/' adresine git, şu bilgilerle giriş yap\n- listesini çıkardığın tüm case'leri browser kullanarak test et\n- gerekirse psql ya da api üzerinden login olduğun kullanıcı için db üzerinde değişilikler yapabilirsin ve kullanıcının belli ekranlara/state'lere düşmesini sağlayabilirsin\n\n10 dk, yüzlerce tool calling sonrası test raporunu görüyorsun.\n\nbaya manuel işten kurtarıyor.",
+        "engagement_score": 1333.62,
+        "like_count": 586,
+        "retweet_count": 29,
+        "reply_count": 11,
+        "impression_count": 43042,
+        "created_at": "2026-02-23 12:39:36+00:00"
+      },
+      {
+        "text": "elle, manuel, satır satır kod yazdığın günler aklına gelir\n\nhttps://t.co/AupK9Z77LF",
+        "engagement_score": 1320.78,
+        "like_count": 570,
+        "retweet_count": 25,
+        "reply_count": 16,
+        "impression_count": 22590,
+        "created_at": "2026-02-27 08:45:45+00:00"
+      },
+      {
+        "text": "yüzlerce açık tab ve yer imi birikmesi problemimi çözdüm arkadaşlar! 😀 kendi web, mobil ve chrome uygulamamı kodladım, yazılımcı stili 😀 denemek isterseniz link aşağıda, videosunu da paylaştım.  \n\nçözümüm şu: \n- kaybolan tabler: belli süre içerisinde okunmayan tab uygulamadan kayboluyor, birikmenin önüne geçiyor. 1 aydır tab açık ve okumadıysan zaten okumayacaksındır. \n- chrome'daki linkleri uygulamaya göndermek bir tık: eklenti kullanarak bütün pencereyi, bazı tableri ya da yer imlerini kolayca uygulamaya taşı, orada oku\n- minimalist okuma deneyimi ve temiz arayüz: birbirinden değişik websitelerinden içeriği tüketmek yerine direk uygulamamım içinden dikkat dağıtıcı unsur (reklam vs) olmaksızın rahatça okuyabilme \n- AI ile kolayca özet oluştur, eğer ilgimi çektiyse içeriği tüket, yoksa okundu olarak işaretle geç \n- makaleyi sesli olarak dinleyebilme (güçlü yazıdan ses AI modellerini kullanarak, robotik sesle değil) \n- telefonumdaysam mobil uygulamamı kullanarak ya podcast gibi sesli dinliyorum, ya da tahmini okuma süresini görerek o an ne kadar vaktim varsa uygun linke tıklayıp okuyorum \n- hızlı arama: günü geçen ya da okunan link listemden kayboluyor, arınmış hissediyorum 😀 ama arama yaptığımda karşıma çıkıyor, yani birşey bulmak istediğimde listemde olmamasına rağmen 1-2 saniye içerisinde bulabiliyorum \n- mobilde offline okuma: yazılar cihaza kaydoluyor, internet bağlantım zayıf ya da yoksa okumaya devam edebiliyorum",
+        "engagement_score": 1307.62,
+        "like_count": 701,
+        "retweet_count": 24,
+        "reply_count": 9,
+        "impression_count": 186611,
+        "created_at": "2024-04-07 15:14:18+00:00"
+      },
+      {
+        "text": "öğrenme daha çok para kazanma ihtimalini arttırıyor. fazla para da (finansal özgürlük) öğrenmeyi önceliklendirebilmeni sağlıyor. bir döngü. eğer hali hazırda zengin değilsen döngüyü başlatan unsur genellikle öğrenmek oluyor, yani öğrenmeyi önceliklendirmek. https://t.co/8PxhY2j3Fv",
+        "engagement_score": 1302.28,
+        "like_count": 518,
+        "retweet_count": 34,
+        "reply_count": 7,
+        "impression_count": 73876,
+        "created_at": "2023-08-01 22:34:50+00:00"
+      },
+      {
+        "text": "yazilimda yeni kisiler zaten kaygili, daha cok kaygilandirmak istemiyorum ama bir an once sr noktasina gelmeleri lazim. bunu egitimle yapamazsin, geriye pratik kaliyor. kendi projende, oluyorsa staj, daha iyisi part time ya da full time, bir sekilde ucundan yakalayip zorlamak lazim.",
+        "engagement_score": 1269.57,
+        "like_count": 682,
+        "retweet_count": 15,
+        "reply_count": 21,
+        "impression_count": 223007,
+        "created_at": "2025-02-06 23:29:56+00:00"
+      },
+      {
+        "text": "tr'de ikinci el arac sektoru bu kadar hareketliyken arac fiyatlarini sitelerden scrape edip marka, model, trim, km, kondosyona gore fiyat gosteren bi uygulama niye yok? amerika'da kelley blue book var, direk goruyorsun ney kac paraya gidiyor",
+        "engagement_score": 1182.31,
+        "like_count": 424,
+        "retweet_count": 6,
+        "reply_count": 47,
+        "impression_count": 147544,
+        "created_at": "2026-01-02 18:59:22+00:00"
+      },
+      {
+        "text": "kod yazmanin maliyeti 0'a yaklasirken yazilimcilar icin ofiste calismak hem finansal olarak hem kariyer olarak daha ilgi cekici hale gelir mi dersiniz? ayni ortamda bulunma ve daha guclu isbirligi (collaboration) cok onem kazanacak diye dusunmeye basladim.",
+        "engagement_score": 1026.67,
+        "like_count": 488,
+        "retweet_count": 3,
+        "reply_count": 35,
+        "impression_count": 87017,
+        "created_at": "2025-01-25 19:17:59+00:00"
+      },
+      {
+        "text": "sektorunde saglam yer edinmis kisilerin gecmisine bakinca benzer dusunce yapisiyla hareket ettigini goruyorsun. bu herkese uygun degil, herkesten bunlari yapmasi da beklenilmiyor. ama bu sekilde dusunen ve hareket eden bir grup insanin yine bu sekilde dusunen insanlarla calisma istegi garip gelmemeli.\n\nben de mulakat surecinde sirketin ve benim beklentilerimi, adayin takimima girdigi takdirde nelerle karsilacagini acik acik belirtmeye calisiyorum. kimse surpriz yasamak istemez.",
+        "engagement_score": 984.87,
+        "like_count": 391,
+        "retweet_count": 6,
+        "reply_count": 35,
+        "impression_count": 310178,
+        "created_at": "2023-08-09 21:17:50+00:00"
+      },
+      {
+        "text": "https://t.co/KnB4AAjF2n",
+        "engagement_score": 969.2,
+        "like_count": 471,
+        "retweet_count": 19,
+        "reply_count": 8,
+        "impression_count": 46808,
+        "created_at": "2026-02-20 14:15:54+00:00"
+      },
+      {
+        "text": "7000 iş başvurusu ve sonuç yok! \n\ntecrübesi olanlar: sektöre giriş yapmaya çalışanlar için tavsiyeniz nedir?\n\nönümüzdeki senelerde mezun olan/olacak devasa grup için ön görünüz nedir? \n\nsistem bu kaynağı ne formda yararlanabileceği iş gücüne dönüştürecek?",
+        "engagement_score": 941.73,
+        "like_count": 266,
+        "retweet_count": 8,
+        "reply_count": 38,
+        "impression_count": 107419,
+        "created_at": "2025-12-27 19:04:57+00:00"
+      },
+      {
+        "text": "düşünsene 10 sene önce elinde claude code ya da codex var, ama başka kimsede yok. kimse bilmiyor. ne yapardın, nasıl kullanırdın? 😀",
+        "engagement_score": 939.86,
+        "like_count": 334,
+        "retweet_count": 1,
+        "reply_count": 43,
+        "impression_count": 65899,
+        "created_at": "2026-02-27 17:06:48+00:00"
+      },
+      {
+        "text": "cursor kullansa 2 dk surmezdi.",
+        "engagement_score": 928.92,
+        "like_count": 693,
+        "retweet_count": 6,
+        "reply_count": 8,
+        "impression_count": 82236,
+        "created_at": "2024-12-24 17:03:34+00:00"
+      },
+      {
+        "text": "prod'daki uygulamaların hata log'undan fix geçme arasındaki süre neredeyse yok oldu. \n\nsentry yerine betterstack kullanmaya başladım. AI prompt diye bir şey yapmışlar, sana direk hazır prompt'u veriyor. claude code vs içerisine yapıştır yapıp entera basıyorsun, hemen hemen her defasında one-shot çözüyor.\n\nprompt yaklaşık 200 satır, içerisinde hatayla alakalı her detay var - yapılan istekler, sayfa bilgisi, tıklanılan şeyler vs.\n\nbir sonraki seviye prod'da oluşan her bir hata için otomatik PR açtırtmak. review edip merge, sonrası prod temiz.\n\nvibely'deyken sentry'de binlerce hata beklerdi de bir türlü sıra gelmezdi :D",
+        "engagement_score": 922.73,
+        "like_count": 436,
+        "retweet_count": 13,
+        "reply_count": 16,
+        "impression_count": 39516,
+        "created_at": "2026-03-03 12:56:54+00:00"
+      }
+    ],
+    "all_original_tweets": [
+      {
+        "text": "binlerce özgeçmiş inceledim, iş başvurusu değerlendirdim. kişilerin kendini tam anlamıyla sunamaması, deyim yerindeyse kendini pazarlayamaması, basit detaylardan ötürü kendilerine şans verilmiyor olması bir gerçek. iş başvurusu yapıyorsun şunlara dikkat etmeni öneriyorum:",
+        "engagement_score": 16904.9,
+        "like_count": 6424,
+        "retweet_count": 506,
+        "reply_count": 16,
+        "impression_count": 803404,
+        "created_at": "2022-12-31 02:58:48+00:00"
+      },
+      {
+        "text": "sonra okurum diye laptop ve telefonda yuzlerce chrome tab acik. raindrop, pocket falan kullandim, bitiremedim. boyle bir probleminiz varsa siz nasil cozuyorsunuz?",
+        "engagement_score": 5198.45,
+        "like_count": 1234,
+        "retweet_count": 56,
+        "reply_count": 209,
+        "impression_count": 338105,
+        "created_at": "2024-04-01 06:56:17+00:00"
+      },
+      {
+        "text": "günümüzün süper güçleri:\n\n- kendini kontrol edebilme (öz disiplin)\n- düşünce yapını değiştirebilme\n- olayları kişisel algılamama\n- haklı olduğunu kanıtlama ihtiyacı duymama\n- ilişkilerini özenle seçme\n- sakin kalabilme\n- yalnız kalıp yalnız hissetmeme\n- konforsuzlukla barışık olma\n- kendi başına düşünebilme",
+        "engagement_score": 4143.98,
+        "like_count": 1332,
+        "retweet_count": 133,
+        "reply_count": 3,
+        "impression_count": 53100,
+        "created_at": "2026-01-04 19:30:39+00:00"
+      },
+      {
+        "text": "iddia: ai/yapay zekanın etkisi sanayi devriminden binlerce kat büyük olacak.\n\n2025–2035 için olası bir senaryo:",
+        "engagement_score": 2808.11,
+        "like_count": 1207,
+        "retweet_count": 56,
+        "reply_count": 35,
+        "impression_count": 422107,
+        "created_at": "2026-01-07 11:19:12+00:00"
+      },
+      {
+        "text": "işimden istifa ettim! bu cuma son günüm. 4-5 takıma, 20-25 kişiye yöneticilik yapıyor olmak, sürekli artan sorumluluklar baya öğretici tecrübeydi.\n\nfakat ai/llm alanındaki gelişmeler inanılmaz ilgimi çekiyor, şimdi değilse ne zaman dedim. daha fazla vakit kaybetmeyi göze alamadım.\n\nelimde bir fikir, prototip, yatırım vs yok. kendime 1 sene vereceğim ve farklı şeyleri deneyeceğım. bu süreçte youtube'da canlı yayınlarda, videolarda bol bol görüşürüz diye umuyorum 😀",
+        "engagement_score": 2384.99,
+        "like_count": 1451,
+        "retweet_count": 11,
+        "reply_count": 52,
+        "impression_count": 299537,
+        "created_at": "2024-11-25 20:47:10+00:00"
+      },
+      {
+        "text": "ai/yapay zeka meslek tanımlarını inanılmaz bir hızda değiştiriyor.\n\nşu an iyi bir kariyer için tek bir tavsiye verecek olsam şu olurdu: herşeyi bırak, önce 'high agency' biri olmaya çalış.\n\nnasıl:",
+        "engagement_score": 2369.43,
+        "like_count": 968,
+        "retweet_count": 58,
+        "reply_count": 17,
+        "impression_count": 206030,
+        "created_at": "2026-01-08 10:34:27+00:00"
+      },
+      {
+        "text": "her gecen gun daha fazla ikna oluyorum. kodlama ogrenmektense konseptleri kavramak, dusunmeyi ogrenmek, kompleks problemi parcalara bolup, insanlara ve makinelere is yaptirabilmek daha kritik hale geliyor.",
+        "engagement_score": 2080.21,
+        "like_count": 947,
+        "retweet_count": 41,
+        "reply_count": 22,
+        "impression_count": 128630,
+        "created_at": "2025-03-27 19:54:19+00:00"
+      },
+      {
+        "text": "5-10 senede yazılım dünyasının ve geliştiricilerin sorumluluklarının kökten değişeceğine inanıyorum.\n\nhala cursor, v0, windsurf, bolt, devin gibi servisleri kullanarak bir proje geliştirmediyseniz bugün her şeyi bırakın, basit bir proje geliştirin.\n\ngeçtiğimiz 1-2 senedir bu alandaki gelişmeleri değerlendirip, 3-5 seneye neler olacak fikir yürütmeye çalışın.",
+        "engagement_score": 2005.41,
+        "like_count": 1002,
+        "retweet_count": 39,
+        "reply_count": 16,
+        "impression_count": 285094,
+        "created_at": "2024-12-22 08:07:18+00:00"
+      },
+      {
+        "text": "bir yazılımcı yol haritası.\n\nbilgisayar mühendisliği 1. sınıf öğrencisi akrabam ile düzenli görüşüp yazılımcı olma yolunda eforlarını takip edip, destekleyeceğim. hem onu daha motive etmek hem de başkalarının da faydalanması için gidişatı buradan da paylaşayım dedim. #birmuhendis https://t.co/kI9pKICa6F",
+        "engagement_score": 1728.55,
+        "like_count": 776,
+        "retweet_count": 41,
+        "reply_count": 9,
+        "impression_count": 128346,
+        "created_at": "2023-12-08 19:18:57+00:00"
+      },
+      {
+        "text": "olay şuraya gidiyor:\n\nyazılımdan anlamayıp kullanıcı/müşteri problemlerini iyi çözebilen &gt; üründen anlamayan iyi yazılımcı",
+        "engagement_score": 1515.57,
+        "like_count": 687,
+        "retweet_count": 14,
+        "reply_count": 39,
+        "impression_count": 50075,
+        "created_at": "2026-02-22 23:37:00+00:00"
+      },
+      {
+        "text": "yazilim alani icin universite egitimi ve not ortalamasini onemli buluyordum fakat son bir senede fikrim cok degisti. 4 sene universite egitimi o kadar uzun ki, ustelik hocalar genelde birak 1-2 seneyi, 10-20 sene onceki trendlere hakim ve mufredatlar yenilenmiyor. \n\nsuan dusuncem ortalaman 2-2.5 altina dusmesin, her hafta bir uygulama bas. yeni araclari kullanarak eskiden 5 senede gelinen senior seviyesine bir kac senede gel ve mezun oldugunda en kotu mid-level, idealde senior seviyesinde ol. \n\ntabi senior beklentileri de cok yukselecegi icin suanin sr seviyesi ile 4 sene sonra sr denildigine anlasilan da farkli olacak, ama daha iyi bir plan dusunemiyorum.",
+        "engagement_score": 1515.26,
+        "like_count": 680,
+        "retweet_count": 26,
+        "reply_count": 23,
+        "impression_count": 231355,
+        "created_at": "2025-01-21 08:47:12+00:00"
+      },
+      {
+        "text": "\"İçinde bulunduğun durum ya da şirket ne olursa olsun, elinden gelenin en iyisini yap. Onlar için değil, kendin için. Hoşnutsuzluğu kendini geliştirmek için motivasyona dönüştür. Ardından fırsat kendini gösterdiğinde fırsatı değerlendir ve daha iyi tarafa geç.\"\n\nhttps://t.co/eVIgIb7HwD",
+        "engagement_score": 1477.56,
+        "like_count": 540,
+        "retweet_count": 36,
+        "reply_count": 16,
+        "impression_count": 558882,
+        "created_at": "2023-07-25 02:04:19+00:00"
+      },
+      {
+        "text": "isimden istifa edip, tamamen yazilim alaninda ai/llm gelismelerine odaklandigim bu donemde dahi twitter ve diger sosyal aglarda olan icerikleri tukettigimde fomo, yani bir seyleri kacirma korkusu tetikleniyor. ben cozumu tuketmeyi birakip uretmekte buluyorum. benzer hisleri yasiyorsaniz size de bunu tavsiye ediyorum. proje gelistir, bir seyler uret ve surece guven 👍",
+        "engagement_score": 1471.78,
+        "like_count": 791,
+        "retweet_count": 17,
+        "reply_count": 24,
+        "impression_count": 72155,
+        "created_at": "2025-01-03 16:43:50+00:00"
+      },
+      {
+        "text": "\"bir şirket onlarca claude code'u 7x24 çalıştırdığı, claude'in şuankinden 1000 kat daha az insan input'u gerektirdiği bir dünyada, çalıştığım şirket bana ne için para ödüyor olacak?\"",
+        "engagement_score": 1459.72,
+        "like_count": 253,
+        "retweet_count": 8,
+        "reply_count": 77,
+        "impression_count": 67965,
+        "created_at": "2026-01-27 17:16:28+00:00"
+      },
+      {
+        "text": "yazılımcının rolü operatörden (yapan) orkestra şefine (planlayan, yöneten) döndü. \n\nstartup founder'ı olarak şu an beklentim arka planda 7x24 agent çalışacak, kod yazacak. hiç boş durmayacak. \n\nroadmap'i implement etsin. task bitti mi, önerileri de bulunsun. refactor yapsın, test eklesin. bug bulsun, çözsün. \n\nslack, mesaj, telefon araması ile bana ulaşsın, konuşalım, gereksinimleri tartışalım, hep ilerlesin. takıldığında bana ulaşsın.\n\nbinlerce test yazsın, sürekli güncel tutsun. değişiklik yaparken ekran görüntüsü paylaşsın, feedback vereyim.\n\ntech tarafında eng takımı sürekli bunların arkasını toplasın, çıktısını kontrol etsin. agent'ların flowlarını optimize etsin. kaliteden ödün vermeden 1 agent'tan 100'e nasıl çıkarız ona kafa yorsun. \n\nclaude code tarzı bir agent'in çalışmadığı her dakikayı ciddi kayıp olarak görmeye başladım. aylık $200 hiç birşey değil. \n\nşuanki tech (bknz ralph wiggum loop) buna ucundan müsade ediyor, 3 ay sonra akacak. yalnız böyle bir sistem ve codebase'de altyapı oturtması hala sıkıntı.\n\nbunu okuyup sen ne diyosun bro, yok öyle bir dünya diyorsan başını ellerinin arasına al, iyi bir düşün, değerini kaybedeceksin",
+        "engagement_score": 1359.32,
+        "like_count": 495,
+        "retweet_count": 22,
+        "reply_count": 31,
+        "impression_count": 127531,
+        "created_at": "2026-01-13 10:26:08+00:00"
+      },
+      {
+        "text": "AI'a yaptırdığın kod değişikliklerini test ederken baya zaman kazandıran bir yaklaşım:\n\nilk olarak claude chrome extension yükle ve claude code'u chrome a bağla.\n\nsonra claude code'a görev ver: \n- bu yaptığın değişiklikler için test etmem gereken bütün kombinasyonların listesini çıkar\n- 'http://localhost:3000/' adresine git, şu bilgilerle giriş yap\n- listesini çıkardığın tüm case'leri browser kullanarak test et\n- gerekirse psql ya da api üzerinden login olduğun kullanıcı için db üzerinde değişilikler yapabilirsin ve kullanıcının belli ekranlara/state'lere düşmesini sağlayabilirsin\n\n10 dk, yüzlerce tool calling sonrası test raporunu görüyorsun.\n\nbaya manuel işten kurtarıyor.",
+        "engagement_score": 1333.62,
+        "like_count": 586,
+        "retweet_count": 29,
+        "reply_count": 11,
+        "impression_count": 43042,
+        "created_at": "2026-02-23 12:39:36+00:00"
+      },
+      {
+        "text": "elle, manuel, satır satır kod yazdığın günler aklına gelir\n\nhttps://t.co/AupK9Z77LF",
+        "engagement_score": 1320.78,
+        "like_count": 570,
+        "retweet_count": 25,
+        "reply_count": 16,
+        "impression_count": 22590,
+        "created_at": "2026-02-27 08:45:45+00:00"
+      },
+      {
+        "text": "yüzlerce açık tab ve yer imi birikmesi problemimi çözdüm arkadaşlar! 😀 kendi web, mobil ve chrome uygulamamı kodladım, yazılımcı stili 😀 denemek isterseniz link aşağıda, videosunu da paylaştım.  \n\nçözümüm şu: \n- kaybolan tabler: belli süre içerisinde okunmayan tab uygulamadan kayboluyor, birikmenin önüne geçiyor. 1 aydır tab açık ve okumadıysan zaten okumayacaksındır. \n- chrome'daki linkleri uygulamaya göndermek bir tık: eklenti kullanarak bütün pencereyi, bazı tableri ya da yer imlerini kolayca uygulamaya taşı, orada oku\n- minimalist okuma deneyimi ve temiz arayüz: birbirinden değişik websitelerinden içeriği tüketmek yerine direk uygulamamım içinden dikkat dağıtıcı unsur (reklam vs) olmaksızın rahatça okuyabilme \n- AI ile kolayca özet oluştur, eğer ilgimi çektiyse içeriği tüket, yoksa okundu olarak işaretle geç \n- makaleyi sesli olarak dinleyebilme (güçlü yazıdan ses AI modellerini kullanarak, robotik sesle değil) \n- telefonumdaysam mobil uygulamamı kullanarak ya podcast gibi sesli dinliyorum, ya da tahmini okuma süresini görerek o an ne kadar vaktim varsa uygun linke tıklayıp okuyorum \n- hızlı arama: günü geçen ya da okunan link listemden kayboluyor, arınmış hissediyorum 😀 ama arama yaptığımda karşıma çıkıyor, yani birşey bulmak istediğimde listemde olmamasına rağmen 1-2 saniye içerisinde bulabiliyorum \n- mobilde offline okuma: yazılar cihaza kaydoluyor, internet bağlantım zayıf ya da yoksa okumaya devam edebiliyorum",
+        "engagement_score": 1307.62,
+        "like_count": 701,
+        "retweet_count": 24,
+        "reply_count": 9,
+        "impression_count": 186611,
+        "created_at": "2024-04-07 15:14:18+00:00"
+      },
+      {
+        "text": "öğrenme daha çok para kazanma ihtimalini arttırıyor. fazla para da (finansal özgürlük) öğrenmeyi önceliklendirebilmeni sağlıyor. bir döngü. eğer hali hazırda zengin değilsen döngüyü başlatan unsur genellikle öğrenmek oluyor, yani öğrenmeyi önceliklendirmek. https://t.co/8PxhY2j3Fv",
+        "engagement_score": 1302.28,
+        "like_count": 518,
+        "retweet_count": 34,
+        "reply_count": 7,
+        "impression_count": 73876,
+        "created_at": "2023-08-01 22:34:50+00:00"
+      },
+      {
+        "text": "yazilimda yeni kisiler zaten kaygili, daha cok kaygilandirmak istemiyorum ama bir an once sr noktasina gelmeleri lazim. bunu egitimle yapamazsin, geriye pratik kaliyor. kendi projende, oluyorsa staj, daha iyisi part time ya da full time, bir sekilde ucundan yakalayip zorlamak lazim.",
+        "engagement_score": 1269.57,
+        "like_count": 682,
+        "retweet_count": 15,
+        "reply_count": 21,
+        "impression_count": 223007,
+        "created_at": "2025-02-06 23:29:56+00:00"
+      },
+      {
+        "text": "tr'de ikinci el arac sektoru bu kadar hareketliyken arac fiyatlarini sitelerden scrape edip marka, model, trim, km, kondosyona gore fiyat gosteren bi uygulama niye yok? amerika'da kelley blue book var, direk goruyorsun ney kac paraya gidiyor",
+        "engagement_score": 1182.31,
+        "like_count": 424,
+        "retweet_count": 6,
+        "reply_count": 47,
+        "impression_count": 147544,
+        "created_at": "2026-01-02 18:59:22+00:00"
+      },
+      {
+        "text": "kod yazmanin maliyeti 0'a yaklasirken yazilimcilar icin ofiste calismak hem finansal olarak hem kariyer olarak daha ilgi cekici hale gelir mi dersiniz? ayni ortamda bulunma ve daha guclu isbirligi (collaboration) cok onem kazanacak diye dusunmeye basladim.",
+        "engagement_score": 1026.67,
+        "like_count": 488,
+        "retweet_count": 3,
+        "reply_count": 35,
+        "impression_count": 87017,
+        "created_at": "2025-01-25 19:17:59+00:00"
+      },
+      {
+        "text": "sektorunde saglam yer edinmis kisilerin gecmisine bakinca benzer dusunce yapisiyla hareket ettigini goruyorsun. bu herkese uygun degil, herkesten bunlari yapmasi da beklenilmiyor. ama bu sekilde dusunen ve hareket eden bir grup insanin yine bu sekilde dusunen insanlarla calisma istegi garip gelmemeli.\n\nben de mulakat surecinde sirketin ve benim beklentilerimi, adayin takimima girdigi takdirde nelerle karsilacagini acik acik belirtmeye calisiyorum. kimse surpriz yasamak istemez.",
+        "engagement_score": 984.87,
+        "like_count": 391,
+        "retweet_count": 6,
+        "reply_count": 35,
+        "impression_count": 310178,
+        "created_at": "2023-08-09 21:17:50+00:00"
+      },
+      {
+        "text": "https://t.co/KnB4AAjF2n",
+        "engagement_score": 969.2,
+        "like_count": 471,
+        "retweet_count": 19,
+        "reply_count": 8,
+        "impression_count": 46808,
+        "created_at": "2026-02-20 14:15:54+00:00"
+      },
+      {
+        "text": "7000 iş başvurusu ve sonuç yok! \n\ntecrübesi olanlar: sektöre giriş yapmaya çalışanlar için tavsiyeniz nedir?\n\nönümüzdeki senelerde mezun olan/olacak devasa grup için ön görünüz nedir? \n\nsistem bu kaynağı ne formda yararlanabileceği iş gücüne dönüştürecek?",
+        "engagement_score": 941.73,
+        "like_count": 266,
+        "retweet_count": 8,
+        "reply_count": 38,
+        "impression_count": 107419,
+        "created_at": "2025-12-27 19:04:57+00:00"
+      },
+      {
+        "text": "düşünsene 10 sene önce elinde claude code ya da codex var, ama başka kimsede yok. kimse bilmiyor. ne yapardın, nasıl kullanırdın? 😀",
+        "engagement_score": 939.86,
+        "like_count": 334,
+        "retweet_count": 1,
+        "reply_count": 43,
+        "impression_count": 65899,
+        "created_at": "2026-02-27 17:06:48+00:00"
+      },
+      {
+        "text": "cursor kullansa 2 dk surmezdi.",
+        "engagement_score": 928.92,
+        "like_count": 693,
+        "retweet_count": 6,
+        "reply_count": 8,
+        "impression_count": 82236,
+        "created_at": "2024-12-24 17:03:34+00:00"
+      },
+      {
+        "text": "prod'daki uygulamaların hata log'undan fix geçme arasındaki süre neredeyse yok oldu. \n\nsentry yerine betterstack kullanmaya başladım. AI prompt diye bir şey yapmışlar, sana direk hazır prompt'u veriyor. claude code vs içerisine yapıştır yapıp entera basıyorsun, hemen hemen her defasında one-shot çözüyor.\n\nprompt yaklaşık 200 satır, içerisinde hatayla alakalı her detay var - yapılan istekler, sayfa bilgisi, tıklanılan şeyler vs.\n\nbir sonraki seviye prod'da oluşan her bir hata için otomatik PR açtırtmak. review edip merge, sonrası prod temiz.\n\nvibely'deyken sentry'de binlerce hata beklerdi de bir türlü sıra gelmezdi :D",
+        "engagement_score": 922.73,
+        "like_count": 436,
+        "retweet_count": 13,
+        "reply_count": 16,
+        "impression_count": 39516,
+        "created_at": "2026-03-03 12:56:54+00:00"
+      },
+      {
+        "text": "yazılımcının ne kadar sr olduğunu nasıl anlarsın? \n\nher şeyi bırakıp bir tarla alayım, bilgisayarı hayatımdan çıkarayım, keyfime bakayım durtüsü ne kadar yüksekse o kadar 😀",
+        "engagement_score": 920.31,
+        "like_count": 502,
+        "retweet_count": 9,
+        "reply_count": 17,
+        "impression_count": 54642,
+        "created_at": "2026-01-27 14:06:40+00:00"
+      },
+      {
+        "text": "istifa edip startup kurmaya karar verdiğimi söylemiştim. detaylar videoda, full versiyon kanalda 🤙 https://t.co/YKZhrulteo",
+        "engagement_score": 883.14,
+        "like_count": 524,
+        "retweet_count": 9,
+        "reply_count": 13,
+        "impression_count": 132051,
+        "created_at": "2024-12-22 07:18:29+00:00"
+      },
+      {
+        "text": "geçen sene gittim, 22 bin dolara bir saas satın aldım. ai kullanarak içerik üretmeye yardım eden bir web uygulaması. müşteriler copywriter'lar, seo ile ilgilenen kişiler. hiç bilmediğim, ilgimi de çekmeyen bir alan. meğer baya rekabet varmış.",
+        "engagement_score": 876.82,
+        "like_count": 546,
+        "retweet_count": 9,
+        "reply_count": 11,
+        "impression_count": 213299,
+        "created_at": "2025-03-19 08:27:17+00:00"
+      },
+      {
+        "text": "youtube canli yayini yapip AI ile (github copilot ve chatgpt) hic bilmedigim bir programlama dili ve framework kullanarak basit bi' uygulama gelistirelim diyorum. hangi teknolojiler ile ne yapalim dersiniz?",
+        "engagement_score": 863.18,
+        "like_count": 331,
+        "retweet_count": 4,
+        "reply_count": 33,
+        "impression_count": 47157,
+        "created_at": "2023-08-18 05:55:06+00:00"
+      },
+      {
+        "text": "📣 takımımda 3 açık pozisyon (remote) var. eğer iş değiştirmeyi düşünüyorsanız, full-stack (js veya ruby)  çalışmak ilginizi çekiyorsa ve ingilizceniz iyiyse başvuru linkleri:\n\nsenior adaylar: https://t.co/xw6rKLqeP1\n\njunior adaylar: https://t.co/QGoU8IkpFD",
+        "engagement_score": 833.17,
+        "like_count": 238,
+        "retweet_count": 29,
+        "reply_count": 1,
+        "impression_count": 133256,
+        "created_at": "2023-08-22 21:47:18+00:00"
+      },
+      {
+        "text": "hissedilen: her fikir yapılmış. hangi alana baksan onlarca saas zaten rekabet içinde.\n\nama elimizde çok hızlı/kolay yazılım geliştirebileceğimiz bir teknoloji var. ona ne kodlatacağız? 😀",
+        "engagement_score": 824.46,
+        "like_count": 387,
+        "retweet_count": 6,
+        "reply_count": 23,
+        "impression_count": 48869,
+        "created_at": "2026-02-23 22:06:14+00:00"
+      },
+      {
+        "text": "düşünsene on sene geçmiş, birine eskiden elle kod yazdığını anlatıyorsun. \"bizim zamanımızda oturur sayfa sayfa kod yazardın, sonra test ederdin. bir uygulama yayınlamak aylar bazen seneler sürerdi.  programlama dilinin, framework'lerin detaylarını öğrenir, bir çok şeyi ezberinde tutardın\"\n\nsektöre yeni girmiş, ai öncesini deneyimlememiş biri için kulağa çılgın gelecek.",
+        "engagement_score": 823.94,
+        "like_count": 336,
+        "retweet_count": 7,
+        "reply_count": 25,
+        "impression_count": 28667,
+        "created_at": "2026-02-26 18:40:27+00:00"
+      },
+      {
+        "text": "çin'den yeni açık kaynak LLM -  kodlama alanında claude sonnet 3.5 (cursor'ın default modeli) kalibresinde belki de üstünde görünüyor. $5-6m harcanmış, bu gpt-4o maliyetinden 10-20 kat daha az. seneleri bırakın önümüzdeki aylarda kodlamada çok daha güçlü modeller göreceğiz!",
+        "engagement_score": 811.59,
+        "like_count": 418,
+        "retweet_count": 14,
+        "reply_count": 8,
+        "impression_count": 63482,
+        "created_at": "2024-12-26 21:41:29+00:00"
+      },
+      {
+        "text": "katılıyorum 👍 kendi topuklarına sıkıyorlar, övülecek bir yanı yok. fazla regulasyon, iş/hayat dengesinın abartılması, rekabetci anlayış olmamasiyla beraber avrupanın son 20 senedeki ekonomik büyümesi amerikanin ve çinin cok gerisinde. https://t.co/Wn9U6Cbm1d",
+        "engagement_score": 796.43,
+        "like_count": 304,
+        "retweet_count": 13,
+        "reply_count": 17,
+        "impression_count": 90579,
+        "created_at": "2024-12-28 06:46:17+00:00"
+      },
+      {
+        "text": "8 sene california, 5 sene hawaii sonrasi 1 senedir eşim ve üç yaşındaki oğlumla TR'de yaşıyorum\n\nAMA (sor bana ne istersen)",
+        "engagement_score": 762.4,
+        "like_count": 598,
+        "retweet_count": 4,
+        "reply_count": 6,
+        "impression_count": 135913,
+        "created_at": "2025-07-03 00:52:53+00:00"
+      },
+      {
+        "text": "aklimda izmirde, evime yakin bir dukkani (50 m2) kiralayip hacker house'a cevirmek var. hem evden calismaktan iyidir, hem aksiyon olsun, isteyen gelsin, hackathonlar, etkinlikler yapalim. startup kafasinda insanlar gelsin, projeleri ustunde calissin falan.\n\nkucuk capta, zevkine benzer birseyler yapan var mi? danismak isterim. \n\nbir de tr'de sirket acma, muhasebe vs hic anlamiyorum. mukellef diye bir site var, oradan ltd sirketi acip yapmak mantikli mi? \n\nsehir merkezine uzak (foca), o biraz sikinti. bir de fiziksel isler, derdi cok olur mu",
+        "engagement_score": 748.3,
+        "like_count": 191,
+        "retweet_count": 2,
+        "reply_count": 38,
+        "impression_count": 40006,
+        "created_at": "2026-01-08 20:40:03+00:00"
+      },
+      {
+        "text": "bu aralar ai coding hype'ı ve önümüzdeki aylarda geleceği yer için beni karamsar yapan bir şey var.\n\ncode generation ne kadar hızlı ve tutarlı olsa da sistemi hala maintain eden ve kreatif süreci yöneten şey insan olduğu için akımın önünde çok büyük bir engel var. \n\nzaten insanların genel olarak odak süresi çok düşük, ai'ın kod çıktısı üretmesini beklerken hep başka şeylerle meşgul oluyorsun (benim için genelde bir şey okumak ya da podcast dinlemek). böyle olunca beyin uygulama context'inden ve gereksinimlerden iyice uzaklaşıyor. kısa süre sonra kendi yaptığın şeye yabancı oluyorsun. elle kod yazma geçirdiğin süreyi uzattığı için düşünmeye ve kafanda güçlü bir bağlam haritasını oluşturmayı mümkün kılıyordu. \n\nai-heavy/vibe coding 0'dan 0.9'a güzel getiriyor. 0.9'dan 1'e yani yayına alacak bir noktaya getirmek hala kolay değil.\n\nasıl iş zaten yayına aldıktan sonra başlıyor. yayına aldığın an bin bir türlü edge case var. mevcut kullanıcılar, onların datası. hele finansal uygulama ya da benzeri kritik bir sistemse iş daha da ürkütücü. vibe coding'i yavaşlatman gerekiyor ama tembelliğe bir kez alışınca ipin ucu hızlı kaçıyor. içten içe yavaşlatmak istemiyorsun. bunu etkili çözebilen ürünler, startup'lar bakalım çıkacak mı.\n\nşuan bir geçiş dönemindeyiz. bu döneminde llm çıktısını hızlıca anlayabilen, neleri yapıp neleri yapamayacağını içselleştiren, insan doğasına bir tık aykırı bu mental engelleri aşabilenler değer bulacak. \n\ntabi bunu başardığın an sonraki (ve daha büyük engel ise) bir geliştirici gibi düşünmeyi gerektiği zaman bırakıp, product manager şapkasını takabilmen ve bunu etkili yapabilmen olacak. \n\nzor zamanlar 😀",
+        "engagement_score": 742.77,
+        "like_count": 249,
+        "retweet_count": 6,
+        "reply_count": 27,
+        "impression_count": 22325,
+        "created_at": "2026-02-09 16:18:20+00:00"
+      },
+      {
+        "text": "artık çok büyük şirketler dışında özelleşmiş rollerde (örn. ios dev) geliştirici alınacağını hiç düşünmüyorum. şuan herkes full-stack rollere itiliyor. roller sıkışıyor, teknik spektrum eskisi kadar geniş değil.",
+        "engagement_score": 725.53,
+        "like_count": 376,
+        "retweet_count": 3,
+        "reply_count": 21,
+        "impression_count": 47724,
+        "created_at": "2026-02-25 14:04:44+00:00"
+      },
+      {
+        "text": "gelistirilen yardim projelerin bir listesi:\nhttps://t.co/NN0sArhGUu\n\nkalacak yer bulma, yardim talepleri ve fazlasi icin linkler var.",
+        "engagement_score": 676.71,
+        "like_count": 118,
+        "retweet_count": 27,
+        "reply_count": 1,
+        "impression_count": 18803,
+        "created_at": "2023-02-10 08:28:18+00:00"
+      },
+      {
+        "text": "her yazilimcinin onune ayni seyler dusuyor 😀",
+        "engagement_score": 671.95,
+        "like_count": 448,
+        "retweet_count": 6,
+        "reply_count": 7,
+        "impression_count": 32309,
+        "created_at": "2026-01-25 20:16:22+00:00"
+      },
+      {
+        "text": "bir yazılımcı yol haritası.  \n\nbölüm 2: alan seçti, kurs ve kitap kaynakları temin etti. serüven başliyor! #birmuhendis https://t.co/169C9Y0loF",
+        "engagement_score": 658.46,
+        "like_count": 334,
+        "retweet_count": 14,
+        "reply_count": 3,
+        "impression_count": 57953,
+        "created_at": "2023-12-26 05:33:53+00:00"
+      },
+      {
+        "text": "birçoğumuz gibi openai kurucusu da AI'ın ilk önce fiziksel dünyadaki, tekrar eden, vasıfsız, işçilik odaklı, dijital değer çıktısı az kısımları elimine edeceğini düşünmüş. \n\nyazılım, tasarım, ürün geliştirme gibi şeyler kreatif bir süreç, insanlarin yerini almak zor diye düşünüyorsun. durum tam tersi. geçen arabayı saniyeye götürünce daha iyi farkettim ki masa başındakilerin işi daha zor olacak 😀",
+        "engagement_score": 645.54,
+        "like_count": 315,
+        "retweet_count": 7,
+        "reply_count": 14,
+        "impression_count": 140738,
+        "created_at": "2024-12-27 09:28:09+00:00"
+      },
+      {
+        "text": "son 1 senede genel iş ilanlarında yuzde 6 düşüş, yazılım geliştirici ilanlarında yüzde 10 artış. \n\nnasıl yorumluyorsunuz?",
+        "engagement_score": 636.13,
+        "like_count": 242,
+        "retweet_count": 2,
+        "reply_count": 26,
+        "impression_count": 54568,
+        "created_at": "2026-02-23 20:04:34+00:00"
+      },
+      {
+        "text": "vibe design yapayim dedim, prompt yazip figma tarzi design'a doken arac neredeyse yok. google'in var, fena degil ama resim uretir gibi yapiyor, editleyebilecegim bir sey degil. \n\nbutun sirketler kod uretip prototip yapma pesinde. sonra claude code ile static app yaptirdim, cok daha hizli/kolay ilerledi. \n\ngorunen o ki genel gorus klasik tasarimi esgecip, prototip ustunden tasarlama. yazilimcilari konusup duruyoruz ama tasarimcilar mesleklerinin gelecegi icin ne dusunuyor acaba.",
+        "engagement_score": 627.31,
+        "like_count": 145,
+        "retweet_count": 3,
+        "reply_count": 31,
+        "impression_count": 29269,
+        "created_at": "2026-01-11 08:52:56+00:00"
+      },
+      {
+        "text": "yeni bir uygulama için 50-100 küsur saat harcayıp güzel bir prototip ile deneyimi çok farklı açılardan test ettikten sonra tüm kodu çöpe atıp, öğrendiklerimizin ışığında daha iyi bir versiyonunu baştan yazdırmaya (claude code) karar verdik. \n\nbu eskiden yapamayacağım bir şeydi. eldekini refactor etmeye çalışmakla vakit kaybedip, yeni yaklaşım için ideal olmayan yapıyla canlıya çıkmak, uzun vadede bunu maintain etmeye uğraşmak gerekecekti. \n\nkod yazma maliyetinin yüzlerce kat ucuzlaması güzel.",
+        "engagement_score": 616.06,
+        "like_count": 248,
+        "retweet_count": 4,
+        "reply_count": 21,
+        "impression_count": 36613,
+        "created_at": "2026-01-19 11:06:26+00:00"
+      },
+      {
+        "text": "surdugum araba dacia sandero, telefon hattim bimcell. fiyat/performans urunlerini kullanmanin ilginc bir zevki var  😀 alabileceginin bir iki tik altinda hareket edip parayi ya deneyime  harcamak ya da yatirimda kullanmak guzel. \n\ntabi, lamboya fiyat/performans diyecegimiz gunleri gormek guzel olur 😀😀",
+        "engagement_score": 605.15,
+        "like_count": 373,
+        "retweet_count": 2,
+        "reply_count": 14,
+        "impression_count": 74225,
+        "created_at": "2025-08-11 23:37:19+00:00"
+      },
+      {
+        "text": "CANLI YAYIN! Yarin (cumartesi) 21:00'da canli yayinda Cursor ve diğer AI araçlarını kullanıp 1-2 saat içinde eğlenceli bir projeyi hayata geçirecegiz! Proje önerilerinizi yorumlarda bekliyorum.\n\nAşağıdaki linkten hatırlatıcı kurabilirsiniz, görüşmek üzere!",
+        "engagement_score": 600.26,
+        "like_count": 282,
+        "retweet_count": 9,
+        "reply_count": 10,
+        "impression_count": 55120,
+        "created_at": "2024-12-27 08:42:15+00:00"
+      },
+      {
+        "text": "lcw şu maskotu geri getirip 25-40 yaş segmentine cool bir konsept, tişört falan yapsa güzel olur sanki. çocukken bunu görünce çok hoşuma giderdi. sınırlı sayıda, sadece online satış. https://t.co/HI85IbBvWg",
+        "engagement_score": 571.22,
+        "like_count": 423,
+        "retweet_count": 1,
+        "reply_count": 9,
+        "impression_count": 36349,
+        "created_at": "2025-09-26 15:53:20+00:00"
+      },
+      {
+        "text": "tam olarak böyle ya. codex/claude code çıktısı review ederken:\n\nhttps://t.co/6WGQmJf2NW",
+        "engagement_score": 570.69,
+        "like_count": 302,
+        "retweet_count": 7,
+        "reply_count": 9,
+        "impression_count": 24918,
+        "created_at": "2026-02-16 12:30:11+00:00"
+      },
+      {
+        "text": "aklına süper bir fikir geldi. hemen bu yeni side project için şıkır şıkır bi' domain aldın, bam bam vibe code'luyosun. taaak, tek prompt'ta ui'ları bastın. uygulama tıkır tıkır çalışıyor. bug var mı yok mu, değişiklikleri main'e pushlayınca ne olacak düşünmüyorsun. test falan zaten yok. satış, müşteri bulma kısmı aklının ucundan geçmiyor. etrafına bakıyorsun, renkler canlı, içtiğin suyun tadı bir farklı geliyor. bu dünyada senden daha iyi bir girişimci, geliştirici gelmiş mi? yok. başın dik yürüyorsun. biri nasılsın mı dedi, cevap belli. iyiyim, unicorn'umu büyütüyorum, yoğun geçiyor. başını yastığa koyduğunda düşünmeden edemiyorsun, hayat ne kadar güzel?",
+        "engagement_score": 566.41,
+        "like_count": 280,
+        "retweet_count": 2,
+        "reply_count": 18,
+        "impression_count": 49481,
+        "created_at": "2026-02-24 12:14:15+00:00"
+      },
+      {
+        "text": "yazılımcılar ve mesleğin geleceği için: \"çıktılar alışık olduğumuzun çok üstünde olacak. bazı yazılımcılar öyle fikirlerle gelecek ki tüm endüstrileri baştan yazacaklar. işlerin nasıl yürüdüğünü sıfırdan tanımlayacaklar, ve kullandıkları botlar/ai agent'lar sayesinde sahip oldukları kapasiteyi maksimum şekilde kullanabilecekler. her bir meslek grubu yazılımcılar tarafından tek tek yutulacak.\"",
+        "engagement_score": 553.92,
+        "like_count": 214,
+        "retweet_count": 10,
+        "reply_count": 10,
+        "impression_count": 26135,
+        "created_at": "2026-02-23 22:44:23+00:00"
+      },
+      {
+        "text": "iki sene once mini emeklilik sonrasi @joinvibely sirketine CTO olarak girmistim. epey bir caba sonucunda buyuk bir firma tarafindan satin alindik. cok inisli cikisli bir yolculuktu. 5-10 videodan olusan mini seri altinda ogrendiklerimi paylasmak istiyorum ama henuz firsat bulamadim.\n\nTeri, vibely'nin kurucusu, satin alinmanin hikayesini kendi kanalinda paylasti. merak ediyorsaniz bir bakin, baya guzel video olmus:\n\nhttps://t.co/ElxTzBS412",
+        "engagement_score": 548.17,
+        "like_count": 306,
+        "retweet_count": 10,
+        "reply_count": 3,
+        "impression_count": 104391,
+        "created_at": "2023-08-08 18:56:31+00:00"
+      },
+      {
+        "text": "yazilimci olup bilgisayardan cok telefondan/tabletten gelistirme yapan var mi? neler kullaniyorsunuz? flow nasil?\n\nclaude code'dan verim aliniyor mu? saniyorum ci/cd pipeline ve testler onem kazaniyor. kod degisikliklerini review etmesi zor",
+        "engagement_score": 531.15,
+        "like_count": 98,
+        "retweet_count": 2,
+        "reply_count": 29,
+        "impression_count": 41328,
+        "created_at": "2026-01-13 09:45:42+00:00"
+      },
+      {
+        "text": "ai ile kod yazma araclarinin bu gunku durumunu guzel ozetleyen bir yazi.",
+        "engagement_score": 511.22,
+        "like_count": 275,
+        "retweet_count": 11,
+        "reply_count": 1,
+        "impression_count": 53610,
+        "created_at": "2024-12-24 18:30:12+00:00"
+      },
+      {
+        "text": "\"başarı işe heyecanla gidip eve heyecanla dönmektir\"\n\nnası söz ama",
+        "engagement_score": 487.56,
+        "like_count": 226,
+        "retweet_count": 4,
+        "reply_count": 13,
+        "impression_count": 19297,
+        "created_at": "2025-01-26 17:17:30+00:00"
+      },
+      {
+        "text": "insan kariyer ve girisimcilik noktasinda AI ile gelen seceneklerin coklugu karsisinda ne yapacagini sasiriyor, bir sey yapamadan kalakaliyor",
+        "engagement_score": 482.97,
+        "like_count": 237,
+        "retweet_count": 4,
+        "reply_count": 12,
+        "impression_count": 30490,
+        "created_at": "2025-01-25 20:28:17+00:00"
+      },
+      {
+        "text": "uygulamalarin yuzde 20'si 2 sene icerisinde $1,000 gelire ulasiyor, yalnizca yuzde 5'i $10,000 yapiyormus. uygulama ustunden para yapmak zorlasiyor. https://t.co/zCHmBs2V3y",
+        "engagement_score": 473.55,
+        "like_count": 249,
+        "retweet_count": 5,
+        "reply_count": 9,
+        "impression_count": 40587,
+        "created_at": "2025-03-20 12:45:09+00:00"
+      },
+      {
+        "text": "AI sonrası ben ne yapacağım? daha güzel özetlenemezdi.\n\nkendini belirsizliğe alıştır, pratiğini yap. sadece tanımlanmış jira ticketlarını değil işin başını (karar alma) ve sonucunu da sahiplen. ancak o zaman sektörde değer bulabileceksin. execution kısmını AI'da zaten. \n\nha on sene sonra bu da geçersiz olabilir, fakat sonraki aşamadaki değişiklikleri kimse tahmin edemiyor. şuan ki en iyi tavsiye bu.",
+        "engagement_score": 466.53,
+        "like_count": 209,
+        "retweet_count": 8,
+        "reply_count": 7,
+        "impression_count": 34231,
+        "created_at": "2025-12-26 11:56:41+00:00"
+      },
+      {
+        "text": "cloudflare gibi bir firma bile claude code'dan nasibini alıyor 😀 60 milyar dolar üstü market hacmine sahip ama yeni yayınlanan claude code security ürünü bugün hissesinde %7 üzerinde düşüşe sebep oldu. crowdstrike gibi benzeri rakipleri daha da kötü etkilendi. claude code'un bu yeni *özelliğinin* toplam market hacmi etkisi on milyarlarca dolar 🤯",
+        "engagement_score": 463.05,
+        "like_count": 191,
+        "retweet_count": 4,
+        "reply_count": 14,
+        "impression_count": 31476,
+        "created_at": "2026-02-20 22:52:12+00:00"
+      },
+      {
+        "text": "vibe coding yarismasi, hem de canli yayinda! kim kazanir dersiniz 😀\n\ntwit'teki linkten hatirlatici kurabilirsiniz\n\nbu arada ne tur bir kodlama gormek istersiniz? heyecanli bir hale getirelim",
+        "engagement_score": 461.61,
+        "like_count": 238,
+        "retweet_count": 5,
+        "reply_count": 9,
+        "impression_count": 54837,
+        "created_at": "2026-02-04 12:55:04+00:00"
+      },
+      {
+        "text": "startup'ımda AI ile bugfix sürecini otomatize etmeye çalışıyoruz. kalite problemi yaşadığımız noktalar var 🥺 eğer QA/test tecrüben varsa, ve AI ile birleştirmek istiyorsan aşağıdaki formu doldur, konuşalım! part-time başlayıp, iki taraf memnun kaldığı takdirde full-time bam bam",
+        "engagement_score": 457.6,
+        "like_count": 228,
+        "retweet_count": 6,
+        "reply_count": 8,
+        "impression_count": 68926,
+        "created_at": "2025-03-18 10:38:07+00:00"
+      },
+      {
+        "text": "nasildi yayin? baya uzun zaman sonra yaptik. 2 bin anlik izleyiciye ulasmisiz, butun yayin binin altina dusmedi. \n\nprojeler eglenceliydi, ama ai model train ederken cursor patlatti bizi biraz. epey uzunca bir sure sohbet edip optimal parametreleri bulmak lazimdi. olsun, ikinci projede bayrakla kapanis iyidi 😀🇹🇷",
+        "engagement_score": 440.11,
+        "like_count": 201,
+        "retweet_count": 1,
+        "reply_count": 16,
+        "impression_count": 30675,
+        "created_at": "2024-12-29 00:36:51+00:00"
+      },
+      {
+        "text": "artik piyango kazanma ihtimali daha yuksek. ancak yasadigin niche bir problem olur, onu guzelce cozersin, sans yaver gider, belki. sensor tower'dan bakip zor",
+        "engagement_score": 437.08,
+        "like_count": 221,
+        "retweet_count": 6,
+        "reply_count": 7,
+        "impression_count": 64547,
+        "created_at": "2026-01-17 17:56:16+00:00"
+      },
+      {
+        "text": "bir sure izmirdeyim. gitmeyi planladiginiz, yaklasan yazilim etkinlikleri neler? yazilim dunyasinin nabzini nerde tutabilirim? 😀",
+        "engagement_score": 429.24,
+        "like_count": 84,
+        "retweet_count": 1,
+        "reply_count": 24,
+        "impression_count": 37528,
+        "created_at": "2024-08-16 18:19:09+00:00"
+      },
+      {
+        "text": "AI'a kod yazdırarak video oluşturmak için süper bir yol buldum. 15 dakikada çok iyi iş çıkartıyor, yaptığı video aşağıda.\n\nkendi startup'ım için uygulama içerisinde kullanıcıyı selamlayan, süreci anlatan bir video yapmak istedim. manuel yapsam edit yapmayı bildiğim halde en az 5-10 saatlik iş. aşağıdaki video için toplasan 20 dk dikkatimi vermişimdir. bu twit'i yazması daha uzun sürdü 😀\n\nclaude code ürünü anlayıp video metnini yazıyor, benim sesimle 😎 seslendiriyor, sahne planlaması, animasyonları hallediyor, arkaya müzik ekliyor, render alıp videoyu oluşturuyor, sayfaya güzelce koyuyor. çok yüksek kalite bir prodüksiyon değil, ama bir prompt ve 20-30 mesajlaşma için baya iyi.\n\nsüper bi' detay, yazılım ürününüz için yapıyorsanız: direk codebase'deki componentleri (react vs.) kullanıp videoyu oluşturabiliyor. yani ürün arayüzünü anlayıp, güzel kısımları videoya minimalist şekilde koyabiliyor. örn. aşağıdaki videoda feedback card'ı bu şekilde aldı.\n\nadımlar:\n\nilk başta remotion skill'i yüklüyorsun: 'npx skills add remotion-dev/skills'\n\nsonra claude code'a şunları söylüyorsun:\n- remotion kullanarak bir video oluşturacağız\n- codebase'i incele, ürünü anla ve welcome videosu için transcript hazırla\n- eleven labs api kullanarak timestamp'li seslendirme al (opsiyonel: kendi sesinizi klonlayıp onu kullandırabilirsiniz, ben öyle yaptım)\n- her kelimeyi doğru sahneyle eşleştir (timestamp'lere göre sahne zamanlamalarını ayarla, gerekirse bunun için script yaz)\n- opsiyonel: sahneleri hazırlarken codebase'deki gerçek (web/mobile) ui componentlerini minimalist bir şekilde kullan\n- stil: sahne geçişlerine animasyon ekle, renk teması olarak şunu kullan vs. burada creative direction veriyorsun\n- pixabay sitesinden copyright-free müzik bul, videoya ekle. başında ve sonunda fade-in fade-out ile gir\n- videoyu render et\n\nsonrası iterasyon: \"bu animasyon çok hızlı\", \"ses çok monoton\" (eleven labs ayarlarını değiştirip yeniden seslendiriyor), \"bunu sil şunu ekle\" vs\n\ndesign tool yok, video editör yok. her şey kodda. yani ileride birşey değiştirmek istesen kodda değişikliği yaptırıp script çalıştırarak yine render alıyorsun 😍 0 produksiyon masrafı. tek para tutan şey elevenlabs, o da baya ucuz - 1 dolar tutmamıştır.\n\nsonuç:",
+        "engagement_score": 425.02,
+        "like_count": 208,
+        "retweet_count": 5,
+        "reply_count": 8,
+        "impression_count": 10197,
+        "created_at": "2026-03-05 13:34:13+00:00"
+      },
+      {
+        "text": "güzel içgörü: alışık olduğumuz kariyer tanımları bitti, iş bulmak zorlaşıyor ama bir yandan da fırsatlar artıyor.",
+        "engagement_score": 420.78,
+        "like_count": 176,
+        "retweet_count": 6,
+        "reply_count": 9,
+        "impression_count": 24322,
+        "created_at": "2026-02-20 20:08:29+00:00"
+      },
+      {
+        "text": "bir satır kod yazmadan yazılım geliştirmek? hem de sıfır yazılım bilgisiyl.. şaka şaka, tamam. videonun tamamı kanalda. https://t.co/TdruH5bCr1",
+        "engagement_score": 411.36,
+        "like_count": 213,
+        "retweet_count": 7,
+        "reply_count": 4,
+        "impression_count": 20908,
+        "created_at": "2024-12-25 12:56:21+00:00"
+      },
+      {
+        "text": "+1. sr developerlar ya baska sektore kaymaya zorlanacak ya da yonetim kismina gecmeye. ai coding araclari kodlama zevkini ortadan kaldiriyor. kullaniciyi urun/cikti odakli dusunmeye zorluyor. \n\nsoftware developer ve product manager arasindaki cizgi git gide yok olacak.",
+        "engagement_score": 410.27,
+        "like_count": 160,
+        "retweet_count": 5,
+        "reply_count": 11,
+        "impression_count": 40546,
+        "created_at": "2025-12-29 10:15:16+00:00"
+      },
+      {
+        "text": "😀",
+        "engagement_score": 408.56,
+        "like_count": 289,
+        "retweet_count": 3,
+        "reply_count": 4,
+        "impression_count": 21444,
+        "created_at": "2025-01-26 08:02:03+00:00"
+      },
+      {
+        "text": "yarin 21.30'da kodlama canli yayini var! asagidaki linkten zile basip hatirlatici kurabilirsiniz. cursor kullanarak ne tur bi uygulama gelistirelim?",
+        "engagement_score": 407.32,
+        "like_count": 149,
+        "retweet_count": 2,
+        "reply_count": 16,
+        "impression_count": 29116,
+        "created_at": "2025-01-30 19:10:52+00:00"
+      },
+      {
+        "text": "figma için karamsarım, işleri zor. ui component'i kodlamak iş değil artık. istediğin kadar varyasyonu dakikalar içerisinde kodda test edebiliyorsun zaten. ui kodlamada core backend gibi ama AI şunu yapamaz, bu kısım da güvenemem dediğin şey de yok. shadcn gibi güzel bir kütüphane seçtin mi tamam. hisseleri arz olduktan bu yana %80 düştü, bakalım nasıl bir yol izleyecekler.",
+        "engagement_score": 404.22,
+        "like_count": 140,
+        "retweet_count": 3,
+        "reply_count": 15,
+        "impression_count": 37016,
+        "created_at": "2026-02-17 19:49:51+00:00"
+      },
+      {
+        "text": "izlediniz mi, nasildi",
+        "engagement_score": 402.32,
+        "like_count": 124,
+        "retweet_count": 1,
+        "reply_count": 19,
+        "impression_count": 31699,
+        "created_at": "2026-02-12 20:27:36+00:00"
+      },
+      {
+        "text": "suan x'te yazılım ile alakalı herhangi bir şey paylaşmak kutuplaştırıcı bir eylem haline döndü 😀 ne açıdan yaklaşırsan yaklaş ister istemez birilerini trigger ediyorsun",
+        "engagement_score": 400.4,
+        "like_count": 153,
+        "retweet_count": 0,
+        "reply_count": 18,
+        "impression_count": 15377,
+        "created_at": "2026-02-23 10:43:15+00:00"
+      },
+      {
+        "text": "izmir ya da istanbul'da yasayan startup founder'lari: nerelerde takiliyorsunuz? co-working space'ler diye tahmin ediyorum? hangileri ve nasil gidiyor? \n\nbay area'da yasarken sorun yoktu, hawaii'de kucuk ekosistem oldugu icin bir-iki yer vardi zaten. \n\nbir bucuk senedir TR'de baya izoleydim, biraz hareketlensin diyorum",
+        "engagement_score": 392.44,
+        "like_count": 128,
+        "retweet_count": 1,
+        "reply_count": 18,
+        "impression_count": 39996,
+        "created_at": "2025-12-21 14:59:52+00:00"
+      },
+      {
+        "text": "bi' restoranda hesabi qr kod okutup bende olmayan uygulama uzerinden odedim. app'i indirmeden app acmak mumkunmus, appclip diye geciyor. baya guzel kullanici deneyimiydi https://t.co/nrYW68Qrjf",
+        "engagement_score": 377.61,
+        "like_count": 221,
+        "retweet_count": 3,
+        "reply_count": 7,
+        "impression_count": 41080,
+        "created_at": "2024-06-18 05:24:12+00:00"
+      },
+      {
+        "text": "iyi bir evlilik, 2'den fazla çocuk, ve onlara sunulan stabil bir ortam -> topluma müthiş bir katkı. \n\n\"çoğalmayan toplumlar çoğalanlar tarafından yutulacak\"\n\nneslim ve ülkem varolmaya devam etsin isterim. son 50 senede birliktelik, evlilik ve çocuk etrafında yaşanan değişiklikleri, günümüzde sesli dile getirmenin politik doğruculuğa ters düştüğü şeyleri çok güzel ifade etmiş:",
+        "engagement_score": 374.29,
+        "like_count": 165,
+        "retweet_count": 9,
+        "reply_count": 2,
+        "impression_count": 28587,
+        "created_at": "2026-02-10 20:42:02+00:00"
+      },
+      {
+        "text": "izmir'de bi avm'de otururken genç bi' çocuk  masa masa dolaşıyordu. bizim masaya geldi. elinde alışveriş poşeti, marketten aldığı keklerden satıyor. \n\nben sormadan \"abi yazılım öğrenmek istiyorum, bilgisayarım yok, onun için para biriktiriyorum, kek almak ister misin\" dedi. ilkokul 8. sınıf öğrencisiymiş. azmine bayıldım. \n\noyun programlama öğrenmek istiyormuş. numarasını aldım. oyun yayınlamış olup mentorlük yapacak biri var mı?",
+        "engagement_score": 369.6,
+        "like_count": 165,
+        "retweet_count": 6,
+        "reply_count": 6,
+        "impression_count": 18003,
+        "created_at": "2025-07-12 20:03:18+00:00"
+      },
+      {
+        "text": "amerika tech cemberinden, stripe founder'indan boyle bir tweet gormek beni sasirtti. yorumlar, yorumlardaki linkler de oyle. ulkemizin savunma alanindaki basarisini hafife aldigimi dusundurdu.",
+        "engagement_score": 368.63,
+        "like_count": 113,
+        "retweet_count": 8,
+        "reply_count": 7,
+        "impression_count": 41508,
+        "created_at": "2023-04-29 21:49:13+00:00"
+      },
+      {
+        "text": "yayinlanan epstein dosyalari berbat ya. yayinlanmayan, ya da aciga cikmayan kim bilir neler var. bu kadar da olmaz dedigimiz komplo teorileri meger gercekmis.",
+        "engagement_score": 363.87,
+        "like_count": 206,
+        "retweet_count": 1,
+        "reply_count": 10,
+        "impression_count": 27257,
+        "created_at": "2026-02-01 10:00:02+00:00"
+      },
+      {
+        "text": "claude code'a age of empires sesleri eklemek lazım. onaylaması, takıldığında yardım istemesi falan güzel olur.\n\nusta\nyaparım\ntamam\nemrin\ndoğru\nefendim\nemret\nhazır\nileri\nsaldır\nusta https://t.co/UCITqWXV7K",
+        "engagement_score": 353.96,
+        "like_count": 202,
+        "retweet_count": 2,
+        "reply_count": 8,
+        "impression_count": 18719,
+        "created_at": "2026-02-25 11:10:16+00:00"
+      },
+      {
+        "text": "+1 \n\nyapabilecegin en iyi sey direnc gostermek yerine mumkun oldugunca adapte olmak.",
+        "engagement_score": 348.01,
+        "like_count": 219,
+        "retweet_count": 5,
+        "reply_count": 2,
+        "impression_count": 38890,
+        "created_at": "2024-12-22 15:15:26+00:00"
+      },
+      {
+        "text": "dijital sektörlerde şu bakış açısını anlamakta zorlanıyorum. yakın zamanda AI'ın bu algıya sahip insan ve sektörlerin üstünden geçeceğine inanıyorum.\n\naçık market, isteyen istediğiyle iş yapar/yapmaz. sektörü sektör, şirketleri şirket yapan ürettiği finansal çıktı. şirketlerin amacı birilerine para kazandırmak değil ki, kendisinin para kazanması. finansal ve iş ilişkileri kapsamında kiminle iş yapacağına karar verirsin, sırtını dönmek gibi ifadeleri bu bağlamda anlayamıyorum.\n\nkapitalizmde şirketlerin esas amacı, kendi karlarını maksimize etmek. piyasadaki her şirket, faaliyetlerini sürdürebilmek için maliyetlerini düşürmeye, verimliliklerini artırmaya ve rekabet avantajı elde etmeye çalışıyor. \n\nsanırım burada ana sorun duygusal bir yaklaşıma sahip olmamız. halbuki iş/para ilişkileri rasyonel ve stratejik kararlarla belirleniyor.\n\nne kadar hızlı bu düşüncelerden kurtulup oyunu kurallarına göre oynarsak pastadan daha büyük pay almak mümkün.\n\natladığım/göremediğim bir şey var mı?\n\n(bu arada görseldeki oluşum hakkında hiç bir fikrim yok, sadece özellikle AI etrafında yaşanan tartışmalarda atlanılan temayı özetlediğini düşündüğüm için ekledim)",
+        "engagement_score": 345.0,
+        "like_count": 121,
+        "retweet_count": 1,
+        "reply_count": 15,
+        "impression_count": 31417,
+        "created_at": "2024-12-26 08:18:29+00:00"
+      },
+      {
+        "text": "iş dünyasında bazı dönemlerde koz çalışanda, bazen iş verende oluyor. neredeyse hiç dengede durmuyor. \n\nzaten işe alımlarda yavaşlama varken bir de AI ile gelen verimlilik artışıyla beraber işveren aynı kaynakla daha çok çıktı üretebiliyor. şuan kozlar neredeyse tamamen işverenlerde.",
+        "engagement_score": 343.82,
+        "like_count": 181,
+        "retweet_count": 4,
+        "reply_count": 6,
+        "impression_count": 35880,
+        "created_at": "2025-01-30 21:08:15+00:00"
+      },
+      {
+        "text": "en ilginc kodlama canli yayinimi yaptim 😀 kodladigimiz seyi anlatmasi biraz zor 😀\n\nyayin katilimcilari olarak yuzlerce kisi oyun fikri girdi, LLM onlari harmanlayip bir oyun kodladi. ardindan yuzlerce kisi o version icin degisiklik talebinde bulundu, LLM yine onlari harmanlayip mevcut oyunu 2 dakikada bir gelistirdi. biz de oynadik. kisa bir kesidi asagi ekliyorum, bir bakin derim.",
+        "engagement_score": 343.24,
+        "like_count": 227,
+        "retweet_count": 3,
+        "reply_count": 4,
+        "impression_count": 35635,
+        "created_at": "2025-02-01 00:11:40+00:00"
+      },
+      {
+        "text": "developerlar için yapılan bütün ürünler neredeyse sadece coding agent'lar tarafından kullanılmak üzere evrilecek gibi görünüyor. örn. datadog, grafana, github actions, kubernetes, docker, playwright \n\ninsan döküman anlayıp okuyana, ürünü kullanıp yapmak istediğini başarana kadar coding agent ile çoktan bitirmiş oluyorsun. kimse döküman okumak istemiyor artık. prompt'a yazıp beklemek daha işine geliyor. \n\nşuan mcp'ler bunu güzel yapıyor. websitesine gidip menülerde dolaş, aramak istediğini bul, değişiklik yap (dashboard oluştur, alert kur vs) - baya manuel iş gelmeye başladı.\n\nbelki de dev tool'ların artık insan için bir arayüzü olmayacak. sadece LLM için bir dökümantasyon ve MCP üzerinden api servisi yetecek.\n\nkişi başı ücret alan bu servislerin kullanıcısı insan sayısıyla limitliyken coding agent sayısı insan sayısının çok-çok üstünde olabileceği için kullanım patlaması yaşanacak gibi görünüyor. bu yüzden yatırımcıların ilgisini çekiyor. girişimcilik için iyi bir alan.",
+        "engagement_score": 342.91,
+        "like_count": 139,
+        "retweet_count": 4,
+        "reply_count": 9,
+        "impression_count": 21496,
+        "created_at": "2026-03-04 10:17:46+00:00"
+      },
+      {
+        "text": "bir yazılımcı yol haritası.    \n\nbölüm 5: final haftası bitti, yazılıma tam gaz devam. ingilizceyi de hedefler arasına koyduk. #birmuhendis https://t.co/yAfjbRLvxs",
+        "engagement_score": 332.83,
+        "like_count": 157,
+        "retweet_count": 8,
+        "reply_count": 1,
+        "impression_count": 23569,
+        "created_at": "2024-03-17 23:31:25+00:00"
+      },
+      {
+        "text": "sürekli etrafındaki insanların senden beklentilerini gerçekleştirmeye uğraşıyorsun. sanıyorsun ki herkes seni izliyor, yargılıyor. aslında herkes kendi koşuşturmacasında, hayatını yaşıyor. çok da önemli değilim diyip hayatı yaşamaya çalışmak güzel olurdu. tabi kolay değil.",
+        "engagement_score": 332.64,
+        "like_count": 167,
+        "retweet_count": 8,
+        "reply_count": 0,
+        "impression_count": 10150,
+        "created_at": "2026-02-25 13:52:15+00:00"
+      },
+      {
+        "text": "clawd agentlarin kendi arasinda konustugu bu postlarin ne kadarlik kismi insan input'uyla oluyor bilmiyorum (platform'a agent gibi sign up yapmak ya da bota su sekilde post et demek mumkundur diye tahmin ediyorum)\n\neger bu yonlendirme olmaksizin botlar bu postlari atiyorsa sikinti",
+        "engagement_score": 326.02,
+        "like_count": 62,
+        "retweet_count": 1,
+        "reply_count": 18,
+        "impression_count": 25768,
+        "created_at": "2026-01-30 21:57:12+00:00"
+      },
+      {
+        "text": "su oyunlarin reklami guzel, indirip oynayinca bombos",
+        "engagement_score": 320.6,
+        "like_count": 110,
+        "retweet_count": 1,
+        "reply_count": 14,
+        "impression_count": 24997,
+        "created_at": "2026-01-25 20:18:29+00:00"
+      },
+      {
+        "text": "korku pompalamadan, fomo yaratmadan yazılım üzerine tecrübe paylaşmak, bir konuyu tartışmaya açmak çok zor oldu ya. bir yandan anlıyorum, kötü bir tat bırakıyor. yazılım/teknoloji dışına da çıkmam, işim değil. bu sefer geriye bir şey kalmıyor 😀 \n\nha senin yorumun eksik kalsın, benzer şeyler söyleniyor denilebilir. ama zaten bu durum hep geçerliydi, sosyal medyada bir şeyler paylaşmaya yeni başlamadım ki. ne yapmak lazım bilmem 😀 ai bu işi de bozdu 😀",
+        "engagement_score": 316.5,
+        "like_count": 124,
+        "retweet_count": 0,
+        "reply_count": 14,
+        "impression_count": 12338,
+        "created_at": "2026-02-25 20:40:40+00:00"
+      },
+      {
+        "text": "YT'da icerik uretmekle ilgilnenler icin: 1 haftada, 2 video, 1 canli yayin ile 5 bin yeni abone, $125 reklam geliri. https://t.co/cPom5Yuj7U",
+        "engagement_score": 316.05,
+        "like_count": 220,
+        "retweet_count": 0,
+        "reply_count": 7,
+        "impression_count": 45961,
+        "created_at": "2024-12-30 06:39:16+00:00"
+      },
+      {
+        "text": "bir suredir soz paylasmiyordum, yapistirayim:\n\n\"sıradan bir çabanın olağanüstü bir sonuç doğurduğunu hiç görmedim.\"",
+        "engagement_score": 313.87,
+        "like_count": 196,
+        "retweet_count": 5,
+        "reply_count": 1,
+        "impression_count": 14316,
+        "created_at": "2024-12-19 15:13:55+00:00"
+      },
+      {
+        "text": "ilginç, şirket alım yapmayı durdurup yavaş yavaş kişi sayısını azaltmak yerine bir kerede 10 binden 6 bin çalışana düşmeye karar vermiş. sebep ise artan 'intelligence tools' kullanımı, az kişiyle, daha düz (hiyerarşinin az olduğu) organizasyonların daha efektif çıktı üreteceğine inanmaları. yalnız en azından tazminat paketi normalin çok üstünde.",
+        "engagement_score": 313.57,
+        "like_count": 164,
+        "retweet_count": 0,
+        "reply_count": 11,
+        "impression_count": 51038,
+        "created_at": "2026-02-26 21:58:17+00:00"
+      },
+      {
+        "text": "tartışmalar üzerine; senin tercihin hangisi olurdu?\n\n1- mavi hap: işini rölantiye al, ama ölene dek çalış. yüksek ihtimalle finansal olarak birşeylere bağımlı kalacaksın. \n\n2- kırmızı hap: 5-10* sene hardcore çalışma sonrası hayatının sonuna dek finansal özgürlük ihtimali.",
+        "engagement_score": 307.1,
+        "like_count": 30,
+        "retweet_count": 1,
+        "reply_count": 19,
+        "impression_count": 25690,
+        "created_at": "2023-07-26 10:10:10+00:00"
+      },
+      {
+        "text": "biraz profesyonel tecrübesi olan için bariz, tecrübesi olmayanların gözden kaçırdığı şey: \n\nişe bulduktan sonra değil, bulmadan önce hazırlanırsın. işin istediği becerinin temellerini işe girdikten sonra değil, öncesinde inşa etmeye başlarsın. insanlar seni referanslamadan ya da sorumluluk vermeden önce, yapabileceğine inanır, en azından sinyaller alır. hesabı önce ödersin, yemeği sonra alırsın.",
+        "engagement_score": 296.11,
+        "like_count": 193,
+        "retweet_count": 3,
+        "reply_count": 3,
+        "impression_count": 22345,
+        "created_at": "2026-01-04 19:22:47+00:00"
+      },
+      {
+        "text": "saas işi eskisi gibi karlı değil. marjinler çok düştü, üründen beklentiler arttı. aynı zamanda ürün çıkarma işi kolaylaştı, kurumlar küçük ve orta problemleri içeride çözüyor, hemen hazır çözümlere gitmiyor. \n\nappsumo saas ürünü yayınlayıp initial traction yakalamak için çok güzel bir platformdu. kurucusu son 2 senede satışların neden baya düştüğünü sıralamış:",
+        "engagement_score": 291.67,
+        "like_count": 116,
+        "retweet_count": 4,
+        "reply_count": 7,
+        "impression_count": 31597,
+        "created_at": "2026-02-06 20:45:44+00:00"
+      },
+      {
+        "text": "bir yazılımcı yol haritası.\n\nbölüm 3: kitaba devam ediyor, sorumluluk partnerlerini seciyor, sinavlara calisiyor. #birmuhendis https://t.co/Tpu7dYreab",
+        "engagement_score": 289.93,
+        "like_count": 167,
+        "retweet_count": 4,
+        "reply_count": 3,
+        "impression_count": 20620,
+        "created_at": "2024-01-15 07:36:05+00:00"
+      },
+      {
+        "text": "cocuklar icin ai odakli etut/oyun merkezleri - nasil fikir? 1-2 seneye gormeye baslariz belki. \n\nai bazli dil egitimi, 3d ai agentlarla konusacak, gercek dunyaya hazirlayacak senaryolari oyunlastirip deneyimlemelerini saglayacak, her cocugun dogasina gore sekillenen ogrenme konseptleri. sinifta en yavas ogrenen cocuga endeksli egitim yerine cocugun/gencin kendi hizina endekslemek cok daha mumkun ve kolay. ogretmenler sadece operator ve denetim rolunu ustleniyor, ogretmek ai'da.",
+        "engagement_score": 289.9,
+        "like_count": 126,
+        "retweet_count": 2,
+        "reply_count": 9,
+        "impression_count": 16383,
+        "created_at": "2025-01-24 08:11:37+00:00"
+      },
+      {
+        "text": "🚨 yarın 12'de canlı yayın var! AI ve yazılım üzerine sohbet ederiz. benim setup'ı paylaşırım, gündemdeki konuları konuşuruz. \n\nbaşka akla gelen birşey varsa twit altına yorum atın 👍 yayında görüşürüz, linkten hatırlatıcı kurabilirsiniz:\n\nhttps://t.co/zA0PnU9Ig4",
+        "engagement_score": 285.25,
+        "like_count": 82,
+        "retweet_count": 2,
+        "reply_count": 12,
+        "impression_count": 21735,
+        "created_at": "2026-02-17 19:30:13+00:00"
+      },
+      {
+        "text": "ya savaşlar ne sebeplerle, ne kadar kolay çıkıyor. bu coğrafyanın dinamikleri farklı. bu aralar baya kabullendim. hazır ve güçlü olmaktan, bir arada kalmaktan başka çaren yok. kendi mesleğimden yola çıkıyorum, savunma sanayinde çalışmayı tercih eden yazılımcıları çok takdir ediyorum. inanılmaz yoğun çalışıyorlar, hataya yer yok, hiç kolay değil. yaptıkları işleri görünce nasıl gurur duyuyor insan. onların hissettiğini, sahip oldukları motivasyonu tahmin edemem.",
+        "engagement_score": 280.93,
+        "like_count": 164,
+        "retweet_count": 3,
+        "reply_count": 4,
+        "impression_count": 16208,
+        "created_at": "2026-03-02 10:13:32+00:00"
+      },
+      {
+        "text": "ai kodlamada devin ai etkisiz kaldı derken önümüzdeki cycle'a en hazır rakip olabilir. çıktığından beri slack vs üstünden asenkron ilerleyen, cloud'da değişiklikleri yapıp test eden mimariye yoğunlaştılar. o esnada cursor, windsurf gibi rakipler developerlar için daha iyi at arabası tasarlama peşindeydi. şimdi yaklaşımı değiştiriyorlar. claude code da remote özellikleri getirip oraya yöneliyor gibi. \n\ntab auto complete ile başladı, local'de insanların sürekli prompt ve mesaj göndererek agent'lara iş yaptırmasıyla devam etti. şimdi sıra cloud'da çalışan, daha otonom, uzun süre insan input'una ihtiyaç duymayan, koordine çalışan agent sürüsüne geliyor. \n\nbu arada cursor ceo'sunun benzetmesi güzel: artık amacımız developerların kod yazmasını sağlamak değil, istedikleri yazılımı kodlayacak fabrikayı inşa etmelerini sağlamak.",
+        "engagement_score": 272.89,
+        "like_count": 104,
+        "retweet_count": 5,
+        "reply_count": 5,
+        "impression_count": 22285,
+        "created_at": "2026-03-02 09:16:40+00:00"
+      },
+      {
+        "text": "mu-kem-mel!!!!\n\nkulturel temalari harmanlamaya bakar misin",
+        "engagement_score": 266.22,
+        "like_count": 137,
+        "retweet_count": 3,
+        "reply_count": 5,
+        "impression_count": 22301,
+        "created_at": "2025-02-07 20:42:21+00:00"
+      },
+      {
+        "text": "tailwindcss'in sahibi. proje inanilmaz populer, hemen hemen her ai generated uygulama bu kutuphaneyi kullaniyor. ama bu ilgiyi paraya donusturmenin yolunu bulamamislar, layoff olmus. ses kaydinda yasadigi sikintilarini paylasmis. ilginc, bir dinleyin",
+        "engagement_score": 264.06,
+        "like_count": 135,
+        "retweet_count": 1,
+        "reply_count": 8,
+        "impression_count": 35756,
+        "created_at": "2026-01-08 10:01:20+00:00"
+      },
+      {
+        "text": "\"benim kafam bu kadar basiyor\"\n\nbenim kafam bu kadar da basmiyor. bir alanda icerik uretip fikir sahibi gorununce insanlar saniyor ki farkli konularda da bilgi sahibi, valla durum hic oyle degil. \n\nsenelerdir turkce icerik uretip gayret etmemin tek sebebi benden sonraki nesil benden daha mutlu, huzurlu yasasin, ulkem ileriye gitsin. ulkemde bosa harcanmis potensiyel beni cok uzuyor. benim elimden gelen sey insanlara yazilimi sevdirmek, ilham vermek, ve yazilim/kariyer noktasinda iyi ornek olabilmek ve bunu en iyi sekilde yapmaya gayret ediyorum, edecegim.",
+        "engagement_score": 258.33,
+        "like_count": 256,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 28080,
+        "created_at": "2025-03-31 15:46:42+00:00"
+      },
+      {
+        "text": "yetiştirilme tarzı mı, kültür mü bilmem ama bizim toplum için kabullenmesi, içselleştirmesi bir tık daha zor sanki: \n\nbir işin %80'i bittiyse daha üçte biri tamamlandı. %90'a geldiğinde işin daha yarısı duruyor. elle tutulur, gurur duyacağın, düzgün bir şey yapmak zaman alıyor.",
+        "engagement_score": 256.61,
+        "like_count": 113,
+        "retweet_count": 3,
+        "reply_count": 6,
+        "impression_count": 11853,
+        "created_at": "2026-02-24 13:11:38+00:00"
+      },
+      {
+        "text": "kendimi yapay zeka kullanarak klonladım! 🤖 \n\nürettiğim tüm içerikler (youtube, medium, twitter) üzerinden sorularınızı anında cevaplayan bi' AI chat botu geliştirdim. kodlaması baya zevkliydi. yorumlarınızı merak ediyorum! 😀\n\nlink:\nhttps://t.co/4FnZZ1rSQS\n\nörnek bi' sohbet: https://t.co/L3MK5bOere",
+        "engagement_score": 256.08,
+        "like_count": 114,
+        "retweet_count": 1,
+        "reply_count": 9,
+        "impression_count": 54254,
+        "created_at": "2023-05-11 13:34:37+00:00"
+      },
+      {
+        "text": "bir ceo'ya neler soralim?",
+        "engagement_score": 253.07,
+        "like_count": 44,
+        "retweet_count": 3,
+        "reply_count": 11,
+        "impression_count": 25493,
+        "created_at": "2023-08-30 02:29:44+00:00"
+      },
+      {
+        "text": "super is. business use case'ler hedef alinmis. ticari konseptlere ai entegrasyonunu hizlandirir. ekosistem icin bomba bir sey.",
+        "engagement_score": 235.83,
+        "like_count": 121,
+        "retweet_count": 3,
+        "reply_count": 4,
+        "impression_count": 36403,
+        "created_at": "2025-10-12 19:33:46+00:00"
+      },
+      {
+        "text": "ayni anda hem codex hem opus yeni model cikti, hadi bakam",
+        "engagement_score": 233.71,
+        "like_count": 70,
+        "retweet_count": 0,
+        "reply_count": 12,
+        "impression_count": 11095,
+        "created_at": "2026-02-05 19:30:12+00:00"
+      },
+      {
+        "text": "genc yaslarda alinan kararlari, bu kararlarin sonuclarini, ve bu sonuclarin dogurdugu cok-cok-cok daha iyi ya da daha kotu sonuclari 30'larda biraz daha net gormeye basliyorsun. sanki bu yaslarda wisdom/bilgelik yuklenmeye basliyor 😀",
+        "engagement_score": 229.58,
+        "like_count": 135,
+        "retweet_count": 2,
+        "reply_count": 4,
+        "impression_count": 55204,
+        "created_at": "2023-07-26 00:03:22+00:00"
+      },
+      {
+        "text": "bayadir video paylasamadim ama gecen bir kanala konuk olmustum. videoyu yuklemisler. \n\nvideo linki asagida. nasil olmus 😀 https://t.co/DMYOM0LQJE",
+        "engagement_score": 229.3,
+        "like_count": 134,
+        "retweet_count": 2,
+        "reply_count": 4,
+        "impression_count": 24632,
+        "created_at": "2024-10-28 18:03:42+00:00"
+      },
+      {
+        "text": "recruiter'la hiç konuşmadan, ilanlara başvurmadan, doğru düzgün mülakat sürecinden geçmeden sağlam iş bulabiliyorsan tamamdir. yoksa 👎",
+        "engagement_score": 228.58,
+        "like_count": 87,
+        "retweet_count": 3,
+        "reply_count": 6,
+        "impression_count": 37645,
+        "created_at": "2026-01-09 16:48:36+00:00"
+      },
+      {
+        "text": "onumuzdeki gunlerde YT canli yayininda ne yapalim?",
+        "engagement_score": 225.14,
+        "like_count": 35,
+        "retweet_count": 0,
+        "reply_count": 14,
+        "impression_count": 9624,
+        "created_at": "2024-12-26 18:48:34+00:00"
+      },
+      {
+        "text": "ai döneminde \"taste\" yani insanın zevk anlayışı en önemli şeye dönüştü.\n\nai bizi inanilmaz tembelleştiriyor. bir şey geliştirirken en core logic'i de AI'a yaptirip gecmeye meyilli hale geliyoruz. kritik aşamalarda yavaşlayıp insan olarak \"brain cycle\" harcamadığımız durumda yaptığımız şeyi farklılaştırmak, kendi konumumuzu garantilemek imkansız. \n\n\"yapay zeka iyi bir zevk üretemez, ama zevkinizin ham malzemesini güzel bir şeye dönüştürmenize yardımcı olabilir.\"\n\ninsan'ın son kalesi bu, ne kadar daha dayanır bilmiyorum 😀 ama yaptığınız işte kendinizden bir şey katmıyorsanız sıkıntı büyük. \n\nçalışansan ai tarafindan yeri değistirilebilir oluyorsun, girişimciysen yüz binlerce ürün arasında farkedilmeden silinip gidiyorsun.\n\nbu 'taste' nasıl edinilir, ve nasıl etkili kullanabilirsin önemli sorular",
+        "engagement_score": 224.62,
+        "like_count": 95,
+        "retweet_count": 1,
+        "reply_count": 8,
+        "impression_count": 14347,
+        "created_at": "2026-01-24 11:34:27+00:00"
+      },
+      {
+        "text": "ai savaşları başlıyor",
+        "engagement_score": 223.79,
+        "like_count": 108,
+        "retweet_count": 1,
+        "reply_count": 7,
+        "impression_count": 20072,
+        "created_at": "2026-02-23 19:41:26+00:00"
+      },
+      {
+        "text": "💯 yahoo'da calismaya basladigimda buna benzerdi (yarim boy panel), sonra open office duzenine gectik. bu kubikleri baya sevmistim.",
+        "engagement_score": 221.51,
+        "like_count": 120,
+        "retweet_count": 1,
+        "reply_count": 6,
+        "impression_count": 54954,
+        "created_at": "2023-10-20 21:35:54+00:00"
+      },
+      {
+        "text": "\"herhangi bir alandaki en basarili insanlar her zaman uzun oyunu oynuyor.\"\n\nsen kisa oyunu mu oynuyorsun, uzun oyunu mu?\n\nhttps://t.co/PEw4jv59kH",
+        "engagement_score": 215.91,
+        "like_count": 101,
+        "retweet_count": 5,
+        "reply_count": 1,
+        "impression_count": 16250,
+        "created_at": "2023-08-01 17:05:00+00:00"
+      },
+      {
+        "text": "darisi basimiza 😀",
+        "engagement_score": 215.56,
+        "like_count": 133,
+        "retweet_count": 0,
+        "reply_count": 6,
+        "impression_count": 19098,
+        "created_at": "2025-08-02 17:04:02+00:00"
+      },
+      {
+        "text": "chrome eklentisinin kodu: https://t.co/ZFkcWFIgOS\n\nteknolojiler: typescript, react, supabase, tailwind\n\nweb'i de bir ara koymayi planliyorum. teknolojiler: typescript, nextjs, supabase, tailwind, shadcn/ui",
+        "engagement_score": 210.68,
+        "like_count": 116,
+        "retweet_count": 4,
+        "reply_count": 1,
+        "impression_count": 21433,
+        "created_at": "2024-04-07 23:16:28+00:00"
+      },
+      {
+        "text": "9 ay sonra yeni video https://t.co/JfvX5XTQ3O",
+        "engagement_score": 209.88,
+        "like_count": 128,
+        "retweet_count": 2,
+        "reply_count": 3,
+        "impression_count": 20065,
+        "created_at": "2023-08-18 05:46:52+00:00"
+      },
+      {
+        "text": "canli yayin basladi! https://t.co/3BExPdqWOP",
+        "engagement_score": 201.47,
+        "like_count": 81,
+        "retweet_count": 6,
+        "reply_count": 0,
+        "impression_count": 37536,
+        "created_at": "2024-12-28 19:01:13+00:00"
+      },
+      {
+        "text": "copilot ya da benzeri denemeyen var mi?",
+        "engagement_score": 200.35,
+        "like_count": 45,
+        "retweet_count": 1,
+        "reply_count": 10,
+        "impression_count": 31689,
+        "created_at": "2023-09-02 03:38:01+00:00"
+      },
+      {
+        "text": "canli yayin basladi!!!\n\nvibe kodlama https://t.co/U97Ot2oGtv",
+        "engagement_score": 199.82,
+        "like_count": 79,
+        "retweet_count": 4,
+        "reply_count": 3,
+        "impression_count": 53960,
+        "created_at": "2026-02-12 15:49:49+00:00"
+      },
+      {
+        "text": "asagidaki twitteki prototipi kodladiktan sonra kajabi'deki mudurume bu fikir iyi fikir, yapmasak mi demistim, yapalim dedi. https://t.co/1Io2mz3rov dogdu!\n\ndun herkese actik. az bir marketing ile bin kusur kullanici var. yuze yakin parali uyelik 👌",
+        "engagement_score": 199.15,
+        "like_count": 78,
+        "retweet_count": 4,
+        "reply_count": 3,
+        "impression_count": 25820,
+        "created_at": "2024-05-17 08:05:10+00:00"
+      },
+      {
+        "text": "twitter profillerini AI ile analiz edin, link asagida.\n\nbana sunlari soyledi 😀😀 https://t.co/yWdIcvdinK",
+        "engagement_score": 192.34,
+        "like_count": 104,
+        "retweet_count": 1,
+        "reply_count": 5,
+        "impression_count": 25109,
+        "created_at": "2025-01-31 13:54:45+00:00"
+      },
+      {
+        "text": "uzun sure sonra canli yayin yapmak guzeldi :D nasil yordugunu unutmusum. anlik 500 izleyiciye yaklastik, sohbette guzel akti, cogunlukla takip edebildim. izleyici olarak nasildi, sonraki yayinda neler yapalim",
+        "engagement_score": 186.77,
+        "like_count": 90,
+        "retweet_count": 0,
+        "reply_count": 7,
+        "impression_count": 7868,
+        "created_at": "2026-02-18 12:20:02+00:00"
+      },
+      {
+        "text": "bir youtube kanalina konuk oldum. kendim video çekmeye kıyasla ışık-ses ayarlanmış stüdyoya otur, mikrofonu tak, konuş, sonra video hazır olsun güzel işmiş 😀 https://t.co/bFm2E4NEt6",
+        "engagement_score": 185.49,
+        "like_count": 103,
+        "retweet_count": 0,
+        "reply_count": 6,
+        "impression_count": 13496,
+        "created_at": "2024-10-13 11:30:05+00:00"
+      },
+      {
+        "text": "ulke olarak hepimize gecmis olsun arkadaslar. ne yazik ki bu noktada cogumuzun elinden maddi yardimdan fazlasi gelmiyor, en azindan onu yapalim.",
+        "engagement_score": 182.41,
+        "like_count": 68,
+        "retweet_count": 5,
+        "reply_count": 1,
+        "impression_count": 14773,
+        "created_at": "2023-02-06 22:24:21+00:00"
+      },
+      {
+        "text": "bir yazılımcı yol haritası.  \n\nbölüm 4: kitaba devam ediyor, sorumluluk partnerlerini seçti. final haftasından ötürü sakin bir hafta. #birmuhendis https://t.co/mmqIweQuaN",
+        "engagement_score": 182.4,
+        "like_count": 148,
+        "retweet_count": 1,
+        "reply_count": 1,
+        "impression_count": 30304,
+        "created_at": "2024-03-09 17:26:05+00:00"
+      },
+      {
+        "text": "Vibely CEO'su @theteriyu ile canli yayin var! Bu Cuma (1 Eylul) TR saatiyle aksam 22:00'da gorusuruz! \n\n⏰ Hatirlatici kurun: https://t.co/DVB04JkONE",
+        "engagement_score": 181.24,
+        "like_count": 87,
+        "retweet_count": 2,
+        "reply_count": 4,
+        "impression_count": 71304,
+        "created_at": "2023-08-27 21:16:33+00:00"
+      },
+      {
+        "text": "kodcast'e bugun 3 yeni bolum yukledim!",
+        "engagement_score": 175.56,
+        "like_count": 94,
+        "retweet_count": 2,
+        "reply_count": 3,
+        "impression_count": 16300,
+        "created_at": "2024-11-25 19:41:12+00:00"
+      },
+      {
+        "text": "çok tatlı, wispr gibi app kullanmaya gerek kalmadan konuşarak vibe coding 👌",
+        "engagement_score": 172.11,
+        "like_count": 77,
+        "retweet_count": 2,
+        "reply_count": 4,
+        "impression_count": 12777,
+        "created_at": "2026-03-03 02:09:52+00:00"
+      },
+      {
+        "text": "bazi meslekler (ozellikle insan hayati soz konusuysa) ai dalgasina hic yenilmeyecek mi?\n\nsoforsuz taksiler yayginlasiyor, insanlar buna hizli alisti. modern ucaklarda yolculugun cok buyuk bir kismi otonom sekilde gidilebiliyor fakat pilotluk meslegi bundan etkilenmedi sanki? sebebi taksiye kiyasla daha cok insan tasiyor olmasi mi, yoksa daha yavas degisen regulasyonlar mi? belki de dogal olarak havada yerde oldugumuzdan daha tedirgin oluyoruz.",
+        "engagement_score": 165.84,
+        "like_count": 37,
+        "retweet_count": 1,
+        "reply_count": 8,
+        "impression_count": 9065,
+        "created_at": "2026-01-07 13:13:56+00:00"
+      },
+      {
+        "text": "voice AI agent yapıyorsun. intelligence için hafif, latency düşük bir LLM kullanıyorsun.\n\nbu agent'in prompt'unu LLM desteğiyle yazıyorsun.\n\nsonra onu test etmek, davranışlarından emin olmak için yine bir LLM kullanıp başarı kriterleri tanımlıyorsun.\n\nardından daha güçlü bir LLM kullanıp yüzlerce, binlerce görüşme simüle ediyorsun. LLM sayesinde her bir görüşme farklı kişiliğe sahip bir user ile gerçekleşiyor.\n\nve yine bir LLM ile her bir görüşmenin başarısı kriterlerini tek tek sağladığını kontrol ediyorsun.\n\nbaşarısız olan durumları düzeltmek için voice AI agent prompt'unu LLM ile güncellip tekrar baştan.\n\ntüm süreci kurgulaması şu an bir kaç saat alıyor.\n\ntek eksiğim, simülasyon ve gerçek görüşmelerden öğrenip kendi kendine güncellemesi sağlamak. bununla beraber self-learning bir hale gelecek. teknik olarak çok zor değil. deneyeceğim.",
+        "engagement_score": 159.84,
+        "like_count": 38,
+        "retweet_count": 2,
+        "reply_count": 6,
+        "impression_count": 8720,
+        "created_at": "2026-01-25 18:29:00+00:00"
+      },
+      {
+        "text": "+1",
+        "engagement_score": 156.55,
+        "like_count": 136,
+        "retweet_count": 1,
+        "reply_count": 0,
+        "impression_count": 38695,
+        "created_at": "2024-06-06 16:15:52+00:00"
+      },
+      {
+        "text": "12-13 yaslarindayken yanlisikla bi klasor silmistim, oyun vs bir suru sey gitmisti. o gunden beri bir seyleri silerken elli kez kontrol ederim",
+        "engagement_score": 152.59,
+        "like_count": 51,
+        "retweet_count": 1,
+        "reply_count": 6,
+        "impression_count": 14886,
+        "created_at": "2026-01-23 13:07:28+00:00"
+      },
+      {
+        "text": "growth ve consumer app'lerden anlayan biri için tikt*k vs. de ilk önce fikri validate etmek, talep gören şeyleri gidip kodlamak, yayına alıp direk hazır müşteriye kavuşturma fikri çok iyi. uygulama basıyor olsam ilk önce uygulama yayınlayıp sonra trafik yönlendirmeye çalışmaktansa tersini denerdim.\n\nyaklaşım biraz daha 25 yaş altı, tikt*k vs kültürüne hakim kişiler için daha uygun tabi. ben boomer 😀",
+        "engagement_score": 152.44,
+        "like_count": 70,
+        "retweet_count": 0,
+        "reply_count": 6,
+        "impression_count": 7996,
+        "created_at": "2026-02-27 15:23:23+00:00"
+      },
+      {
+        "text": "telefonunda 1-2'den fazla uygulamanin bildirimleri aciksa ve kilit ekraninda bildirim gorunuyorsa 👎 ngmi",
+        "engagement_score": 149.85,
+        "like_count": 55,
+        "retweet_count": 0,
+        "reply_count": 7,
+        "impression_count": 26582,
+        "created_at": "2026-01-12 08:55:39+00:00"
+      },
+      {
+        "text": "babam lisede bi' mont aldi. tabi uzun sure giyeyim diye buyuk almis. tam 20 sene giydim hala bir tik buyuk geliyordu. eskitemedim. https://t.co/GQAiSK3KF9",
+        "engagement_score": 142.07,
+        "like_count": 87,
+        "retweet_count": 0,
+        "reply_count": 4,
+        "impression_count": 12043,
+        "created_at": "2026-01-17 17:15:22+00:00"
+      },
+      {
+        "text": "x'te onume surekli clawd bot icerigi dustugunde yasadigim  https://t.co/Lb4v1us02m",
+        "engagement_score": 138.36,
+        "like_count": 90,
+        "retweet_count": 1,
+        "reply_count": 2,
+        "impression_count": 9390,
+        "created_at": "2026-01-27 17:20:04+00:00"
+      },
+      {
+        "text": "bir youtube kanalina ziyaretci oldum, link asagida. icerik:\n\nAmerika’da Egitim, Farklı Sirket Deneyimleri, Start-Up’da Kritik Noktalar, Kajabi Satış Süreci, Yazılımcılara Tavsiyeler, İş-YouTube Dengesi, Yazılımcı Sorumlulukları, Türkiye - ABD Farkı",
+        "engagement_score": 134.79,
+        "like_count": 107,
+        "retweet_count": 0,
+        "reply_count": 2,
+        "impression_count": 18375,
+        "created_at": "2025-03-11 18:53:40+00:00"
+      },
+      {
+        "text": "yazilim prototipleme cok kolaylasti. figmada itere etmek yerine kodda itere etmek daha ilgi cekici hale geliyor.",
+        "engagement_score": 134.76,
+        "like_count": 67,
+        "retweet_count": 2,
+        "reply_count": 2,
+        "impression_count": 12489,
+        "created_at": "2025-01-19 09:00:00+00:00"
+      },
+      {
+        "text": "guzel argumanlar",
+        "engagement_score": 134.62,
+        "like_count": 53,
+        "retweet_count": 0,
+        "reply_count": 6,
+        "impression_count": 12712,
+        "created_at": "2026-02-14 20:40:25+00:00"
+      },
+      {
+        "text": "internet kafe, lan bağlantısı, aoe, fifa, cs, generals zero, dota\n\ngüzel zamanlardı. oğlum da büyüyünce deneyimlesin isterdim ama benzeri olmayacak herhalde",
+        "engagement_score": 134.38,
+        "like_count": 39,
+        "retweet_count": 0,
+        "reply_count": 7,
+        "impression_count": 7012,
+        "created_at": "2026-01-09 16:52:20+00:00"
+      },
+      {
+        "text": "browser'da windows 98 uzerinden eski oyunlari oynayabiliyorsun 😀 favori hangisi?\n\nhttps://t.co/jrbVgSdBYE",
+        "engagement_score": 129.82,
+        "like_count": 35,
+        "retweet_count": 2,
+        "reply_count": 4,
+        "impression_count": 6454,
+        "created_at": "2026-02-27 22:39:45+00:00"
+      },
+      {
+        "text": "AI kullanarak kullanicilarin daha kolay bir sekilde ders olusturup satabilmeleri icin 6 tane arac gelistirdik. bu araclarin ilki, course outline generator benden ;) uzun sure sonra birseyler kodladim :D\n\nhttps://t.co/0ZzxaoB2LL",
+        "engagement_score": 129.14,
+        "like_count": 68,
+        "retweet_count": 1,
+        "reply_count": 3,
+        "impression_count": 14397,
+        "created_at": "2023-03-09 21:08:01+00:00"
+      },
+      {
+        "text": "guzel gorunuyor. 2000 lerde build city (yanlis hatirlamiyorsam) diye turk gelistiricinin yaptigi buna benzer bir oyun vardi. deprem oluyordu falan, baya zevkliydi.",
+        "engagement_score": 128.9,
+        "like_count": 95,
+        "retweet_count": 1,
+        "reply_count": 1,
+        "impression_count": 30895,
+        "created_at": "2023-04-12 19:51:43+00:00"
+      },
+      {
+        "text": "videoda hersey ai generated. interaktif, kisiye ozel, sonu olmayan ya da istediginde biten dizi konsepti netflix'e ne zaman gelir?",
+        "engagement_score": 127.68,
+        "like_count": 80,
+        "retweet_count": 1,
+        "reply_count": 2,
+        "impression_count": 15517,
+        "created_at": "2025-06-05 20:12:12+00:00"
+      },
+      {
+        "text": "kajabi'de kendi takimimda, cok yakin calisacagim sr/staff seviyesinde muhendisler ariyoruz! surecte sona yaklasiyoruz, eger ilginizi cekiyorsa linkten hemen basvurabilirsiniz: https://t.co/6muPqI2EmD",
+        "engagement_score": 124.5,
+        "like_count": 51,
+        "retweet_count": 3,
+        "reply_count": 1,
+        "impression_count": 0,
+        "created_at": "2022-12-01 23:34:56+00:00"
+      },
+      {
+        "text": "yayin icin ai muzik listesi olusturdum: https://t.co/VL7kD0prgi\n\ntavsiyeleriniz varsa beklerim. bu arada, aklinizda ilginc bir uygulama fikri varsa yoruma bekliyorum",
+        "engagement_score": 119.56,
+        "like_count": 65,
+        "retweet_count": 0,
+        "reply_count": 4,
+        "impression_count": 14562,
+        "created_at": "2024-12-28 12:22:56+00:00"
+      },
+      {
+        "text": "'jr/sr muhabbetinin yerini ai iyi kullanıyor/kullanamıyor alıyor' - hmm, bu yoruma katılıyor musunuz?\n\nben şu bariyer aşılacak mı, nasıl aşılacak tahmin edemiyorum: ai sr elinde verimlilik arttıran bir şey, jr elinde tehlikeli bir silah olabiliyor (sr için de geçerli tabi, ama jr'da daha fazla)",
+        "engagement_score": 114.93,
+        "like_count": 47,
+        "retweet_count": 0,
+        "reply_count": 5,
+        "impression_count": 13958,
+        "created_at": "2026-03-04 13:00:13+00:00"
+      },
+      {
+        "text": "email bültenlerini (newsletter) nasıl buluyorsunuz? sosyal medya ya da blog (medium) üzerinden takip edenlere ulaşmak çok zorlaştı. algoritmalar çok absürt şeyleri ön plana çıkarabiliyor.\n\nbir tane bülten açıp paylaşımlarımı oradan yapıp direk email kutusuna düşmek daha güzel olur gibime geliyor. ama inbox'a gelen çoğu şeyi kaçıran çok kullanıcı da var.\n\nbir sorayim dedim, newsletter açsam:",
+        "engagement_score": 113.79,
+        "like_count": 19,
+        "retweet_count": 0,
+        "reply_count": 7,
+        "impression_count": 10032,
+        "created_at": "2024-11-27 13:36:23+00:00"
+      },
+      {
+        "text": "warehouse/depo işlerinde yer almış varsa tecrubesinden yararlanmayi çok isterim. bu aralar o konulara sardım. DM'e beklerim.",
+        "engagement_score": 111.88,
+        "like_count": 24,
+        "retweet_count": 1,
+        "reply_count": 5,
+        "impression_count": 8717,
+        "created_at": "2025-09-17 08:23:19+00:00"
+      },
+      {
+        "text": "mutluluğun peşinde 😕 https://t.co/SGMCHwHZR4",
+        "engagement_score": 110.78,
+        "like_count": 50,
+        "retweet_count": 1,
+        "reply_count": 3,
+        "impression_count": 21233,
+        "created_at": "2023-01-17 18:31:26+00:00"
+      },
+      {
+        "text": "haha vibe coderlar:\n\nteknik becerim hic yok. zevk anlayisim iyidir, kendimi guzel ifade ederim",
+        "engagement_score": 106.14,
+        "like_count": 45,
+        "retweet_count": 1,
+        "reply_count": 3,
+        "impression_count": 8089,
+        "created_at": "2026-02-05 19:54:37+00:00"
+      },
+      {
+        "text": "arabayi hep geri geri parkederim, hem park etmesi daha kolay hem cikmasi",
+        "engagement_score": 103.94,
+        "like_count": 36,
+        "retweet_count": 0,
+        "reply_count": 5,
+        "impression_count": 9673,
+        "created_at": "2026-01-08 09:13:09+00:00"
+      },
+      {
+        "text": "bu etkinlige giden var mi, guzel gorunuyor @istanbulslushd",
+        "engagement_score": 102.6,
+        "like_count": 15,
+        "retweet_count": 1,
+        "reply_count": 5,
+        "impression_count": 22299,
+        "created_at": "2025-09-15 09:11:57+00:00"
+      },
+      {
+        "text": "bel agrisindan uzun suredir ayakta calisiyorum, onun da ayri sikintilari var. haftada 2-3 kez spor yapiyorum, yapmasam ne olacagini dusunemiyorum.",
+        "engagement_score": 102.4,
+        "like_count": 21,
+        "retweet_count": 0,
+        "reply_count": 6,
+        "impression_count": 6833,
+        "created_at": "2025-12-31 14:38:54+00:00"
+      },
+      {
+        "text": "depremden bir saat onceden haberimiz olabilir miymis ya\n\nistanbula ayda bir falan geliyoruz, nerdeyse her defasinda depreme yakalaniyoruz. yuksek kat, baya da sallaniyor, kotu ya",
+        "engagement_score": 100.17,
+        "like_count": 53,
+        "retweet_count": 1,
+        "reply_count": 2,
+        "impression_count": 32571,
+        "created_at": "2026-01-24 10:26:33+00:00"
+      },
+      {
+        "text": "belli noktadan sonra zorlamicaksin ya, direk sifira",
+        "engagement_score": 99.35,
+        "like_count": 45,
+        "retweet_count": 0,
+        "reply_count": 4,
+        "impression_count": 13915,
+        "created_at": "2026-02-07 23:18:20+00:00"
+      },
+      {
+        "text": "aksam 6.45'te canli yayinda vibe coding yarismasindayim. kupa kimde?\n\nhttps://t.co/tuNAxk2dQk",
+        "engagement_score": 98.71,
+        "like_count": 38,
+        "retweet_count": 1,
+        "reply_count": 3,
+        "impression_count": 20111,
+        "created_at": "2026-02-12 11:53:39+00:00"
+      },
+      {
+        "text": "age of empires tarzi bir oyunu vibe kodlama\n\nhttps://t.co/DspJK5OGd5",
+        "engagement_score": 96.89,
+        "like_count": 83,
+        "retweet_count": 0,
+        "reply_count": 1,
+        "impression_count": 20702,
+        "created_at": "2025-04-24 14:23:29+00:00"
+      },
+      {
+        "text": "nasil ya, daha gecen aklima geldi. bunu hatirlayan var mi 😀 gecen oturdum 90 ve 2000'lerin oyun videolarina baktim. cok guzeldi 😀",
+        "engagement_score": 94.99,
+        "like_count": 27,
+        "retweet_count": 0,
+        "reply_count": 5,
+        "impression_count": 6156,
+        "created_at": "2026-02-25 13:00:26+00:00"
+      },
+      {
+        "text": "süper. ürününü kullanan kişiden eski usül feedback yerine prompt alıyorsun. claude code'a verip değişikliği yaptırıyorsun, sonra prod'a 😀",
+        "engagement_score": 94.1,
+        "like_count": 60,
+        "retweet_count": 1,
+        "reply_count": 1,
+        "impression_count": 9722,
+        "created_at": "2026-02-25 11:59:43+00:00"
+      },
+      {
+        "text": "12 ekim ctesi devnot etkinliginde olacagim, orada olursaniz gorusmek uzere 👋",
+        "engagement_score": 93.83,
+        "like_count": 53,
+        "retweet_count": 0,
+        "reply_count": 3,
+        "impression_count": 15858,
+        "created_at": "2024-09-30 15:13:13+00:00"
+      },
+      {
+        "text": "ai coding'e karşı olanların fikrini değiştirmesi artık bir olasılık değil, yaşanacak bir gerçek.",
+        "engagement_score": 91.87,
+        "like_count": 78,
+        "retweet_count": 0,
+        "reply_count": 1,
+        "impression_count": 19496,
+        "created_at": "2026-01-04 13:51:35+00:00"
+      },
+      {
+        "text": "🤯",
+        "engagement_score": 91.75,
+        "like_count": 38,
+        "retweet_count": 2,
+        "reply_count": 1,
+        "impression_count": 15178,
+        "created_at": "2024-01-26 19:14:21+00:00"
+      },
+      {
+        "text": "🇹🇷🇹🇷🇹🇷",
+        "engagement_score": 88.43,
+        "like_count": 61,
+        "retweet_count": 0,
+        "reply_count": 2,
+        "impression_count": 12856,
+        "created_at": "2025-08-02 17:03:33+00:00"
+      },
+      {
+        "text": "guzel tavsiyeler var. ozellikle 30 civarinda epey buyuk degisiklikler oluyor. akraba/arkadasa ayirdigin vakit epey dusuyor, cocuk cok vakit aliyor, sonrasinda cocuga ayrilan vakit bireye kaliyor, derken pat 🪦",
+        "engagement_score": 87.8,
+        "like_count": 74,
+        "retweet_count": 0,
+        "reply_count": 1,
+        "impression_count": 22001,
+        "created_at": "2022-12-31 08:36:43+00:00"
+      },
+      {
+        "text": "YAYIN BASLADI \n\nhttps://t.co/zdQx86KIG9",
+        "engagement_score": 84.79,
+        "like_count": 31,
+        "retweet_count": 2,
+        "reply_count": 1,
+        "impression_count": 9980,
+        "created_at": "2025-01-31 18:35:38+00:00"
+      },
+      {
+        "text": "kucuk bir LLM'i (&lt;7b) finetune edip biraz detayli ogreneyim dedim. suan yuz tane chrome tab'i acik, bu is uzun surecek 😀 eger bu alanda tecrubesi olup danismanlik hizmeti vermek isteyen varsa beraber calismayi cok isterim. o sekilde cok daha hizli ogrenecegim gibi duruyor.",
+        "engagement_score": 84.72,
+        "like_count": 44,
+        "retweet_count": 0,
+        "reply_count": 3,
+        "impression_count": 18257,
+        "created_at": "2024-01-14 06:10:07+00:00"
+      },
+      {
+        "text": "ben yaristim, guzeldi 😀 tavsiye ederim",
+        "engagement_score": 84.3,
+        "like_count": 37,
+        "retweet_count": 1,
+        "reply_count": 2,
+        "impression_count": 11126,
+        "created_at": "2026-03-03 10:36:47+00:00"
+      },
+      {
+        "text": "uzun sure sonra youtube'a vlog yukledim\n\nhttps://t.co/EC7BBSVOBo",
+        "engagement_score": 81.81,
+        "like_count": 54,
+        "retweet_count": 0,
+        "reply_count": 2,
+        "impression_count": 5599,
+        "created_at": "2024-11-29 12:50:29+00:00"
+      },
+      {
+        "text": "gundem olan olaydan bagimsiz\n\nkatiliyorum, memleket baska bir sey. dogup buyuyup sonra tamamiyla baska yere ait hissediyorum diyen ya kendini kandiriyordur ya da kararlarinin sonuclarini gorecek kadar cok yasamamistir.",
+        "engagement_score": 80.79,
+        "like_count": 47,
+        "retweet_count": 1,
+        "reply_count": 1,
+        "impression_count": 13393,
+        "created_at": "2025-08-11 23:27:40+00:00"
+      },
+      {
+        "text": "tam gym'e cikiyordum, motivasyon oldu. bugun pull gunu\n\nhttps://t.co/egBAPCDY7N",
+        "engagement_score": 79.16,
+        "like_count": 38,
+        "retweet_count": 0,
+        "reply_count": 3,
+        "impression_count": 4906,
+        "created_at": "2026-01-27 14:42:19+00:00"
+      },
+      {
+        "text": "mumkun",
+        "engagement_score": 73.68,
+        "like_count": 33,
+        "retweet_count": 0,
+        "reply_count": 3,
+        "impression_count": 14496,
+        "created_at": "2025-10-10 20:57:29+00:00"
+      },
+      {
+        "text": "kesinlikle, guzel yorum\n\n\"İnkar, Öfke, Pazarlık, Depresyon ve Kabul\"",
+        "engagement_score": 71.36,
+        "like_count": 51,
+        "retweet_count": 1,
+        "reply_count": 0,
+        "impression_count": 10203,
+        "created_at": "2026-02-27 09:08:25+00:00"
+      },
+      {
+        "text": "oo",
+        "engagement_score": 69.77,
+        "like_count": 56,
+        "retweet_count": 0,
+        "reply_count": 1,
+        "impression_count": 14912,
+        "created_at": "2026-02-21 04:05:28+00:00"
+      },
+      {
+        "text": "bu ara ara kendine sormak icin guzel bir soru. en yakin arkadasim/ailem boyle bir durumda beni arar mi? akla ilk gelen ben olmam icin hayatimda neleri degistirmeliyim?",
+        "engagement_score": 69.71,
+        "like_count": 16,
+        "retweet_count": 2,
+        "reply_count": 1,
+        "impression_count": 6175,
+        "created_at": "2026-01-08 12:45:14+00:00"
+      },
+      {
+        "text": "benim hikayem de buna benzer, guzel zamanlardi ya 🥹",
+        "engagement_score": 68.14,
+        "like_count": 41,
+        "retweet_count": 0,
+        "reply_count": 2,
+        "impression_count": 20782,
+        "created_at": "2023-03-30 16:21:12+00:00"
+      },
+      {
+        "text": "orta ve büyük çaplı projelerde ship ettiğin kodun yüzde kaçı cursor/windsurf ya da LLM'den geliyor?",
+        "engagement_score": 67.16,
+        "like_count": 13,
+        "retweet_count": 0,
+        "reply_count": 4,
+        "impression_count": 6945,
+        "created_at": "2025-01-16 08:58:04+00:00"
+      },
+      {
+        "text": "karakterlere bak 😀 var mi boyle ai videolar yapan, kac tool birden kullaniyorsunuz",
+        "engagement_score": 63.69,
+        "like_count": 23,
+        "retweet_count": 0,
+        "reply_count": 3,
+        "impression_count": 8521,
+        "created_at": "2025-12-27 17:35:33+00:00"
+      },
+      {
+        "text": "aa guzel nokta, iceride calismis birinin bu konudaki yorumu ne olurdu acaba",
+        "engagement_score": 63.06,
+        "like_count": 16,
+        "retweet_count": 1,
+        "reply_count": 2,
+        "impression_count": 20758,
+        "created_at": "2026-01-26 14:17:58+00:00"
+      },
+      {
+        "text": "burada thread boi'lari gorur cringe bulurdum. korkuyorum, bi bakicam ben de onlardan biri olmusum. iki gundur uzun thread paylasiyorum",
+        "engagement_score": 62.78,
+        "like_count": 22,
+        "retweet_count": 0,
+        "reply_count": 3,
+        "impression_count": 5637,
+        "created_at": "2026-01-08 13:39:47+00:00"
+      },
+      {
+        "text": "11 saatten az kaldi! aksam gorusuruz! 🔴",
+        "engagement_score": 57.62,
+        "like_count": 44,
+        "retweet_count": 0,
+        "reply_count": 1,
+        "impression_count": 20721,
+        "created_at": "2023-09-01 07:16:52+00:00"
+      },
+      {
+        "text": "cok iyi ya",
+        "engagement_score": 54.12,
+        "like_count": 27,
+        "retweet_count": 0,
+        "reply_count": 2,
+        "impression_count": 12614,
+        "created_at": "2025-10-03 05:37:08+00:00"
+      },
+      {
+        "text": "ya x algoritmasi oyle bi hale geldi ki ai slop basmaya zorluyor. gundemdeki konuya cringe content uretirsen goruntulenme geliyor. daha ozgun, kendi capimda kendi stilimde birsey yapayim diyorsun kimseye gostermiyor. birak baskasini follower'larina bile gostermiyor. icerik uretici icin degmiyor",
+        "engagement_score": 51.2,
+        "like_count": 24,
+        "retweet_count": 0,
+        "reply_count": 2,
+        "impression_count": 6606,
+        "created_at": "2026-01-26 18:46:54+00:00"
+      },
+      {
+        "text": "2023'te benim için iyi ve kötü giden birer şeyden, ve 2024 hedefimden bahsettim. \n\nSizin yeni yılda hedeflediğiniz bir şey nedir?",
+        "engagement_score": 51.12,
+        "like_count": 24,
+        "retweet_count": 0,
+        "reply_count": 2,
+        "impression_count": 10904,
+        "created_at": "2024-02-04 22:32:29+00:00"
+      },
+      {
+        "text": "yarin bu etkinlikteyim, gelen varsa gorusuruz",
+        "engagement_score": 50.56,
+        "like_count": 10,
+        "retweet_count": 0,
+        "reply_count": 3,
+        "impression_count": 11095,
+        "created_at": "2025-10-02 11:38:16+00:00"
+      },
+      {
+        "text": "bu aralar kodcaste iyi bolum cektik 😀 bundan sonra 4 tane daha kaydettik.",
+        "engagement_score": 47.15,
+        "like_count": 47,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 14949,
+        "created_at": "2024-01-16 08:50:22+00:00"
+      },
+      {
+        "text": "öğrenciyseniz ya da henüz full time tecrübeniz yoksa iş arayışı nasıl gidiyor?",
+        "engagement_score": 43.52,
+        "like_count": 3,
+        "retweet_count": 0,
+        "reply_count": 3,
+        "impression_count": 11250,
+        "created_at": "2025-12-27 18:25:51+00:00"
+      },
+      {
+        "text": "balenciaga\n\nhttps://t.co/gvIu89zH9f",
+        "engagement_score": 41.08,
+        "like_count": 21,
+        "retweet_count": 1,
+        "reply_count": 0,
+        "impression_count": 11462,
+        "created_at": "2023-04-15 15:04:17+00:00"
+      },
+      {
+        "text": "celeron islemci, 4gb hd, 8 mb ekran karti, 32mb ram. iki haftada bir disk birlestirir dururduk 😀 guzel gunlerdi",
+        "engagement_score": 37.2,
+        "like_count": 37,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 7011,
+        "created_at": "2026-03-01 22:01:22+00:00"
+      },
+      {
+        "text": "işe alımlar inanılmaz yavaşladı, iş bulmak bu aralar zor. şuan şirketinizde mutlu musunuz?\n\n1-2 sene ve fazla profesyonel tecrübesi olanlar için durum nasıl?\n\nöğrenci veya tecrübesi olmayanlar için başka anket açayım",
+        "engagement_score": 29.01,
+        "like_count": 2,
+        "retweet_count": 0,
+        "reply_count": 2,
+        "impression_count": 9843,
+        "created_at": "2025-12-27 18:21:45+00:00"
+      },
+      {
+        "text": "YAYIN BASLADI!",
+        "engagement_score": 28.54,
+        "like_count": 15,
+        "retweet_count": 0,
+        "reply_count": 1,
+        "impression_count": 10879,
+        "created_at": "2023-09-01 19:00:08+00:00"
+      },
+      {
+        "text": "suan yazilim gelistirici olup kac iste calisiyorsun?",
+        "engagement_score": 25.55,
+        "like_count": 12,
+        "retweet_count": 0,
+        "reply_count": 1,
+        "impression_count": 7258,
+        "created_at": "2024-12-18 20:21:04+00:00"
+      },
+      {
+        "text": "cursor kullanarak 5 sene önce çektiğim videoda çok hızlı bir şekilde 1 saatte geliştirdiğim web uygulamasını bugün dakikalar içerisinde nasıl hayata geçirebileceğimizi göstermek istedim. https://t.co/HnJzyFGnSC",
+        "engagement_score": 24.15,
+        "like_count": 24,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 3809,
+        "created_at": "2024-12-25 12:56:21+00:00"
+      },
+      {
+        "text": "haha cs dust'a bak",
+        "engagement_score": 16.05,
+        "like_count": 16,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 5444,
+        "created_at": "2025-12-30 19:33:47+00:00"
+      }
+    ],
+    "all_retweets": [
+      {
+        "text": "RT @SelmanKahyaX: https://t.co/KnB4AAjF2n",
+        "engagement_score": 2185.0,
+        "like_count": 0,
+        "retweet_count": 19,
+        "reply_count": 0,
+        "impression_count": 4,
+        "created_at": "2026-02-21 15:32:46+00:00"
+      },
+      {
+        "text": "RT @BilgemCakir: Çok fazla emek ve çabanın ardından bunu göğsümüzü gere gere paylaşabilmekten çok mutluyum. Bütün ekip arkadaşlarımla gurur…",
+        "engagement_score": 860.0,
+        "like_count": 0,
+        "retweet_count": 43,
+        "reply_count": 0,
+        "impression_count": 0,
+        "created_at": "2024-01-30 06:24:29+00:00"
+      },
+      {
+        "text": "RT @ilayderkul: Psikoloji alanında bir sağlık çalışanı olarak, şu anda insanların yaşadığı genel 'sahip olduklarından suçluluk duyma' yani…",
+        "engagement_score": 155900.0,
+        "like_count": 0,
+        "retweet_count": 7795,
+        "reply_count": 0,
+        "impression_count": 0,
+        "created_at": "2023-02-11 21:57:17+00:00"
+      }
+    ],
+    "original_count": 201,
+    "retweet_count": 3,
+    "top_keywords": [
+      {
+        "keyword": "genel",
+        "avg_score": 39476.55
+      },
+      {
+        "keyword": "insanların",
+        "avg_score": 39312.07
+      },
+      {
+        "keyword": "sahip",
+        "avg_score": 26283.79
+      },
+      {
+        "keyword": "yani",
+        "avg_score": 23053.44
+      },
+      {
+        "keyword": "basit",
+        "avg_score": 6591.16
+      },
+      {
+        "keyword": "kendini",
+        "avg_score": 4614.75
+      },
+      {
+        "keyword": "gerçek",
+        "avg_score": 4395.41
+      },
+      {
+        "keyword": "binlerce",
+        "avg_score": 3729.92
+      },
+      {
+        "keyword": "tam",
+        "avg_score": 3112.53
+      },
+      {
+        "keyword": "acik",
+        "avg_score": 2089.35
+      },
+      {
+        "keyword": "yalnız",
+        "avg_score": 1938.96
+      },
+      {
+        "keyword": "tab",
+        "avg_score": 1715.92
+      },
+      {
+        "keyword": "chrome",
+        "avg_score": 1627.02
+      },
+      {
+        "keyword": "istifa",
+        "avg_score": 1579.97
+      },
+      {
+        "keyword": "ilgimi",
+        "avg_score": 1523.14
+      },
+      {
+        "keyword": "kontrol",
+        "avg_score": 1453.93
+      },
+      {
+        "keyword": "boyle",
+        "avg_score": 1425.12
+      },
+      {
+        "keyword": "yapay",
+        "avg_score": 1414.56
+      },
+      {
+        "keyword": "süper",
+        "avg_score": 1307.38
+      },
+      {
+        "keyword": "inanılmaz",
+        "avg_score": 1266.09
+      },
+      {
+        "keyword": "prototip",
+        "avg_score": 1209.45
+      },
+      {
+        "keyword": "olacak",
+        "avg_score": 1164.91
+      },
+      {
+        "keyword": "kat",
+        "avg_score": 1159.13
+      },
+      {
+        "keyword": "fakat",
+        "avg_score": 1133.15
+      },
+      {
+        "keyword": "diye",
+        "avg_score": 1117.61
+      },
+      {
+        "keyword": "tavsiye",
+        "avg_score": 1098.01
+      },
+      {
+        "keyword": "falan",
+        "avg_score": 1095.34
+      },
+      {
+        "keyword": "sürekli",
+        "avg_score": 1087.46
+      },
+      {
+        "keyword": "proje",
+        "avg_score": 1085.38
+      },
+      {
+        "keyword": "canlı",
+        "avg_score": 1078.88
+      }
+    ],
+    "most_used_keywords": [
+      {
+        "keyword": "iyi",
+        "count": 23
+      },
+      {
+        "keyword": "cok",
+        "count": 19
+      },
+      {
+        "keyword": "güzel",
+        "count": 18
+      },
+      {
+        "keyword": "değil",
+        "count": 17
+      },
+      {
+        "keyword": "kendi",
+        "count": 16
+      },
+      {
+        "keyword": "code",
+        "count": 16
+      },
+      {
+        "keyword": "guzel",
+        "count": 16
+      },
+      {
+        "keyword": "baya",
+        "count": 15
+      },
+      {
+        "keyword": "claude",
+        "count": 15
+      },
+      {
+        "keyword": "kod",
+        "count": 14
+      },
+      {
+        "keyword": "uygulama",
+        "count": 14
+      },
+      {
+        "keyword": "uzun",
+        "count": 13
+      },
+      {
+        "keyword": "sene",
+        "count": 13
+      },
+      {
+        "keyword": "yeni",
+        "count": 13
+      },
+      {
+        "keyword": "icin",
+        "count": 13
+      },
+      {
+        "keyword": "şey",
+        "count": 12
+      },
+      {
+        "keyword": "canli",
+        "count": 12
+      },
+      {
+        "keyword": "kullanarak",
+        "count": 11
+      },
+      {
+        "keyword": "diye",
+        "count": 11
+      },
+      {
+        "keyword": "yayin",
+        "count": 11
+      },
+      {
+        "keyword": "yazılım",
+        "count": 10
+      },
+      {
+        "keyword": "insan",
+        "count": 10
+      },
+      {
+        "keyword": "zor",
+        "count": 10
+      },
+      {
+        "keyword": "zaten",
+        "count": 10
+      },
+      {
+        "keyword": "olacak",
+        "count": 10
+      },
+      {
+        "keyword": "fazla",
+        "count": 9
+      },
+      {
+        "keyword": "llm",
+        "count": 9
+      },
+      {
+        "keyword": "vibe",
+        "count": 9
+      },
+      {
+        "keyword": "test",
+        "count": 9
+      },
+      {
+        "keyword": "cursor",
+        "count": 9
+      }
+    ],
+    "length_analysis": {
+      "short": {
+        "count": 151,
+        "avg_score": 1549.79
+      },
+      "medium": {
+        "count": 38,
+        "avg_score": 730.4
+      },
+      "long": {
+        "count": 15,
+        "avg_score": 701.64
+      }
+    },
+    "question_analysis": {
+      "question_tweets": {
+        "count": 40,
+        "avg_score": 552.25
+      },
+      "statement_tweets": {
+        "count": 164,
+        "avg_score": 1525.66
+      }
+    },
+    "top_hashtags": [
+      {
+        "tag": "#birmuhendis",
+        "count": 5,
+        "avg_score": 638.43
+      }
+    ],
+    "best_hours": [
+      {
+        "hour": 21,
+        "avg_score": 14583.05,
+        "tweet_count": 11
+      },
+      {
+        "hour": 2,
+        "avg_score": 4701.91,
+        "tweet_count": 4
+      },
+      {
+        "hour": 6,
+        "avg_score": 1451.13,
+        "tweet_count": 5
+      },
+      {
+        "hour": 19,
+        "avg_score": 671.36,
+        "tweet_count": 19
+      },
+      {
+        "hour": 8,
+        "avg_score": 583.06,
+        "tweet_count": 16
+      }
+    ],
+    "style_dna": {
+      "kucuk_harf_yuzde": 84,
+      "ortalama_uzunluk": 240,
+      "imza_kelimeleri": {
+        "ya": 33,
+        "güzel": 16,
+        "şey": 14,
+        "zaten": 8,
+        "yani": 7,
+        "sadece": 6,
+        "açık": 5,
+        "artık": 4,
+        "şimdi": 3,
+        "böyle": 3,
+        "öyle": 3,
+        "bile": 2,
+        "bak": 2,
+        "çıktı": 2,
+        "aslında": 1,
+        "valla": 1,
+        "tamam": 1,
+        "hadi": 1,
+        "lan": 1,
+        "net": 1,
+        "henüz": 1,
+        "geldi": 1
+      },
+      "imza_kaliplari": {
+        "olm": 27,
+        "ok.": 9,
+        "artık": 5,
+        "şu an": 3,
+        "aslında": 1,
+        "açık kaynak": 1
+      },
+      "hook_ornekleri": [
+        "binlerce özgeçmiş inceledim, iş başvurusu değerlendirdim. kişilerin kendini tam anlamıyla sunamaması, deyim yerindeyse kendini pazarlayamaması, basit detaylardan ötürü kendilerine şans verilmiyor olma",
+        "sonra okurum diye laptop ve telefonda yuzlerce chrome tab acik. raindrop, pocket falan kullandim, bitiremedim. boyle bir probleminiz varsa siz nasil cozuyorsunuz?",
+        "günümüzün süper güçleri:",
+        "iddia: ai/yapay zekanın etkisi sanayi devriminden binlerce kat büyük olacak.",
+        "işimden istifa ettim! bu cuma son günüm. 4-5 takıma, 20-25 kişiye yöneticilik yapıyor olmak, sürekli artan sorumluluklar baya öğretici tecrübeydi.",
+        "ai/yapay zeka meslek tanımlarını inanılmaz bir hızda değiştiriyor.",
+        "her gecen gun daha fazla ikna oluyorum. kodlama ogrenmektense konseptleri kavramak, dusunmeyi ogrenmek, kompleks problemi parcalara bolup, insanlara ve makinelere is yaptirabilmek daha kritik hale gel",
+        "5-10 senede yazılım dünyasının ve geliştiricilerin sorumluluklarının kökten değişeceğine inanıyorum.",
+        "bir yazılımcı yol haritası.",
+        "olay şuraya gidiyor:",
+        "yazilim alani icin universite egitimi ve not ortalamasini onemli buluyordum fakat son bir senede fikrim cok degisti. 4 sene universite egitimi o kadar uzun ki, ustelik hocalar genelde birak 1-2 seneyi",
+        "\"İçinde bulunduğun durum ya da şirket ne olursa olsun, elinden gelenin en iyisini yap. Onlar için değil, kendin için. Hoşnutsuzluğu kendini geliştirmek için motivasyona dönüştür. Ardından fırsat kendi",
+        "isimden istifa edip, tamamen yazilim alaninda ai/llm gelismelerine odaklandigim bu donemde dahi twitter ve diger sosyal aglarda olan icerikleri tukettigimde fomo, yani bir seyleri kacirma korkusu teti",
+        "\"bir şirket onlarca claude code'u 7x24 çalıştırdığı, claude'in şuankinden 1000 kat daha az insan input'u gerektirdiği bir dünyada, çalıştığım şirket bana ne için para ödüyor olacak?\"",
+        "yazılımcının rolü operatörden (yapan) orkestra şefine (planlayan, yöneten) döndü."
+      ],
+      "kapanis_tercihi": {
+        "nokta": 47,
+        "noktasiz": 95,
+        "soru": 16,
+        "sevgiler": 0,
+        "link": 43
+      },
+      "emoji_yuzde": 20,
+      "tweet_sayisi": 201
+    }
+  },
+  "ai_report": ""
+}

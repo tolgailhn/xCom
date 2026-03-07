@@ -9,7 +9,7 @@ import re
 from collections import Counter
 from pathlib import Path
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
 ANALYSES_DIR = DATA_DIR / "tweet_analyses"
 
 

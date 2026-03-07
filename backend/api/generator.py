@@ -24,6 +24,7 @@ class GenerateRequest(BaseModel):
     media_urls: list[str] = []
     content_format: str = ""
     quote_url: str = ""
+    provider: str = ""  # "", "minimax", "anthropic", "openai" — empty = auto
 
 
 class QuoteTweetRequest(BaseModel):
@@ -34,6 +35,7 @@ class QuoteTweetRequest(BaseModel):
     additional_context: str = ""
     length_preference: str = "spark"
     deep_verify: bool = False
+    provider: str = ""
 
 
 class GenerateResponse(BaseModel):
@@ -75,6 +77,7 @@ class ReplyRequest(BaseModel):
     original_author: str = ""
     style: str = "reply"
     additional_context: str = ""
+    provider: str = ""
 
 
 class ImageAnalysisRequest(BaseModel):
@@ -142,7 +145,7 @@ async def generate_tweet(request: GenerateRequest):
     from backend.api.helpers import create_generator
 
     try:
-        generator = create_generator(topic=request.topic)
+        generator = create_generator(topic=request.topic, preferred_provider=request.provider)
 
         if request.thread:
             parts = await asyncio.to_thread(
@@ -173,7 +176,7 @@ async def generate_quote_tweet_endpoint(request: QuoteTweetRequest):
     from backend.api.helpers import create_generator
 
     try:
-        generator = create_generator(topic=request.original_tweet)
+        generator = create_generator(topic=request.original_tweet, preferred_provider=request.provider)
 
         text = await asyncio.to_thread(
             generator.generate_quote_tweet,
@@ -247,7 +250,7 @@ async def generate_reply_endpoint(request: ReplyRequest):
     from backend.api.helpers import create_generator
 
     try:
-        generator = create_generator(topic=request.original_tweet)
+        generator = create_generator(topic=request.original_tweet, preferred_provider=request.provider)
 
         text = await asyncio.to_thread(
             generator.generate_reply,
@@ -496,14 +499,30 @@ async def research_stream(request: ResearchRequest):
                     if title:
                         key_points.append(f"{title}: {body[:100]}" if body else title)
                 sources = []
-                for art in getattr(result, "deep_articles", [])[:5]:
+                for art in getattr(result, "deep_articles", [])[:8]:
                     sources.append({
                         "title": art.get("title", ""),
                         "url": art.get("url", ""),
-                        "body": art.get("content", "")[:200] if art.get("content") else "",
+                        "body": art.get("content", "")[:500] if art.get("content") else "",
                     })
+                # Add web results as sources if no deep articles
+                if not sources:
+                    for wr in getattr(result, "web_results", [])[:5]:
+                        if wr.get("href"):
+                            sources.append({
+                                "title": wr.get("title", ""),
+                                "url": wr.get("href", ""),
+                                "body": wr.get("body", "")[:300] if wr.get("body") else "",
+                            })
+                # Add thread tweets if available
+                thread_tweets = getattr(result, "thread_tweets", [])
+                thread_context = ""
+                if thread_tweets:
+                    thread_context = "\n\nThread:\n" + "\n".join(
+                        [f"@{t.get('author', '?')}: {t.get('text', '')[:200]}" for t in thread_tweets[:5]]
+                    )
                 data = {
-                    "summary": summary,
+                    "summary": summary + thread_context,
                     "key_points": key_points,
                     "sources": sources,
                     "media_urls": getattr(result, "media_urls", []) or [],
@@ -677,6 +696,13 @@ async def fact_check(request: FactCheckRequest):
 async def get_styles():
     """Mevcut yazim tarzlari ve format seceneklerini don"""
     return {"styles": STYLES, "formats": FORMATS, "content_styles": CONTENT_STYLES}
+
+
+@router.get("/providers")
+async def get_providers():
+    """Mevcut AI provider listesini don"""
+    from backend.api.helpers import get_available_providers
+    return {"providers": get_available_providers()}
 
 
 # ── Topic Discovery ───────────────────────────────────

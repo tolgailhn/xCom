@@ -12,7 +12,7 @@ import re
 import datetime
 from pathlib import Path
 
-DATA_DIR = Path("data")
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
 POOL_FILE = DATA_DIR / "tweet_pool.json"
 POOL_ACCOUNTS_FILE = DATA_DIR / "pool_accounts.json"
 
