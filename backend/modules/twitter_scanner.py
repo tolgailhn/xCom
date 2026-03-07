@@ -920,7 +920,18 @@ class TwitterScanner:
             except Exception as e:
                 print(f"Tweepy get_thread error: {e}")
 
-        # Method 2: Twikit fallback — get single tweet text
+        # Method 2: Twikit fallback — fetch full thread via twikit
+        if self.twikit_client and self.use_twikit:
+            try:
+                thread_data = self.twikit_client.get_thread(tweet_id)
+                if thread_data and len(thread_data) > 0:
+                    texts = [t.get('text', '') for t in thread_data if t.get('text')]
+                    if texts:
+                        return texts
+            except Exception as e:
+                print(f"Twikit get_thread error: {e}")
+
+        # Method 3: Last resort — single tweet
         twikit_result = self._get_tweet_by_id_twikit(tweet_id)
         if twikit_result:
             return [twikit_result.text]

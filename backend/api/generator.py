@@ -364,11 +364,29 @@ async def do_research_endpoint(request: ResearchRequest):
         # DuckDuckGo / standard research (run in thread to avoid blocking event loop)
         from backend.modules.deep_research import research_topic as do_research
 
+        # Build scanner for thread fetching if tweet_id provided
+        scanner = None
+        if request.tweet_id:
+            try:
+                from backend.modules.twitter_scanner import TwitterScanner
+                from backend.config import get_settings
+                s = get_settings()
+                if s.twitter_bearer_token or s.twikit_ct0 or s.twikit_auth_token or s.twikit_username:
+                    scanner = TwitterScanner(
+                        bearer_token=s.twitter_bearer_token or "",
+                        twikit_username=s.twikit_username or "",
+                        twikit_password=s.twikit_password or "",
+                        twikit_email=s.twikit_email or "",
+                    )
+            except Exception:
+                pass
+
         result = await asyncio.to_thread(
             do_research,
             tweet_text=request.topic,
             tweet_author=request.tweet_author,
             tweet_id=request.tweet_id,
+            scanner=scanner,
             engine=request.engine if request.engine != "default" else "standard",
             use_agentic=request.agentic,
             ai_client=ai_client,
@@ -581,26 +599,30 @@ class ExtractTweetRequest(BaseModel):
 
 @router.post("/extract-tweet")
 async def extract_tweet_endpoint(request: ExtractTweetRequest):
-    """Tweet URL'sinden ID cikar ve tweet bilgilerini getir"""
+    """Tweet URL'sinden ID cikar, tweet bilgilerini ve thread varsa tum thread'i getir"""
     try:
         from backend.modules.deep_research import extract_tweet_id
         tweet_id = extract_tweet_id(request.url)
         if not tweet_id:
             return {"success": False, "error": "Gecersiz tweet URL'si"}
 
-        # Try to fetch tweet details
         tweet_data = None
+        thread_tweets = []  # Full thread texts if this is a thread
         from backend.config import get_settings
         s = get_settings()
 
-        # Method 1: Twitter API v2 (bearer token)
+        # Method 1: Twitter API v2 (bearer token) — includes thread fetching
         if s.twitter_bearer_token:
             try:
                 from backend.modules.twitter_scanner import TwitterScanner
-                scanner = TwitterScanner(bearer_token=s.twitter_bearer_token)
+                scanner = TwitterScanner(
+                    bearer_token=s.twitter_bearer_token,
+                    twikit_username=s.twikit_username or "",
+                    twikit_password=s.twikit_password or "",
+                    twikit_email=s.twikit_email or "",
+                )
                 result = await asyncio.to_thread(scanner.get_tweet_by_id, tweet_id)
                 if result:
-                    # TwitterScanner returns AITopic object
                     tweet_data = {
                         "text": getattr(result, "text", ""),
                         "author_username": getattr(result, "author_username", ""),
@@ -609,10 +631,14 @@ async def extract_tweet_endpoint(request: ExtractTweetRequest):
                         "retweet_count": getattr(result, "retweet_count", 0),
                         "reply_count": getattr(result, "reply_count", 0),
                     }
+                # Also fetch thread
+                thread_texts = await asyncio.to_thread(scanner.get_thread, tweet_id)
+                if thread_texts and len(thread_texts) > 1:
+                    thread_tweets = thread_texts
             except Exception as e:
                 logger.warning(f"Bearer token tweet fetch failed: {e}")
 
-        # Method 2: Twikit (cookie-based, free)
+        # Method 2: Twikit (cookie-based, free) — includes thread fetching
         if not tweet_data and (s.twikit_ct0 or s.twikit_auth_token or s.twikit_username):
             try:
                 from backend.modules.twikit_client import TwikitSearchClient
@@ -622,21 +648,46 @@ async def extract_tweet_endpoint(request: ExtractTweetRequest):
                     email=s.twikit_email or "",
                 )
                 if twikit.authenticate():
-                    result = await asyncio.to_thread(twikit.get_tweet_by_id, tweet_id)
-                    if result:
+                    # Fetch thread (returns list of tweet dicts)
+                    thread_data = await asyncio.to_thread(twikit.get_thread, tweet_id)
+                    if thread_data and len(thread_data) > 0:
+                        # Use first tweet as main tweet data if we don't have it
+                        # Find the original tweet in thread
+                        main = None
+                        for t in thread_data:
+                            if t.get("id") == tweet_id or str(t.get("id")) == str(tweet_id):
+                                main = t
+                                break
+                        if not main:
+                            main = thread_data[0]
+
                         tweet_data = {
-                            "text": result.get("text", ""),
-                            "author_username": result.get("author_username", ""),
-                            "author_name": result.get("author_name", ""),
-                            "like_count": result.get("like_count", 0),
-                            "retweet_count": result.get("retweet_count", 0),
-                            "reply_count": result.get("reply_count", 0),
+                            "text": main.get("text", ""),
+                            "author_username": main.get("author_username", ""),
+                            "author_name": main.get("author_name", ""),
+                            "like_count": main.get("like_count", 0),
+                            "retweet_count": main.get("retweet_count", 0),
+                            "reply_count": main.get("reply_count", 0),
                         }
+                        if len(thread_data) > 1:
+                            thread_tweets = [t.get("text", "") for t in thread_data if t.get("text")]
+                    else:
+                        # Fallback to single tweet
+                        result = await asyncio.to_thread(twikit.get_tweet_by_id, tweet_id)
+                        if result:
+                            tweet_data = {
+                                "text": result.get("text", ""),
+                                "author_username": result.get("author_username", ""),
+                                "author_name": result.get("author_name", ""),
+                                "like_count": result.get("like_count", 0),
+                                "retweet_count": result.get("retweet_count", 0),
+                                "reply_count": result.get("reply_count", 0),
+                            }
             except Exception as e:
                 logger.warning(f"Twikit tweet fetch failed: {e}")
 
         if tweet_data:
-            return {
+            response = {
                 "success": True,
                 "tweet_id": tweet_id,
                 "text": tweet_data.get("text", ""),
@@ -646,6 +697,18 @@ async def extract_tweet_endpoint(request: ExtractTweetRequest):
                 "retweet_count": tweet_data.get("retweet_count", 0),
                 "reply_count": tweet_data.get("reply_count", 0),
             }
+            # Include thread data if available
+            if thread_tweets and len(thread_tweets) > 1:
+                response["is_thread"] = True
+                response["thread_tweets"] = thread_tweets
+                response["thread_count"] = len(thread_tweets)
+                # Combine all thread texts for display
+                response["full_thread_text"] = "\n\n".join(thread_tweets)
+            else:
+                response["is_thread"] = False
+                response["thread_tweets"] = []
+                response["thread_count"] = 1
+            return response
         else:
             return {
                 "success": True,
@@ -653,6 +716,9 @@ async def extract_tweet_endpoint(request: ExtractTweetRequest):
                 "text": "",
                 "author": "",
                 "author_name": "",
+                "is_thread": False,
+                "thread_tweets": [],
+                "thread_count": 0,
             }
 
     except Exception as e:

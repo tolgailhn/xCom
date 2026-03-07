@@ -1040,6 +1040,10 @@ function TabQuoteTweet({
     like_count: number;
     retweet_count: number;
     reply_count: number;
+    is_thread?: boolean;
+    thread_tweets?: string[];
+    thread_count?: number;
+    full_thread_text?: string;
   } | null>(null);
   const [extracting, setExtracting] = useState(false);
 
@@ -1094,6 +1098,10 @@ function TabQuoteTweet({
           like_count?: number;
           retweet_count?: number;
           reply_count?: number;
+          is_thread?: boolean;
+          thread_tweets?: string[];
+          thread_count?: number;
+          full_thread_text?: string;
           error?: string;
         };
         if (res.success && res.tweet_id) {
@@ -1106,6 +1114,10 @@ function TabQuoteTweet({
               like_count: res.like_count || 0,
               retweet_count: res.retweet_count || 0,
               reply_count: res.reply_count || 0,
+              is_thread: res.is_thread || false,
+              thread_tweets: res.thread_tweets || [],
+              thread_count: res.thread_count || 1,
+              full_thread_text: res.full_thread_text || "",
             });
           } else {
             setOriginalTweet(null);
@@ -1135,7 +1147,8 @@ function TabQuoteTweet({
     setProgressMessages([]);
 
     try {
-      const researchTopic = originalTweet?.text || quoteUrl;
+      // Use full thread text if available, otherwise single tweet text
+      const researchTopic = originalTweet?.full_thread_text || originalTweet?.text || quoteUrl;
       // Build research_sources from checkboxes
       const sources: string[] = [];
       if (srcX) sources.push("x");
@@ -1171,7 +1184,8 @@ function TabQuoteTweet({
 
     try {
       const researchSummary = `${researchResult.summary}\n\nKey Points:\n${researchResult.key_points.join("\n")}`;
-      const tweetText = originalTweet?.text || quoteUrl;
+      // Pass full thread text so the AI has complete context
+      const tweetText = originalTweet?.full_thread_text || originalTweet?.text || quoteUrl;
       const tweetAuthor = originalTweet?.author || "";
 
       const result = (await generateQuoteTweet({
@@ -1258,8 +1272,28 @@ function TabQuoteTweet({
               {originalTweet.author && (
                 <span className="text-xs text-[var(--text-secondary)]">@{originalTweet.author}</span>
               )}
+              {originalTweet.is_thread && (
+                <span className="text-xs bg-[var(--accent-blue)] text-white px-2 py-0.5 rounded-full">
+                  Thread ({originalTweet.thread_count} tweet)
+                </span>
+              )}
             </div>
             <p className="text-sm whitespace-pre-line mb-2">{originalTweet.text}</p>
+            {/* Show thread tweets if available */}
+            {originalTweet.is_thread && originalTweet.thread_tweets && originalTweet.thread_tweets.length > 1 && (
+              <details className="mt-2 mb-2">
+                <summary className="text-xs text-[var(--accent-blue)] cursor-pointer hover:underline">
+                  Tum thread&apos;i gor ({originalTweet.thread_count} tweet)
+                </summary>
+                <div className="mt-2 space-y-2 pl-3 border-l-2 border-[var(--border)]">
+                  {originalTweet.thread_tweets.map((tweet, i) => (
+                    <p key={i} className="text-xs text-[var(--text-secondary)] whitespace-pre-line">
+                      <span className="font-medium text-[var(--text-primary)]">{i + 1}/</span> {tweet}
+                    </p>
+                  ))}
+                </div>
+              </details>
+            )}
             <div className="flex gap-4 text-xs text-[var(--text-secondary)]">
               <span>Like {originalTweet.like_count}</span>
               <span>RT {originalTweet.retweet_count}</span>

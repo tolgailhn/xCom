@@ -1927,47 +1927,44 @@ def ai_synthesize_research(raw_summary: str, original_tweet: str,
     if not ai_client:
         return None
 
-    prompt = f"""Aşağıda bir tweet ve o tweet hakkında yapılmış araştırma sonuçları var.
+    prompt = f"""Aşağıda bir tweet/thread ve o konu hakkında yapılmış araştırma sonuçları var.
 
-ORİJİNAL TWEET:
-"{original_tweet[:800]}"
+ORİJİNAL TWEET/THREAD:
+"{original_tweet[:1500]}"
 
 ARAŞTIRMA SONUÇLARI:
 {raw_summary[:6000]}
 
 ---
 
-GÖREV: Bu araştırmadan tweet yazarken kullanılabilecek en değerli bilgileri çıkar.
-Sadece TWEET KONUSUYLA İLGİLİ bilgileri dahil et, alakasız olanları AT.
+GÖREV: Bu araştırmadan bir TWEET yazmak için gerekli bilgileri özetle.
+Amacımız bu gelişmeyi/haberi takipçilerimize en iyi şekilde aktarmak.
 
 Yanıtını şu formatta yaz:
 
-## TEMEL BULGULAR
-(Tweet'in konusuyla doğrudan ilgili en önemli 3-5 bilgi. Her biri tek cümle.)
+## NE OLDU?
+(Bu gelişme/haber/ürün/olay ne? 2-3 cümle ile net açıkla. Orijinal tweet bir thread ise thread'deki TÜM bilgileri dahil et — adım adım anlatım, teknik detaylar, örnekler hepsi önemli.)
 
-## RAKAMLAR VE VERİLER
-(Spesifik rakamlar, yüzdeler, dolar tutarları, tarihler — tweet'e güç katacak veriler.)
+## NEDEN ÖNEMLİ?
+(Bu gelişme neden dikkat çekici? Kime faydalı? Sektöre etkisi ne? 1-2 cümle.)
 
-## UZMAN GÖRÜŞLERİ / ALITILAR
-(Varsa, kaynaklardan alıntılanabilecek görüşler veya ifadeler.)
-
-## KARŞIT GÖRÜŞ / ÇELİŞKİ
-(Konuyla ilgili karşıt bir bakış açısı veya ilginç bir çelişki varsa yaz.)
-
-## BAĞLAM
-(Bu olay neden önemli? Piyasa etkisi, sektörel anlam, trend bağlamı.)
+## SOMUT DETAYLAR
+(Araştırmadan çıkan spesifik bilgiler: fiyat, tarih, benchmark sonucu, performans karşılaştırması, pratik kullanım detayı vb. Sadece konuyla doğrudan ilgili olanlar.)
 
 KURALLAR:
-- Her madde TEK CÜMLE olsun, kısa ve net
-- Sadece GERÇEK bilgi yaz, yorum ekleme
-- Tweet konusuyla ALAKASIZ bilgileri dahil etme
-- "Bulunamadı" yazmak yerine o bölümü boş bırak
-- Araştırmada bilgi yoksa bölümü atla
+- Orijinal tweet/thread'deki bilgilere SADIK KAL — thread bir anlatım/tutorial ise adımları özetle
+- Araştırmadan sadece KONUYU DESTEKLEYEN ve DOĞRULAYAN bilgileri al
+- Konuyla ALAKASIZ bilgileri, farklı ürünlerin karşılaştırmalarını, genel sektör bilgilerini DAHIL ETME
+- Her bilgi kısa ve net olsun
+- Yorum ekleme, sadece gerçekleri yaz
+- Bilgi yoksa o bölümü atla, "bulunamadı" yazma
+- Eski veya güncelliğini yitirmiş bilgileri DAHIL ETME (sadece güncel bilgiler)
 
-⛔ FİLTRELE:
-- Yıldız sayısı (star count), fork sayısı, contributor sayısı gibi popülerlik metrikleri DAHIL ETME
-- Bunlar yüzeysel vanity metrikler ve tweet'e değer katmaz
-- Bunun yerine teknik bilgi, mimari detay, benchmark sonuçları, pratik kullanım öne çıkar"""
+⛔ DAHIL ETME:
+- Tweet konusuyla ilgisiz karşılaştırmalar (örn: tweet A ürününü anlatıyorsa B vs C karşılaştırması gereksiz)
+- Popülerlik metrikleri (star, fork, download sayıları)
+- Genel/herkesin bildiği bilgiler (örn: "AI sektörü büyüyor")
+- Karşıt görüş veya çelişki ARAMA — sadece varsa ve önemliyse yaz"""
 
     try:
         if provider == "anthropic":

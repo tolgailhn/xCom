@@ -723,6 +723,99 @@ class TwikitSearchClient:
             print(f"Twikit get_tweet_by_id error: {type(e).__name__}: {e}")
         return None
 
+    def get_thread(self, tweet_id: str) -> list[dict]:
+        """Fetch the full thread for a given tweet using twikit.
+
+        Strategy:
+        1. Get the tweet to find its author
+        2. Search for conversation tweets from the same author using
+           conversation_id (which twikit's Tweet object exposes)
+        3. Walk up reply chain if conversation_id not available
+        4. Return list of tweet dicts sorted oldest-first
+        """
+        if not self._authenticated:
+            return []
+        return self._run(self._get_thread_async(tweet_id))
+
+    async def _get_thread_async(self, tweet_id: str) -> list[dict]:
+        try:
+            self._bypass_client_transaction(silent=True)
+            client = self._get_client_sync()
+            tweet = await client.get_tweet_by_id(tweet_id)
+            if not tweet:
+                return []
+
+            author_id = None
+            user = getattr(tweet, 'user', None)
+            if user:
+                author_id = getattr(user, 'id', None) or getattr(user, 'rest_id', None)
+            author_screen = getattr(user, 'screen_name', '') if user else ''
+
+            # Strategy 1: Use conversation_id to search all thread tweets
+            conv_id = getattr(tweet, 'conversation_id', None)
+
+            thread_tweets = {}  # id -> tweet dict
+            main_tweet_dict = self._tweet_to_dict(tweet)
+            thread_tweets[str(getattr(tweet, 'id', tweet_id))] = main_tweet_dict
+
+            if conv_id and author_screen:
+                try:
+                    query = f"conversation_id:{conv_id} from:{author_screen}"
+                    results = await client.search_tweet(query, 'Latest', count=40)
+                    for t in (results or []):
+                        tid = str(getattr(t, 'id', ''))
+                        if tid and tid not in thread_tweets:
+                            thread_tweets[tid] = self._tweet_to_dict(t)
+                except Exception as e:
+                    print(f"Twikit thread conversation search error: {e}")
+
+            # Strategy 2: Walk up the reply chain (in_reply_to)
+            current = tweet
+            walk_count = 0
+            while walk_count < 15:
+                reply_to_id = (getattr(current, 'in_reply_to_tweet_id', None)
+                               or getattr(current, 'reply_to', None))
+                if not reply_to_id:
+                    break
+                reply_to_id = str(reply_to_id)
+                if reply_to_id in thread_tweets:
+                    break
+                try:
+                    parent = await client.get_tweet_by_id(reply_to_id)
+                    if not parent:
+                        break
+                    # Only include tweets from the same author (self-thread)
+                    parent_user = getattr(parent, 'user', None)
+                    parent_author_id = None
+                    if parent_user:
+                        parent_author_id = (getattr(parent_user, 'id', None)
+                                            or getattr(parent_user, 'rest_id', None))
+                    if author_id and parent_author_id and str(parent_author_id) != str(author_id):
+                        break  # Different author = not a self-thread
+                    thread_tweets[reply_to_id] = self._tweet_to_dict(parent)
+                    current = parent
+                    walk_count += 1
+                except Exception:
+                    break
+
+            # Sort by created_at (oldest first)
+            sorted_tweets = sorted(
+                thread_tweets.values(),
+                key=lambda t: t.get('created_at') or datetime.datetime.min.replace(
+                    tzinfo=datetime.timezone.utc
+                ),
+            )
+            return sorted_tweets
+
+        except Exception as e:
+            print(f"Twikit get_thread error: {type(e).__name__}: {e}")
+            # Fallback: return single tweet
+            try:
+                single = await self._get_tweet_by_id_async(tweet_id)
+                return [single] if single else []
+            except Exception:
+                return []
+
     def get_user_info(self, username: str) -> dict | None:
         """Get user profile info. Returns dict with user data."""
         if not self._authenticated:
