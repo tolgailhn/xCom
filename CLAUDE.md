@@ -302,8 +302,19 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 - **feat**: `yaz/page.tsx` — Quote Tweet tab'ında da API publish eklendi
 - **feat**: `api.ts` — `PublishResult` tipi eklendi (`thread_results` desteği)
 
+### 2026-03-07 (Faz 2A: Scheduled Posting Backend)
+- **feat**: `scheduler_worker.py` — APScheduler BackgroundScheduler: her dakika bekleyen postları kontrol edip paylaşıyor
+- **feat**: `api/scheduler.py` — Yeni API: POST /add, GET /pending, GET /all, DELETE /cancel/{id}
+- **feat**: `style_manager.py` — Scheduled posts CRUD fonksiyonları (load, save, add, update, delete)
+- **feat**: `main.py` — Scheduler startup/shutdown event'leri + router kaydı
+- **feat**: `requirements.txt` — `apscheduler>=3.10.0` eklendi
+
+### 2026-03-07 (Faz 2B: Scheduled Posting Frontend)
+- **feat**: `api.ts` — Scheduler API fonksiyonları (schedulePost, getPendingPosts, getAllScheduledPosts, cancelScheduledPost)
+- **feat**: `yaz/page.tsx` — "Zamanla" butonu: tarih/saat seçici ile tweet zamanlama
+- **feat**: `takvim/page.tsx` — "Zamanlanmış Postlar" bölümü: bekleyen/tüm filtre + iptal butonu
+
 ### BEKLEYEN FAZLAR (HAFIZADA)
-- **Faz 2**: Otomatik Zamanlı Paylaşım (APScheduler + Schedule UI)
 - **Faz 3**: Paylaşım Sonrası Performans Takibi (Tweet metrikleri)
 - **Küçük İyileştirmeler (Sonra)**: En iyi paylaşım saati analizi, rakip analizi
 
