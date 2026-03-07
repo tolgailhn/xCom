@@ -9,6 +9,17 @@
 5. **Bir hata olduğunda, öncelikle hatayı yeniden oluşturacak bir test yaz, ardından test başarılı olana kadar hatayı düzelt.**
 6. **Her düzeltme yaptığında, neyi yanlış yaptığını düşün ve aynı hatayı bir daha asla yapmamak için bir plan geliştir.**
 8. **Her git push'tan sonra kullanıcıya sunucuda `git pull` yapması gerektiğini hatırlat.** Kod GitHub'a yazılıyor, sunucuya otomatik yansımıyor.
+9. **Her push'tan sonra hangi servislerin yeniden başlatılması gerektiğini MUTLAKA söyle.** Kullanıcıya sormadan, değişen dosyalara göre adım adım talimat ver:
+   - **Frontend dosyası değiştiyse** (`.tsx`, `.ts`, `.css`, `next.config.ts`): Frontend yeniden başlatılmalı:
+     ```powershell
+     # Frontend terminalinde Ctrl+C ile durdur, sonra:
+     cd C:\Users\Administrator\xCom\frontend
+     Remove-Item -Recurse -Force .next
+     npm run dev -- --hostname 0.0.0.0 --port 3000
+     ```
+   - **Backend dosyası değiştiyse** (`.py`): Backend `--reload` ile çalışıyorsa otomatik algılar, yeniden başlatmaya gerek yok. Ama yeni paket eklendiyse `pip install -r requirements.txt` gerekir.
+   - **Her ikisi de değiştiyse**: Önce backend kontrol, sonra frontend yeniden başlat.
+   - Bu talimatları HER SEFERINDE ver, kullanıcı sormasını BEKLEME.
 7. **Bu dosyayı her önemli değişiklikten sonra güncelle.** Yeni kararlar, mimari değişiklikler, bilinen sorunlar buraya yazılmalı.
 
 ---
