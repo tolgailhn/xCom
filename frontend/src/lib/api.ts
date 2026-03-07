@@ -195,10 +195,35 @@ export function discoverContentTopics(focusArea: string = "", engine: string = "
   });
 }
 
+// Quote Tweet Generation
+export function generateQuoteTweet(params: {
+  original_tweet: string;
+  original_author?: string;
+  style?: string;
+  research_summary?: string;
+  additional_context?: string;
+  length_preference?: string;
+  deep_verify?: boolean;
+}) {
+  return apiFetch("/api/generator/quote-tweet", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+// Extract Tweet from URL
+export function extractTweet(url: string) {
+  return apiFetch("/api/generator/extract-tweet", {
+    method: "POST",
+    body: JSON.stringify({ url }),
+  });
+}
+
 // Publish
 export function publishTweet(params: {
   text: string;
   thread_parts?: string[];
+  quote_tweet_id?: string;
 }) {
   return apiFetch("/api/publish/tweet", {
     method: "POST",

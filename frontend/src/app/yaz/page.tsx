@@ -4,6 +4,8 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   generateTweet,
+  generateQuoteTweet,
+  extractTweet,
   researchTopic,
   researchTopicStream,
   publishTweet,
@@ -163,6 +165,7 @@ function YazContent() {
       {activeTab === "quote" && (
         <TabQuoteTweet
           styles={styles}
+          formats={formats}
           initialUrl={searchParams.get("quote_url") || ""}
         />
       )}
@@ -692,13 +695,16 @@ function TabTweetYaz({
 
 function TabQuoteTweet({
   styles,
+  formats,
   initialUrl,
 }: {
   styles: StyleOption[];
+  formats: FormatOption[];
   initialUrl: string;
 }) {
   const [quoteUrl, setQuoteUrl] = useState(initialUrl);
-  const [style, setStyle] = useState("samimi");
+  const [style, setStyle] = useState("quote_tweet");
+  const [contentFormat, setContentFormat] = useState("spark");
   const [engine, setEngine] = useState("default");
   const [agentic, setAgentic] = useState(false);
   const [deepVerify, setDeepVerify] = useState(false);
@@ -706,6 +712,20 @@ function TabQuoteTweet({
   /* Research sources */
   const [srcX, setSrcX] = useState(true);
   const [srcWeb, setSrcWeb] = useState(false);
+  const [srcReddit, setSrcReddit] = useState(false);
+  const [srcNews, setSrcNews] = useState(false);
+
+  /* Original tweet info */
+  const [tweetId, setTweetId] = useState("");
+  const [originalTweet, setOriginalTweet] = useState<{
+    text: string;
+    author: string;
+    author_name: string;
+    like_count: number;
+    retweet_count: number;
+    reply_count: number;
+  } | null>(null);
+  const [extracting, setExtracting] = useState(false);
 
   const [researchResult, setResearchResult] = useState<{
     summary: string;
@@ -731,6 +751,57 @@ function TabQuoteTweet({
   } | null>(null);
   const [factLoading, setFactLoading] = useState(false);
 
+  /* Extract tweet when URL changes (debounced) */
+  useEffect(() => {
+    const url = quoteUrl.trim();
+    if (!url || (!url.includes("twitter.com/") && !url.includes("x.com/"))) {
+      setOriginalTweet(null);
+      setTweetId("");
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setExtracting(true);
+      try {
+        const res = await extractTweet(url) as {
+          success: boolean;
+          tweet_id?: string;
+          text?: string;
+          author?: string;
+          author_name?: string;
+          like_count?: number;
+          retweet_count?: number;
+          reply_count?: number;
+          error?: string;
+        };
+        if (res.success && res.tweet_id) {
+          setTweetId(res.tweet_id);
+          if (res.text) {
+            setOriginalTweet({
+              text: res.text,
+              author: res.author || "",
+              author_name: res.author_name || "",
+              like_count: res.like_count || 0,
+              retweet_count: res.retweet_count || 0,
+              reply_count: res.reply_count || 0,
+            });
+          } else {
+            setOriginalTweet(null);
+          }
+        } else {
+          setTweetId("");
+          setOriginalTweet(null);
+          if (res.error) setError(res.error);
+        }
+      } catch {
+        setTweetId("");
+        setOriginalTweet(null);
+      } finally {
+        setExtracting(false);
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [quoteUrl]);
+
   const handleResearchAndGenerate = async () => {
     if (!quoteUrl.trim()) return;
     setResearching(true);
@@ -740,45 +811,35 @@ function TabQuoteTweet({
     setProgressMessages([]);
 
     try {
-      // Step 1: Research the topic from the URL (with live progress)
-      const topicFromUrl = quoteUrl;
+      // Use original tweet text as research topic if available
+      const researchTopic = originalTweet?.text || quoteUrl;
+
+      // Step 1: Research (with live progress)
       const research = await researchTopicStream(
-        { topic: topicFromUrl, engine, agentic },
+        { topic: researchTopic, engine, agentic },
         (msg) => setProgressMessages((prev) => [...prev, msg]),
       );
       setResearchResult(research);
 
-      // Step 2: Generate quote tweet using research
+      // Step 2: Generate quote tweet using the proper endpoint
       setResearching(false);
       setGenerating(true);
 
-      const researchContext = `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}`;
+      const researchSummary = `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}`;
+      const tweetText = originalTweet?.text || quoteUrl;
+      const tweetAuthor = originalTweet?.author || "";
 
-      const result = (await generateTweet({
-        topic: topicFromUrl,
+      const result = (await generateQuoteTweet({
+        original_tweet: tweetText,
+        original_author: tweetAuthor,
         style,
-        research_context: researchContext,
-        quote_url: quoteUrl,
+        research_summary: researchSummary,
+        length_preference: contentFormat,
+        deep_verify: deepVerify,
       })) as { text: string; score: ScoreResult | null };
       setGeneratedText(result.text);
       setScoreResult(result.score || null);
 
-      // Step 3: Auto fact-check if deep verify enabled
-      if (deepVerify && result.text) {
-        setFactLoading(true);
-        try {
-          const fc = (await factCheck(result.text, topicFromUrl)) as {
-            verified: boolean;
-            claims: FactClaim[];
-            context: string;
-          };
-          setFactResult(fc);
-        } catch {
-          /* ignore */
-        } finally {
-          setFactLoading(false);
-        }
-      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Arastirma/uretim hatasi");
     } finally {
@@ -791,7 +852,10 @@ function TabQuoteTweet({
     if (!generatedText) return;
     setPublishing(true);
     try {
-      const result = (await publishTweet({ text: generatedText })) as {
+      const result = (await publishTweet({
+        text: generatedText,
+        quote_tweet_id: tweetId || undefined,
+      })) as {
         success: boolean;
         url: string;
         error: string;
@@ -808,11 +872,19 @@ function TabQuoteTweet({
     }
   };
 
+  const handleOpenInX = () => {
+    if (!generatedText || !tweetId) return;
+    const quoteUrlForX = `https://x.com/i/status/${tweetId}`;
+    const cleanText = generatedText.replace(new RegExp(`status/${tweetId}\\S*`, "g"), "").trim();
+    const intentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(cleanText)}&attachment_url=${encodeURIComponent(quoteUrlForX)}`;
+    window.open(intentUrl, "_blank");
+  };
+
   return (
     <div className="space-y-5">
       <div className="glass-card p-4 border-l-4 border-[var(--accent-purple)]">
         <p className="text-sm text-[var(--text-secondary)]">
-          Tweet URL girin &rarr; Thread okunur &rarr; Web + X&apos;te arastirilir &rarr; Bilgili quote tweet yazilir
+          Tweet URL girin &rarr; Tweet cekilir &rarr; Arastirilir &rarr; Quote tweet yazilir &rarr; Dogrulanir &rarr; Paylasilir
         </p>
       </div>
 
@@ -828,7 +900,54 @@ function TabQuoteTweet({
             placeholder="https://x.com/kullanici/status/123456789..."
             className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-4 py-3 text-sm focus:border-[var(--accent-blue)] focus:outline-none"
           />
+          {extracting && (
+            <p className="text-xs text-[var(--text-secondary)] mt-1">Tweet bilgileri aliniyor...</p>
+          )}
         </div>
+
+        {/* Original tweet card */}
+        {originalTweet && originalTweet.text && (
+          <div className="bg-[var(--bg-primary)] rounded-lg p-4 border-l-4 border-[var(--accent-blue)]">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sm font-semibold">{originalTweet.author_name || originalTweet.author}</span>
+              {originalTweet.author && (
+                <span className="text-xs text-[var(--text-secondary)]">@{originalTweet.author}</span>
+              )}
+            </div>
+            <p className="text-sm whitespace-pre-line mb-2">{originalTweet.text}</p>
+            <div className="flex gap-4 text-xs text-[var(--text-secondary)]">
+              <span>Like {originalTweet.like_count}</span>
+              <span>RT {originalTweet.retweet_count}</span>
+              <span>Reply {originalTweet.reply_count}</span>
+            </div>
+          </div>
+        )}
+
+        {/* No bearer token — manual input */}
+        {tweetId && !originalTweet?.text && !extracting && (
+          <div className="bg-[var(--bg-primary)] rounded-lg p-3">
+            <p className="text-xs text-[var(--text-secondary)] mb-2">
+              Tweet ID: {tweetId} (Tweet icerigi cekilemedi — Bearer token gerekli)
+            </p>
+            <textarea
+              placeholder="Orijinal tweet metnini buraya yapistirabilirsiniz (opsiyonel)..."
+              rows={2}
+              className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs resize-none"
+              onChange={(e) => {
+                if (e.target.value.trim()) {
+                  setOriginalTweet({
+                    text: e.target.value.trim(),
+                    author: "",
+                    author_name: "",
+                    like_count: 0,
+                    retweet_count: 0,
+                    reply_count: 0,
+                  });
+                }
+              }}
+            />
+          </div>
+        )}
 
         {/* Research settings */}
         <div className="bg-[var(--bg-primary)] rounded-lg p-3 space-y-3">
@@ -836,51 +955,66 @@ function TabQuoteTweet({
             Arastirma Ayarlari
           </p>
 
+          {/* Sources */}
           <div className="flex flex-wrap gap-4">
             <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input
-                type="checkbox"
-                checked={srcX}
-                onChange={(e) => setSrcX(e.target.checked)}
-                className="rounded"
-              />
+              <input type="checkbox" checked={srcX} onChange={(e) => setSrcX(e.target.checked)} className="rounded" />
               X
             </label>
             <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input
-                type="checkbox"
-                checked={srcWeb}
-                onChange={(e) => setSrcWeb(e.target.checked)}
-                className="rounded"
-              />
+              <input type="checkbox" checked={srcWeb} onChange={(e) => setSrcWeb(e.target.checked)} className="rounded" />
               Web
+            </label>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input type="checkbox" checked={srcReddit} onChange={(e) => setSrcReddit(e.target.checked)} className="rounded" />
+              Reddit
+            </label>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input type="checkbox" checked={srcNews} onChange={(e) => setSrcNews(e.target.checked)} className="rounded" />
+              Haber
             </label>
           </div>
 
           <div className="flex flex-wrap gap-4">
             {/* Style */}
             <div>
-              <label className="text-xs text-[var(--text-secondary)] block mb-1">
-                Tarz
-              </label>
+              <label className="text-xs text-[var(--text-secondary)] block mb-1">Tarz</label>
               <select
                 value={style}
                 onChange={(e) => setStyle(e.target.value)}
                 className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
               >
                 {styles.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
+                  <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
+              </select>
+            </div>
+
+            {/* Format */}
+            <div>
+              <label className="text-xs text-[var(--text-secondary)] block mb-1">Format</label>
+              <select
+                value={contentFormat}
+                onChange={(e) => setContentFormat(e.target.value)}
+                className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
+              >
+                {formats.length > 0 ? formats.filter(f => f.id !== "thread").map((f) => (
+                  <option key={f.id} value={f.id}>{f.name}</option>
+                )) : (
+                  <>
+                    <option value="micro">Micro (0-140)</option>
+                    <option value="punch">Punch (140-280)</option>
+                    <option value="spark">Spark (400-600)</option>
+                    <option value="storm">Storm (700-1000)</option>
+                    <option value="thunder">Thunder (1200-1500)</option>
+                  </>
+                )}
               </select>
             </div>
 
             {/* Engine */}
             <div>
-              <label className="text-xs text-[var(--text-secondary)] block mb-1">
-                Motor
-              </label>
+              <label className="text-xs text-[var(--text-secondary)] block mb-1">Motor</label>
               <select
                 value={engine}
                 onChange={(e) => setEngine(e.target.value)}
@@ -893,21 +1027,11 @@ function TabQuoteTweet({
 
             <div className="flex items-end gap-4">
               <label className="flex items-center gap-1 text-xs cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={agentic}
-                  onChange={(e) => setAgentic(e.target.checked)}
-                  className="rounded"
-                />
+                <input type="checkbox" checked={agentic} onChange={(e) => setAgentic(e.target.checked)} className="rounded" />
                 Agentic
               </label>
               <label className="flex items-center gap-1 text-xs cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={deepVerify}
-                  onChange={(e) => setDeepVerify(e.target.checked)}
-                  className="rounded"
-                />
+                <input type="checkbox" checked={deepVerify} onChange={(e) => setDeepVerify(e.target.checked)} className="rounded" />
                 Dogrulama
               </label>
             </div>
@@ -983,9 +1107,7 @@ function TabQuoteTweet({
                 Kaynaklar ({researchResult.sources.length})
               </p>
               {researchResult.sources.slice(0, 5).map((s, i) => (
-                <p key={i} className="text-xs text-[var(--text-secondary)]">
-                  - {s.title}
-                </p>
+                <p key={i} className="text-xs text-[var(--text-secondary)]">- {s.title}</p>
               ))}
             </div>
           )}
@@ -1017,64 +1139,42 @@ function TabQuoteTweet({
               <h4
                 className={`text-sm font-semibold ${factResult.verified ? "text-[var(--accent-green)]" : "text-[var(--accent-red)]"}`}
               >
-                {factResult.verified
-                  ? "Iddialar dogrulandi"
-                  : "Dogrulanamayan iddialar var"}
+                {factResult.verified ? "Iddialar dogrulandi" : "Dogrulanamayan iddialar var"}
               </h4>
               {factResult.claims.map((c, i) => (
                 <div
                   key={i}
                   className={`text-xs p-2 rounded ${c.verified ? "bg-[var(--accent-green)]/10" : "bg-[var(--accent-red)]/10"}`}
                 >
-                  <span className="font-medium">
-                    {c.verified ? "+" : "-"} {c.claim}
-                  </span>
-                  {c.detail && (
-                    <p className="text-[var(--text-secondary)] mt-0.5">
-                      {c.detail}
-                    </p>
-                  )}
+                  <span className="font-medium">{c.verified ? "+" : "-"} {c.claim}</span>
+                  {c.detail && <p className="text-[var(--text-secondary)] mt-0.5">{c.detail}</p>}
                 </div>
               ))}
             </div>
           )}
           {factLoading && (
-            <p className="text-xs text-[var(--text-secondary)]">
-              Dogrulama yapiliyor...
-            </p>
+            <p className="text-xs text-[var(--text-secondary)]">Dogrulama yapiliyor...</p>
           )}
 
           {publishResult && (
             <div className="bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/30 rounded-lg p-3">
               <span className="text-sm text-[var(--accent-green)]">
                 Paylasildi!{" "}
-                <a
-                  href={publishResult}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
+                <a href={publishResult} target="_blank" rel="noopener noreferrer" className="underline">
                   Goruntule
                 </a>
               </span>
             </div>
           )}
 
-          <div className="flex gap-3">
-            <button
-              onClick={handleResearchAndGenerate}
-              className="btn-secondary text-sm"
-            >
+          <div className="flex flex-wrap gap-3">
+            <button onClick={handleResearchAndGenerate} className="btn-secondary text-sm">
               Yeniden Uret
             </button>
             <button
               onClick={async () => {
                 setDraftSaved(false);
-                await addDraft({
-                  text: generatedText,
-                  topic: quoteUrl,
-                  style,
-                });
+                await addDraft({ text: generatedText, topic: quoteUrl, style });
                 setDraftSaved(true);
                 setTimeout(() => setDraftSaved(false), 3000);
               }}
@@ -1082,13 +1182,14 @@ function TabQuoteTweet({
             >
               {draftSaved ? "Kaydedildi!" : "Taslak Kaydet"}
             </button>
-            <button
-              onClick={handlePublish}
-              disabled={publishing}
-              className="btn-primary text-sm"
-            >
-              {publishing ? "Paylasiliyor..." : "Paylas"}
+            <button onClick={handlePublish} disabled={publishing} className="btn-primary text-sm">
+              {publishing ? "Paylasiliyor..." : "Quote Tweet Paylas"}
             </button>
+            {tweetId && (
+              <button onClick={handleOpenInX} className="btn-secondary text-sm">
+                X&apos;te Ac
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -26,6 +26,16 @@ class GenerateRequest(BaseModel):
     quote_url: str = ""
 
 
+class QuoteTweetRequest(BaseModel):
+    original_tweet: str
+    original_author: str = ""
+    style: str = "quote_tweet"
+    research_summary: str = ""
+    additional_context: str = ""
+    length_preference: str = "spark"
+    deep_verify: bool = False
+
+
 class GenerateResponse(BaseModel):
     text: str
     thread_parts: list[str] = []
@@ -68,23 +78,23 @@ class DiscoverRequest(BaseModel):
 # ── Style & Format Constants ───────────────────────────
 
 STYLES = [
-    {"id": "samimi", "name": "Samimi", "desc": "Dogal, gunluk konusma tonu"},
-    {"id": "profesyonel", "name": "Profesyonel", "desc": "Resmi, is dunyasi tonu"},
-    {"id": "analitik", "name": "Analitik", "desc": "Veri odakli, teknik analiz"},
-    {"id": "esprili", "name": "Esprili", "desc": "Mizahi, espri iceren ton"},
-    {"id": "egitici", "name": "Egitici", "desc": "Ogretici, aciklayici ton"},
-    {"id": "heyecanli", "name": "Heyecanli", "desc": "Enerji dolu, motive edici"},
-    {"id": "minimalist", "name": "Minimalist", "desc": "Az ve oz, vurucu"},
-    {"id": "storyteller", "name": "Hikayeci", "desc": "Hikaye anlatici ton"},
+    {"id": "auto", "name": "Otomatik", "desc": "Rastgele stil sec"},
+    {"id": "samimi", "name": "Samimi / Kisisel", "desc": "Kisisel deneyim odakli, dogal ve samimi"},
+    {"id": "profesyonel", "name": "Profesyonel / Bilgilendirici", "desc": "Bilgi odakli, profesyonel ama sicak"},
+    {"id": "hook", "name": "Hook / Viral Tarz", "desc": "Guclu acilis, cesur fikirler, viral potansiyeli yuksek"},
+    {"id": "analitik", "name": "Analitik / Derinlemesine", "desc": "Derinlemesine analiz, karsilastirma ve tahminler"},
+    {"id": "haber", "name": "Haber / Bilgi Paylasimi", "desc": "Detayli AI haber paylasimi — bilgi + kisisel yorum"},
+    {"id": "agresif", "name": "Agresif / Enerjik", "desc": "Direkt, enerjik, firsat odakli — guclu ton"},
+    {"id": "quote_tweet", "name": "Quote Tweet / Yorum", "desc": "Tweet'e kendi yorumunu ekle, dogal ve samimi"},
 ]
 
 FORMATS = [
-    {"id": "micro", "name": "Micro", "desc": "Tek cumle, vurucu (< 100 kar)"},
-    {"id": "punch", "name": "Punch", "desc": "Kisa ve etkili (100-180 kar)"},
-    {"id": "spark", "name": "Spark", "desc": "Standart tweet (180-280 kar)"},
-    {"id": "storm", "name": "Storm", "desc": "Uzun tweet/note (280-500 kar)"},
-    {"id": "thunder", "name": "Thunder", "desc": "Cok uzun post (500-1000 kar)"},
-    {"id": "mega", "name": "Mega", "desc": "Maksimum uzunluk (1000+ kar)"},
+    {"id": "micro", "name": "Micro — Tek Satir", "desc": "Tek cumle, vurucu fikir (0-140 kar)"},
+    {"id": "punch", "name": "Punch — Standart Tweet", "desc": "Standart tweet uzunlugu (140-280 kar)"},
+    {"id": "spark", "name": "Spark — Kisa Hikaye", "desc": "Kisa hikaye, aciklama (400-600 kar)"},
+    {"id": "storm", "name": "Storm — Derin Analiz", "desc": "Derin analiz, uzun hikaye (700-1000 kar)"},
+    {"id": "thread", "name": "Thread — Seri Anlatim", "desc": "3-5 tweet serisi (her biri max 280 kar)"},
+    {"id": "thunder", "name": "Thunder — En Derin", "desc": "En uzun ve detayli format (1200-1500 kar)"},
 ]
 
 CONTENT_STYLES = [
@@ -140,6 +150,80 @@ async def generate_tweet(request: GenerateRequest):
                 content_format=request.content_format,
             )
             return GenerateResponse(text=text, score=_score_text(text))
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/quote-tweet", response_model=GenerateResponse)
+async def generate_quote_tweet_endpoint(request: QuoteTweetRequest):
+    """Quote tweet uret — orijinal tweet + arastirma ile"""
+    from backend.api.helpers import create_generator
+
+    try:
+        generator = create_generator(topic=request.original_tweet)
+
+        text = await asyncio.to_thread(
+            generator.generate_quote_tweet,
+            original_tweet=request.original_tweet,
+            original_author=request.original_author,
+            style=request.style,
+            additional_context=request.additional_context,
+            research_summary=request.research_summary,
+            length_preference=request.length_preference,
+        )
+
+        score = _score_text(text)
+
+        # Auto deep verify
+        if request.deep_verify and text:
+            try:
+                from backend.modules.deep_research import (
+                    ai_fact_check_draft, verify_claims,
+                    compile_verification_context,
+                )
+                from backend.api.helpers import get_ai_provider
+
+                provider, api_key, model = get_ai_provider()
+                ai_client = None
+                if provider == "anthropic":
+                    import anthropic
+                    ai_client = anthropic.Anthropic(api_key=api_key)
+                elif provider in ("openai", "minimax"):
+                    from openai import OpenAI
+                    base_url = "https://api.minimaxi.chat/v1" if provider == "minimax" else None
+                    ai_client = OpenAI(api_key=api_key, base_url=base_url)
+
+                claims = await asyncio.to_thread(
+                    ai_fact_check_draft,
+                    draft_tweet=text,
+                    original_tweet=request.original_tweet,
+                    research_context=request.research_summary,
+                    ai_client=ai_client,
+                    ai_model=model,
+                    provider=provider,
+                )
+                if claims and not all(c.get("is_clean") for c in ([claims] if isinstance(claims, dict) else claims)):
+                    issues = claims if isinstance(claims, list) else claims.get("issues", [])
+                    if issues:
+                        verified = await asyncio.to_thread(verify_claims, issues)
+                        verification_ctx = compile_verification_context(verified)
+
+                        text = await asyncio.to_thread(
+                            generator.refine_tweet_with_verification,
+                            draft_tweet=text,
+                            original_tweet=request.original_tweet,
+                            original_author=request.original_author,
+                            research_summary=request.research_summary,
+                            verification_context=verification_ctx,
+                            style=request.style,
+                            length_preference=request.length_preference,
+                        )
+                        score = _score_text(text)
+            except Exception as e:
+                logger.warning("Deep verify failed: %s", e)
+
+        return GenerateResponse(text=text, score=score)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -382,6 +466,57 @@ async def research_stream(request: ResearchRequest):
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)}, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+# ── Extract Tweet ──────────────────────────────────────
+
+class ExtractTweetRequest(BaseModel):
+    url: str
+
+
+@router.post("/extract-tweet")
+async def extract_tweet_endpoint(request: ExtractTweetRequest):
+    """Tweet URL'sinden ID cikar ve tweet bilgilerini getir"""
+    try:
+        from backend.modules.deep_research import extract_tweet_id
+        tweet_id = extract_tweet_id(request.url)
+        if not tweet_id:
+            return {"success": False, "error": "Gecersiz tweet URL'si"}
+
+        # Try to fetch tweet details
+        tweet_data = None
+        try:
+            from backend.modules.twitter_scanner import TwitterScanner
+            from backend.config import get_settings
+            s = get_settings()
+            if s.twitter_bearer_token:
+                scanner = TwitterScanner(bearer_token=s.twitter_bearer_token)
+                tweet_data = await asyncio.to_thread(scanner.get_tweet_by_id, tweet_id)
+        except Exception:
+            pass
+
+        if tweet_data:
+            return {
+                "success": True,
+                "tweet_id": tweet_id,
+                "text": tweet_data.get("text", ""),
+                "author": tweet_data.get("author", {}).get("username", ""),
+                "author_name": tweet_data.get("author", {}).get("name", ""),
+                "like_count": tweet_data.get("like_count", 0),
+                "retweet_count": tweet_data.get("retweet_count", 0),
+                "reply_count": tweet_data.get("reply_count", 0),
+            }
+        else:
+            return {
+                "success": True,
+                "tweet_id": tweet_id,
+                "text": "",
+                "author": "",
+                "author_name": "",
+            }
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 # ── Score ───────────────────────────────────────────────
