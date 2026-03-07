@@ -1654,7 +1654,7 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
                   onClick={() => {
                     setSelectedTweet(tw);
                     setGeneratedReply("");
-                  }}}
+                  }}
                   className="btn-secondary text-xs"
                 >
                   Reply Yaz
