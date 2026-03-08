@@ -106,15 +106,20 @@ STYLES = [
     {"id": "quote_tweet", "name": "Quote Tweet / Yorum", "desc": "Tweet'e kendi yorumunu ekle, dogal ve samimi"},
     {"id": "tolga", "name": "Tolga Style", "desc": "Gelismeyi detaylariyla aktaran, bilgi yogun, pratik deger sunan format"},
     {"id": "hurricane", "name": "Hurricane Style", "desc": "Provokasyon, kontrast, kisa-vurucu, konusma dili — viral odakli"},
+    {"id": "mentalist", "name": "Mentalist / Dusundurcu", "desc": "Psikolojik derinlik, insan davranisi analizi, dusundurcu bakis"},
+    {"id": "sigma", "name": "Sigma / Keskin Gorus", "desc": "Net, filtresiz, bagimsiz dusunce — kalabaligin tersine giden keskin bakis"},
+    {"id": "doomer", "name": "Doomer / Elestirmen", "desc": "Realist bakis, abartiyi sonduran, risklere odaklanan elestirel analiz"},
 ]
 
 FORMATS = [
     {"id": "micro", "name": "Micro — Tek Satir", "desc": "Tek cumle, vurucu fikir (0-140 kar)"},
     {"id": "punch", "name": "Punch — Standart Tweet", "desc": "Standart tweet uzunlugu (140-280 kar)"},
+    {"id": "classic", "name": "Classic — Orta Tweet", "desc": "Punch ile Spark arasi, biraz daha detayli (200-400 kar)"},
     {"id": "spark", "name": "Spark — Kisa Hikaye", "desc": "Kisa hikaye, aciklama (400-600 kar)"},
     {"id": "storm", "name": "Storm — Derin Analiz", "desc": "Derin analiz, uzun hikaye (700-1000 kar)"},
     {"id": "thread", "name": "Thread — Seri Anlatim", "desc": "3-5 tweet serisi (her biri max 280 kar)"},
     {"id": "thunder", "name": "Thunder — En Derin", "desc": "En uzun ve detayli format (1200-1500 kar)"},
+    {"id": "mega", "name": "Mega — Ultra Detayli", "desc": "En uzun single-post, makale tarzi tweet (1500-2000 kar)"},
 ]
 
 CONTENT_STYLES = [
