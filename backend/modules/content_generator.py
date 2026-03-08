@@ -1143,17 +1143,17 @@ class ContentGenerator:
 
         system_prompt = self._build_reply_system_prompt(user_samples)
 
-        user_prompt = f"""@{original_author} tweeted:
+        user_prompt = f"""@{original_author} şunu yazdı:
 "{original_tweet}"
 
-Write a REPLY to this tweet. Rules:
-- SHORT: 1-3 sentences, max 280 characters
-- ADD VALUE — not empty praise, add insight/opinion/experience
-- Natural casual English, conversational tone
-- NO hashtags
-{f"Note: {additional_context}" if additional_context else ""}
+Bu tweet'e bir YANIT yaz. Kurallar:
+- KISA: 1-3 cümle, max 280 karakter
+- DEĞER KAT — boş övgü değil, içgörü/fikir/deneyim ekle
+- Doğal samimi Türkçe, sohbet tonu
+- Hashtag KULLANMA
+{f"Not: {additional_context}" if additional_context else ""}
 
-Write ONLY the reply text, nothing else."""
+SADECE yanıt metnini yaz, başka bir şey yazma."""
 
         if self.provider == "anthropic":
             return self._generate_anthropic(system_prompt, user_prompt)
@@ -1569,11 +1569,11 @@ Kendi orijinal cümlelerini kur ama aynı doğallık ve samimiyet olsun.
         return prompt
 
     def _build_reply_system_prompt(self, user_samples: list = None) -> str:
-        """Build system prompt for English reply generation with style DNA."""
+        """Build system prompt for Turkish reply generation with style DNA."""
         style_info = WRITING_STYLES.get("reply", {})
 
-        prompt = f"""You are a tech-savvy AI/ML enthusiast who writes sharp, insightful replies on X (Twitter).
-You write in ENGLISH. You sound like a real person — casual, knowledgeable, opinionated.
+        prompt = f"""Sen X (Twitter) üzerinde keskin, içgörülü yanıtlar yazan teknoloji ve AI meraklısı birisin.
+TÜRKÇE yazıyorsun. Gerçek bir insan gibi konuşuyorsun — samimi, bilgili, fikirli.
 
 {style_info.get('prompt', '')}
 """
@@ -1587,38 +1587,37 @@ You write in ENGLISH. You sound like a real person — casual, knowledgeable, op
             prompt += f"""
 {tc}
 
-## CRITICAL — STYLE DNA PRIORITY:
-The training data above defines your WRITING PERSONALITY — tone, word choice,
-sentence structure, how you open and close. Absorb the STYLE, not the language.
-Since replies must be in ENGLISH, translate the personality traits:
-- If the DNA shows casual/witty tone → be casual/witty in English
-- If the DNA shows strong opinions → have strong opinions in English
-- If the DNA shows technical depth → show technical depth in English
-- Match the energy, confidence level, and personality — just in English.
+## KRİTİK — STİL DNA ÖNCELİĞİ:
+Yukarıdaki eğitim verisi senin YAZIM KİŞİLİĞİNİ tanımlıyor — ton, kelime seçimi,
+cümle yapısı, açılış ve kapanış tarzın. STİLİ özümse.
+- Eğer DNA samimi/espritüel ton gösteriyorsa → samimi/espritüel yaz
+- Eğer DNA güçlü fikirler gösteriyorsa → güçlü fikirler belirt
+- Eğer DNA teknik derinlik gösteriyorsa → teknik derinlik göster
+- Enerjiyi, özgüven seviyesini ve kişiliği yakala.
 """
 
         if user_samples:
             samples_text = "\n".join([f"- {s}" for s in user_samples[:5]])
             prompt += f"""
-## USER'S TWEET EXAMPLES (TONE reference only):
+## KULLANICININ TWEET ÖRNEKLERİ (sadece TON referansı):
 {samples_text}
 
-NOTE: Use the TONE and APPROACH from these examples.
-NEVER copy these tweets. Write original sentences with the same natural voice.
+NOT: Bu örneklerdeki TONU ve YAKLAŞIMI kullan.
+Bu tweet'leri ASLA kopyalama. Aynı doğal sesle orijinal cümleler yaz.
 """
 
         # Extra guardrails for non-Claude models
         if self.provider in ("minimax", "openai"):
             prompt += """
-## NATURALNESS RULES:
-1. WRITE SHORT — Get to the point. No filler.
-2. NO AI PATTERNS — Don't use "It's worth noting", "Let's dive in", "Here's the thing"
-3. CASUAL ENGLISH — "honestly", "tbh", "ngl", "lowkey", "actually" — sound human
-4. ONE REPLY = ONE IDEA — Don't try to cover everything
-5. PERSONAL TAKE REQUIRED — "I tested this", "imo", "from what I've seen"
-6. NEVER start with "I" — vary your openings
-7. NO quotes around the reply text
-8. NO ending questions like "What do you think?" — end with a strong take
+## DOĞALLIK KURALLARI:
+1. KISA YAZ — Konuya gel. Dolgu yok.
+2. AI KALIPLARI YOK — "Şunu belirtmek gerekir", "Hadi inceleyelim" gibi kalıplar YASAK
+3. SAMİMİ TÜRKÇE — "açıkçası", "vallahi", "harbiden", "bence", "ya" — insan gibi konuş
+4. BİR YANIT = BİR FİKİR — Her şeyi kapsamaya çalışma
+5. KİŞİSEL GÖRÜŞ ŞART — "bunu denedim", "bence", "gördüğüm kadarıyla"
+6. ASLA "Ben" ile başlama — açılışlarını çeşitlendir
+7. Yanıt metninin etrafında tırnak işareti KOYMA
+8. "Ne düşünüyorsun?" gibi sorularla BİTİRME — güçlü bir görüşle kapat
 """
 
         MAX_PROMPT_CHARS = 35000
