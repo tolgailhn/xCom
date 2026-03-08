@@ -182,6 +182,10 @@ async def scan_topics(request: ScanRequest):
             ai_topics = [t for t in ai_topics
                          if t.author_followers_count == 0 or t.author_followers_count >= request.min_followers]
 
+        # Limit results to requested max_results
+        if request.max_results and request.max_results > 0:
+            ai_topics = ai_topics[:request.max_results]
+
         topics = [_topic_to_item(t) for t in ai_topics]
         return ScanResponse(topics=topics, total_scanned=len(ai_topics), errors=errors[:5])
 

@@ -101,14 +101,14 @@ DEFAULT_AI_ACCOUNTS = [
 
 # AI-related search queries
 AI_SEARCH_QUERIES = [
-    "(new model OR new AI OR AI release OR LLM) -is:retweet lang:en",
-    "(GPT OR Claude OR Gemini OR Llama OR Qwen OR Mistral) (release OR launch OR update OR new) -is:retweet",
-    "(AI breakthrough OR machine learning OR deep learning) (new OR release OR paper) -is:retweet",
-    "(artificial intelligence OR neural network) (announcement OR launched OR introducing) -is:retweet",
-    "(AGI OR transformer OR diffusion model OR multimodal) (new OR update OR release) -is:retweet",
-    "(AI agent OR AI tool OR AI startup) (launch OR release OR announce) -is:retweet",
-    "(benchmark OR SOTA OR state-of-the-art) (AI OR model OR LLM) -is:retweet",
-    "(open source OR open-source) (model OR AI OR LLM) (release OR new) -is:retweet",
+    "(yapay zeka OR AI OR LLM) (yeni OR güncelleme OR duyuru OR çıktı) -is:retweet lang:tr",
+    "(GPT OR Claude OR Gemini OR Llama OR Grok OR Mistral) (yeni OR güncelleme OR release) -is:retweet lang:tr",
+    "(yapay zeka OR makine öğrenmesi OR derin öğrenme) -is:retweet lang:tr",
+    "(AI agent OR AI aracı OR otomasyon) -is:retweet lang:tr",
+    "(açık kaynak OR open source) (model OR AI OR LLM) -is:retweet lang:tr",
+    "(new model OR new AI OR AI release OR LLM) -is:retweet",
+    "(GPT OR Claude OR Gemini OR Llama OR Grok OR Mistral) (release OR launch OR update OR new) -is:retweet",
+    "(AI breakthrough OR AI agent OR AI tool) (new OR release OR launch) -is:retweet",
 ]
 
 # Spam/irrelevant patterns to filter out
@@ -630,7 +630,7 @@ class TwitterScanner:
                 self.search_errors.append(f"Hesap hatası (@{account}): {e}")
                 continue
 
-        # Filter spam, Turkish accounts, low-follower accounts and calculate relevance
+        # Filter spam, low-follower accounts and calculate relevance
         filtered_topics = []
         for topic in all_topics:
             if is_spam(topic.text):

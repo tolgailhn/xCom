@@ -1749,7 +1749,7 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
       const { scanTopics } = await import("@/lib/api");
       const result = (await scanTopics({
         time_range: `${timeHours}h`,
-        max_results: maxPerAccount * 10,
+        max_results: maxResults,
         min_likes: minEngagement > 0 ? minEngagement : undefined,
         engine,
       })) as {
