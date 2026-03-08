@@ -106,9 +106,9 @@ AI_SEARCH_QUERIES = [
     "(yapay zeka OR makine öğrenmesi OR derin öğrenme) -is:retweet lang:tr",
     "(AI agent OR AI aracı OR otomasyon) -is:retweet lang:tr",
     "(açık kaynak OR open source) (model OR AI OR LLM) -is:retweet lang:tr",
-    "(new model OR new AI OR AI release OR LLM) -is:retweet",
-    "(GPT OR Claude OR Gemini OR Llama OR Grok OR Mistral) (release OR launch OR update OR new) -is:retweet",
-    "(AI breakthrough OR AI agent OR AI tool) (new OR release OR launch) -is:retweet",
+    "(new model OR new AI OR AI release OR LLM) -is:retweet lang:tr",
+    "(GPT OR Claude OR Gemini OR Llama OR Grok OR Mistral) (release OR launch OR update OR new) -is:retweet lang:tr",
+    "(AI breakthrough OR AI agent OR AI tool) (new OR release OR launch) -is:retweet lang:tr",
 ]
 
 # Spam/irrelevant patterns to filter out

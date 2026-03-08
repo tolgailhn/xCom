@@ -158,7 +158,7 @@ async def scan_topics(request: ScanRequest):
 
             custom_queries = []
             if request.custom_query:
-                custom_queries.append(f"{request.custom_query} -is:retweet")
+                custom_queries.append(f"{request.custom_query} -is:retweet lang:tr")
 
             ai_topics = scanner.scan_ai_topics(
                 time_range_hours=hours,
@@ -195,10 +195,10 @@ async def scan_topics(request: ScanRequest):
 
 # Default AI queries for Grok scanning (when no custom_query is provided)
 _GROK_DEFAULT_QUERIES = [
-    "latest AI model releases and updates today",
-    "trending AI news and breakthroughs",
-    "new open source AI tools and models",
-    "AI agents and LLM developments",
+    "yapay zeka yeni model güncellemeler bugün lang:tr",
+    "trending AI haberleri ve gelişmeler lang:tr",
+    "açık kaynak AI araçları ve modeller lang:tr",
+    "AI agent LLM gelişmeleri lang:tr",
 ]
 
 
@@ -212,7 +212,12 @@ async def _grok_scan(custom_query: str = "", max_results: int = 20) -> list:
     except ImportError:
         return []
 
-    queries = [custom_query] if custom_query else _GROK_DEFAULT_QUERIES
+    if custom_query:
+        # Kullanıcı sorgusu — lang:tr yoksa ekle
+        cq = custom_query if "lang:tr" in custom_query else f"{custom_query} lang:tr"
+        queries = [cq]
+    else:
+        queries = _GROK_DEFAULT_QUERIES
     ai_topics: list = []
     seen_texts: set[str] = set()
 

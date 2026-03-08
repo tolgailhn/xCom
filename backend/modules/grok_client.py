@@ -179,16 +179,16 @@ def grok_search_x(query: str, api_key: str = None, max_results: int = 10) -> lis
     """
     result = _grok_responses_api(
         messages=[
-            {"role": "system", "content": "You are a research assistant. Search X for the given query and return relevant posts as a JSON array. Return ONLY the JSON array."},
+            {"role": "system", "content": "You are a research assistant. Search X for the given query and return relevant posts as a JSON array. Return ONLY the JSON array. IMPORTANT: Only return Turkish language tweets (lang:tr). Ignore all non-Turkish tweets."},
             {"role": "user", "content": f"""Search X/Twitter for: "{query}"
 
-Return the top {max_results} most relevant and recent posts as a JSON array. Each item should have:
+Return the top {max_results} most relevant and recent TURKISH language posts as a JSON array. Each item should have:
 - "text": the full tweet text
 - "author": the username (without @)
 - "likes": number of likes
 - "retweets": number of retweets
 
-Return ONLY the JSON array, no other text."""},
+Only include tweets written in Turkish. Return ONLY the JSON array, no other text."""},
         ],
         tools=[{"type": "x_search"}],
         max_tokens=2000,
