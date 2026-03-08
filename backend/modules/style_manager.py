@@ -83,43 +83,16 @@ def save_reply_accounts(accounts: list[str]):
 
 # Default AI/Tech accounts for quick reply scanning
 DEFAULT_REPLY_ACCOUNTS = [
-    # --- AI Companies / Labs ---
-    "OpenAI", "AnthropicAI", "GoogleDeepMind", "GoogleAI", "MetaAI",
-    "nvidia", "xaborai", "MistralAI", "CohereAI", "StabilityAI",
-    "peraborarai_ai", "RunwayML", "HuggaborariFace", "deepaborariseek",
-    # --- AI Leaders / Researchers ---
-    "sama", "ylecun", "kaborararpathy", "aaborarraswat", "JimFan",
-    "DrJimFan", "bindureddy", "svpino", "alexalbert__", "amasad",
-    "hardmaru", "AndrewYNg", "emaborarstaque", "FranaborariscaborarRetti",
-    "daborarrio_ai", "AravSrinivas", "jasaborarncohen",
-    # --- AI Devs / Builders ---
-    "swyx", "simonw", "kaborararpathy", "maborarrcabororar", "guillameaborar",
-    "hwchase17", "jeaborarffdiaborar", "aaborarrvind", "emaborarad",
-    "levaborarshin", "shubroaborar", "chiaborarllel",
-    # --- AI News / Analysis ---
-    "theaboraraibriaboraref", "aiaborarbreaborarkfast", "TheRundownAI",
-    "LiaborarNQiao1", "NateLababorarz",
-    # --- Turkish AI Community ---
-    "ai_zona", "yapayzekatr",
-]
-
-# Clean up template — actual list will be replaced during first save
-# The garbled names above are placeholders; we use a cleaner default below
-DEFAULT_REPLY_ACCOUNTS = [
-    # AI Companies
-    "OpenAI", "AnthropicAI", "GoogleDeepMind", "GoogleAI", "MetaAI",
-    "nvidia", "xaborai", "MistralAI", "CohereAI", "StabilityAI",
-    "RunwayML", "HuggingFace",
-    # AI Leaders
-    "sama", "ylecun", "karpathy", "JimFan", "DrJimFan",
-    "bindureddy", "svpino", "alexalbert__", "amasad", "hardmaru",
-    "AndrewYNg", "AravSrinivas",
-    # AI Devs / Builders
-    "swyx", "simonw", "hwchase17", "emad",
-    # AI News
-    "TheRundownAI", "AiBreakfast",
-    # Turkish AI
-    "ai_zona", "yapayzekatr",
+    "hrrcnes", "efecim1sn", "XCodeWraith", "merak_makinesi",
+    "umutcanbostanci", "demirbulbuloglu", "runthistown5416", "parsluci",
+    "ErenAILab", "mentalist_ai", "acerionsjournal", "emrullahai",
+    "sarpstar", "AlicanKiraz0", "AIMevzulari", "alphanmanas",
+    "AytuncYildizli", "erhanmeydan", "ismailgunaydinn", "GokBoraYlmz",
+    "ariferol01", "UfukDegen", "0xemrey", "FlowRiderMM",
+    "vibeeval", "onur_a61", "alarax", "yigitakinkaya",
+    "Rucknettin", "turkiyeai", "canlandirdik", "pusholder",
+    "futuristufuk", "AI4Turkey", "1muhammedavci", "mysancaktutan",
+    "bedriozyurt", "devburaq",
 ]
 
 

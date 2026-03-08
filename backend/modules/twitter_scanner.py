@@ -87,20 +87,16 @@ class AITopic:
 # Kategoriler: xAI/Grok, Beta/Leak Avcıları, Teknik Derinlik, Resmi Büyükler,
 #              Niche/Open-Source/Indie, Bonus Liderler, Diğer Önemli
 DEFAULT_AI_ACCOUNTS = [
-    # xAI / Grok Odaklı (hızlı beta + leak)
-    "XFreeze", "xai", "gaborrok",
-    # Ana AI Beta & Leak Avcıları
-    "testingcatalog", "rowancheung", "MatthewBerman", "adrgrondin", "bentossell",
-    # Teknik Derinlik + Yeni Model
-    "karpathy", "TwoMinutePapers", "goodside", "OfficialLoganK", "mattshumer_",
-    # Resmi Büyük Oyuncular
-    "OpenAI", "AnthropicAI", "GoogleDeepMind", "NVIDIAAI", "huggingface", "perplexity_ai",
-    # Arka Planda Kalan / Niche / Open-Source / Indie
-    "Thom_Wolf", "jeremyphoward", "_aiaborhighlight", "soumithchintala",
-    # Bonus Liderler
-    "sama", "ylecun", "demishassabis",
-    # Diğer Önemli (mevcut listeden kalan)
-    "MetaAI", "MistralAI", "stabilityai", "DarioAmodei", "Alibaba_Qwen",
+    "hrrcnes", "efecim1sn", "XCodeWraith", "merak_makinesi",
+    "umutcanbostanci", "demirbulbuloglu", "runthistown5416", "parsluci",
+    "ErenAILab", "mentalist_ai", "acerionsjournal", "emrullahai",
+    "sarpstar", "AlicanKiraz0", "AIMevzulari", "alphanmanas",
+    "AytuncYildizli", "erhanmeydan", "ismailgunaydinn", "GokBoraYlmz",
+    "ariferol01", "UfukDegen", "0xemrey", "FlowRiderMM",
+    "vibeeval", "onur_a61", "alarax", "yigitakinkaya",
+    "Rucknettin", "turkiyeai", "canlandirdik", "pusholder",
+    "futuristufuk", "AI4Turkey", "1muhammedavci", "mysancaktutan",
+    "bedriozyurt", "devburaq",
 ]
 
 # AI-related search queries
@@ -638,9 +634,6 @@ class TwitterScanner:
         filtered_topics = []
         for topic in all_topics:
             if is_spam(topic.text):
-                continue
-            # Filter Turkish accounts (keep only international)
-            if is_turkish_account(topic.text, topic.author_name):
                 continue
             topic.category = categorize_topic(topic.text)
             topic.relevance_score = calculate_relevance(topic, time_range_hours)
