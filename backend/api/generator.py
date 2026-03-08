@@ -105,6 +105,7 @@ STYLES = [
     {"id": "agresif", "name": "Agresif / Enerjik", "desc": "Direkt, enerjik, firsat odakli — guclu ton"},
     {"id": "quote_tweet", "name": "Quote Tweet / Yorum", "desc": "Tweet'e kendi yorumunu ekle, dogal ve samimi"},
     {"id": "tolga", "name": "Tolga Style", "desc": "Gelismeyi detaylariyla aktaran, bilgi yogun, pratik deger sunan format"},
+    {"id": "tolga_news", "name": "Tolga News / Haber Analizi", "desc": "Derinlemesine haber analizi — 'asil mesele su' formuluyle etki odakli yazim"},
     {"id": "hurricane", "name": "Hurricane Style", "desc": "Provokasyon, kontrast, kisa-vurucu, konusma dili — viral odakli"},
     {"id": "mentalist", "name": "Mentalist / Dusundurcu", "desc": "Psikolojik derinlik, insan davranisi analizi, dusundurcu bakis"},
     {"id": "sigma", "name": "Sigma / Keskin Gorus", "desc": "Net, filtresiz, bagimsiz dusunce — kalabaligin tersine giden keskin bakis"},
@@ -136,7 +137,13 @@ CONTENT_STYLES = [
 def _score_text(text: str) -> dict:
     try:
         from backend.modules.content_generator import score_tweet
-        return score_tweet(text)
+        result = score_tweet(text)
+        # Add legacy keys for frontend compatibility
+        result["score"] = result.get("overall", 0)
+        result["length"] = result.get("char_count", len(text))
+        result["has_hook"] = result.get("hook_score", 0) >= 12
+        result["has_cta"] = False
+        return result
     except Exception:
         length = len(text)
         has_hook = text[:2] in ("🚨", "⚡", "💡", "🔥", "🧵", "📢") if len(text) >= 2 else False
@@ -144,7 +151,7 @@ def _score_text(text: str) -> dict:
         score = min(100, 40 + (10 if 180 <= length <= 280 else 0) +
                     (15 if has_hook else 0) + (15 if has_cta else 0) +
                     (10 if "\n" in text else 0) + (10 if length > 100 else 0))
-        return {"score": score, "length": length, "has_hook": has_hook, "has_cta": has_cta}
+        return {"score": score, "overall": score, "length": length, "char_count": length, "has_hook": has_hook, "has_cta": has_cta}
 
 
 # ── Generate ────────────────────────────────────────────

@@ -607,6 +607,97 @@ YAPMA:
 - büyük harf kullanma — her şey küçük harfle
 """,
     },
+    "tolga_news": {
+        "name": "Tolga News / Haber Analizi",
+        "description": "Gelişmeyi derinlemesine analiz eden, 'asıl mesele şu' formülü ile etki odaklı haber yazımı",
+        "prompt": """
+yazım tarzı: TOLGA NEWS / HABER ANALİZİ
+
+Bu tarz = bir gelişmeyi sadece haber olarak aktarmıyorsun. Herkesin gördüğü haberin ARKASINI anlatıyorsun.
+"ne oldu" değil "bu neden önemli", "asıl mesele ne", "bunu kimse böyle anlatmadı" perspektifinden yazıyorsun.
+
+Bu tarz QUOTE TWEET için optimize edilmiş. Birisi bir gelişme paylaşıyor, sen alıntılayıp DEĞERLİ bir analiz ekliyorsun.
+Okuyucu senin tweet'ini okuduktan sonra konuyu DAHA DERİN anlıyor, "aa bunu düşünmemiştim" diyor.
+
+## ANA FORMÜL (her tweet'te bu yapıyı takip et):
+
+1. ETKİ ODAKLI HOOK — "ne oldu" değil "bu neden önemli" ile başla
+   - "herkes X'e bakıyor ama asıl mesele Y'de" formülü
+   - "şimdi şöyle düşün:" formülü
+   - "bunu görünce tüylerim diken diken oldu ama asıl mesele..." formülü
+   - konunun ETKİSİNİ, SONUCUNU, veya FARKLI AÇISINI hook'a koy
+   - YANLIŞ: "vLLM v0.17 çıktı" → DOĞRU: "yapay zeka modelleri artık çok daha hızlı ve ucuz çalışıyor"
+
+2. SOMUT ETKİ PARAGRAFI — herkesin anlayacağı dilde ETKİYİ anlat
+   - teknik detayı GÜNLÜK HAYATA çevir
+   - "aynı bilgisayarda daha çok sohbet yapılabiliyor, elektrik faturası düşüyor"
+   - "routerınız sizi tıbbi düzeyde izleyebilir hale geliyor"
+   - "bir petri kabındaki nöronlar doom oynamayı öğrendi"
+   - somut, herkesin anlayacağı, "vay be" dedirtecek etki
+
+3. DERİN BAĞLAM — kimsenin görmediği açı
+   - "şimdi şöyle düşün:" ile perspektif değiştir
+   - güvenlik boyutu, etik boyut, maliyet boyutu, topluluk boyutu
+   - "biz silikon üzerinde zekayı simüle etmeye trilyonlar harcarken, biyolojik bilgi işlem çoktan cevabı veriyor olabilir mi?"
+   - paradoks, çelişki veya bağlantı kur
+
+4. FARKLI AÇI / GENİŞ PERSPEKTİF — büyük resim
+   - sektöre etkisi, kullanıcılara etkisi, geleceğe etkisi
+   - "açık kaynak yapmanın anlamını düşünün"
+   - "asıl soru teknolojinin kendisi değil, regülasyonun bu hıza yetişip yetişemeyeceği"
+
+5. KESKİN KAPANIŞ — akılda kalan bir tespit
+   - "atomu görmek değil atomu anlamak meselesi bu"
+   - "gürültüyü yapanlarla işi yapanlar hiç aynı kişiler değil"
+   - "yapay zeka yarışında herkes daha büyük model diye koşarken asıl devrim belki de silikon değil karbon tabanlı olacak"
+   - klişe tahmin YASAK, soru YASAK
+
+## TON VE DİL:
+- küçük harfle yaz (isimler hariç: OpenAI, Claude, NVIDIA)
+- türkçe ağırlıklı, teknik terimler ingilizce kalabilir
+- "asıl mesele şu", "şimdi şöyle düşün", "bir de şunu düşünün" gibi geçişler
+- bilgi yoğun ama erişilebilir — herkes anlasın, teknik jargon minimum
+- paragraflar arası boş satır, her paragraf 1-3 cümle
+- emoji SIFIR veya en fazla 1
+- kişisel yorum ve bakış açısı ŞART — sadece haber aktarma
+- madde işareti/numara listesi KULLANMA — doğal paragraflar
+
+## ÖRNEK TWEET'LER:
+
+"wifi sinyalleriyle duvarların arkasını görmek çoğu kişiye vay be teknoloji dedirtiyor ama asıl mesele kimsenin konuşmadığı yerde. bu sistem sadece poz algılamıyor, nefes hızınızı ve kalp atışınızı da ölçebiliyor. yani evinizde bir kamera yok, bir sensör yok ama routerınız sizi neredeyse tıbbi düzeyde izleyebilir hale geliyor.
+
+şimdi bunu açık kaynak yapmanın anlamını düşünün. herhangi biri githubdan indirip sıradan bir routerla çalıştırabilir. güvenlik amaçlı kullanılabilir, yaşlı bakımında devrim yaratabilir ama kötü niyetli birinin eline geçtiğinde mahremiyetin sonu demek.
+
+asıl soru teknolojinin kendisi değil, regülasyonun bu hıza yetişip yetişemeyeceği."
+
+"herkes burada vay beyin hücreleri doom oynuyor diye şaşırıyor ama asıl mesele çok daha derin.
+
+200 bin nöron bir haftada doom oynamayı öğrendi. yani bu hücreler sadece tepki vermiyor, 3 boyutlu bir ortamda geziniyor, düşman tanıyıp ateş ediyor.
+
+şimdi şunu düşün: günümüzün en güçlü yapay zeka modelleri milyarlarca dolarlık veri merkezlerinde megawattlarca enerji harcayarak çalışıyor. ama bir petri kabındaki biyolojik nöronlar silikon ile birleştirildiğinde elektrik uyarımıyla kendi kendine öğrenebiliyor.
+
+yapay zeka yarışında herkes daha büyük model, daha fazla parametre diye koşarken asıl devrim belki de silikon değil karbon tabanlı olacak."
+
+"vLLM denen araç yapay zeka modellerini çok daha hızlı ve ucuz çalıştırmayı sağlayan bir sistem. yeni sürümü çıktı ve bayağı şey değişmiş.
+
+en çok konuşulan yenilik modellerin düşünme kısmını inanılmaz hızlandıran bir teknoloji eklendi. artık aynı bilgisayarda daha çok sohbet yapılabiliyor, cevaplar daha çabuk geliyor ve elektrik faturası düşüyor.
+
+yani eskiden yavaş yavaş gelen cevaplar şimdi neredeyse anında geliyor. bu son sürümde hepsi birleşti hem metin hem görüntü hem ses hem video aynı motorla uçuyor.
+
+270'ten fazla kişi katkıda bulunmuş yani gerçekten herkesin emeği var içinde."
+
+## YAPMA:
+- sadece "ne oldu" anlatma — NEDEN ÖNEMLİ olduğunu açıkla
+- teknik jargonu çevirmeden bırakma — "FlashAttention 4 entegrasyonu" yerine "modellerin düşünme kısmını hızlandıran teknoloji"
+- yüzeysel yorum yapma — derinlik şart
+- "heyecan verici", "çığır açan", "dikkat çekici" klişeler YASAK
+- madde listesi / numara listesi YASAK
+- soru ile bitirme YASAK
+- büyük harf kullanma — her şey küçük harfle
+- tweet'i birebir çevirme veya özetleme — kendi analizini yaz
+- araştırma verilerini görmezden gelme — somut veri kullan
+""",
+    },
     "hurricane": {
         "name": "Hurricane Style",
         "description": "Provokasyon, kontrast, kısa-vurucu, konuşma dili — viral odaklı",
@@ -1430,30 +1521,37 @@ ARAŞTIRMA NASIL KULLANILIR:
 ---
 
 ## GÖREV:
-Orijinal tweet'in konusu hakkında KENDİ ANALİZİNİ Türkçe yaz.
+Orijinal tweet'in konusu hakkında KENDİ HABER ANALİZİNİ Türkçe yaz.
+Sadece "ne oldu" anlatma — NEDEN ÖNEMLİ olduğunu, KİME ETKİSİ olduğunu ve HERKESIN GÖRMEDİĞİ bir açıyı da anlat.
 
 ZORUNLU KURALLAR:
 1. Tweet'in KONUSUNA sadık kal — tweet ne anlatıyorsa o konuda yaz
-2. Araştırmadan EN AZ 1 spesifik bilgi/rakam/veri kullan (genel yorum yetmez)
+2. Araştırmadan EN AZ 2 spesifik bilgi/rakam/veri kullan (genel yorum yetmez)
 3. YUKARIDAKI BAKIŞ AÇISINA SADIK KAL — o perspektiften yaz
-4. GÜÇLÜ İFADEYLE BİTİR — güçlü görüş, kuru tespit veya ironi. "6 ay içinde...", "bunu geçer" gibi kalıp tahminlerle bitirme, çeşitlen. SORU SORMA.
+4. SOMUT ETKİ AÇIKLA — teknik detayı herkesin anlayacağı günlük hayat etkisine çevir
+5. FARKLI BİR AÇI EKLE — herkesin görmediği bir boyut (güvenlik/etik/maliyet/rekabet/topluluk)
+6. GÜÇLÜ İFADEYLE BİTİR — güçlü görüş, kuru tespit veya ironi. "6 ay içinde...", "bunu geçer" gibi kalıp tahminlerle bitirme, çeşitlen. SORU SORMA.
 
 {length_instructions}
 
 ## FORMAT:
-- İlk satır = HOOK (merak uyandıran doğal giriş)
+- İlk satır = ETKİ ODAKLI HOOK ("ne oldu" değil "bu neden önemli" ile başla)
+- 2. paragraf = SOMUT ETKİ (herkesin anlayacağı dilde)
+- 3+ paragraf = DERİN ANALİZ + FARKLI AÇI
+- Son satır = KESKİN KAPANIŞ (güçlü görüş, kuru tespit veya ironi)
 - Her paragraf arası BOŞ SATIR
 - Her paragraf 1-3 cümle
-- Son satır = güçlü görüş, kuru tespit veya ironi (klişe tahmin kalıbı YASAK)
 - En sona 1-2 hashtag
 
 ## YAPMA:
+- Sadece "ne oldu" anlatıp bırakma — NEDEN ÖNEMLİ olduğunu MUTLAKA açıkla
 - Tweet konusundan SAPMA
 - Tweet'i birebir çevirme/özetleme
-- Araştırmayla tweet'i KARIŞITIRMA (tweet ne diyorsa onu kullan)
+- Teknik jargonu çevirmeden bırakma — "FlashAttention 4" yerine "modellerin düşünme hızını artıran teknoloji"
 - Klişe kullanma: "heyecan verici", "çığır açan", "dikkat çekici"
 - Madde işareti/liste kullanma
 - CTA soru sorma: "sizce?", "denediniz mi?" YASAK
+- Yüzeysel/genel yorum yapma — derinlik şart
 
 Sadece tweet metnini yaz, başka bir şey yazma."""
         else:
@@ -1461,13 +1559,18 @@ Sadece tweet metnini yaz, başka bir şey yazma."""
             user_prompt = f"""@{original_author} şunu yazmış:
 "{original_tweet}"
 
-Bu tweet ne hakkındaysa O KONU hakkında KENDİ YORUMUNU yaz.
+Bu tweet ne hakkındaysa O KONU hakkında KENDİ ANALİZİNİ yaz.
 Tweet'teki verileri (rakamlar, isimler, benchmark sonuçları, fiyatlar varsa) kullanarak kendi analizini ekle.
 Orijinal tweet'i birebir çevirme veya tekrarlama, ama içindeki bilgilerden yararlan.
-Kendi bakış açını ekle, doğal Türkçe yaz.
+
+ZORUNLU:
+1. Sadece "ne oldu" anlatma — NEDEN ÖNEMLİ olduğunu açıkla
+2. Teknik detayı herkesin anlayacağı ETKİYE çevir
+3. Herkesin görmediği bir AÇI ekle (güvenlik/etik/maliyet/rekabet boyutu)
+4. Kendi bakış açını ekle — "bence", "asıl mesele şu", "şimdi şöyle düşün"
 {f"Not: {additional_context}" if additional_context else ""}
 
-FORMAT: İlk satır = hook (konuyu tanıt, merak uyandır). Paragraflar arası boş satır bırak. Son satır güçlü görüş veya kuru tespit (klişe tahmin kalıbı YASAK, SORU SORMA). En sona 1-2 hashtag.
+FORMAT: İlk satır = etki odaklı hook ("ne oldu" değil "bu neden önemli" ile başla). Paragraflar arası boş satır bırak. Son satır güçlü görüş veya kuru tespit (klişe tahmin kalıbı YASAK, SORU SORMA). En sona 1-2 hashtag.
 
 Sadece tweet metnini yaz."""
 
@@ -1661,10 +1764,26 @@ Araştırma verilerini kullanarak {length_desc_text} formatında yazıyorsun.
    Tweet kısa ise → araştırmadan detay ve veri ekle.
    Tweet uzun ise → tweet'in verilerini kullan, araştırmadan bağlam ekle.
 
-5. ANALİZ EKLE: Bilgiyi ver, sonra KENDİ YORUMUNU kat.
-   Paradoksları, çelişkileri ve stratejik boyutu yakala.
+5. ETKİ ANALİZİ (ÇOK ÖNEMLİ): Sadece "ne oldu" yazmak yetmez. MUTLAKA şunu açıkla:
+   - Bu gelişme KİME ETKİ ediyor? (kullanıcılar, şirketler, geliştiriciler, sektör?)
+   - Herkesin anlayacağı SOMUT ETKİ ne? (teknik jargonu günlük hayata çevir)
+   - "asıl mesele şu", "şimdi şöyle düşün" ile DERİN bağlam ver
+   - Araştırmadaki [ETKİ] etiketli kaynaklar bu konuda en değerli — KULLAN
+   ÖRNEK — YANLIŞ: "FlashAttention 4 entegrasyonu geldi"
+   ÖRNEK — DOĞRU: "modellerin düşünme kısmını hızlandıran teknoloji geldi. aynı bilgisayarda daha çok sohbet yapılabiliyor, elektrik faturası düşüyor"
 
-6. DOĞAL YAZ: Türkçe günlük dil, teknik terimler İngilizce.
+6. ANALİZ VE KİŞİSEL YORUM EKLE: Bilgiyi ver, sonra KENDİ YORUMUNU kat.
+   Paradoksları, çelişkileri ve stratejik boyutu yakala.
+   "bence", "gördüğüm kadarıyla", "test ettim" gibi kişisel ifadeler kullan.
+
+7. FARKLI AÇI / GİZLİ BOYUT: Herkesin görmediği bir boyutu ekle:
+   - Güvenlik boyutu: "kötü niyetli birinin eline geçerse?"
+   - Etik boyut: "canlı nöronlarla AI ne kadar etik?"
+   - Maliyet boyutu: "gelir 5B ama gider 8B, sürdürülebilir mi?"
+   - Topluluk boyutu: "270'ten fazla kişi katkıda bulunmuş"
+   - Rekabet boyutu: "asıl savaş model değil, altyapıda"
+
+8. DOĞAL YAZ: Türkçe günlük dil, teknik terimler İngilizce.
    AI kalıpları YASAK. Madde işareti/liste YASAK.
 
 ## ⛔ BİLGİ UYDURMA YASAĞI:
@@ -2174,27 +2293,34 @@ def score_tweet(tweet_text: str, content_format: str = "spark",
     Returns a dict with overall score (0-100) and dimension breakdowns.
 
     Dimensions:
-    - hook_score: How strong is the opening line? (0-25)
-    - data_score: Does it contain specific data/numbers? (0-25)
-    - naturalness_score: Does it avoid AI clichés? (0-25)
-    - format_score: Does it match the target format? (0-25)
+    - hook_score: How strong is the opening line? (0-20)
+    - data_score: Does it contain specific data/numbers? (0-20)
+    - naturalness_score: Does it avoid AI clichés? (0-20)
+    - depth_score: Does it go beyond surface-level? (0-20)
+    - format_score: Does it match the target format? (0-20)
     """
     import re as _re
 
     text = tweet_text.strip()
     char_count = len(text)
 
-    # ===== 1. HOOK SCORE (0-25) =====
-    hook_score = 15  # base score
+    # ===== 1. HOOK SCORE (0-20) =====
+    hook_score = 12  # base score
     first_line = text.split("\n")[0].strip()
 
     # Good hooks: start with lowercase (natural), specific names/numbers
     if first_line and first_line[0].islower():
-        hook_score += 3  # lowercase start = more natural
+        hook_score += 2  # lowercase start = more natural
     if _re.search(r'\d+', first_line):
-        hook_score += 4  # numbers in hook = strong
+        hook_score += 3  # numbers in hook = strong
     if any(word in first_line.lower() for word in ["milyar", "milyon", "billion", "$", "%"]):
         hook_score += 3  # financial/big numbers = very strong
+
+    # Impact-first hooks (like the successful accounts)
+    impact_hooks = ["asıl mesele", "şimdi şöyle düşün", "ama asıl", "kimse bahsetmiyor",
+                    "herkes", "bir de şunu düşün", "asıl soru"]
+    if any(ih in first_line.lower() for ih in impact_hooks):
+        hook_score += 2  # impact-first opening = strong
 
     # Bad hooks: cliché openings
     bad_hooks = [
@@ -2204,13 +2330,13 @@ def score_tweet(tweet_text: str, content_format: str = "spark",
     ]
     for bh in bad_hooks:
         if bh in first_line.lower():
-            hook_score = max(0, hook_score - 10)
+            hook_score = max(0, hook_score - 8)
             break
 
-    hook_score = min(25, max(0, hook_score))
+    hook_score = min(20, max(0, hook_score))
 
-    # ===== 2. DATA SCORE (0-25) =====
-    data_score = 5  # base
+    # ===== 2. DATA SCORE (0-20) =====
+    data_score = 4  # base
 
     # Count specific data points
     numbers = _re.findall(r'\d+[\.,]?\d*', text)
@@ -2219,18 +2345,18 @@ def score_tweet(tweet_text: str, content_format: str = "spark",
     proper_names = _re.findall(r'\b[A-Z][a-zA-Z]+(?:\s[A-Z][a-zA-Z]+)*\b', text)
 
     data_points = len(numbers) + len(percentages) * 2 + len(dollar_amounts) * 2
-    data_score += min(15, data_points * 3)
+    data_score += min(12, data_points * 2)
 
     # Bonus for specific tech names
     tech_names = ["openai", "claude", "gpt", "gemini", "llama", "qwen", "nvidia",
                   "anthropic", "google", "meta", "microsoft", "deepseek", "grok"]
     found_tech = sum(1 for t in tech_names if t in text.lower())
-    data_score += min(5, found_tech * 2)
+    data_score += min(4, found_tech * 2)
 
-    data_score = min(25, max(0, data_score))
+    data_score = min(20, max(0, data_score))
 
-    # ===== 3. NATURALNESS SCORE (0-25) =====
-    naturalness_score = 20  # start high, penalize for issues
+    # ===== 3. NATURALNESS SCORE (0-20) =====
+    naturalness_score = 16  # start high, penalize for issues
 
     # AI cliché detection
     ai_cliches = [
@@ -2242,57 +2368,89 @@ def score_tweet(tweet_text: str, content_format: str = "spark",
         "revolutionary", "groundbreaking",
     ]
     cliche_count = sum(1 for c in ai_cliches if c in text.lower())
-    naturalness_score -= cliche_count * 5
+    naturalness_score -= cliche_count * 4
 
     # Check for natural Turkish markers (good sign)
     natural_markers = ["ya ", "yani", "aslında", "bence", "bi baktım",
                        "harbiden", "cidden", "valla", "test ettim",
                        "gördüğüm kadarıyla", "denedim"]
     natural_count = sum(1 for m in natural_markers if m in text.lower())
-    naturalness_score += min(5, natural_count * 2)
+    naturalness_score += min(4, natural_count * 2)
 
     # Penalize ending with question (CTA)
     last_line = text.rstrip().split("\n")[-1].strip()
     if last_line.endswith("?"):
-        naturalness_score -= 5
+        naturalness_score -= 4
 
     # Penalize bullet points / numbered lists
     if _re.search(r'^\s*[-•]\s', text, _re.MULTILINE):
-        naturalness_score -= 5
+        naturalness_score -= 4
     if _re.search(r'^\s*\d+[\.\)]\s', text, _re.MULTILINE):
         naturalness_score -= 3
 
-    naturalness_score = min(25, max(0, naturalness_score))
+    naturalness_score = min(20, max(0, naturalness_score))
 
-    # ===== 4. FORMAT SCORE (0-25) =====
+    # ===== 4. DEPTH SCORE (0-20) =====
+    # Does the tweet go beyond surface-level? Does it explain WHY something matters?
+    depth_score = 6  # base
+
+    # Impact/analysis markers — "asıl mesele", "şöyle düşün" etc.
+    depth_markers = [
+        "asıl mesele", "asıl soru", "şimdi şöyle düşün", "bir de şunu düşün",
+        "neden önemli", "pratik anlamı", "ama asıl", "kimsenin görmediği",
+        "kimse bahsetmiyor", "ama dikkat", "güvenlik", "etik",
+        "maliyet", "sürdürülebilir", "büyük resim", "stratejik",
+        "paradigma", "regülasyon", "paradoks", "çelişki",
+    ]
+    depth_marker_count = sum(1 for dm in depth_markers if dm in text.lower())
+    depth_score += min(6, depth_marker_count * 2)
+
+    # Multiple paragraphs = more depth potential
+    if len(paragraphs) >= 3:
+        depth_score += 2
+    if len(paragraphs) >= 4:
+        depth_score += 2
+
+    # Personal perspective markers
+    perspective_markers = ["bence", "gördüğüm kadarıyla", "test ettim",
+                           "denedim", "kendi deneyimim", "izlediğim kadarıyla"]
+    if any(pm in text.lower() for pm in perspective_markers):
+        depth_score += 2
+
+    # Penalize very short tweets with no depth
+    if char_count < 200 and depth_marker_count == 0:
+        depth_score = max(2, depth_score - 4)
+
+    depth_score = min(20, max(0, depth_score))
+
+    # ===== 5. FORMAT SCORE (0-20) =====
     format_key = _LENGTH_TO_FORMAT.get(content_format, content_format)
     fmt = CONTENT_FORMATS.get(format_key, CONTENT_FORMATS["spark"])
-    format_score = 15  # base
+    format_score = 12  # base
 
     char_min = fmt.get("char_min", 0)
     char_max = fmt.get("char_max", 9999)
 
     # Character count compliance
     if char_min <= char_count <= char_max:
-        format_score += 10  # perfect range
+        format_score += 8  # perfect range
     elif char_count < char_min:
         deficit_pct = (char_min - char_count) / max(char_min, 1)
-        format_score -= min(10, int(deficit_pct * 15))
+        format_score -= min(8, int(deficit_pct * 12))
     else:  # too long
         excess_pct = (char_count - char_max) / max(char_max, 1)
-        format_score -= min(10, int(excess_pct * 15))
+        format_score -= min(8, int(excess_pct * 12))
 
-    # Paragraph structure
-    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
-    if format_key in ("storm", "thunder") and len(paragraphs) < 3:
-        format_score -= 5  # long formats need multiple paragraphs
+    # Paragraph structure (use already-calculated paragraphs)
+    if format_key in ("storm", "thunder", "mega") and len(paragraphs) < 3:
+        format_score -= 4  # long formats need multiple paragraphs
     if format_key == "micro" and len(paragraphs) > 2:
-        format_score -= 5  # micro should be very short
+        format_score -= 4  # micro should be very short
 
-    format_score = min(25, max(0, format_score))
+    format_score = min(20, max(0, format_score))
 
     # ===== OVERALL =====
-    overall = hook_score + data_score + naturalness_score + format_score
+    overall = hook_score + data_score + naturalness_score + depth_score + format_score
 
     # Quality level
     if overall >= 80:
@@ -2314,13 +2472,15 @@ def score_tweet(tweet_text: str, content_format: str = "spark",
 
     # Build improvement suggestions
     suggestions = []
-    if hook_score < 15:
-        suggestions.append("Hook daha güçlü olabilir — şok edici rakam veya cesur iddia ile başla")
-    if data_score < 12:
+    if hook_score < 12:
+        suggestions.append("Hook daha güçlü olabilir — etki odaklı açılış, rakam veya cesur iddia ile başla")
+    if data_score < 10:
         suggestions.append("Daha fazla spesifik veri/rakam ekle")
-    if naturalness_score < 15:
+    if naturalness_score < 12:
         suggestions.append("AI klişelerinden kaçın, daha doğal yaz")
-    if format_score < 15:
+    if depth_score < 10:
+        suggestions.append("Derinlik ekle — neden önemli, kime etkisi var, herkesin görmediği açı")
+    if format_score < 12:
         target_range = f"{char_min}-{char_max}"
         suggestions.append(f"Format uyumu düşük — hedef: {target_range} karakter (şu an: {char_count})")
 
@@ -2332,6 +2492,7 @@ def score_tweet(tweet_text: str, content_format: str = "spark",
         "hook_score": hook_score,
         "data_score": data_score,
         "naturalness_score": naturalness_score,
+        "depth_score": depth_score,
         "format_score": format_score,
         "char_count": char_count,
         "suggestions": suggestions,

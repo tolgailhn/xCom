@@ -273,7 +273,7 @@ sorguları çeşitlendir. Sadece "X nedir" değil, şu açılardan da sorgula:
 TWEET:
 {tweet_text[:1500]}
 
-Görevin: Bu tweet'in gerçek konusunu anla ve araştırma yapmak için HEDEFLI arama sorguları üret.
+Görevin: Bu tweet'in gerçek konusunu anla ve HABER ANALİZİ yazmaya yetecek derinlikte araştırma sorguları üret.
 
 DİKKAT: Tweet'te birçok marka/ürün adı geçebilir ama asıl konu farklı olabilir.
 Örnek: "Claude ve Codex built-in" diyen bir tweet Claude hakkında değil, o ürünleri entegre eden ARAÇ hakkındadır.
@@ -284,6 +284,7 @@ Yanıtını SADECE şu JSON formatında ver, başka hiçbir şey yazma:
     "main_subject": "tweet'in ana konusu olan ürün/şirket/olay (tek isim)",
     "general_queries": ["ne oldu/ne çıktı araması", "detay/özellik araması", "etki/analiz araması"],
     "technical_queries": ["teknik detay/benchmark araması", "karşılaştırma/rakip araması"],
+    "impact_queries": ["pratik etki/kullanıcıya faydası araması", "sektör etkisi/büyük resim araması"],
     "reddit_queries": ["site:reddit.com spesifik tartışma 1", "site:reddit.com spesifik tartışma 2"],
     "news_queries": ["haber araması 1", "haber araması 2"]
 }}
@@ -292,11 +293,13 @@ KURALLAR:
 - Arama sorgularını İngilizce yaz
 - Her sorguya "{current_year}" ekle
 - general_queries: 3 farklı AÇI ile ara (ne oldu + detaylar + etki/analiz)
-- technical_queries: teknik detay + benchmark/karşılaştırma
+- technical_queries: teknik detay + benchmark/karşılaştırma + önceki sürümle fark
+- impact_queries: 2 sorgu — pratik kullanıcı etkisi + sektörel/stratejik etki (ÖNEMLİ: "why it matters", "implications", "impact on" gibi sorgular)
 - reddit_queries: Reddit'te kullanıcı deneyimleri ve tartışmaları bul
 - news_queries: son haberler ve duyurular
 - Sorgular KISA olsun (3-7 kelime ideal), spesifik olsun
-- "AI news" gibi genel sorgular YASAK, her sorgu konuya özel olmalı"""
+- "AI news" gibi genel sorgular YASAK, her sorgu konuya özel olmalı
+- impact_queries ÇOK ÖNEMLİ — haber analizi yazmak için "neden önemli" ve "kime etkisi var" bilgisi şart"""
 
     try:
         if provider == "anthropic":
@@ -341,6 +344,7 @@ KURALLAR:
             "search_queries": {
                 "general": data.get("general_queries", [])[:3],
                 "technical": data.get("technical_queries", [])[:2],
+                "impact": data.get("impact_queries", [])[:2],
                 "reddit": data.get("reddit_queries", [])[:2],
                 "news": news_queries,
             }
@@ -1606,6 +1610,15 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                             all_urls.add(url)
                             r["title"] = f"[TEKNİK] {r.get('title', '')}"
                             result.web_results.append(r)
+                # Impact queries — why it matters, practical implications
+                for query in search_queries.get("impact", [])[:2]:
+                    grok_results = grok_search_web(query, max_results=4)
+                    for r in grok_results:
+                        url = r.get("url", "")
+                        if url and url not in all_urls:
+                            all_urls.add(url)
+                            r["title"] = f"[ETKİ] {r.get('title', '')}"
+                            result.web_results.append(r)
             except Exception as e:
                 print(f"Grok web search error, falling back to DuckDuckGo: {e}")
                 engine = "standard"  # Fallback
@@ -1625,6 +1638,11 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                 parallel_queries.append((query, 5, "m"))
                 query_types.append("technical")
 
+            # Impact queries — why it matters, practical implications
+            for query in search_queries.get("impact", [])[:2]:
+                parallel_queries.append((query, 4, "m"))
+                query_types.append("impact")
+
             # Include Reddit queries in the same parallel batch
             if "reddit" in research_sources:
                 for query in search_queries.get("reddit", [])[:2]:
@@ -1641,6 +1659,9 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                         all_urls.add(r["url"])
                         if qtype == "technical":
                             r["title"] = f"[TEKNİK] {r['title']}"
+                            result.web_results.append(r)
+                        elif qtype == "impact":
+                            r["title"] = f"[ETKİ] {r['title']}"
                             result.web_results.append(r)
                         elif qtype == "reddit":
                             result.reddit_results.append(r)
@@ -2041,10 +2062,26 @@ def compile_research_summary(r: ResearchResult) -> str:
             parts.append(article_text)
             total_chars += len(article_text)
 
-    # Section 3: Web search snippets (compact — title + snippet)
+    # Section 3: Impact findings — WHY IT MATTERS (priority over general web)
     if r.web_results and total_chars < MAX_TOTAL - 300:
         deep_urls = {a["url"] for a in r.deep_articles}
-        remaining = [wr for wr in r.web_results if wr["url"] not in deep_urls]
+        impact_results = [wr for wr in r.web_results
+                          if wr["url"] not in deep_urls and "[ETKİ]" in wr.get("title", "")]
+        if impact_results:
+            parts.append(f"\n## ETKİ ANALİZİ (neden önemli, kime etkisi var):")
+            for i, wr in enumerate(impact_results[:3], 1):
+                clean_title = wr['title'].replace("[ETKİ] ", "")
+                snippet = f"  {i}. {clean_title}: {wr['body'][:300]}"
+                if total_chars + len(snippet) > MAX_TOTAL:
+                    break
+                parts.append(snippet)
+                total_chars += len(snippet)
+
+    # Section 4: Web search snippets (compact — title + snippet)
+    if r.web_results and total_chars < MAX_TOTAL - 300:
+        deep_urls = {a["url"] for a in r.deep_articles}
+        remaining = [wr for wr in r.web_results
+                     if wr["url"] not in deep_urls and "[ETKİ]" not in wr.get("title", "")]
 
         if remaining:
             parts.append(f"\n## Ek Web Bulguları ({len(remaining)} kaynak):")
@@ -2055,7 +2092,7 @@ def compile_research_summary(r: ResearchResult) -> str:
                 parts.append(snippet)
                 total_chars += len(snippet)
 
-    # Section 4: Reddit (compact)
+    # Section 5: Reddit (compact)
     if r.reddit_results and total_chars < MAX_TOTAL - 200:
         deep_urls = {a["url"] for a in r.deep_articles}
         remaining_reddit = [rr for rr in r.reddit_results if rr["url"] not in deep_urls]
@@ -2068,7 +2105,7 @@ def compile_research_summary(r: ResearchResult) -> str:
                 parts.append(snippet)
                 total_chars += len(snippet)
 
-    # Section 5: X opinions — ONLY high-engagement, max 3
+    # Section 6: X opinions — ONLY high-engagement, max 3
     # (This is where irrelevant tangents come from — be very selective)
     if r.related_tweets and total_chars < MAX_TOTAL - 200:
         # Only include tweets with significant engagement
