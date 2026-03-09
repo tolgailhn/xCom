@@ -8,6 +8,11 @@ ROTASYON SİSTEMİ:
 - Twikit rate limit'e takılmayı önler
 - scheduler_worker.py tarafindan her 5 dakikada bir cagirilir
   ama sadece saatin ilk çağrısında çalışır (aynı saat tekrar çalışmaz)
+
+PAYLAŞIM STRATEJİSİ:
+- Önce reply dener
+- 403 Forbidden alırsa (reply kısıtlı tweet) → Quote Tweet'e fallback
+- RT'ler ve reply'lar otomatik filtrelenir
 """
 import datetime
 import hashlib
@@ -32,7 +37,6 @@ def _get_accounts_for_hour(accounts: list[str], hour: int) -> list[str]:
     if not accounts:
         return []
 
-    n = len(accounts)
     selected = []
     for i, account in enumerate(accounts):
         # Her hesabı bir saate ata: index'e göre round-robin
@@ -43,12 +47,19 @@ def _get_accounts_for_hour(accounts: list[str], hour: int) -> list[str]:
     return selected
 
 
+def _is_retweet(tweet_text: str) -> bool:
+    """RT olup olmadığını kontrol et."""
+    return tweet_text.strip().startswith("RT @")
+
+
 def check_and_reply():
     """
     Ana worker fonksiyonu — scheduler tarafindan her 5 dakikada bir cagirilir.
 
     ROTASYON: Her saat sadece 1-2 hesap kontrol edilir (38 hesap / 24 saat).
     Aynı saat içinde tekrar çağrılırsa çalışmaz (duplicate koruması).
+
+    PAYLAŞIM: Reply dener → 403 alırsa Quote Tweet yapar.
     """
     global _last_processed_hour
 
@@ -155,8 +166,14 @@ def check_and_reply():
             if not tweet_id or tweet_id in seen:
                 continue
 
-            # Skip replies if only_original is set
             tweet_text = tweet.get("text", "")
+
+            # RT'leri atla — RT'lere reply/quote yapılamaz
+            if _is_retweet(tweet_text):
+                seen.add(tweet_id)
+                continue
+
+            # Reply tweet'leri atla (only_original açıksa)
             if only_original and tweet_text.startswith("@"):
                 seen.add(tweet_id)
                 continue
@@ -197,22 +214,15 @@ def check_and_reply():
             if not reply_text:
                 continue
 
-            # Publish reply
-            try:
-                result = _publish_reply(reply_text, tweet_id)
-            except Exception as e:
-                logger.warning("Auto-reply: Failed to publish reply for @%s tweet %s: %s", account, tweet_id, e)
-                add_auto_reply_log({
-                    "account": account,
-                    "tweet_id": tweet_id,
-                    "tweet_text": tweet_text[:200],
-                    "reply_text": reply_text,
-                    "status": "publish_failed",
-                    "error": str(e),
-                })
-                continue
+            # Publish: önce reply dene, 403 alırsa quote tweet yap
+            result = _publish_with_fallback(
+                text=reply_text,
+                tweet_id=tweet_id,
+                account=account,
+            )
 
             if result.get("success"):
+                publish_type = result.get("type", "reply")
                 add_auto_reply_log({
                     "account": account,
                     "tweet_id": tweet_id,
@@ -221,9 +231,16 @@ def check_and_reply():
                     "reply_tweet_id": result.get("tweet_id", ""),
                     "reply_url": result.get("url", ""),
                     "status": "published",
+                    "publish_type": publish_type,
                 })
                 replies_made += 1
-                logger.info("Auto-reply: Replied to @%s tweet %s — %s", account, tweet_id, result.get("url", ""))
+                logger.info(
+                    "Auto-reply: %s to @%s tweet %s — %s",
+                    publish_type.upper(),
+                    account,
+                    tweet_id,
+                    result.get("url", ""),
+                )
             else:
                 add_auto_reply_log({
                     "account": account,
@@ -238,9 +255,9 @@ def check_and_reply():
     save_auto_reply_seen(seen)
 
     if replies_made > 0:
-        logger.info("Auto-reply: Saat %02d — %d reply atildi", hour, replies_made)
+        logger.info("Auto-reply: Saat %02d — %d paylaşım yapıldı", hour, replies_made)
     else:
-        logger.info("Auto-reply: Saat %02d — yeni tweet bulunamadi", hour)
+        logger.info("Auto-reply: Saat %02d — yeni tweet bulunamadı", hour)
 
 
 def _get_twikit_client():
@@ -288,8 +305,13 @@ def _generate_reply(original_tweet: str, original_author: str,
     return reply.strip() if reply else ""
 
 
-def _publish_reply(text: str, reply_to_tweet_id: str) -> dict:
-    """Publish a reply tweet via Twitter API."""
+def _publish_with_fallback(text: str, tweet_id: str, account: str) -> dict:
+    """
+    Paylaşım stratejisi:
+    1. Önce reply dene
+    2. 403 Forbidden alırsa → Quote Tweet yap
+    3. Her ikisi de başarısızsa hata döndür
+    """
     from backend.config import get_settings
     from backend.modules.tweet_publisher import TweetPublisher
     from backend.modules.style_manager import add_to_post_history, add_tweet_metric
@@ -308,14 +330,28 @@ def _publish_reply(text: str, reply_to_tweet_id: str) -> dict:
         bearer_token=settings.twitter_bearer_token,
     )
 
-    result = publisher.post_reply(text, reply_to_tweet_id)
+    # 1. Önce reply dene
+    result = publisher.post_reply(text, tweet_id)
+
+    publish_type = "reply"
+
+    # 2. 403 Forbidden → Quote Tweet'e fallback
+    if not result.get("success") and "403" in str(result.get("error", "")):
+        logger.info(
+            "Auto-reply: Reply 403 for @%s tweet %s — trying quote tweet",
+            account, tweet_id,
+        )
+        result = publisher.post_quote_tweet(text, tweet_id)
+        publish_type = "quote_tweet"
 
     if result.get("success"):
+        result["type"] = publish_type
+
         add_to_post_history({
             "text": text,
             "url": result.get("url", ""),
-            "type": "auto_reply",
-            "reply_to_id": reply_to_tweet_id,
+            "type": f"auto_{publish_type}",
+            "reply_to_id": tweet_id,
         })
 
         now_str = datetime.datetime.now(TZ_TR).isoformat()
@@ -327,7 +363,7 @@ def _publish_reply(text: str, reply_to_tweet_id: str) -> dict:
                 "metrics": {},
                 "last_checked": now_str,
                 "first_tracked": now_str,
-                "source": "auto_reply",
+                "source": f"auto_{publish_type}",
             })
 
     return result
