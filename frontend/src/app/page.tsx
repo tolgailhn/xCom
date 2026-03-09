@@ -138,21 +138,27 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <ActionCard
             href="/yaz"
-            icon="✍️"
-            title="Tweet Yaz"
-            description="AI ile dogal tweet uret"
+            icon="🔍"
+            title="Arastirmali Quote"
+            description="Quote tweet ile arastirmali icerik"
+          />
+          <ActionCard
+            href="/yaz?tab=reply"
+            icon="💬"
+            title="Hizli Reply"
+            description="Tara ve hizli yanit ver"
+          />
+          <ActionCard
+            href="/yaz?tab=linkreply"
+            icon="🔗"
+            title="Linkle Reply"
+            description="Tweet linkine yanit uret"
           />
           <ActionCard
             href="/icerik"
             icon="💡"
             title="Icerik Uret"
             description="Konu kesfet, uzun icerik yaz"
-          />
-          <ActionCard
-            href="/analiz"
-            icon="📊"
-            title="Tweet Analizi"
-            description="Analiz et, AI'yi egit"
           />
           <ActionCard
             href="/takvim"

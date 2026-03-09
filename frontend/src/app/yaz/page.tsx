@@ -272,11 +272,15 @@ function YazContent() {
       .catch(() => {});
   }, []);
 
-  // Pre-fill from search params (from Tara page)
+  // Pre-fill from search params
   useEffect(() => {
-    const topicParam = searchParams.get("topic");
+    const tabParam = searchParams.get("tab");
     const quoteUrl = searchParams.get("quote_url");
-    if (quoteUrl) {
+    if (tabParam === "reply") {
+      setActiveTab("reply");
+    } else if (tabParam === "linkreply") {
+      setActiveTab("linkreply");
+    } else if (quoteUrl) {
       setActiveTab("quote");
     }
   }, [searchParams]);
