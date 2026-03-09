@@ -56,7 +56,7 @@ def get_available_providers() -> list[dict]:
     if s.minimax_api_key:
         providers.append({"id": "minimax", "name": "MiniMax M2.5", "available": True})
     if s.groq_api_key:
-        providers.append({"id": "groq", "name": "Groq (Qwen3-32B)", "available": True})
+        providers.append({"id": "groq", "name": "Groq (Llama 3.3 70B)", "available": True})
     if s.anthropic_api_key:
         providers.append({"id": "anthropic", "name": "Anthropic Claude", "available": True})
     if s.openai_api_key:

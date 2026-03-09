@@ -1350,7 +1350,7 @@ class ContentGenerator:
         self.training_context = training_context or ""
 
         if provider == "anthropic":
-            self.model = model or "claude-sonnet-4-6"
+            self.model = model or "claude-sonnet-4-20250514"
             self.client = anthropic.Anthropic(api_key=api_key) if api_key else None
         elif provider == "openai":
             self.model = model or "gpt-4o"
@@ -1362,7 +1362,7 @@ class ContentGenerator:
                 base_url="https://api.minimax.io/v1",
             ) if api_key else None
         elif provider == "groq":
-            self.model = model or "qwen/qwen3-32b"
+            self.model = model or "llama-3.3-70b-versatile"
             self.client = openai.OpenAI(
                 api_key=api_key,
                 base_url="https://api.groq.com/openai/v1",
@@ -2326,6 +2326,8 @@ Paragraflari kısa tut, metin duvarı olmasın. Sadece içerik metnini yaz."""
     def _dispatch(self, system_prompt: str, user_prompt: str,
                   image_urls: list[str] = None) -> str:
         """Route generation to the correct provider backend."""
+        if not self.client:
+            raise ValueError(f"{self.provider} API anahtari eksik veya gecersiz. Ayarlar sayfasindan kontrol edin.")
         if self.provider == "claude_code":
             text = self._generate_claude_code(system_prompt, user_prompt)
         elif self.provider == "anthropic":
