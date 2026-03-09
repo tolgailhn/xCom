@@ -1137,12 +1137,6 @@ function TabQuoteTweet({
   const [deepVerify, setDeepVerify] = useState(false);
   const [provider, setProvider] = useState("");
 
-  /* Research sources */
-  const [srcX, setSrcX] = useState(true);
-  const [srcWeb, setSrcWeb] = useState(true);
-  const [srcReddit, setSrcReddit] = useState(false);
-  const [srcNews, setSrcNews] = useState(true);
-
   /* Original tweet info */
   const [tweetId, setTweetId] = useState("");
   const [originalTweet, setOriginalTweet] = useState<{
@@ -1264,20 +1258,12 @@ function TabQuoteTweet({
     try {
       // Use full thread text if available, otherwise single tweet text
       const researchTopic = originalTweet?.full_thread_text || originalTweet?.text || quoteUrl;
-      // Build research_sources from checkboxes
-      const sources: string[] = [];
-      if (srcX) sources.push("x");
-      if (srcWeb) sources.push("web");
-      if (srcReddit) sources.push("reddit");
-      if (srcNews) sources.push("news");
-      // If nothing selected, default to all
-      const researchSources = sources.length > 0 ? sources : undefined;
 
       const research = await researchTopicStream(
         {
           topic: researchTopic,
           engine,
-          research_sources: researchSources,
+          research_sources: ["x", "web", "news"],
           tweet_id: tweetId || undefined,
           tweet_author: originalTweet?.author || undefined,
         },
@@ -1493,26 +1479,6 @@ function TabQuoteTweet({
           <p className="text-xs font-medium text-[var(--text-secondary)]">
             Adim 1: Arastirma
           </p>
-
-          {/* Sources */}
-          <div className="flex flex-wrap gap-4">
-            <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input type="checkbox" checked={srcX} onChange={(e) => setSrcX(e.target.checked)} className="rounded" />
-              X
-            </label>
-            <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input type="checkbox" checked={srcWeb} onChange={(e) => setSrcWeb(e.target.checked)} className="rounded" />
-              Web
-            </label>
-            <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input type="checkbox" checked={srcReddit} onChange={(e) => setSrcReddit(e.target.checked)} className="rounded" />
-              Reddit
-            </label>
-            <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input type="checkbox" checked={srcNews} onChange={(e) => setSrcNews(e.target.checked)} className="rounded" />
-              Haber
-            </label>
-          </div>
 
           <div className="flex flex-wrap gap-4">
             {/* Engine */}
