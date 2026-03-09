@@ -191,6 +191,25 @@ export function getMediaDownloadUrl(url: string): string {
   return `${API_BASE}/api/generator/download-media?url=${encodeURIComponent(url)}`;
 }
 
+// Infographic Generation (Gemini)
+export function generateInfographic(params: {
+  topic: string;
+  research_summary?: string;
+  key_points?: string[];
+  provider?: string;
+}): Promise<{
+  success: boolean;
+  image_base64: string;
+  image_format: string;
+  brief: string;
+  error: string;
+}> {
+  return apiFetch("/api/generator/generate-infographic", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
 // Fact Check
 export function factCheck(text: string, topic: string = "") {
   return apiFetch("/api/generator/fact-check", {
@@ -635,6 +654,10 @@ export function testTelegram() {
 
 export function testTwikit() {
   return apiFetch("/api/settings/test-twikit", { method: "POST" });
+}
+
+export function testGemini() {
+  return apiFetch("/api/settings/test-gemini", { method: "POST" });
 }
 
 // Twikit / Cookies

@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     # Grok / xAI
     xai_api_key: str = ""
 
+    # Google Gemini (image generation)
+    gemini_api_key: str = ""
+
     # Twitter/X API
     twitter_bearer_token: str = ""
     twitter_api_key: str = ""

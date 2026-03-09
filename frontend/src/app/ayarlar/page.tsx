@@ -7,6 +7,7 @@ import {
   testTwitter,
   testAI,
   testGrok,
+  testGemini,
   testTelegram,
   testTwikit,
   getTwikitStatus,
@@ -35,6 +36,7 @@ interface APIStatusData {
   anthropic: boolean;
   openai: boolean;
   xai: boolean;
+  gemini: boolean;
   twitter: boolean;
   twikit: boolean;
   telegram: boolean;
@@ -100,6 +102,7 @@ const API_FIELDS = [
   { key: "anthropic_api_key", label: "Anthropic API Key", group: "AI API" },
   { key: "openai_api_key", label: "OpenAI API Key", group: "AI API" },
   { key: "xai_api_key", label: "xAI (Grok) API Key", group: "xAI / Grok" },
+  { key: "gemini_api_key", label: "Google Gemini API Key", group: "Gemini (Gorsel Uretim)" },
   { key: "telegram_bot_token", label: "Telegram Bot Token", group: "Telegram" },
   { key: "telegram_chat_id", label: "Telegram Chat ID", group: "Telegram" },
 ];
@@ -109,6 +112,7 @@ const API_GROUPS = [
   "Twikit (Ucretsiz Arama)",
   "AI API",
   "xAI / Grok",
+  "Gemini (Gorsel Uretim)",
   "Telegram",
 ];
 
@@ -305,6 +309,11 @@ function TabAPIKeys({
               console.x.ai adresinden alinir. Yeni hesaplara $25 ucretsiz kredi verilir.
             </p>
           )}
+          {group === "Gemini (Gorsel Uretim)" && (
+            <p className="text-xs text-zinc-400">
+              aistudio.google.com adresinden alinir. Infografik gorsel uretimi icin kullanilir.
+            </p>
+          )}
 
           {API_FIELDS.filter((f) => f.group === group).map((field) => (
             <div key={field.key} className="flex gap-3 items-end">
@@ -398,6 +407,7 @@ function TabAPIKeys({
             { name: "twikit", label: "Twikit", fn: testTwikit, show: status?.twikit },
             { name: "ai", label: "AI API", fn: testAI, show: status?.minimax || status?.groq || status?.anthropic || status?.openai },
             { name: "grok", label: "Grok", fn: testGrok, show: status?.xai },
+            { name: "gemini", label: "Gemini", fn: testGemini, show: status?.gemini },
             { name: "telegram", label: "Telegram", fn: testTelegram, show: status?.telegram },
           ].map((t) => (
             <button

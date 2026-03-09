@@ -8,6 +8,7 @@ import {
   generateLongContent,
   scoreTweet,
   findMedia,
+  generateInfographic,
   addDraft,
 } from "@/lib/api";
 
@@ -202,6 +203,12 @@ function TabDiscover({
   const [mediaSource, setMediaSource] = useState("x");
   const [mediaLoading, setMediaLoading] = useState(false);
 
+  /* Infographic */
+  const [infographicImage, setInfographicImage] = useState<string | null>(null);
+  const [infographicFormat, setInfographicFormat] = useState("png");
+  const [infographicLoading, setInfographicLoading] = useState(false);
+  const [infographicError, setInfographicError] = useState<string | null>(null);
+
   const handleDiscover = async () => {
     setDiscovering(true);
     setError(null);
@@ -275,6 +282,30 @@ function TabDiscover({
       /* ignore */
     } finally {
       setMediaLoading(false);
+    }
+  };
+
+  const handleGenerateInfographic = async () => {
+    if (selectedIdx === null) return;
+    setInfographicLoading(true);
+    setInfographicError(null);
+    setInfographicImage(null);
+    try {
+      const res = await generateInfographic({
+        topic: topics[selectedIdx].title,
+        research_summary: generatedContent,
+        key_points: [topics[selectedIdx].description, topics[selectedIdx].angle].filter(Boolean),
+      });
+      if (res.success) {
+        setInfographicImage(res.image_base64);
+        setInfographicFormat(res.image_format || "png");
+      } else {
+        setInfographicError(res.error || "Gorsel uretilemedi");
+      }
+    } catch (e) {
+      setInfographicError(e instanceof Error ? e.message : "Infografik hatasi");
+    } finally {
+      setInfographicLoading(false);
     }
   };
 
@@ -479,6 +510,11 @@ function TabDiscover({
           mediaSource={mediaSource}
           mediaLoading={mediaLoading}
           draftSaved={draftSaved}
+          infographicImage={infographicImage}
+          infographicFormat={infographicFormat}
+          infographicLoading={infographicLoading}
+          infographicError={infographicError}
+          onGenerateInfographic={handleGenerateInfographic}
           onRegenerate={handleGenerate}
           onFindMedia={handleFindMedia}
           onMediaSourceChange={setMediaSource}
@@ -535,6 +571,12 @@ function TabGenerate({
   const [mediaSource, setMediaSource] = useState("x");
   const [mediaLoading, setMediaLoading] = useState(false);
 
+  /* Infographic */
+  const [infographicImage, setInfographicImage] = useState<string | null>(null);
+  const [infographicFormat, setInfographicFormat] = useState("png");
+  const [infographicLoading, setInfographicLoading] = useState(false);
+  const [infographicError, setInfographicError] = useState<string | null>(null);
+
   const handleGenerate = async () => {
     if (!topic.trim()) return;
     setLoading(true);
@@ -587,6 +629,29 @@ function TabGenerate({
       /* ignore */
     } finally {
       setMediaLoading(false);
+    }
+  };
+
+  const handleGenerateInfographic = async () => {
+    setInfographicLoading(true);
+    setInfographicError(null);
+    setInfographicImage(null);
+    try {
+      const res = await generateInfographic({
+        topic,
+        research_summary: researchData || generatedContent,
+        key_points: [],
+      });
+      if (res.success) {
+        setInfographicImage(res.image_base64);
+        setInfographicFormat(res.image_format || "png");
+      } else {
+        setInfographicError(res.error || "Gorsel uretilemedi");
+      }
+    } catch (e) {
+      setInfographicError(e instanceof Error ? e.message : "Infografik hatasi");
+    } finally {
+      setInfographicLoading(false);
     }
   };
 
@@ -727,6 +792,11 @@ function TabGenerate({
           mediaSource={mediaSource}
           mediaLoading={mediaLoading}
           draftSaved={draftSaved}
+          infographicImage={infographicImage}
+          infographicFormat={infographicFormat}
+          infographicLoading={infographicLoading}
+          infographicError={infographicError}
+          onGenerateInfographic={handleGenerateInfographic}
           onRegenerate={handleGenerate}
           onFindMedia={handleFindMedia}
           onMediaSourceChange={setMediaSource}
@@ -760,6 +830,11 @@ function ContentDisplay({
   mediaSource,
   mediaLoading,
   draftSaved,
+  infographicImage,
+  infographicFormat,
+  infographicLoading,
+  infographicError,
+  onGenerateInfographic,
   onRegenerate,
   onFindMedia,
   onMediaSourceChange,
@@ -773,6 +848,11 @@ function ContentDisplay({
   mediaSource: string;
   mediaLoading: boolean;
   draftSaved: boolean;
+  infographicImage: string | null;
+  infographicFormat: string;
+  infographicLoading: boolean;
+  infographicError: string | null;
+  onGenerateInfographic: () => void;
   onRegenerate: () => void;
   onFindMedia: () => void;
   onMediaSourceChange: (s: string) => void;
@@ -852,6 +932,39 @@ function ContentDisplay({
           </div>
         </div>
       )}
+
+      {/* Infographic Generation */}
+      <div className="space-y-3 border-t border-[var(--border)] pt-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onGenerateInfographic}
+            disabled={infographicLoading}
+            className="btn-secondary text-xs"
+          >
+            {infographicLoading ? "Infografik Uretiliyor..." : "Gemini ile Infografik Uret"}
+          </button>
+          <span className="text-[10px] text-[var(--text-secondary)]">16:9 landscape</span>
+        </div>
+        {infographicError && (
+          <p className="text-xs text-[var(--accent-red)]">{infographicError}</p>
+        )}
+        {infographicImage && (
+          <div className="space-y-2">
+            <img
+              src={`data:image/${infographicFormat};base64,${infographicImage}`}
+              alt="Infografik"
+              className="w-full rounded-lg border border-[var(--border)]"
+            />
+            <a
+              href={`data:image/${infographicFormat};base64,${infographicImage}`}
+              download={`infographic_${Date.now()}.${infographicFormat}`}
+              className="btn-primary text-xs inline-block"
+            >
+              Gorseli Indir
+            </a>
+          </div>
+        )}
+      </div>
 
       {/* X'te Ac link */}
       {content.length <= 280 && (

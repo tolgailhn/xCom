@@ -96,6 +96,13 @@ class DiscoverRequest(BaseModel):
     engine: str = "default"
 
 
+class InfographicRequest(BaseModel):
+    topic: str
+    research_summary: str = ""
+    key_points: list[str] = []
+    provider: str = ""
+
+
 # ── Style & Format Constants ───────────────────────────
 
 STYLES = [
@@ -1074,4 +1081,65 @@ async def discover_topics_endpoint(request: DiscoverRequest):
     except HTTPException:
         raise
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Infographic Generation (Gemini) ──────────────────────
+
+@router.post("/generate-infographic")
+async def generate_infographic_endpoint(request: InfographicRequest):
+    """Arastirma sonuclarindan Gemini ile 16:9 infografik gorsel uret.
+    2 asamali: AI ile brief olustur, Gemini ile gorsel uret."""
+    from backend.config import get_settings
+
+    s = get_settings()
+    if not s.gemini_api_key:
+        raise HTTPException(status_code=400, detail="Gemini API key ayarlanmamis. Ayarlar sayfasindan ekleyin.")
+
+    if not request.topic:
+        raise HTTPException(status_code=400, detail="Konu belirtilmedi")
+
+    try:
+        from backend.modules.image_generator import generate_infographic
+        from backend.api.helpers import get_ai_provider
+
+        # Get AI client for brief generation
+        ai_client = None
+        ai_model = ""
+        ai_provider = ""
+        try:
+            provider, api_key, model = get_ai_provider(preferred=request.provider)
+            ai_provider = provider
+            ai_model = model or ""
+            if provider == "anthropic":
+                import anthropic
+                ai_client = anthropic.Anthropic(api_key=api_key)
+            elif provider in ("openai", "minimax", "groq"):
+                from openai import OpenAI
+                base_url = None
+                if provider == "minimax":
+                    base_url = "https://api.minimaxi.chat/v1"
+                elif provider == "groq":
+                    base_url = "https://api.groq.com/openai/v1"
+                ai_client = OpenAI(api_key=api_key, base_url=base_url)
+        except Exception:
+            pass  # Brief olmadan da devam edebilir
+
+        result = await asyncio.to_thread(
+            generate_infographic,
+            topic=request.topic,
+            research_summary=request.research_summary,
+            key_points=request.key_points,
+            gemini_api_key=s.gemini_api_key,
+            ai_client=ai_client,
+            ai_model=ai_model,
+            ai_provider=ai_provider,
+        )
+
+        return result.to_dict()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Infographic generation error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

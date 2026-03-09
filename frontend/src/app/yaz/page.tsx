@@ -11,6 +11,7 @@ import {
   scoreTweet,
   findMedia,
   getMediaDownloadUrl,
+  generateInfographic,
   factCheck,
   getStyles,
   getProviders,
@@ -387,6 +388,12 @@ function TabQuoteTweet({
   const [mediaSource, setMediaSource] = useState("x");
   const [mediaLoading, setMediaLoading] = useState(false);
 
+  /* Infographic */
+  const [infographicImage, setInfographicImage] = useState<string | null>(null);
+  const [infographicFormat, setInfographicFormat] = useState("png");
+  const [infographicLoading, setInfographicLoading] = useState(false);
+  const [infographicError, setInfographicError] = useState<string | null>(null);
+
   /* Publish */
   const [publishingQt, setPublishingQt] = useState(false);
   const [publishResultQt, setPublishResultQt] = useState<PublishResult | null>(null);
@@ -545,6 +552,31 @@ function TabQuoteTweet({
       /* ignore */
     } finally {
       setMediaLoading(false);
+    }
+  };
+
+  const handleGenerateInfographic = async () => {
+    if (!researchResult) return;
+    setInfographicLoading(true);
+    setInfographicError(null);
+    setInfographicImage(null);
+    try {
+      const res = await generateInfographic({
+        topic: originalTweet?.text || quoteUrl,
+        research_summary: researchResult.summary,
+        key_points: researchResult.key_points,
+        provider,
+      });
+      if (res.success) {
+        setInfographicImage(res.image_base64);
+        setInfographicFormat(res.image_format || "png");
+      } else {
+        setInfographicError(res.error || "Gorsel uretilemedi");
+      }
+    } catch (e) {
+      setInfographicError(e instanceof Error ? e.message : "Infografik hatasi");
+    } finally {
+      setInfographicLoading(false);
     }
   };
 
@@ -962,6 +994,41 @@ function TabQuoteTweet({
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Infographic Generation */}
+          {researchResult && (
+            <div className="space-y-3 border-t border-[var(--border)] pt-4">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleGenerateInfographic}
+                  disabled={infographicLoading}
+                  className="btn-secondary text-xs"
+                >
+                  {infographicLoading ? "Infografik Uretiliyor..." : "Gemini ile Infografik Uret"}
+                </button>
+                <span className="text-[10px] text-[var(--text-secondary)]">16:9 landscape</span>
+              </div>
+              {infographicError && (
+                <p className="text-xs text-[var(--accent-red)]">{infographicError}</p>
+              )}
+              {infographicImage && (
+                <div className="space-y-2">
+                  <img
+                    src={`data:image/${infographicFormat};base64,${infographicImage}`}
+                    alt="Infografik"
+                    className="w-full rounded-lg border border-[var(--border)]"
+                  />
+                  <a
+                    href={`data:image/${infographicFormat};base64,${infographicImage}`}
+                    download={`infographic_${Date.now()}.${infographicFormat}`}
+                    className="btn-primary text-xs inline-block"
+                  >
+                    Gorseli Indir
+                  </a>
+                </div>
+              )}
             </div>
           )}
 

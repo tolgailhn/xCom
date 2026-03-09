@@ -23,6 +23,7 @@ class APIStatus(BaseModel):
     anthropic: bool
     openai: bool
     xai: bool
+    gemini: bool
     twitter: bool
     twikit: bool
     telegram: bool
@@ -67,6 +68,7 @@ async def get_api_status():
         anthropic=bool(s.anthropic_api_key),
         openai=bool(s.openai_api_key),
         xai=bool(s.xai_api_key),
+        gemini=bool(s.gemini_api_key),
         twitter=bool(s.twitter_bearer_token),
         twikit=has_twikit,
         telegram=bool(s.telegram_bot_token and s.telegram_chat_id),
@@ -160,6 +162,30 @@ async def test_grok_connection():
         from backend.modules.grok_client import test_grok_connection
         result = test_grok_connection(s.xai_api_key)
         return result
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@router.post("/test-gemini")
+async def test_gemini_connection():
+    """Gemini API baglanti testi"""
+    s = get_settings()
+    if not s.gemini_api_key:
+        return {"success": False, "error": "Gemini API key eksik"}
+
+    try:
+        from google import genai
+        client = genai.Client(api_key=s.gemini_api_key)
+        # Simple text generation to verify key works
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-preview-image-generation",
+            contents="Say 'OK' in one word.",
+        )
+        if response and response.text:
+            return {"success": True, "model": "gemini-2.0-flash-preview-image-generation"}
+        return {"success": False, "error": "Bos yanit alindi"}
+    except ImportError:
+        return {"success": False, "error": "google-genai paketi yuklu degil"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
