@@ -17,27 +17,77 @@ router = APIRouter()
 
 TZ_TR = ZoneInfo("Europe/Istanbul")
 
-WEEKDAY_SLOTS = [
-    {"time": "09:00", "label": "Sabah", "icon": "sun", "type": "Deger / Egitim / Meme",
-     "desc": "Ilk post'un reach'i tum gun en yuksek kalir. Grok ranking ilk 60dk'yi agir tartar."},
-    {"time": "13:00", "label": "Ogle", "icon": "utensils", "type": "Soru / Poll",
-     "desc": "Turk lunch + global overlap (13-17 arasi Turk kaynaklarinda zirve)."},
-    {"time": "17:00", "label": "Is Cikisi", "icon": "walking", "type": "Opinion (kisa & punchy)",
-     "desc": "Commute saati, telefon elde. Reply orani +%40."},
-    {"time": "21:00", "label": "Aksam", "icon": "moon", "type": "Conversation Starter / Video",
-     "desc": "En yuksek 'unregretted user-seconds'. Uzun scroll, bookmark, video izleme."},
-]
-
-WEEKEND_SLOTS = [
-    {"time": "10:00", "label": "Sabah", "icon": "sun", "type": "Deger / Egitim / Meme",
-     "desc": "Hafta sonu insanlar gec uyaniyor, 1 saat kaydirildi."},
-    {"time": "13:30", "label": "Ogle", "icon": "utensils", "type": "Soru / Poll",
-     "desc": "Brunch sonrasi scroll zamani."},
-    {"time": "17:30", "label": "Aksamustu", "icon": "sunset", "type": "Opinion (kisa & punchy)",
-     "desc": "Hafta sonu aksamustu daha rahat engagement."},
-    {"time": "21:30", "label": "Aksam", "icon": "moon", "type": "Conversation Starter / Video",
-     "desc": "Hafta sonu aksam en uzun scroll sureleri."},
-]
+# Grok analizi + 2026 Turkiye AI/tech kitle verilerine gore gun bazli optimal saatler
+# Aksam 18:00-22:00 arasi views 2-3x daha yuksek (veri bazli)
+# Carsamba 09:15 global zirve saati
+DAILY_SLOTS = {
+    "Monday": [
+        {"time": "09:00", "label": "Sabah", "icon": "sun", "type": "Deger / Egitim",
+         "desc": "Hafta basi, ilk post reach'i tum gun en yuksek kalir."},
+        {"time": "13:30", "label": "Ogle", "icon": "utensils", "type": "Soru / Poll",
+         "desc": "Turk lunch + global overlap."},
+        {"time": "18:00", "label": "Is Cikisi", "icon": "walking", "type": "Opinion (kisa & punchy)",
+         "desc": "En guclu saat dilimi — views 2-3x daha yuksek."},
+        {"time": "21:00", "label": "Aksam", "icon": "moon", "type": "Conversation Starter / Video",
+         "desc": "Uzun scroll, bookmark, video izleme zamani."},
+    ],
+    "Tuesday": [
+        {"time": "08:45", "label": "Sabah", "icon": "sun", "type": "Deger / Egitim",
+         "desc": "Erken baslangic — is oncesi scroll saati."},
+        {"time": "13:15", "label": "Ogle", "icon": "utensils", "type": "Soru / Poll",
+         "desc": "Erken ogle arasi, yemek oncesi engagement."},
+        {"time": "17:45", "label": "Is Cikisi", "icon": "walking", "type": "Opinion (kisa & punchy)",
+         "desc": "Commute saati, telefon elde. Reply orani yuksek."},
+        {"time": "20:45", "label": "Aksam", "icon": "moon", "type": "Conversation Starter / Video",
+         "desc": "Aksam scroll zamani, dwell time yuksek."},
+    ],
+    "Wednesday": [
+        {"time": "09:15", "label": "Sabah (Zirve)", "icon": "sun", "type": "Deger / Egitim",
+         "desc": "Carsamba 09:15 — dunya genelinde en guclu saat. En iyi icerigi buraya koy."},
+        {"time": "13:45", "label": "Ogle", "icon": "utensils", "type": "Soru / Poll",
+         "desc": "Hafta ortasi ogle engagement zirvesi."},
+        {"time": "18:15", "label": "Is Cikisi", "icon": "walking", "type": "Opinion (kisa & punchy)",
+         "desc": "Aksam saatleri — views 2-3x daha yuksek."},
+        {"time": "21:15", "label": "Aksam", "icon": "moon", "type": "Conversation Starter / Video",
+         "desc": "Uzun scroll, bookmark zamani."},
+    ],
+    "Thursday": [
+        {"time": "09:00", "label": "Sabah", "icon": "sun", "type": "Deger / Egitim",
+         "desc": "Hafta sonu oncesi son tam verimli gun."},
+        {"time": "13:30", "label": "Ogle", "icon": "utensils", "type": "Soru / Poll",
+         "desc": "Ogle arasi scroll zamani."},
+        {"time": "17:45", "label": "Is Cikisi", "icon": "walking", "type": "Opinion (kisa & punchy)",
+         "desc": "Is cikisi, yuksek engagement saati."},
+        {"time": "21:00", "label": "Aksam", "icon": "moon", "type": "Conversation Starter / Video",
+         "desc": "Aksam engagement zamani."},
+    ],
+    "Friday": [
+        {"time": "08:45", "label": "Sabah", "icon": "sun", "type": "Deger / Egitim",
+         "desc": "Cuma sabahi — hafta sonu oncesi son firsat."},
+        {"time": "13:00", "label": "Ogle", "icon": "utensils", "type": "Soru / Poll",
+         "desc": "Erken ogle, cuma rahatligi."},
+        {"time": "17:30", "label": "Is Cikisi", "icon": "walking", "type": "Opinion (kisa & punchy)",
+         "desc": "Cuma aksami — rahat engagement."},
+        {"time": "20:30", "label": "Aksam (Opsiyonel)", "icon": "moon", "type": "Conversation Starter / Video",
+         "desc": "Cuma aksami opsiyonel — kitle dis cikabilir."},
+    ],
+    "Saturday": [
+        {"time": "10:00", "label": "Sabah", "icon": "sun", "type": "Deger / Egitim / Meme",
+         "desc": "Hafta sonu gec uyanma — brunch zamani."},
+        {"time": "14:00", "label": "Ogle", "icon": "utensils", "type": "Soru / Poll",
+         "desc": "Hafta sonu rahat scroll zamani."},
+        {"time": "19:00", "label": "Aksam", "icon": "sunset", "type": "Opinion / Conversation Starter",
+         "desc": "Cumartesi aksami — uzun scroll, dwell time yuksek."},
+    ],
+    "Sunday": [
+        {"time": "09:30", "label": "Sabah", "icon": "sun", "type": "Deger / Egitim / Meme",
+         "desc": "Pazar sabahi — hafta planlama zamani."},
+        {"time": "13:30", "label": "Ogle", "icon": "utensils", "type": "Soru / Poll",
+         "desc": "Pazar ogle arasi scroll."},
+        {"time": "18:30", "label": "Aksam", "icon": "sunset", "type": "Opinion / Conversation Starter",
+         "desc": "Pazar aksami — yarin is icin hazirlik, uzun scroll."},
+    ],
+}
 
 ALGORITHM_CHECKLIST = [
     {"key": "native_media", "label": "Her posta native medya koy (foto/GIF/video/poll)", "impact": "+%50-90 reach"},
@@ -75,8 +125,10 @@ class ChecklistUpdate(BaseModel):
 
 def _get_today_slots():
     now = datetime.datetime.now(TZ_TR)
+    day_name = now.strftime("%A")  # "Monday", "Tuesday", etc.
     is_weekend = now.weekday() >= 5
-    return (WEEKEND_SLOTS if is_weekend else WEEKDAY_SLOTS), is_weekend, now
+    slots = DAILY_SLOTS.get(day_name, DAILY_SLOTS["Monday"])
+    return slots, is_weekend, now
 
 
 def _get_next_slot(slots, now):

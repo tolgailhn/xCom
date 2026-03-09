@@ -899,20 +899,17 @@ export default function TakvimPage() {
               </p>
               <div className="text-xs space-y-1 text-[var(--text-secondary)]">
                 <div>
-                  <strong>09:00 (HI) / 10:00 (HS)</strong> — Ilk post reach'i
-                  en yuksek. Grok ranking ilk 60dk'yi agir tartar.
+                  Saatler gun bazli optimize edilmis — her gun farkli saatler.
+                  Aksam 18:00-22:00 arasi views 2-3x daha yuksek.
                 </div>
                 <div>
-                  <strong>13:00 (HI) / 13:30 (HS)</strong> — Turk lunch + global
-                  overlap.
+                  <strong>Carsamba 09:15</strong> — Dunya genelinde en guclu saat. En iyi icerigi buraya koy.
                 </div>
                 <div>
-                  <strong>17:00 (HI) / 17:30 (HS)</strong> — Is cikisi commute.
-                  Reply orani +%40.
+                  <strong>Cuma aksam</strong> — Opsiyonel (kitle dis cikabilir).
                 </div>
                 <div>
-                  <strong>21:00 (HI) / 21:30 (HS)</strong> — Aksam en yuksek
-                  scroll sureleri.
+                  <strong>Cumartesi/Pazar</strong> — 3 slot (4. slot yok).
                 </div>
               </div>
             </div>
