@@ -32,7 +32,7 @@ USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
 FETCH_TIMEOUT = 15
-MAX_ARTICLE_CHARS = 5000
+MAX_ARTICLE_CHARS = 8000  # Increased: bilgi yoğunluğu öncelikli, sayfa detaylarını kes
 SEARCH_DELAY = 0.3  # Delay between sequential DuckDuckGo calls to avoid IP blocking
 SKIP_DOMAINS = {
     "twitter.com", "x.com", "t.co", "youtube.com", "youtu.be",
@@ -1954,35 +1954,41 @@ ORİJİNAL TWEET/THREAD:
 "{original_tweet[:1500]}"
 
 ARAŞTIRMA SONUÇLARI:
-{raw_summary[:6000]}
+{raw_summary[:8000]}
 
 ---
 
-GÖREV: Bu araştırmadan bir TWEET yazmak için gerekli bilgileri özetle.
-Amacımız bu gelişmeyi/haberi takipçilerimize en iyi şekilde aktarmak.
+GÖREV: Bu araştırmadan bir TWEET yazmak için gerekli TÜM bilgileri çıkar ve detaylıca aktar.
+Amacımız bu gelişmeyi/haberi takipçilerimize DETAYLIYLA aktarmak — okuyucu tweet'i okuyunca konuyu tamamen anlamış olmalı.
 
 Yanıtını şu formatta yaz:
 
-## NE OLDU?
-(Bu gelişme/haber/ürün/olay ne? 2-3 cümle ile net açıkla. Orijinal tweet bir thread ise thread'deki TÜM bilgileri dahil et — adım adım anlatım, teknik detaylar, örnekler hepsi önemli.)
+## TEMEL BULGULAR
+(Bu gelişme/haber/ürün/olay ne? Kim yaptı? Ne zaman? Orijinal tweet bir thread ise thread'deki TÜM bilgileri dahil et — adım adım anlatım, teknik detaylar, örnekler hepsi önemli. KISALTMA, mümkün olduğunca ÇOK bilgi ver.)
 
-## NEDEN ÖNEMLİ?
-(Bu gelişme neden dikkat çekici? Kime faydalı? Sektöre etkisi ne? 1-2 cümle.)
+## TEKNİK DETAYLAR VE RAKAMLAR
+(Araştırmadan çıkan TÜM spesifik bilgiler — hiçbirini atlama:
+- Fiyat, tarih, versiyon numarası, benchmark sonuçları
+- Performans karşılaştırmaları (önceki versiyon/rakip ile)
+- Nasıl çalışıyor — teknik mekanizma
+- Kim kullanabilir, nasıl erişilir (ücretsiz mi, açık kaynak mı, API mi)
+- Topluluk/şirket bilgisi, yatırım miktarı, kullanıcı sayısı
+- Avantajlar VE dezavantajlar/riskler/limitasyonlar varsa onlar da)
 
-## SOMUT DETAYLAR
-(Araştırmadan çıkan spesifik bilgiler: fiyat, tarih, benchmark sonucu, performans karşılaştırması, pratik kullanım detayı vb. Sadece konuyla doğrudan ilgili olanlar.)
+## PRATİK ETKİ
+(Bu gelişmenin kullanıcılara, geliştiricilere, sektöre pratik etkisi ne? Somut, herkesin anlayacağı dilde.)
 
 KURALLAR:
-- Orijinal tweet/thread'deki bilgilere SADIK KAL — thread bir anlatım/tutorial ise adımları özetle
-- Araştırmadan sadece KONUYU DESTEKLEYEN ve DOĞRULAYAN bilgileri al
-- Konuyla ALAKASIZ bilgileri, farklı ürünlerin karşılaştırmalarını, genel sektör bilgilerini DAHIL ETME
-- Her bilgi kısa ve net olsun
+- Orijinal tweet/thread'deki bilgilere SADIK KAL
+- Araştırmadan MÜMKÜN OLDUĞUNCA ÇOK somut bilgi aktar — yüzeysel özet YAPMA
+- BİLGİ YOĞUNLUĞU en önemli kriter — kısa tutma, uzun ve detaylı yaz
+- Teknik kısaltmaları Türkçe aç (eval → değerlendirme/test, CLI → komut satırı aracı vb.)
 - Yorum ekleme, sadece gerçekleri yaz
 - Bilgi yoksa o bölümü atla, "bulunamadı" yazma
-- Eski veya güncelliğini yitirmiş bilgileri DAHIL ETME (sadece güncel bilgiler)
+- Eski veya güncelliğini yitirmiş bilgileri DAHIL ETME
 
 ⛔ DAHIL ETME:
-- Tweet konusuyla ilgisiz karşılaştırmalar (örn: tweet A ürününü anlatıyorsa B vs C karşılaştırması gereksiz)
+- Tweet konusuyla ilgisiz karşılaştırmalar
 - Popülerlik metrikleri (star, fork, download sayıları)
 - Genel/herkesin bildiği bilgiler (örn: "AI sektörü büyüyor")
 - Karşıt görüş veya çelişki ARAMA — sadece varsa ve önemliyse yaz"""
@@ -1992,7 +1998,7 @@ KURALLAR:
             import anthropic
             response = ai_client.messages.create(
                 model=ai_model or "claude-haiku-4-5-20251001",
-                max_tokens=1500,
+                max_tokens=2500,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.1,
             )
@@ -2001,7 +2007,7 @@ KURALLAR:
             response = ai_client.chat.completions.create(
                 model=ai_model or "MiniMax-M2.5",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=1500,
+                max_tokens=2500,
                 temperature=0.1,
             )
             result = response.choices[0].message.content.strip()
@@ -2029,11 +2035,11 @@ def compile_research_summary(r: ResearchResult) -> str:
     4. Reddit discussions (community perspective)
     5. X opinions (limited — only high-engagement ones)
 
-    Keeps total under ~5000 chars to avoid token bloat.
+    Keeps total under ~12000 chars — bilgi yoğunluğu öncelikli, kısa tutma.
     """
     parts = []
     total_chars = 0
-    MAX_TOTAL = 8000  # Target max for research context (increased for long-form tweets)
+    MAX_TOTAL = 12000  # Increased: bilgi yoğunluğu öncelikli, daha fazla detay aktar
 
     # Section 1: Original tweet/thread — MOST IMPORTANT (always included)
     parts.append(f"# ANA KONU: {r.topic}")
@@ -2049,15 +2055,15 @@ def compile_research_summary(r: ResearchResult) -> str:
     total_chars = sum(len(p) for p in parts)
 
     # Section 2: DEEP ARTICLES — Key content from fetched pages
-    # Limit each article to 2000 chars, max 3 articles
+    # Limit each article to 3500 chars, max 5 articles — bilgi yoğunluğu öncelikli
     if r.deep_articles:
         parts.append(f"\n## ARAŞTIRMA KAYNAKLARI ({len(r.deep_articles)} makale okundu):")
-        for i, article in enumerate(r.deep_articles[:3], 1):
-            content = article['content'][:2000]
+        for i, article in enumerate(r.deep_articles[:5], 1):
+            content = article['content'][:3500]
             article_text = f"\n### Kaynak {i}: {article['title']}\n{content}"
             if total_chars + len(article_text) > MAX_TOTAL:
                 # Truncate this article to fit budget
-                remaining = max(500, MAX_TOTAL - total_chars - 200)
+                remaining = max(800, MAX_TOTAL - total_chars - 200)
                 article_text = f"\n### Kaynak {i}: {article['title']}\n{article['content'][:remaining]}..."
             parts.append(article_text)
             total_chars += len(article_text)
