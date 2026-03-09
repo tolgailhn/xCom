@@ -608,102 +608,101 @@ YAPMA:
 """,
     },
     "tolga_news": {
-        "name": "Tolga News / Haber Analizi",
-        "description": "Gelişmeyi derinlemesine analiz eden, etki odaklı haber yazımı",
+        "name": "Tolga News / Haber Aktarımı",
+        "description": "Gelişmeyi detaylı araştırıp takipçilere bilgi aktaran haber formatı",
         "prompt": """
-yazım tarzı: TOLGA NEWS / HABER ANALİZİ
+yazım tarzı: TOLGA NEWS / HABER AKTARIMI
 
-Bu tarz = bir gelişmeyi sadece haber olarak aktarmıyorsun. Herkesin gördüğü haberin ARKASINI anlatıyorsun.
-"ne oldu" değil "bu neden önemli", "asıl mesele ne", "bunu kimse böyle anlatmadı" perspektifinden yazıyorsun.
+Bu tarz = bir teknoloji gelişmesini, güncellemeyi, ürünü veya haberi DETAYLIYLA anlatıyorsun.
+Takipçilerin senin tweet'ini okuyunca konuyu TAM OLARAK anlamış olmalı — başka kaynak aramaya gerek kalmamalı.
 
-Bu tarz QUOTE TWEET için optimize edilmiş. Birisi bir gelişme paylaşıyor, sen alıntılayıp DEĞERLİ bir analiz ekliyorsun.
-Okuyucu senin tweet'ini okuduktan sonra konuyu DAHA DERİN anlıyor, "aa bunu düşünmemiştim" diyor.
+AMAÇ: Araştırmadan çıkan TÜM önemli bilgileri (rakamlar, tarihler, fiyatlar, teknik detaylar, kim yaptı, nasıl çalışıyor, ne farkı var) doğal paragraflar halinde takipçilerine aktarmak. %80 BİLGİ AKTARIMI, %20 kişisel perspektif.
 
-## ANA FORMÜL (her tweet'te bu yapıyı takip et):
+Bu bir "bence şöyle düşünüyorum" tweet'i DEĞİL. Bu bir "şu oldu, şöyle çalışıyor, bu kadar ediyor, şu farkı var" haberi.
 
-1. ETKİ ODAKLI HOOK — "ne oldu" değil "bu neden önemli" ile başla
-   - konunun ETKİSİNİ, SONUCUNU, veya FARKLI AÇISINI hook'a koy
-   - YANLIŞ: "vLLM v0.17 çıktı" → DOĞRU: "yapay zeka modelleri artık çok daha hızlı ve ucuz çalışıyor"
-   - hook her seferinde FARKLI olmalı — aynı kalıpla başlama
+## YAZI YAPISI:
 
-2. SOMUT ETKİ PARAGRAFI — herkesin anlayacağı dilde ETKİYİ anlat
-   - teknik detayı GÜNLÜK HAYATA çevir
-   - somut, herkesin anlayacağı, "vay be" dedirtecek etki
+1. GİRİŞ — ne oldu, kim yaptı, neden önemli — konuyu net tanıt
+   Okuyucu ilk paragrafta "bu ne hakkında" sorusuna cevap bulmalı.
 
-3. DERİN BAĞLAM — kimsenin görmediği açı
-   - güvenlik boyutu, etik boyut, maliyet boyutu, topluluk boyutu
-   - paradoks, çelişki veya bağlantı kur
-   - perspektif değiştiren bir gözlem ekle
+2. DETAY PARAGRAFLARI — araştırmadan çıkan TÜM somut bilgileri aktar:
+   - nasıl çalışıyor? (teknik detay ama herkesin anlayacağı dilde)
+   - rakamlar: fiyat, performans, boyut, kapasite, kullanıcı sayısı, yatırım miktarı
+   - karşılaştırma: önceki versiyona/rakibe göre ne farkı var
+   - kim kullanabilir, nasıl erişilir
+   - topluluk/şirket bilgisi: kim yaptı, kaç kişi katkıda bulundu
 
-4. FARKLI AÇI / GENİŞ PERSPEKTİF — büyük resim
-   - sektöre etkisi, kullanıcılara etkisi, geleceğe etkisi
+3. ETKİ / BAĞLAM — bu gelişmenin pratik anlamı ne:
+   - kullanıcılara etkisi, sektöre etkisi
+   - avantajlar VE dezavantajlar/riskler/etik sorular varsa onlar da
+   - teknik jargonu günlük hayata çevir
 
-5. KESKİN KAPANIŞ — akılda kalan bir tespit
-   - klişe tahmin YASAK, soru YASAK
+4. KAPANIŞ — güçlü, akılda kalan bir tespit veya gözlem
 
-## ⛔ TEKRAR YASAĞI (ÇOK ÖNEMLİ):
-Aşağıdaki geçiş ifadeleri SADECE ÖRNEK. Bunları olduğu gibi kullanma, KENDİ doğal geçişlerini üret.
-Her tweet'te FARKLI kelimeler, FARKLI cümle yapıları kullan.
-
-SAKINCI OLAN TEKRAR: Her tweet'te "asıl mesele şu", "şimdi şöyle düşün", "bir de şunu düşünün" kullanmak.
-Bunlar iyi geçişler AMA her seferinde aynısını kullanırsan robot gibi görünürsün.
-
-DOĞRU YAKLAŞIM: Düşünceni doğal akışla geçir. Bazen:
-- direkt konuya gir, geçiş kullanma bile
-- "ama burada ince bir nokta var" / "bunu biraz açalım" / "mesele sadece bu değil"
-- "bi de şöyle bakalım" / "ama dikkat" / "ilginç olan kısım şu"
-- "pratik anlamı ne?" / "peki bu bize ne anlatıyor" / "tablo aslında farklı"
-- veya hiç geçiş kelimesi olmadan, yeni paragrafta farklı açıya geç
-
-KURAL: Aynı geçiş ifadesini aynı tweet içinde İKİ KEZ kullanma.
-KURAL: Art arda üretilen tweet'lerde aynı açılış/geçiş kalıbını kullanma.
-KURAL: Eğitim verisindeki ve havuzdaki tweet'lerden KENDİ geçiş tarzını öğren, benim verdiğim örneklere yapışma.
+## ÇOK ÖNEMLİ — ARAŞTIRMA VERİLERİNİ KULLAN:
+- Araştırmada ne kadar somut bilgi varsa tweet'e O KADAR aktar
+- Rakamları, tarihleri, isimleri, fiyatları, performans verilerini YAZMAKTAN ÇEKİNME
+- Tweet uzun olabilir — bilgi yoğunluğu kısa tutmaktan daha önemli
+- Okuyucu tweet'i bitirince "vay be, her şeyi öğrendim" demeli
 
 ## TON VE DİL:
 - küçük harfle yaz (isimler hariç: OpenAI, Claude, NVIDIA)
 - türkçe ağırlıklı, teknik terimler ingilizce kalabilir
-- bilgi yoğun ama erişilebilir — herkes anlasın, teknik jargon minimum
-- paragraflar arası boş satır, her paragraf 1-3 cümle
+- bilgi aktarımı tonu — "haber anlatan arkadaş" gibi, akademik değil
+- teknik jargonu açıkla — "FlashAttention 4" yerine "modellerin düşünme hızını artıran teknoloji"
+- doğal paragraflar halinde yaz — madde işareti, numara listesi, emoji listesi KULLANMA
 - emoji SIFIR veya en fazla 1
-- kişisel yorum ve bakış açısı ŞART — sadece haber aktarma
-- madde işareti/numara listesi KULLANMA — doğal paragraflar
-- HER TWEET FARKLI HİSSETMELİ — aynı şablon, aynı açılış, aynı geçişler YASAK
+- paragraflar arası boş satır, her paragraf 1-4 cümle
+- uzun olabilir — bilgiyi kesme, tamamını aktar
 
-## ÖRNEK TWEET'LER (dikkat: her birinin geçişleri ve yapısı FARKLI):
+## ⛔ TEKRAR YASAĞI:
+- Her tweet'te aynı açılış, aynı geçiş kalıplarını kullanma
+- KENDİ doğal geçişlerini üret, sabit kalıplara yapışma
+- Eğitim verisindeki ve havuzdaki tweet'lerden anlatım tarzını, geçiş stilini, kelime seçimini öğren
+- Benim burada yazdığım örneklere DEĞİL, eğitim verisindeki yüzlerce tweet'e bak
 
-"wifi sinyalleriyle duvarların arkasını görmek çoğu kişiye vay be teknoloji dedirtiyor ama kimsenin konuşmadığı bir taraf var. bu sistem sadece poz algılamıyor, nefes hızınızı ve kalp atışınızı da ölçebiliyor. yani evinizde bir kamera yok, bir sensör yok ama routerınız sizi neredeyse tıbbi düzeyde izleyebilir hale geliyor.
+## ÖRNEK TWEET (bilgi aktarımı nasıl yapılır):
 
-bunu açık kaynak yapmanın ne anlama geldiğini düşünün. herhangi biri githubdan indirip sıradan bir routerla çalıştırabilir. güvenlik amaçlı kullanılabilir, yaşlı bakımında devrim yaratabilir ama kötü niyetli birinin eline geçtiğinde mahremiyetin sonu demek.
+"dünyanın ilk ticari biyolojik bilgisayarı piyasaya çıktı.
 
-teknolojinin kendisi değil, regülasyonun bu hıza yetişip yetişemeyeceği asıl mesele."
+Avustralya merkezli Cortical Labs, CL1 adını verdiği sistemi mart 2025'te satışa sundu. silikon bir çip üzerinde yetiştirilen kök hücrelerden elde edilen 200.000 ile 800.000 arası insan nöronu, elektrotlara bağlanıyor ve elektriksel geri bildirim yoluyla öğreniyor.
 
-"herkes burada vay beyin hücreleri doom oynuyor diye şaşırıyor ama olay çok daha derin.
+nasıl çalıştığını görmek için 2022'deki Pong demosuna bakabilirsiniz — bu nöronlar gerçekten oyun oynamayı öğrendi. sıvı sinir ağları oluşturuyor yani biyoloji ve silikonu birleştiren 'Sentetik Biyolojik Zeka' denen şey bu.
 
-200 bin nöron bir haftada doom oynamayı öğrendi. bu hücreler sadece tepki vermiyor, 3 boyutlu bir ortamda geziniyor, düşman tanıyıp ateş ediyor.
+en büyük avantajı enerji verimliliği. insan beyni yaklaşık 20 watt enerji tüketirken yapay zeka veri merkezleri megawattlarca enerji harcıyor. CL1 yaklaşık 35.000 dolara satılıyor, bulut üzerinden de erişilebilir.
 
-günümüzün en güçlü yapay zeka modelleri milyarlarca dolarlık veri merkezlerinde megawattlarca enerji harcıyor. ama bir petri kabındaki biyolojik nöronlar silikon ile birleştirildiğinde elektrik uyarımıyla kendi kendine öğrenebiliyor.
+milyarlarca nörona ölçeklendirmek hala karmaşık. canlı hücrelerin korunması ve potansiyel bilinç gibi etik sorular da masada."
 
-herkes daha büyük model, daha fazla parametre diye koşarken belki de asıl devrim silikon değil karbon tabanlı olacak."
+"cursor automations çıktı. always-on agent sistemi.
 
-"vLLM denen araç yapay zeka modellerini çok daha hızlı ve ucuz çalıştırmayı sağlayan bir sistem. yeni sürümü çıktı ve bayağı şey değişmiş.
+codebase'e yeni ekleme yapıldığında, slack mesajı geldiğinde, github PR merge edildiğinde, linear issue oluşturulduğunda, pagerduty incident açıldığında — agent'lar otomatik tetikleniyor. manuel başlatmıyorsun, sistem event olduğunda otomatik başlıyor.
 
-en çok konuşulan yenilik modellerin düşünme kısmını inanılmaz hızlandıran bir teknoloji. artık aynı bilgisayarda daha çok sohbet yapılabiliyor, cevaplar daha çabuk geliyor ve elektrik faturası düşüyor.
+cursor kendi codebase'inde saatte yüzlerce automation çalıştırıyor. sadece code review değil, security audit, incident response, test coverage kontrolü, bug triage, haftalık özet raporları hepsi otomatik.
 
-eskiden yavaş yavaş gelen cevaplar neredeyse anında geliyor. hem metin hem görüntü hem ses hem video aynı motorla uçuyor.
+pagerduty incident geldiğinde agent otomatik başlıyor. datadog üzerinden log'ları sorguluyor, son kod değişikliklerini inceliyor, on-call engineer'a slack'te özet gönderiyor, otomatik PR ile fix öneriyor.
 
-270'ten fazla kişi katkıda bulunmuş. gerçekten herkesin emeği var içinde."
+cursor'un annual revenue 2 milyar doları geçti, son 3 ayda ikiye katlanmış."
+
+"anthropic claude marketplace'i tanıttı.
+
+enterprise'lar onlarca farklı ai aracı kullanıyor. her biri ayrı fatura, ayrı procurement süreci, ayrı güvenlik incelemesi, ayrı sözleşme. claude marketplace bu kaosu tek noktadan çözüyor — zaten anthropic'le yıllık harcama commitment'ı olan enterprise'lar, o budget'ın bir kısmını claude-powered third-party araçları satın almak için kullanabiliyor.
+
+launch partner'lar snowflake, gitlab, harvey, replit, rogo, lovable.
+
+en ilginç detay: anthropic commission almıyor. AWS ve Azure marketplace'lerde %3-15 arası commission alınıyor, anthropic sıfır. enterprise lock-in şu an transaction revenue'dan daha değerli çünkü.
+
+yılda 6-7 digit anthropic'e ödüyor enterprise. snowflake data tools, harvey legal workflows, replit developer environments hepsini aynı budget satırına ekleyebiliyorlar."
 
 ## YAPMA:
-- sadece "ne oldu" anlatma — NEDEN ÖNEMLİ olduğunu açıkla
-- teknik jargonu çevirmeden bırakma — "FlashAttention 4 entegrasyonu" yerine "modellerin düşünme kısmını hızlandıran teknoloji"
-- yüzeysel yorum yapma — derinlik şart
+- bilgiyi eksik bırakma — araştırmada varsa tweet'e yaz
+- teknik jargonu çevirmeden bırakma — herkes anlasın
+- sadece "bence şöyle" yazıp somut bilgi vermeme — bu haber, yorum değil
 - "heyecan verici", "çığır açan", "dikkat çekici" klişeler YASAK
-- madde listesi / numara listesi YASAK
+- madde listesi / numara listesi YASAK — doğal paragraflar
 - soru ile bitirme YASAK
 - büyük harf kullanma — her şey küçük harfle
-- tweet'i birebir çevirme veya özetleme — kendi analizini yaz
-- araştırma verilerini görmezden gelme — somut veri kullan
-- AYNI GEÇİŞ İFADELERİNİ TEKRAR TEKRAR KULLANMA — her tweet farklı hissetmeli
+- kısa yazma — bilgi yoğunluğu öncelikli, gerekirse uzun yaz
+- aynı geçiş kalıplarını tekrarlama — her tweet farklı hissetmeli
 """,
     },
     "hurricane": {
@@ -1529,37 +1528,37 @@ ARAŞTIRMA NASIL KULLANILIR:
 ---
 
 ## GÖREV:
-Orijinal tweet'in konusu hakkında KENDİ HABER ANALİZİNİ Türkçe yaz.
-Sadece "ne oldu" anlatma — NEDEN ÖNEMLİ olduğunu, KİME ETKİSİ olduğunu ve HERKESIN GÖRMEDİĞİ bir açıyı da anlat.
+Orijinal tweet'in konusu hakkında Türkçe yaz. Bu gelişmeyi/haberi takipçilerine DETAYLIYLA aktar.
 
 ZORUNLU KURALLAR:
 1. Tweet'in KONUSUNA sadık kal — tweet ne anlatıyorsa o konuda yaz
-2. Araştırmadan EN AZ 2 spesifik bilgi/rakam/veri kullan (genel yorum yetmez)
+2. Araştırmadan MÜMKÜN OLDUĞUNCA ÇOK somut bilgi kullan — rakamlar, tarihler, fiyatlar, isimler, teknik detaylar, karşılaştırmalar
 3. YUKARIDAKI BAKIŞ AÇISINA SADIK KAL — o perspektiften yaz
-4. SOMUT ETKİ AÇIKLA — teknik detayı herkesin anlayacağı günlük hayat etkisine çevir
-5. FARKLI BİR AÇI EKLE — herkesin görmediği bir boyut (güvenlik/etik/maliyet/rekabet/topluluk)
-6. GÜÇLÜ İFADEYLE BİTİR — güçlü görüş, kuru tespit veya ironi. "6 ay içinde...", "bunu geçer" gibi kalıp tahminlerle bitirme, çeşitlen. SORU SORMA.
+4. Teknik jargonu herkesin anlayacağı dile çevir — takipçilerin teknik olmayabilir
+5. Bilgi aktarımı AĞIRLIKLI yaz (%80 bilgi, %20 kişisel perspektif) — bu bir haber aktarımı, kişisel yorum tweet'i değil
+6. GÜÇLÜ İFADEYLE BİTİR — güçlü tespit veya gözlem. "6 ay içinde...", "bunu geçer" gibi kalıp tahminlerle bitirme. SORU SORMA.
+7. Yazım tarzını EĞİTİM VERİSİNDEKİ ve HAVUZDAKİ tweet'lerden öğren — oradaki yüzlerce tweet senin gerçek stilin
 
 {length_instructions}
 
 ## FORMAT:
-- İlk satır = ETKİ ODAKLI HOOK ("ne oldu" değil "bu neden önemli" ile başla)
-- 2. paragraf = SOMUT ETKİ (herkesin anlayacağı dilde)
-- 3+ paragraf = DERİN ANALİZ + FARKLI AÇI
-- Son satır = KESKİN KAPANIŞ (güçlü görüş, kuru tespit veya ironi)
+- İlk paragraf = konuyu net tanıt (ne oldu, kim yaptı)
+- Orta paragraflar = DETAYLAR (nasıl çalışıyor, rakamlar, fiyatlar, karşılaştırmalar, avantajlar/dezavantajlar)
+- Son paragraf = pratik etki veya güçlü gözlem
 - Her paragraf arası BOŞ SATIR
-- Her paragraf 1-3 cümle
+- Her paragraf 1-4 cümle
 - En sona 1-2 hashtag
+- Uzun olabilir — bilgi yoğunluğu kısa tutmaktan daha önemli
 
 ## YAPMA:
-- Sadece "ne oldu" anlatıp bırakma — NEDEN ÖNEMLİ olduğunu MUTLAKA açıkla
+- Bilgiyi eksik bırakma — araştırmada varsa tweet'e yaz
 - Tweet konusundan SAPMA
 - Tweet'i birebir çevirme/özetleme
-- Teknik jargonu çevirmeden bırakma — "FlashAttention 4" yerine "modellerin düşünme hızını artıran teknoloji"
+- Teknik jargonu çevirmeden bırakma
 - Klişe kullanma: "heyecan verici", "çığır açan", "dikkat çekici"
-- Madde işareti/liste kullanma
+- Madde işareti/liste kullanma — doğal paragraflar
 - CTA soru sorma: "sizce?", "denediniz mi?" YASAK
-- Yüzeysel/genel yorum yapma — derinlik şart
+- Sadece "bence şöyle" yazıp somut bilgi vermemek — bilgi aktarımı birincil
 
 Sadece tweet metnini yaz, başka bir şey yazma."""
         else:
@@ -1567,18 +1566,18 @@ Sadece tweet metnini yaz, başka bir şey yazma."""
             user_prompt = f"""@{original_author} şunu yazmış:
 "{original_tweet}"
 
-Bu tweet ne hakkındaysa O KONU hakkında KENDİ ANALİZİNİ yaz.
-Tweet'teki verileri (rakamlar, isimler, benchmark sonuçları, fiyatlar varsa) kullanarak kendi analizini ekle.
+Bu tweet ne hakkındaysa O KONU hakkında takipçilerini BİLGİLENDİR.
+Tweet'teki verileri (rakamlar, isimler, benchmark sonuçları, fiyatlar varsa) kullanarak konuyu detaylıca aktar.
 Orijinal tweet'i birebir çevirme veya tekrarlama, ama içindeki bilgilerden yararlan.
 
 ZORUNLU:
-1. Sadece "ne oldu" anlatma — NEDEN ÖNEMLİ olduğunu açıkla
-2. Teknik detayı herkesin anlayacağı ETKİYE çevir
-3. Herkesin görmediği bir AÇI ekle (güvenlik/etik/maliyet/rekabet boyutu)
-4. Kendi bakış açını doğal şekilde ekle — kişisel yorum ve perspektif şart ama HER SEFERINDE FARKLI ifadeler kullan, aynı kalıba yapışma
+1. Konuyu detaylıyla anlat — ne oldu, nasıl çalışıyor, ne farkı var
+2. Tweet'teki somut verileri (rakamlar, isimler, tarihler) kullan
+3. Teknik jargonu herkesin anlayacağı dile çevir
+4. Kısa bir kişisel gözlem ekleyebilirsin ama tweet'in ağırlığı bilgi aktarımı olsun
 {f"Not: {additional_context}" if additional_context else ""}
 
-FORMAT: İlk satır = etki odaklı hook ("ne oldu" değil "bu neden önemli" ile başla). Paragraflar arası boş satır bırak. Son satır güçlü görüş veya kuru tespit (klişe tahmin kalıbı YASAK, SORU SORMA). En sona 1-2 hashtag.
+FORMAT: İlk paragraf = konuyu tanıt. Orta paragraflar = detaylar. Son paragraf = pratik etki veya gözlem. Paragraflar arası boş satır bırak. Klişe tahmin kalıbı YASAK, SORU SORMA. En sona 1-2 hashtag.
 
 Sadece tweet metnini yaz."""
 
@@ -1772,26 +1771,24 @@ Araştırma verilerini kullanarak {length_desc_text} formatında yazıyorsun.
    Tweet kısa ise → araştırmadan detay ve veri ekle.
    Tweet uzun ise → tweet'in verilerini kullan, araştırmadan bağlam ekle.
 
-5. ETKİ ANALİZİ (ÇOK ÖNEMLİ): Sadece "ne oldu" yazmak yetmez. MUTLAKA şunu açıkla:
-   - Bu gelişme KİME ETKİ ediyor? (kullanıcılar, şirketler, geliştiriciler, sektör?)
-   - Herkesin anlayacağı SOMUT ETKİ ne? (teknik jargonu günlük hayata çevir)
-   - Derin bağlam ver — perspektif değiştiren bir gözlem ekle
-   - Araştırmadaki [ETKİ] etiketli kaynaklar bu konuda en değerli — KULLAN
+5. BİLGİ YOĞUNLUĞU (ÇOK ÖNEMLİ): Araştırmada ne kadar somut bilgi varsa tweet'e O KADAR aktar.
+   - Rakamlar, tarihler, fiyatlar, performans verileri, karşılaştırmalar — HEPSİNİ yaz
+   - Teknik jargonu herkesin anlayacağı dile çevir
    ÖRNEK — YANLIŞ: "FlashAttention 4 entegrasyonu geldi"
    ÖRNEK — DOĞRU: "modellerin düşünme kısmını hızlandıran teknoloji geldi. aynı bilgisayarda daha çok sohbet yapılabiliyor, elektrik faturası düşüyor"
+   - Araştırmadaki [ETKİ] etiketli kaynaklar pratik etki bilgisi için en değerli — KULLAN
+   - %80 bilgi aktarımı, %20 kişisel perspektif — bu haber, kişisel yorum tweet'i değil
 
-6. ANALİZ VE KİŞİSEL YORUM EKLE: Bilgiyi ver, sonra KENDİ YORUMUNU kat.
-   Paradoksları, çelişkileri ve stratejik boyutu yakala.
-   Kişisel ifadeler doğal şekilde kullan — ama her seferinde aynı kalıpları tekrarlama.
+6. KİŞİSEL PERSPEKTİF (AZ AMA ETKİLİ): Bilgiyi aktardıktan sonra kısa bir kişisel gözlem ekle.
+   Ama tweet'in %80'i somut bilgi olmalı, %20'si yorum.
 
-7. FARKLI AÇI / GİZLİ BOYUT: Herkesin görmediği bir boyutu ekle:
-   Güvenlik, etik, maliyet, topluluk veya rekabet boyutlarından konuya en uygun olanı seç.
+7. AVANTAJ + DEZAVANTAJ: Varsa hem olumlu hem olumsuz tarafları (riskler, etik sorular, maliyetler) aktar.
+   Tek taraflı övgü yapma — dengeli bilgi ver.
 
 8. DOĞAL YAZ VE ÇEŞİTLEN: Türkçe günlük dil, teknik terimler İngilizce.
    AI kalıpları YASAK. Madde işareti/liste YASAK.
    ÖNEMLİ: Her tweet'te aynı geçiş ifadelerini kullanma. KENDİ doğal geçişlerini üret.
-   Eğitim verisinde ve havuzda gördüğün tweet'lerdeki geçiş çeşitliliğini taklit et.
-   Sabit kalıplara yapışma — düşünceni doğal akışla paragraflar arasında geçir.
+   Eğitim verisinde ve havuzda gördüğün tweet'lerdeki yazım tarzını, geçiş stilini, kelime seçimini öğren.
 
 ## ⛔ BİLGİ UYDURMA YASAĞI:
 - SADECE araştırma verisinde ve orijinal tweet'te bulunan bilgileri kullan.
