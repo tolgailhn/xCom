@@ -116,10 +116,13 @@ async def schedule_self_reply_chain(request: SelfReplyChainRequest):
     chain_id = now.strftime("%Y%m%d%H%M%S") + "_chain"
     interval = max(1, request.interval_minutes)
 
+    FIRST_REPLY_DELAY = 5  # First reply 5 minutes after scheduling
+
     created_posts = []
     for i, reply_text in enumerate(request.replies):
-        # First reply: 1 minute from now, rest: interval apart
-        offset_minutes = 1 + (i * interval)
+        # First reply: 5 min from now, rest: interval apart after that
+        # e.g. 15dk interval, 3 replies → 5dk, 20dk, 35dk
+        offset_minutes = FIRST_REPLY_DELAY + (i * interval)
         scheduled_dt = now + datetime.timedelta(minutes=offset_minutes)
 
         post = add_scheduled_post({

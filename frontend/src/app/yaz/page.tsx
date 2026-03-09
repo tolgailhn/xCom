@@ -2457,7 +2457,7 @@ function TabSelfReply({ styles }: { styles: StyleOption[] }) {
                   </select>
                 </div>
                 <p className="text-[10px] text-[var(--text-secondary)]">
-                  Sayfa kapatilsa bile backend otomatik atar. Ilk reply 1dk icinde, sonrakiler {intervalMin}dk arayla.
+                  Sayfa kapatilsa bile backend otomatik atar. Ilk reply 5dk sonra, sonrakiler {intervalMin}dk arayla.
                 </p>
                 <button
                   onClick={handleScheduleChain}
