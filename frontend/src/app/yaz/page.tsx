@@ -17,6 +17,8 @@ import {
   getProviders,
   publishTweet,
   schedulePost,
+  getTodaySchedule,
+  logPost,
 } from "@/lib/api";
 import type { PublishResult } from "@/lib/api";
 
@@ -75,6 +77,100 @@ interface FormatOption {
   id: string;
   name: string;
   desc: string;
+}
+
+/* ── "Paylaştım" Butonu — takvime kayıt ─────────────────── */
+
+interface SlotOption {
+  time: string;
+  label: string;
+}
+
+function LogToCalendar({ content }: { content: string }) {
+  const [open, setOpen] = useState(false);
+  const [slots, setSlots] = useState<SlotOption[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (open && slots.length === 0) {
+      getTodaySchedule().then((data: { slots?: { time: string; label: string; posted: boolean }[] }) => {
+        const available = (data.slots || []).filter((s: { posted: boolean }) => !s.posted);
+        setSlots(available.map((s: { time: string; label: string }) => ({ time: s.time, label: s.label })));
+        if (available.length > 0) setSelectedSlot(available[0].time);
+      }).catch(() => {});
+    }
+  }, [open, slots.length]);
+
+  const handleSave = async () => {
+    if (!selectedSlot) return;
+    setSaving(true);
+    try {
+      await logPost({
+        slot_time: selectedSlot,
+        post_type: "Tweet",
+        content: content.slice(0, 280),
+      });
+      setSaved(true);
+    } catch {
+      /* ignore */
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (saved) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-[var(--accent-green)]">
+        Takvime kaydedildi ({selectedSlot})
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      {!open ? (
+        <button
+          onClick={() => setOpen(true)}
+          className="btn-secondary text-sm"
+        >
+          Paylastim
+        </button>
+      ) : (
+        <>
+          <select
+            className="p-1.5 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-sm"
+            value={selectedSlot}
+            onChange={(e) => setSelectedSlot(e.target.value)}
+          >
+            {slots.length === 0 ? (
+              <option value="">Slot yok</option>
+            ) : (
+              slots.map((s) => (
+                <option key={s.time} value={s.time}>
+                  {s.time} — {s.label}
+                </option>
+              ))
+            )}
+          </select>
+          <button
+            onClick={handleSave}
+            disabled={saving || !selectedSlot}
+            className="btn-primary text-sm"
+          >
+            {saving ? "..." : "Kaydet"}
+          </button>
+          <button
+            onClick={() => setOpen(false)}
+            className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          >
+            Iptal
+          </button>
+        </>
+      )}
+    </div>
+  );
 }
 
 /* ── Score Bar ─────────────────────────────────────────── */
@@ -1018,6 +1114,11 @@ function TabTweetYaz({
               ) : (
                 <p className="text-[var(--accent-red)]">{publishResult.error || "Paylasim basarisiz"}</p>
               )}
+              {publishResult.success && (
+                <div className="mt-3 pt-3 border-t border-[var(--border)]">
+                  <LogToCalendar content={generatedText} />
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1719,6 +1820,11 @@ function TabQuoteTweet({
                 </div>
               ) : (
                 <p className="text-[var(--accent-red)] text-xs">{publishResultQt.error || "Paylasim basarisiz"}</p>
+              )}
+              {publishResultQt.success && (
+                <div className="mt-3 pt-3 border-t border-[var(--border)]">
+                  <LogToCalendar content={generatedText} />
+                </div>
               )}
             </div>
           )}

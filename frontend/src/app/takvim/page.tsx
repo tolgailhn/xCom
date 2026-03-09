@@ -4,8 +4,6 @@ import { useEffect, useState, useCallback } from "react";
 import {
   getTodaySchedule,
   logPost,
-  getChecklist,
-  updateChecklist,
   getWeeklySummary,
   getCalendarHistory,
   getAllScheduledPosts,
@@ -44,13 +42,6 @@ interface ScheduleData {
   next_slot: { time: string; label: string; countdown: string } | null;
   today_posted: number;
   post_types: string[];
-}
-
-interface ChecklistItem {
-  key: string;
-  label: string;
-  impact: string;
-  checked: boolean;
 }
 
 interface WeeklySummary {
@@ -235,7 +226,6 @@ function LogForm({
 
 export default function TakvimPage() {
   const [schedule, setSchedule] = useState<ScheduleData | null>(null);
-  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [summary, setSummary] = useState<WeeklySummary | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyLimit, setHistoryLimit] = useState(10);
@@ -304,10 +294,6 @@ export default function TakvimPage() {
       setSummary(sum as WeeklySummary);
       setHistory((hist as { entries: HistoryEntry[] }).entries || []);
 
-      // Load checklist for today
-      const todayStr = (sched as ScheduleData).date;
-      const cl = await getChecklist(todayStr);
-      setChecklist((cl as { items: ChecklistItem[] }).items || []);
     } catch {
       /* ignore */
     } finally {
@@ -321,20 +307,6 @@ export default function TakvimPage() {
     loadPerformance();
   }, [loadAll, loadScheduledPosts, loadPerformance]);
 
-  const handleChecklistToggle = async (key: string, checked: boolean) => {
-    if (!schedule) return;
-    const newChecklist = checklist.map((item) =>
-      item.key === key ? { ...item, checked } : item
-    );
-    setChecklist(newChecklist);
-
-    const items: Record<string, boolean> = {};
-    newChecklist.forEach((item) => {
-      items[item.key] = item.checked;
-    });
-    await updateChecklist(schedule.date, items);
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -343,7 +315,7 @@ export default function TakvimPage() {
     );
   }
 
-  const checklistDone = checklist.filter((i) => i.checked).length;
+
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -376,10 +348,6 @@ export default function TakvimPage() {
         <StatBox
           value={`${summary?.total_posts || 0}/28`}
           label="Bu Hafta"
-        />
-        <StatBox
-          value={`${checklistDone}/${checklist.length}`}
-          label="Checklist"
         />
       </div>
 
@@ -707,53 +675,6 @@ export default function TakvimPage() {
             Henuz takip edilen tweet yok. Tweet paylasinca otomatik eklenir veya &quot;Gecmisten Ekle&quot; ile mevcut tweetleri iceri aktar.
           </div>
         )}
-      </div>
-
-      {/* Algorithm Checklist */}
-      <div>
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-lg font-semibold">Gunluk Algoritma Checklist</h3>
-          <span className="text-xs text-[var(--text-secondary)] bg-[var(--bg-secondary)] px-2 py-1 rounded">
-            Her gun uygula
-          </span>
-        </div>
-        <div className="glass-card">
-          <p className="text-xs text-[var(--text-secondary)] mb-3">
-            Bu maddeleri her gun uygulamak reach'ini 2-4x artirir. X Premium'san
-            etkisi daha da fazla.
-          </p>
-          <div className="space-y-2">
-            {checklist.map((item) => (
-              <label
-                key={item.key}
-                className="flex items-start gap-3 cursor-pointer p-2 rounded hover:bg-[var(--bg-secondary)] transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={item.checked}
-                  onChange={(e) =>
-                    handleChecklistToggle(item.key, e.target.checked)
-                  }
-                  className="accent-[var(--accent-green)] mt-0.5"
-                />
-                <div className="flex-1">
-                  <span
-                    className={`text-sm ${
-                      item.checked
-                        ? "line-through text-[var(--text-secondary)]"
-                        : ""
-                    }`}
-                  >
-                    {item.label}
-                  </span>
-                  <span className="text-xs text-[var(--accent-blue)] ml-2">
-                    {item.impact}
-                  </span>
-                </div>
-              </label>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Weekly Summary */}

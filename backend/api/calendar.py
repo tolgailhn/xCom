@@ -203,8 +203,8 @@ async def log_post(entry: PostLogEntry):
         slot_time=entry.slot_time,
         post_type=entry.post_type,
         has_media=entry.has_media,
-        has_self_reply=entry.has_self_reply,
-        url=entry.url,
+        self_reply=entry.has_self_reply,
+        tweet_url=entry.url,
         content=entry.content,
     )
     return {"status": "ok"}
