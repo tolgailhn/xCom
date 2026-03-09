@@ -47,28 +47,30 @@ class InfographicResult:
 
 # ── Step 1: Brief Olusturma ──────────────────────────────
 
-BRIEF_SYSTEM_PROMPT = """Sen bir infografik tasarim direktörusun. Sana verilen arastirma sonuclarindan Twitter/X icin 16:9 landscape infografik brief'i olusturacaksin.
+BRIEF_SYSTEM_PROMPT = """Sen bir HABER infografik editörusun (gazetecilik tonu). Sana verilen arastirma sonuclarindan Twitter/X icin 16:9 landscape HABER infografik brief'i olusturacaksin.
 
 KURALLAR:
 - Brief MUTLAKA Turkce olacak
-- Baslik kisa ve catchy olmali (max 8 kelime)
-- 3-5 ana mesaj/bilgi cikar (kisa cumleler)
-- Varsa anahtar sayilar/istatistikler belirt
+- Bu bir HABER/BILGI infografigi — reklam veya tanitim DEGIL
+- Baslik haber basligi gibi olmali (max 8 kelime, "Tanitiyoruz" gibi promosyon ifadeleri YASAK)
+- 3-5 ana BILGI/VERI maddesi cikar (kisa, nesnel cumleler)
+- Varsa anahtar sayilar/istatistikler MUTLAKA belirt (yuzde, rakam, karsilastirma)
 - Renk onerisinde bulun (konu ile uyumlu)
 - Her bilgi maddesi yaninda uygun bir emoji belirt
+- Hicbir maddede "hemen dene", "kesfet", "basvur" gibi CTA ifadesi OLMASIN
 
 CIKTI FORMATI (JSON):
 {
-  "title": "Ana Baslik",
-  "subtitle": "Alt baslik (opsiyonel, kisa aciklama)",
+  "title": "Haber Basligi Gibi Kisa Baslik",
+  "subtitle": "Alt baslik (1 cumle ozet — nesnel, bilgilendirici)",
   "key_points": [
-    {"emoji": "...", "text": "Kisa bilgi maddesi 1"},
-    {"emoji": "...", "text": "Kisa bilgi maddesi 2"},
-    {"emoji": "...", "text": "Kisa bilgi maddesi 3"}
+    {"emoji": "...", "text": "Nesnel bilgi maddesi 1"},
+    {"emoji": "...", "text": "Nesnel bilgi maddesi 2"},
+    {"emoji": "...", "text": "Nesnel bilgi maddesi 3"}
   ],
   "stats": [
-    {"value": "95%", "label": "Dogruluk"},
-    {"value": "2x", "label": "Hiz Artisi"}
+    {"value": "95%", "label": "Dogruluk Orani"},
+    {"value": "2x", "label": "Onceki Modele Gore Hiz"}
   ],
   "color_theme": "mavi-mor",
   "mood": "teknolojik"
@@ -154,30 +156,43 @@ def _build_gemini_prompt(brief: dict) -> str:
             f'  - {s.get("value", "")} → {s.get("label", "")}' for s in stats
         )
 
-    return f"""Create a professional 16:9 landscape infographic image for Twitter/X.
+    return f"""Create a professional 16:9 landscape NEWS INFOGRAPHIC image for Twitter/X.
+
+THIS IS A NEWS/INFORMATION INFOGRAPHIC — NOT AN ADVERTISEMENT OR PRODUCT PROMOTION.
+
+STRICT RULES — DO NOT INCLUDE ANY OF THESE:
+- NO promotional language ("Tanitiyoruz", "Hemen Basla", "Kesfet", "Dene", "Basvur", "Satin Al")
+- NO call-to-action buttons or links ("Baglantiya Git", "Hemen Basla", "Daha Fazla", "Kayit Ol")
+- NO marketing/sales tone — this is journalism, not advertising
+- NO arrows pointing to buttons or external links
+- NO "introducing", "presenting", "meet", "discover" style phrases
+- NO QR codes, URLs, or website links
+- NO bottom banner with CTA
 
 DESIGN REQUIREMENTS:
 - Modern, clean design with dark background
 - Color theme: {color_theme}
 - Mood: {mood}
-- NO photo-realistic elements, use flat design / vector style icons
-- Clear visual hierarchy: title at top, content in organized sections
-- Use dividers, cards, or sections to organize information
-- Make it visually rich with icons, shapes, and color accents
+- Flat design / vector style icons — NO photo-realistic elements
+- Clear visual hierarchy: title at top, factual content below
+- Use dividers, cards, or grid sections to organize information densely
+- Fill the space with DATA — stats, facts, comparisons, timelines
+- Make it information-dense like a newspaper infographic or Bloomberg chart
 - All text MUST be in Turkish language
-- Resolution suitable for Twitter (1200x675 or similar 16:9)
+- Resolution: 1200x675 (16:9 landscape)
+- Add a small source/credit text at bottom-right corner: "AI Gundem"
 
 CONTENT TO DISPLAY:
 
-Title (large, bold, top of image): {title}
-{f'Subtitle: {subtitle}' if subtitle else ''}
+Headline (large, bold, top): {title}
+{f'Subheadline: {subtitle}' if subtitle else ''}
 
-Key Information Points (use icons/bullets, organized in cards or columns):
+Key Facts (organized in cards, columns, or grid — NOT as a product feature list):
 {points_text}
 {stats_text}
 
-STYLE: Professional tech infographic, like you'd see from a top tech media outlet.
-Make it visually engaging and easy to read at a glance on a phone screen."""
+TONE: Objective, factual, journalistic — like Reuters, Bloomberg, or TRT Haber infographics.
+Present INFORMATION and DATA, not a product pitch. Think "news summary visual" not "product launch poster"."""
 
 
 def _generate_with_gemini(prompt: str, gemini_api_key: str) -> InfographicResult:
