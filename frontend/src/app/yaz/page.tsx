@@ -1695,11 +1695,14 @@ function TabLinkReply({ styles }: { styles: StyleOption[] }) {
     setError(null);
     try {
       const tweetText = originalTweet.full_thread_text || originalTweet.text;
+      const isThread = originalTweet.is_thread && (originalTweet.thread_count || 1) > 1;
       const result = (await generateReply({
         original_tweet: tweetText,
         original_author: originalTweet.author,
         style: replyStyle,
         additional_context: replyExtra || "",
+        is_thread: isThread,
+        thread_count: originalTweet.thread_count || 1,
       })) as { text: string };
       if (!result.text || result.text.trim() === "") {
         setError("Reply uretilemedi — AI bos yanit dondu. Tekrar deneyin.");

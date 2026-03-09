@@ -89,6 +89,8 @@ export function generateReply(params: {
   style?: string;
   additional_context?: string;
   provider?: string;
+  is_thread?: boolean;
+  thread_count?: number;
 }) {
   return apiFetch("/api/generator/reply", {
     method: "POST",

@@ -1409,26 +1409,52 @@ class ContentGenerator:
     def generate_reply(self, original_tweet: str, original_author: str,
                        style: str = "reply",
                        additional_context: str = "",
-                       user_samples: list = None) -> str:
+                       user_samples: list = None,
+                       is_thread: bool = False,
+                       thread_count: int = 1) -> str:
         """
-        Generate a short reply to a tweet (no web research, just tweet content).
+        Generate a short reply to a tweet or thread.
 
         Args:
-            original_tweet: The tweet text being replied to
+            original_tweet: The tweet text (or full thread text) being replied to
             original_author: Author username
             style: Writing style (default "reply")
             additional_context: Extra instructions
             user_samples: Sample tweets for style matching
+            is_thread: Whether this is a multi-tweet thread
+            thread_count: Number of tweets in the thread
 
         Returns:
-            Generated reply text (short, max ~280 chars)
+            Generated reply text
         """
         if not self.client:
             raise ValueError("API client not initialized. Check your API key.")
 
         system_prompt = self._build_reply_system_prompt(user_samples)
 
-        user_prompt = f"""@{original_author} şunu yazdı:
+        if is_thread and thread_count > 1:
+            # Thread reply — AI must read and digest ALL thread content
+            user_prompt = f"""@{original_author} aşağıdaki THREAD'i yazdı ({thread_count} tweet):
+
+--- THREAD BAŞLANGIÇ ---
+{original_tweet}
+--- THREAD BİTİŞ ---
+
+Bu thread'in TAMAMINI dikkatlice oku. Yazarın ANA ARGÜMANINI, verdiği örnekleri ve vardığı sonucu anla.
+
+Şimdi bu thread'e bir YANIT yaz. Kurallar:
+- Thread'in GERÇEK İÇERİĞİNE yanıt ver — yüzeysel "güzel thread" gibi boş övgü YAZMA
+- Thread'deki spesifik bir noktaya değin (örnek: "özellikle X kısmı çok doğru çünkü...")
+- Kendi deneyimini/görüşünü ekle — thread'in konusuyla ilgili somut bir katkı yap
+- 1-5 cümle arası yaz (thread uzunsa biraz daha uzun yanıt olabilir)
+- Doğal samimi Türkçe, sohbet tonu
+- Hashtag KULLANMA
+{f"Not: {additional_context}" if additional_context else ""}
+
+SADECE yanıt metnini yaz, başka bir şey yazma."""
+        else:
+            # Single tweet reply
+            user_prompt = f"""@{original_author} şunu yazdı:
 "{original_tweet}"
 
 Bu tweet'e bir YANIT yaz. Kurallar:

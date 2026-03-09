@@ -84,6 +84,8 @@ class ReplyRequest(BaseModel):
     style: str = "reply"
     additional_context: str = ""
     provider: str = ""
+    is_thread: bool = False
+    thread_count: int = 1
 
 
 class ImageAnalysisRequest(BaseModel):
@@ -295,6 +297,8 @@ async def generate_reply_endpoint(request: ReplyRequest):
             original_author=request.original_author,
             style=request.style,
             additional_context=request.additional_context,
+            is_thread=request.is_thread,
+            thread_count=request.thread_count,
         )
         return GenerateResponse(text=text, score=_score_text(text))
 
