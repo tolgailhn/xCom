@@ -35,6 +35,49 @@ LOGIN_TIMEOUT = 30  # seconds — prevents infinite hang on interactive prompts
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 COOKIES_PATH = DATA_DIR / "twikit_cookies.json"
 
+# ---------- Global rate limiter for Twikit requests ----------
+# Prevents rapid-fire requests that cause Twitter to temporarily ban the account.
+TWIKIT_MIN_DELAY = 2.0  # minimum seconds between consecutive requests
+TWIKIT_BACKOFF_MULTIPLIER = 2.0  # multiply delay on consecutive errors
+TWIKIT_MAX_DELAY = 30.0  # max backoff delay
+_twikit_last_request_time: float = 0.0
+_twikit_consecutive_errors: int = 0
+_twikit_rate_lock = threading.Lock()
+
+
+def _twikit_rate_limit_wait():
+    """Wait to respect rate limiting between Twikit requests."""
+    global _twikit_last_request_time, _twikit_consecutive_errors
+    with _twikit_rate_lock:
+        now = time.monotonic()
+        # Calculate delay: base delay + exponential backoff on errors
+        delay = TWIKIT_MIN_DELAY
+        if _twikit_consecutive_errors > 0:
+            delay = min(
+                TWIKIT_MIN_DELAY * (TWIKIT_BACKOFF_MULTIPLIER ** _twikit_consecutive_errors),
+                TWIKIT_MAX_DELAY,
+            )
+        elapsed = now - _twikit_last_request_time
+        if elapsed < delay:
+            wait_time = delay - elapsed
+            print(f"Twikit rate limiter: waiting {wait_time:.1f}s (errors={_twikit_consecutive_errors})")
+            time.sleep(wait_time)
+        _twikit_last_request_time = time.monotonic()
+
+
+def _twikit_rate_limit_success():
+    """Reset consecutive error count on successful request."""
+    global _twikit_consecutive_errors
+    with _twikit_rate_lock:
+        _twikit_consecutive_errors = 0
+
+
+def _twikit_rate_limit_error():
+    """Increment error count for exponential backoff."""
+    global _twikit_consecutive_errors
+    with _twikit_rate_lock:
+        _twikit_consecutive_errors = min(_twikit_consecutive_errors + 1, 5)
+
 
 def _safe_int(val) -> int:
     """Safely convert a value to int (twikit sometimes returns strings)."""
@@ -425,8 +468,12 @@ class TwikitSearchClient:
         """Search tweets. Returns list of tweet dicts."""
         if not self._authenticated:
             return []
+        _twikit_rate_limit_wait()
         adapted = adapt_query_for_web(query, since_date)
-        return self._run(self._search_async(adapted, count))
+        result = self._run(self._search_async(adapted, count))
+        if result:
+            _twikit_rate_limit_success()
+        return result
 
     async def _retry_after_reauth(self, coro_factory):
         """Reset client, force login (skip stale cookies), then run coro_factory().
@@ -487,12 +534,14 @@ class TwikitSearchClient:
                     "Grok motorunu kullanmayı deneyin."
                 )
                 print(f"Twikit search 403 — NOT re-authing (preserving cookies): {e}")
+                _twikit_rate_limit_error()
             elif err_name in ("NotFound", "TypeError", "AttributeError"):
                 # NotFound = search returned no results or endpoint changed
                 # TypeError/AttributeError = parsing issue, not auth
                 # Do NOT re-auth — it blocks the thread and won't fix these errors.
                 self.last_error = f"Arama hatası ({err_name}): {e}"
                 print(f"Twikit search {err_name} — NOT re-authing (not an auth issue): {e}")
+                _twikit_rate_limit_error()
             else:
                 # Only Unauthorized should trigger re-auth
                 print(f"Twikit search {err_name}, attempting re-auth...")
@@ -509,6 +558,7 @@ class TwikitSearchClient:
             reset_ts = getattr(e, 'rate_limit_reset', None)
             self.last_error = "Arama rate limit. Biraz bekleyip tekrar deneyin."
             print(f"Twikit search: TooManyRequests (reset={reset_ts})")
+            _twikit_rate_limit_error()
         except Exception as e:
             error_str = str(e)
             error_type = type(e).__name__
@@ -533,6 +583,7 @@ class TwikitSearchClient:
             else:
                 self.last_error = f"Arama hatası: {error_type}: {e}"
             print(f"Twikit search error: {error_type}: {e}")
+            _twikit_rate_limit_error()
         return results
 
     def get_user_tweets(self, username: str, count: int = 10,
@@ -540,7 +591,11 @@ class TwikitSearchClient:
         """Get recent tweets from a user with pagination. Returns list of tweet dicts."""
         if not self._authenticated:
             return []
-        return self._run(self._user_tweets_async(username, count, progress_callback))
+        _twikit_rate_limit_wait()
+        result = self._run(self._user_tweets_async(username, count, progress_callback))
+        if result:
+            _twikit_rate_limit_success()
+        return result
 
     async def _user_tweets_async(self, username: str, count: int,
                                   progress_callback=None) -> list[dict]:
@@ -810,7 +865,11 @@ class TwikitSearchClient:
         """
         if not self._authenticated:
             return []
-        return self._run(self._get_thread_async(tweet_id))
+        _twikit_rate_limit_wait()
+        result = self._run(self._get_thread_async(tweet_id))
+        if result:
+            _twikit_rate_limit_success()
+        return result
 
     async def _get_thread_async(self, tweet_id: str) -> list[dict]:
         try:

@@ -88,6 +88,7 @@ export function generateReply(params: {
   original_author?: string;
   style?: string;
   additional_context?: string;
+  provider?: string;
 }) {
   return apiFetch("/api/generator/reply", {
     method: "POST",
@@ -234,6 +235,7 @@ export function generateQuoteTweet(params: {
   additional_context?: string;
   length_preference?: string;
   deep_verify?: boolean;
+  provider?: string;
 }) {
   return apiFetch("/api/generator/quote-tweet", {
     method: "POST",

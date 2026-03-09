@@ -389,9 +389,13 @@ async def do_research_endpoint(request: ResearchRequest):
         # DuckDuckGo / standard research (run in thread to avoid blocking event loop)
         from backend.modules.deep_research import research_topic as do_research
 
-        # Build scanner for thread fetching if tweet_id provided
+        # Build scanner for X search and thread fetching
+        # Scanner is needed whenever "x" is in research_sources, not just when tweet_id exists
         scanner = None
-        if request.tweet_id:
+        needs_scanner = bool(request.tweet_id) or (
+            request.research_sources and "x" in request.research_sources
+        ) or not request.research_sources  # default sources include "x"
+        if needs_scanner:
             try:
                 from backend.modules.twitter_scanner import TwitterScanner
                 from backend.config import get_settings
@@ -509,9 +513,13 @@ async def research_stream(request: ResearchRequest):
         # DuckDuckGo / standard
         from backend.modules.deep_research import research_topic as do_research
 
-        # Build scanner for thread fetching if tweet_id provided
+        # Build scanner for X search and thread fetching
+        # Scanner is needed whenever "x" is in research_sources, not just when tweet_id exists
         scanner = None
-        if request.tweet_id:
+        needs_scanner = bool(request.tweet_id) or (
+            request.research_sources and "x" in request.research_sources
+        ) or not request.research_sources  # default sources include "x"
+        if needs_scanner:
             try:
                 from backend.modules.twitter_scanner import TwitterScanner
                 from backend.config import get_settings

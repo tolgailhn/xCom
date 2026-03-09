@@ -1490,6 +1490,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                                         result.media_urls.extend(t_media)
                             except Exception as e:
                                 print(f"X search in Grok agentic mode error: {e}")
+                                break  # Stop X search on error to prevent ban
                         result.related_tweets.sort(key=lambda x: x.get("likes", 0) + x.get("retweets", 0) * 2, reverse=True)
                         result.related_tweets = result.related_tweets[:15]
                     except Exception as e:
@@ -1574,6 +1575,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                                     result.media_urls.extend(t_media)
                         except Exception as e:
                             print(f"X search error in agentic mode: {e}")
+                            break  # Stop X search on error to prevent ban
 
                     result.related_tweets.sort(key=lambda x: x.get("likes", 0) + x.get("retweets", 0) * 2, reverse=True)
                     result.related_tweets = result.related_tweets[:15]
@@ -1775,6 +1777,10 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                     for comp in topic_info["companies"][:2]:
                         x_queries.append(f"{comp} {topic_info.get('action', 'AI')} -is:retweet -is:reply lang:en")
 
+            # Limit total X queries to prevent Twitter rate limiting / temp bans
+            MAX_X_QUERIES = 5  # max 5 unique searches per research call
+            x_queries = x_queries[:MAX_X_QUERIES]
+
             start = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=72)
             seen_ids = set()
             per_query_count = max(max_tweets // len(x_queries), 10) if x_queries else 20
@@ -1802,6 +1808,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                             result.media_urls.extend(t_media)
                 except Exception as e:
                     print(f"X search error ({q[:40]}): {e}")
+                    break  # Stop further X queries on error to prevent Twitter ban
 
             result.related_tweets.sort(key=lambda x: x.get("likes", 0) + x.get("retweets", 0) * 2, reverse=True)
             result.related_tweets = result.related_tweets[:max_tweets]
@@ -2552,6 +2559,9 @@ def research_topic_from_text(
                 seen_queries.add(q_key)
                 unique_queries.append(q)
 
+        # Limit total X queries to prevent Twitter rate limiting / temp bans
+        MAX_AGENTIC_X_QUERIES = 8
+        unique_queries = unique_queries[:MAX_AGENTIC_X_QUERIES]
         total_queries = len(unique_queries)
         if progress_callback:
             progress_callback(f"X'te {total_queries} farklı arama yapılıyor...")
@@ -2577,6 +2587,7 @@ def research_topic_from_text(
                         result.media_urls.extend(t_media)
             except Exception as e:
                 print(f"X topic search error ({q[:50]}): {e}")
+                break  # Stop further X queries on error to prevent Twitter ban
 
         # Sort by engagement
         result.x_tweets.sort(key=lambda x: x.get("likes", 0) + x.get("retweets", 0) * 2, reverse=True)
@@ -3078,6 +3089,7 @@ def discover_topics(ai_client=None, ai_model: str = None,
                         })
             except Exception as e:
                 print(f"Topic discovery X search error: {e}")
+                break  # Stop further X queries on error to prevent Twitter ban
 
         x_tweets.sort(key=lambda x: x.get("likes", 0) + x.get("retweets", 0) * 2, reverse=True)
         x_tweets = x_tweets[:25]

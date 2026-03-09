@@ -1309,6 +1309,7 @@ function TabQuoteTweet({
         research_summary: researchSummary,
         length_preference: contentFormat,
         deep_verify: deepVerify,
+        provider: provider || undefined,
       })) as { text: string; score: ScoreResult | null };
       if (!result.text || result.text.trim() === "") {
         setError("Tweet uretilemedi — AI bos yanit dondu. Farkli bir stil veya AI model deneyin.");
