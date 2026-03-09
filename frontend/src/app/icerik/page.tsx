@@ -311,6 +311,7 @@ function TabDiscover({
             >
               <option value="default">DuckDuckGo</option>
               <option value="grok">Grok (xAI)</option>
+              <option value="claude_code">Claude Code (Max)</option>
             </select>
           </div>
         </div>
@@ -441,6 +442,7 @@ function TabDiscover({
                 >
                   <option value="default">DuckDuckGo</option>
                   <option value="grok">Grok</option>
+                  <option value="claude_code">Claude Code (Max)</option>
                 </select>
               </div>
             </div>
@@ -681,6 +683,7 @@ function TabGenerate({
                 >
                   <option value="default">DuckDuckGo</option>
                   <option value="grok">Grok</option>
+                  <option value="claude_code">Claude Code (Max)</option>
                 </select>
               </div>
             </div>

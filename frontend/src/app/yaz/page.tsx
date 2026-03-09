@@ -698,6 +698,7 @@ function TabQuoteTweet({
               >
                 <option value="default">DuckDuckGo</option>
                 <option value="grok">Grok</option>
+                <option value="claude_code">Claude Code (Max)</option>
               </select>
             </div>
 
@@ -1192,6 +1193,7 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
             >
               <option value="default">DuckDuckGo (Twikit - Ucretsiz)</option>
               <option value="grok">Grok (xAI - Ucretli)</option>
+              <option value="claude_code">Claude Code (Max - Ucretsiz)</option>
             </select>
           </div>
 

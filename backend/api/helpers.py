@@ -25,6 +25,13 @@ def get_ai_provider(preferred: str = "") -> tuple[str, str, str | None]:
         "openai": s.openai_api_key,
     }
 
+    # Claude Code CLI — no API key needed, uses Max subscription
+    if preferred == "claude_code":
+        from backend.modules.claude_code_client import is_available
+        if is_available():
+            return "claude_code", "", None
+        # Fall through to auto if CLI not available
+
     # If user selected a specific provider and key exists
     if preferred and preferred in providers and providers[preferred]:
         return preferred, providers[preferred], None
@@ -54,6 +61,13 @@ def get_available_providers() -> list[dict]:
         providers.append({"id": "anthropic", "name": "Anthropic Claude", "available": True})
     if s.openai_api_key:
         providers.append({"id": "openai", "name": "OpenAI GPT", "available": True})
+    # Claude Code CLI — check if available
+    try:
+        from backend.modules.claude_code_client import is_available
+        if is_available():
+            providers.append({"id": "claude_code", "name": "Claude Code (Max)", "available": True})
+    except Exception:
+        pass
     return providers
 
 

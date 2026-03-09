@@ -1352,6 +1352,9 @@ class ContentGenerator:
                 api_key=api_key,
                 base_url="https://api.groq.com/openai/v1",
             ) if api_key else None
+        elif provider == "claude_code":
+            self.model = "claude-code-cli"
+            self.client = True  # Marker: CLI-based, no API client needed
         else:
             raise ValueError(f"Unsupported provider: {provider}")
 
@@ -1388,10 +1391,7 @@ class ContentGenerator:
             max_length, thread_mode, content_format=content_format
         )
 
-        if self.provider == "anthropic":
-            return self._generate_anthropic(system_prompt, user_prompt)
-        else:
-            return self._generate_openai(system_prompt, user_prompt)
+        return self._dispatch(system_prompt, user_prompt)
 
     def generate_reply(self, original_tweet: str, original_author: str,
                        style: str = "reply",
@@ -1427,10 +1427,7 @@ Bu tweet'e bir YANIT yaz. Kurallar:
 
 SADECE yanıt metnini yaz, başka bir şey yazma."""
 
-        if self.provider == "anthropic":
-            return self._generate_anthropic(system_prompt, user_prompt)
-        else:
-            return self._generate_openai(system_prompt, user_prompt)
+        return self._dispatch(system_prompt, user_prompt)
 
     def generate_quote_tweet(self, original_tweet: str, original_author: str,
                              style: str = "quote_tweet",
@@ -1567,10 +1564,7 @@ FORMAT: İlk paragraf = konuyu tanıt. Orta paragraflar = detaylar. Son paragraf
 
 Sadece tweet metnini yaz."""
 
-        if self.provider == "anthropic":
-            return self._generate_anthropic(system_prompt, user_prompt)
-        else:
-            return self._generate_openai(system_prompt, user_prompt)
+        return self._dispatch(system_prompt, user_prompt)
 
     def refine_tweet_with_verification(self, draft_tweet: str,
                                         original_tweet: str, original_author: str,
@@ -1617,10 +1611,7 @@ Yukarıdaki taslak tweet'i doğrulama sonuçlarına göre DÜZELT.
 FORMAT: İlk satır hook, paragraflar arası boş satır, son satır güçlü görüş. Hashtag KULLANMA.
 Sadece düzeltilmiş tweet metnini yaz, başka bir şey yazma."""
 
-        if self.provider == "anthropic":
-            return self._generate_anthropic(system_prompt, user_prompt)
-        else:
-            return self._generate_openai(system_prompt, user_prompt)
+        return self._dispatch(system_prompt, user_prompt)
 
     def generate_thread(self, topic_text: str, topic_source: str = "",
                         style: str = "analitik", num_tweets: int = 5,
@@ -1664,10 +1655,7 @@ THREAD KURALLARI:
 
 Her tweet'i --- ile ayır. Sadece tweet metinlerini yaz."""
 
-        if self.provider == "anthropic":
-            raw = self._generate_anthropic(system_prompt, user_prompt)
-        else:
-            raw = self._generate_openai(system_prompt, user_prompt)
+        raw = self._dispatch(system_prompt, user_prompt)
 
         # Parse thread into individual tweets
         tweets = [t.strip() for t in raw.split("---") if t.strip()]
@@ -1697,10 +1685,7 @@ KURALLAR:
 
 Sadece yeni tweet metnini yaz."""
 
-        if self.provider == "anthropic":
-            return self._generate_anthropic(system_prompt, user_prompt)
-        else:
-            return self._generate_openai(system_prompt, user_prompt)
+        return self._dispatch(system_prompt, user_prompt)
 
     def _get_length_instructions(self, length_preference: str) -> str:
         """Return format-specific instructions for the prompt.
@@ -2135,10 +2120,22 @@ KRİTİK: Yukarıdaki bilgileri KENDİ DENEYİMİN ve BİLGİN gibi yaz. ASLA:
 Bilgiyi özümseyip KENDİ AĞZINDAN, {style} tarzında, samimi ve doğal yaz.
 Paragraflari kısa tut, metin duvarı olmasın. Sadece içerik metnini yaz."""
 
-        if self.provider == "anthropic":
-            return self._generate_anthropic(system_prompt, user_prompt)
+        return self._dispatch(system_prompt, user_prompt)
+
+    def _dispatch(self, system_prompt: str, user_prompt: str,
+                  image_urls: list[str] = None) -> str:
+        """Route generation to the correct provider backend."""
+        if self.provider == "claude_code":
+            return self._generate_claude_code(system_prompt, user_prompt)
+        elif self.provider == "anthropic":
+            return self._generate_anthropic(system_prompt, user_prompt, image_urls)
         else:
-            return self._generate_openai(system_prompt, user_prompt)
+            return self._generate_openai(system_prompt, user_prompt, image_urls)
+
+    def _generate_claude_code(self, system_prompt: str, user_prompt: str) -> str:
+        """Generate content using Claude Code CLI (Max subscription)."""
+        from backend.modules.claude_code_client import claude_code_generate
+        return claude_code_generate(system_prompt, user_prompt)
 
     def _generate_anthropic(self, system_prompt: str, user_prompt: str,
                              image_urls: list[str] = None) -> str:
@@ -2240,14 +2237,7 @@ Paragraflari kısa tut, metin duvarı olmasın. Sadece içerik metnini yaz."""
             user_prompt += f"\n\nBağlam: {context}"
 
         try:
-            if self.provider == "anthropic":
-                return self._generate_anthropic(
-                    system_prompt, user_prompt, image_urls=[image_url]
-                )
-            elif self.provider == "openai":
-                return self._generate_openai(
-                    system_prompt, user_prompt, image_urls=[image_url]
-                )
+            return self._dispatch(system_prompt, user_prompt, image_urls=[image_url])
         except Exception as e:
             print(f"Vision analysis error: {e}")
             return ""
@@ -2282,10 +2272,7 @@ Bu analizi, AI'ın aynı tarzda tweet yazabilmesi için bir "yazım profili" ola
 
         system = "Sen bir yazım tarzı analisti̇si̇n. Tweet'leri analiz edip yazarın benzersiz tarzını tespit ediyorsun."
 
-        if self.provider == "anthropic":
-            return self._generate_anthropic(system, prompt)
-        else:
-            return self._generate_openai(system, prompt)
+        return self._dispatch(system, prompt)
 
 
 def score_tweet(tweet_text: str, content_format: str = "spark",

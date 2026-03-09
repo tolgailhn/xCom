@@ -360,6 +360,27 @@ async def do_research_endpoint(request: ResearchRequest):
         except Exception:
             pass  # AI client is optional, research can work without it
 
+        # Claude Code research
+        if request.engine == "claude_code":
+            try:
+                from backend.modules.claude_code_client import claude_code_research, is_available
+                if is_available():
+                    result = await asyncio.to_thread(
+                        claude_code_research,
+                        topic=request.topic,
+                        research_sources=request.research_sources,
+                    )
+                    if result and result.get("summary"):
+                        return ResearchResponse(
+                            summary=result["summary"],
+                            key_points=result.get("key_points", []),
+                            sources=result.get("sources", []),
+                            media_urls=result.get("media_urls", []),
+                        )
+            except Exception as e:
+                logger.warning("Claude Code research failed: %s", e)
+                # Fall through to DuckDuckGo
+
         # Grok research (only when engine is explicitly grok)
         if request.engine == "grok":
             try:
@@ -499,6 +520,23 @@ async def research_stream(request: ResearchRequest):
         except Exception:
             pass
 
+        # Claude Code path
+        if request.engine == "claude_code":
+            try:
+                from backend.modules.claude_code_client import claude_code_research, is_available
+                if is_available():
+                    result = claude_code_research(
+                        topic=request.topic,
+                        research_sources=request.research_sources,
+                        progress_callback=progress_callback,
+                    )
+                    if result and result.get("summary"):
+                        return {"_type": "claude_code", **result}
+                else:
+                    progress_callback("Claude Code CLI bulunamadi, DuckDuckGo'ya geciliyor...")
+            except Exception as e:
+                progress_callback(f"Claude Code hatasi, DuckDuckGo'ya geciliyor: {e}")
+
         # Grok path
         if request.engine == "grok":
             try:
@@ -579,6 +617,13 @@ async def research_stream(request: ResearchRequest):
                     "key_points": [],
                     "sources": [],
                     "media_urls": [],
+                }
+            elif isinstance(result, dict) and result.get("_type") == "claude_code":
+                data = {
+                    "summary": result.get("summary", ""),
+                    "key_points": result.get("key_points", []),
+                    "sources": result.get("sources", []),
+                    "media_urls": result.get("media_urls", []),
                 }
             elif isinstance(result, dict) and result.get("_type") == "grok":
                 summary = result["summary"]

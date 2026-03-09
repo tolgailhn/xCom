@@ -287,6 +287,7 @@ function TabScan() {
             >
               <option value="default">DuckDuckGo</option>
               <option value="grok">Grok</option>
+              <option value="claude_code">Claude Code (Max)</option>
             </select>
           </div>
 
@@ -555,6 +556,7 @@ function TabDiscover() {
           >
             <option value="default">Standart</option>
             <option value="grok">Grok</option>
+            <option value="claude_code">Claude Code (Max)</option>
           </select>
         </div>
 
