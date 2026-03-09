@@ -445,6 +445,8 @@ async def do_research_endpoint(request: ResearchRequest):
         # ResearchResult dataclass -> ResearchResponse
         if hasattr(result, "summary"):
             summary = result.synthesized_brief or result.summary or ""
+            # Strip <think> tags from reasoning model outputs
+            summary = re.sub(r'<think>.*?</think>', '', summary, flags=re.DOTALL).strip()
 
             # Build key_points from web_results
             key_points = []
@@ -675,6 +677,16 @@ async def research_stream(request: ResearchRequest):
                 }
             else:
                 data = {"summary": str(result), "key_points": [], "sources": [], "media_urls": []}
+
+            # Strip <think> tags from reasoning model outputs
+            import re
+            if isinstance(data.get("summary"), str):
+                data["summary"] = re.sub(r'<think>.*?</think>', '', data["summary"], flags=re.DOTALL).strip()
+            if isinstance(data.get("key_points"), list):
+                data["key_points"] = [
+                    re.sub(r'<think>.*?</think>', '', kp, flags=re.DOTALL).strip()
+                    for kp in data["key_points"] if isinstance(kp, str)
+                ]
 
             yield f"data: {json.dumps({'type': 'result', 'data': data}, ensure_ascii=False)}\n\n"
 

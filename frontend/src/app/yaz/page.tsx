@@ -452,8 +452,11 @@ function TabQuoteTweet({
     return () => clearTimeout(timer);
   }, [quoteUrl]);
 
+  // Tweet text must be available (either extracted or manually entered)
+  const hasTweetContent = !!(originalTweet?.text);
+
   const handleResearch = async () => {
-    if (!quoteUrl.trim()) return;
+    if (!quoteUrl.trim() || !hasTweetContent) return;
     setResearching(true);
     setError(null);
     setGeneratedText("");
@@ -463,10 +466,8 @@ function TabQuoteTweet({
 
     try {
       // Use full thread text if available, otherwise single tweet text
-      const researchTopic = originalTweet?.full_thread_text || originalTweet?.text || quoteUrl;
+      const researchTopic = originalTweet?.full_thread_text || originalTweet?.text || "";
 
-      // Tweet bilgisi zaten extract-tweet ile çekildi, tekrar Twikit kullanmaya gerek yok.
-      // Sadece web + haber araştırması yap — Twikit 404 sorununu tamamen atla.
       const research = await researchTopicStream(
         {
           topic: researchTopic,
@@ -706,11 +707,16 @@ function TabQuoteTweet({
 
           <button
             onClick={handleResearch}
-            disabled={researching || !quoteUrl.trim()}
+            disabled={researching || !quoteUrl.trim() || (!hasTweetContent && !extracting)}
             className="btn-primary w-full"
           >
-            {researching ? "Arastiriliyor..." : "Arastir"}
+            {researching ? "Arastiriliyor..." : extracting ? "Tweet cekiliyor..." : !hasTweetContent && quoteUrl.trim() ? "Tweet icerigi gerekli (asagiya yapistiriniz)" : "Arastir"}
           </button>
+          {!hasTweetContent && tweetId && !extracting && (
+            <p className="text-xs text-yellow-400 mt-1">
+              Tweet icerigi cekilemedi. Asagidaki alana tweet metnini yapistiriniz.
+            </p>
+          )}
         </div>
       </div>
 
@@ -755,7 +761,7 @@ function TabQuoteTweet({
             Arastirma Sonuclari
           </h4>
           <p className="text-sm text-[var(--text-secondary)] whitespace-pre-line mb-2">
-            {researchResult.summary}
+            {researchResult.summary.replace(/<think>[\s\S]*?<\/think>/g, "").trim()}
           </p>
           {researchResult.key_points.length > 0 && (
             <ul className="text-xs text-[var(--text-secondary)] space-y-1">
