@@ -2139,11 +2139,42 @@ Paragraflari kısa tut, metin duvarı olmasın. Sadece içerik metnini yaz."""
                   image_urls: list[str] = None) -> str:
         """Route generation to the correct provider backend."""
         if self.provider == "claude_code":
-            return self._generate_claude_code(system_prompt, user_prompt)
+            text = self._generate_claude_code(system_prompt, user_prompt)
         elif self.provider == "anthropic":
-            return self._generate_anthropic(system_prompt, user_prompt, image_urls)
+            text = self._generate_anthropic(system_prompt, user_prompt, image_urls)
         else:
-            return self._generate_openai(system_prompt, user_prompt, image_urls)
+            text = self._generate_openai(system_prompt, user_prompt, image_urls)
+        return self._fix_colon_labels(text)
+
+    @staticmethod
+    def _fix_colon_labels(text: str) -> str:
+        """Post-process: fix colon-terminated section labels in generated text.
+
+        Detects patterns like 'tekil olan tarafı: ...' or 'ama mesele şu: ...'
+        at paragraph starts and converts them to natural flowing sentences.
+        """
+        import re
+        paragraphs = text.split('\n\n')
+        fixed = []
+        for p in paragraphs:
+            # Match: paragraph starts with short phrase (2-60 chars) ending with ":"
+            # followed by actual content. Only match Turkish lowercase text patterns.
+            match = re.match(
+                r'^([a-zA-ZçğıöşüÇĞİÖŞÜ][a-zA-ZçğıöşüÇĞİÖŞÜ\s,\'\"\-]+?):\s+(\S)',
+                p
+            )
+            if match:
+                label = match.group(1).strip()
+                # Only fix if label is short enough to be a section header
+                # and doesn't look like a legitimate inline colon (e.g., "ismi: MGP-STR")
+                if 10 <= len(label) <= 55:
+                    # Replace "label: content" with "label, content" or just "content"
+                    rest_start = match.start(2)
+                    rest = p[rest_start:]
+                    # Make it a natural sentence: "label — content" or merge
+                    p = f"{label}, {rest}"
+            fixed.append(p)
+        return '\n\n'.join(fixed)
 
     def _generate_claude_code(self, system_prompt: str, user_prompt: str) -> str:
         """Generate content using Claude Code CLI (Max subscription)."""
