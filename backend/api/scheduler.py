@@ -22,6 +22,13 @@ class ScheduleRequest(BaseModel):
     scheduled_time: str  # ISO format: "2026-03-07T14:00:00"
     thread_parts: list[str] = []
     quote_tweet_id: str = ""
+    reply_to_id: str = ""
+
+
+class SelfReplyChainRequest(BaseModel):
+    original_tweet_id: str
+    replies: list[str]  # List of reply texts in order
+    interval_minutes: int = 15  # Minutes between each reply
 
 
 class ScheduleResponse(BaseModel):
@@ -91,3 +98,49 @@ async def cancel_scheduled_post(post_id: str):
     if not deleted:
         raise HTTPException(status_code=404, detail="Post bulunamadi")
     return {"success": True}
+
+
+@router.post("/self-reply-chain")
+async def schedule_self_reply_chain(request: SelfReplyChainRequest):
+    """Self-reply chain zamanla — her reply belirtilen aralikla siraliyle atilir.
+
+    Ilk reply hemen (1dk icinde), sonrakiler interval_minutes aralikla.
+    Her reply oncekine reply olarak chain'lenir (reply_to_id otomatik guncellenir).
+    """
+    if not request.replies:
+        raise HTTPException(status_code=400, detail="En az 1 reply gerekli")
+    if not request.original_tweet_id:
+        raise HTTPException(status_code=400, detail="original_tweet_id gerekli")
+
+    now = datetime.datetime.now(TZ_TR)
+    chain_id = now.strftime("%Y%m%d%H%M%S") + "_chain"
+    interval = max(1, request.interval_minutes)
+
+    created_posts = []
+    for i, reply_text in enumerate(request.replies):
+        # First reply: 1 minute from now, rest: interval apart
+        offset_minutes = 1 + (i * interval)
+        scheduled_dt = now + datetime.timedelta(minutes=offset_minutes)
+
+        post = add_scheduled_post({
+            "text": reply_text,
+            "scheduled_time": scheduled_dt.isoformat(),
+            # First reply points to original tweet, rest will be updated by chain
+            "reply_to_id": request.original_tweet_id if i == 0 else "",
+            "self_reply_chain_id": chain_id,
+            "self_reply_chain_index": i,
+        })
+        created_posts.append({
+            "id": post["id"],
+            "index": i + 1,
+            "scheduled_time": scheduled_dt.isoformat(),
+            "text_preview": reply_text[:80],
+        })
+
+    return {
+        "success": True,
+        "chain_id": chain_id,
+        "total_replies": len(created_posts),
+        "interval_minutes": interval,
+        "posts": created_posts,
+    }

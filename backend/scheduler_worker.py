@@ -48,6 +48,7 @@ def _publish_scheduled_post(post: dict) -> dict:
 
     thread_parts = post.get("thread_parts", [])
     quote_tweet_id = post.get("quote_tweet_id", "")
+    reply_to_id = post.get("reply_to_id", "")
 
     if thread_parts:
         results = publisher.post_thread(thread_parts)
@@ -62,6 +63,17 @@ def _publish_scheduled_post(post: dict) -> dict:
                 "thread_urls": urls,
             })
         return first
+    elif reply_to_id:
+        # Self-reply or reply to specific tweet
+        result = publisher.post_reply(post.get("text", ""), reply_to_id)
+        if result.get("success"):
+            add_to_post_history({
+                "text": post.get("text", ""),
+                "url": result.get("url", ""),
+                "type": "scheduled_self_reply",
+                "reply_to_id": reply_to_id,
+            })
+        return result
     elif quote_tweet_id:
         result = publisher.post_quote_tweet(post.get("text", ""), quote_tweet_id)
         if result.get("success"):
@@ -119,6 +131,13 @@ def check_and_publish():
                     })
                     logger.info("Scheduled post %s published successfully: %s", post_id, result.get("url", ""))
 
+                    # Self-reply chain: update next reply's reply_to_id
+                    chain_id = post.get("self_reply_chain_id")
+                    chain_index = post.get("self_reply_chain_index", -1)
+                    new_tweet_id = result.get("tweet_id", "")
+                    if chain_id and new_tweet_id and chain_index >= 0:
+                        _update_chain_next_reply(chain_id, chain_index, new_tweet_id)
+
                     # Telegram bildirimi (opsiyonel)
                     _send_telegram_notification(post, result)
                 else:
@@ -137,6 +156,24 @@ def check_and_publish():
                     "error": str(e),
                 })
                 logger.exception("Scheduled post %s error", post_id)
+
+
+def _update_chain_next_reply(chain_id: str, current_index: int, new_tweet_id: str):
+    """Self-reply chain: update the next reply's reply_to_id to point to the just-published tweet."""
+    posts = load_scheduled_posts()
+    next_index = current_index + 1
+    for p in posts:
+        if (
+            p.get("self_reply_chain_id") == chain_id
+            and p.get("self_reply_chain_index") == next_index
+            and p.get("status") == "pending"
+        ):
+            update_scheduled_post(p["id"], {"reply_to_id": new_tweet_id})
+            logger.info(
+                "Chain %s: updated reply #%d reply_to_id → %s",
+                chain_id, next_index, new_tweet_id,
+            )
+            break
 
 
 def _send_telegram_notification(post: dict, result: dict):

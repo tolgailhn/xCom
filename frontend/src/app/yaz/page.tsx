@@ -23,6 +23,7 @@ import {
   getPromptTemplates,
   addPromptTemplate,
   deletePromptTemplate,
+  scheduleSelfReplyChain,
 } from "@/lib/api";
 import type { PublishResult } from "@/lib/api";
 
@@ -2006,6 +2007,17 @@ function TabSelfReply({ styles }: { styles: StyleOption[] }) {
     { index: number; success: boolean; url: string; error: string }[]
   >([]);
 
+  // Scheduling
+  const [scheduling, setScheduling] = useState(false);
+  const [intervalMin, setIntervalMin] = useState(15);
+  const [scheduleResult, setScheduleResult] = useState<{
+    success: boolean;
+    chain_id?: string;
+    total_replies?: number;
+    posts?: { index: number; scheduled_time: string }[];
+    error?: string;
+  } | null>(null);
+
   // Prompt templates
   const [templates, setTemplates] = useState<
     { id: string; name: string; prompt: string; category: string }[]
@@ -2117,6 +2129,25 @@ function TabSelfReply({ styles }: { styles: StyleOption[] }) {
     }
     setPublishResults(results);
     setPublishing(false);
+  };
+
+  // Schedule self-reply chain with intervals
+  const handleScheduleChain = async () => {
+    if (!myTweetId || generatedReplies.length === 0) return;
+    setScheduling(true);
+    setScheduleResult(null);
+    try {
+      const r = await scheduleSelfReplyChain({
+        original_tweet_id: myTweetId,
+        replies: generatedReplies.filter((r) => r.trim()),
+        interval_minutes: intervalMin,
+      });
+      setScheduleResult(r);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Zamanlama hatasi";
+      setScheduleResult({ success: false, error: msg });
+    }
+    setScheduling(false);
   };
 
   // Add template
@@ -2382,44 +2413,129 @@ function TabSelfReply({ styles }: { styles: StyleOption[] }) {
           ))}
 
           {/* Action buttons */}
-          <div className="flex gap-2">
-            {myTweetId ? (
-              <button
-                onClick={handlePublish}
-                disabled={publishing}
-                className="btn-primary flex-1"
-              >
-                {publishing
-                  ? "Paylasilyor..."
-                  : `API ile ${generatedReplies.length} Reply Paylas`}
-              </button>
-            ) : (
-              <div className="flex-1 p-3 rounded-lg bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/30 text-center">
+          {myTweetId ? (
+            <div className="space-y-3">
+              {/* Immediate publish */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handlePublish}
+                  disabled={publishing || scheduling}
+                  className="btn-primary flex-1"
+                >
+                  {publishing
+                    ? "Paylasilyor..."
+                    : `Hemen Paylas (2.5sn arayla)`}
+                </button>
+                <button
+                  onClick={() => {
+                    const full = generatedReplies.map((r, i) => `[Reply ${i + 1}]\n${r}`).join("\n\n");
+                    copyText(full);
+                  }}
+                  className="btn-secondary px-4"
+                >
+                  Kopyala
+                </button>
+              </div>
+
+              {/* Scheduled publish — interval selector + button */}
+              <div className="p-3 rounded-lg bg-[var(--accent-cyan)]/5 border border-[var(--accent-cyan)]/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-[var(--accent-cyan)]">
+                    Zamanli Paylasim (Onerilen)
+                  </p>
+                  <select
+                    className="p-1.5 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-xs"
+                    value={intervalMin}
+                    onChange={(e) => setIntervalMin(Number(e.target.value))}
+                  >
+                    <option value={5}>5dk arayla</option>
+                    <option value={10}>10dk arayla</option>
+                    <option value={15}>15dk arayla (onerilen)</option>
+                    <option value={20}>20dk arayla</option>
+                    <option value={30}>30dk arayla</option>
+                  </select>
+                </div>
+                <p className="text-[10px] text-[var(--text-secondary)]">
+                  Sayfa kapatilsa bile backend otomatik atar. Ilk reply 1dk icinde, sonrakiler {intervalMin}dk arayla.
+                </p>
+                <button
+                  onClick={handleScheduleChain}
+                  disabled={scheduling || publishing}
+                  className="btn-primary w-full"
+                >
+                  {scheduling
+                    ? "Zamanlaniyor..."
+                    : `${intervalMin}dk Arayla Zamanla`}
+                </button>
+              </div>
+
+              {/* Schedule result */}
+              {scheduleResult && (
+                <div
+                  className={`p-3 rounded-lg text-sm ${
+                    scheduleResult.success
+                      ? "bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/30"
+                      : "bg-[var(--accent-red)]/10 border border-[var(--accent-red)]/30"
+                  }`}
+                >
+                  {scheduleResult.success ? (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-[var(--accent-green)]">
+                        {scheduleResult.total_replies} reply zamanlandi!
+                      </p>
+                      {scheduleResult.posts?.map((p) => (
+                        <div key={p.index} className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+                          <span className="w-5 h-5 rounded-full bg-[var(--accent-green)]/20 text-[var(--accent-green)] flex items-center justify-center text-[10px] font-bold">
+                            {p.index}
+                          </span>
+                          <span>
+                            {new Date(p.scheduled_time).toLocaleTimeString("tr-TR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      ))}
+                      <p className="text-[10px] text-[var(--text-secondary)]">
+                        Takvim sayfasindan takip edebilirsiniz. Sayfa kapatilsa bile atilacak.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-[var(--accent-red)]">
+                      Hata: {scheduleResult.error}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="p-3 rounded-lg bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/30 text-center">
                 <p className="text-xs text-[var(--accent-amber)]">
-                  API ile paylasim icin tweet URL&apos;si gerekli (tweet ID lazim).
+                  API ile paylasim/zamanlama icin tweet URL&apos;si gerekli (tweet ID lazim).
                   Reply&apos;lari kopyalayip manuel atabilirsiniz.
                 </p>
               </div>
-            )}
-            <button
-              onClick={() => {
-                const full = generatedReplies.map((r, i) => `[Reply ${i + 1}]\n${r}`).join("\n\n");
-                copyText(full);
-              }}
-              className="btn-secondary px-4"
-            >
-              Kopyala
-            </button>
-          </div>
+              <button
+                onClick={() => {
+                  const full = generatedReplies.map((r, i) => `[Reply ${i + 1}]\n${r}`).join("\n\n");
+                  copyText(full);
+                }}
+                className="btn-secondary w-full"
+              >
+                Tumunu Kopyala
+              </button>
+            </div>
+          )}
 
           {/* Tips */}
           <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)]">
             <p className="text-xs font-medium text-[var(--accent-cyan)] mb-1">Self-Reply Ipuclari:</p>
             <ul className="text-xs text-[var(--text-secondary)] space-y-1 list-disc list-inside">
-              <li>Orijinal tweet&apos;i attiktan <strong>2-3 dakika</strong> bekle, sonra reply&apos;lari at</li>
-              <li>Her reply arasinda <strong>1-2 dakika</strong> beklersen daha dogal gorunur</li>
+              <li><strong>Zamanli paylasim onerilen</strong> — 15dk arayla daha dogal ve etkili</li>
+              <li>X algoritmasi &quot;devam eden konusma&quot; sinyali alir → Phoenix boost</li>
               <li>Son reply&apos;da <strong>soru veya CTA</strong> olsun — yorum cekmek icin</li>
-              <li>API ile paylas butonu reply&apos;lar arasinda <strong>otomatik 2.5sn</strong> bekler</li>
+              <li>Sayfa kapatilsa bile backend scheduler otomatik paylasiyor</li>
             </ul>
           </div>
         </div>

@@ -486,6 +486,23 @@ export function schedulePost(params: {
   });
 }
 
+export function scheduleSelfReplyChain(params: {
+  original_tweet_id: string;
+  replies: string[];
+  interval_minutes?: number;
+}): Promise<{
+  success: boolean;
+  chain_id: string;
+  total_replies: number;
+  interval_minutes: number;
+  posts: { id: string; index: number; scheduled_time: string; text_preview: string }[];
+}> {
+  return apiFetch("/api/scheduler/self-reply-chain", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
 export function getPendingPosts(): Promise<{ posts: ScheduledPost[]; total: number }> {
   return apiFetch("/api/scheduler/pending");
 }
