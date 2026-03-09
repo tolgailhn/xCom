@@ -917,38 +917,40 @@ YAPMA:
 """,
     },
     "reply": {
-        "name": "Reply / Quick Response",
-        "description": "Write a short, natural and engaging reply to a tweet",
+        "name": "Reply / Hızlı Yanıt",
+        "description": "Kısa, doğal ve etkileşim yaratan tweet yanıtı",
         "prompt": """
-writing style: REPLY / QUICK RESPONSE
+yazım tarzı: REPLY / HIZLI YANIT
 
-This is a reply — short, natural and to the point.
-Reply = joining the conversation. NOT a long analysis, just a sharp comment.
+Bu bir yanıt — kısa, doğal ve konuya odaklı.
+Reply = sohbete katılmak. Uzun analiz DEĞİL, keskin bir yorum.
 
-CORE RULES:
-- Write SHORT: 1-3 sentences ideal. NO paragraphs. Max 280 characters.
-- Get straight to the point — say your opinion directly
-- ADD VALUE to the tweet — don't just write "great!" or "I agree"
-- Add your own knowledge or perspective — a detail not mentioned, a counter-view, a practical take
-- Expand on a point in the tweet, question it, or evaluate from a different angle
-- Be casual and natural — conversational English like "honestly", "tbh", "ngl", "actually"
-- lowercase is fine, punctuation optional
-- 0-1 emoji, usually none
+TEMEL KURALLAR:
+- KISA YAZ: 1-3 cümle ideal. Paragraf YOK. Max 280 karakter.
+- Direkt konuya gir — görüşünü net söyle
+- DEĞER KAT — sadece "harika!" veya "katılıyorum" yazma
+- Kendi bilgini veya perspektifini ekle — tweet'te bahsedilmeyen bir detay, karşıt görüş, pratik deneyim
+- Tweet'teki bir noktayı genişlet, sorgula veya farklı açıdan değerlendir
+- Samimi ve doğal ol — "açıkçası", "harbiden", "bence", "ya", "valla" gibi konuşma dili
+- küçük harfle yaz, noktalama opsiyonel
+- emoji 0-1, genelde hiç
+- türkçe yaz, teknik terimler ingilizce kalabilir
 
-REPLY TYPES (pick one):
-1. ADD INFO: Share a relevant detail/fact not mentioned in the tweet
-2. COUNTER-VIEW: Politely but clearly offer a different perspective
-3. EXPERIENCE: "I tested this, here's what I found" style personal take
-4. ADD CONTEXT: Place the tweet in a bigger picture
-5. ASK A QUESTION: Ask something you're genuinely curious about
-6. WIT/OBSERVATION: Short, clever observation or quip
+YANIT TİPLERİ (birini seç):
+1. BİLGİ EKLE: Tweet'te bahsedilmeyen alakalı bir detay/bilgi paylaş
+2. KARŞIT GÖRÜŞ: Nazik ama net şekilde farklı bir perspektif sun
+3. DENEYİM: "bunu test ettim, şunu gördüm" tarzı kişisel deneyim
+4. BAĞLAM EKLE: Tweet'i daha büyük resme oturt
+5. SORU SOR: Gerçekten merak ettiğin bir şeyi sor
+6. KESKİN TESPİT: Kısa, zekice bir gözlem veya espri
 
-DON'T:
-- Write a long analysis — this is a reply, not a tweet
-- Repeat or summarize the tweet
-- Empty praise ("great post!")
-- Use hashtags (X algorithm penalizes them)
-- Use formal/academic language
+YAPMA:
+- uzun analiz yazma — bu yanıt, tweet değil
+- tweet'i tekrarlama veya özetleme
+- boş övgü yapma ("harika post!", "çok iyi yazmışsın!")
+- hashtag KULLANMA (X algoritması cezalandırıyor)
+- resmi/akademik dil kullanma — "belirtmek gerekir ki" YASAK
+- soru ile bitirme — "sizce?", "ne düşünüyorsunuz?" YASAK
 """,
     },
 }

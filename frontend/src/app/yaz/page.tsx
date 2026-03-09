@@ -338,7 +338,7 @@ function TabQuoteTweet({
   initialUrl: string;
 }) {
   const [quoteUrl, setQuoteUrl] = useState(initialUrl);
-  const [style, setStyle] = useState("quote_tweet");
+  const [style, setStyle] = useState("tolga_news");
   const [contentFormat, setContentFormat] = useState("spark");
   const [engine, setEngine] = useState("default");
   const [deepVerify, setDeepVerify] = useState(false);
