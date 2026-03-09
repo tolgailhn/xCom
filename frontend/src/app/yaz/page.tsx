@@ -1102,13 +1102,13 @@ function TabTweetYaz({
               ) : (
                 <p className="text-[var(--accent-red)]">{publishResult.error || "Paylasim basarisiz"}</p>
               )}
-              {publishResult.success && (
-                <div className="mt-3 pt-3 border-t border-[var(--border)]">
-                  <LogToCalendar content={generatedText} />
-                </div>
-              )}
             </div>
           )}
+
+          {/* Paylaştım — takvime kayıt (her zaman görünür) */}
+          <div className="pt-3 border-t border-[var(--border)]">
+            <LogToCalendar content={generatedText} />
+          </div>
         </div>
       )}
     </div>
@@ -1849,13 +1849,13 @@ function TabQuoteTweet({
               ) : (
                 <p className="text-[var(--accent-red)] text-xs">{publishResultQt.error || "Paylasim basarisiz"}</p>
               )}
-              {publishResultQt.success && (
-                <div className="mt-3 pt-3 border-t border-[var(--border)]">
-                  <LogToCalendar content={generatedText} />
-                </div>
-              )}
             </div>
           )}
+
+          {/* Paylaştım — takvime kayıt (her zaman görünür) */}
+          <div className="pt-3 border-t border-[var(--border)]">
+            <LogToCalendar content={generatedText} />
+          </div>
         </div>
       )}
     </div>
@@ -2320,6 +2320,11 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
                   )}
                 </div>
               )}
+
+              {/* Paylaştım — takvime kayıt */}
+              <div className="pt-3 border-t border-[var(--border)]">
+                <LogToCalendar content={generatedReply} />
+              </div>
             </div>
           )}
         </div>
