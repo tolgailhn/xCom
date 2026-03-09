@@ -2,9 +2,15 @@
 Auto Reply Worker — Takip edilen hesaplarin yeni tweetlerini kontrol edip
 AI ile yanit uretip otomatik paylas.
 
-scheduler_worker.py tarafindan periyodik olarak cagirilir.
+ROTASYON SİSTEMİ:
+- 38 hesap 24 saate dağıtılır (saat başı 1-2 hesap)
+- Her saat sadece o saate ait hesaplar kontrol edilir
+- Twikit rate limit'e takılmayı önler
+- scheduler_worker.py tarafindan her 5 dakikada bir cagirilir
+  ama sadece saatin ilk çağrısında çalışır (aynı saat tekrar çalışmaz)
 """
 import datetime
+import hashlib
 import logging
 import time
 from zoneinfo import ZoneInfo
@@ -12,17 +18,40 @@ from zoneinfo import ZoneInfo
 logger = logging.getLogger(__name__)
 TZ_TR = ZoneInfo("Europe/Istanbul")
 
+# Track which hour we last processed to avoid duplicate runs within same hour
+_last_processed_hour: str | None = None
+
+
+def _get_accounts_for_hour(accounts: list[str], hour: int) -> list[str]:
+    """
+    38 hesabı 24 saate dağıt.
+    38 / 24 = 1.58 → bazı saatlerde 1, bazılarında 2 hesap.
+
+    Dağılım deterministik: hesap listesi değişmedikçe aynı saat aynı hesapları alır.
+    """
+    if not accounts:
+        return []
+
+    n = len(accounts)
+    selected = []
+    for i, account in enumerate(accounts):
+        # Her hesabı bir saate ata: index'e göre round-robin
+        assigned_hour = i % 24
+        if assigned_hour == hour:
+            selected.append(account)
+
+    return selected
+
 
 def check_and_reply():
     """
-    Ana worker fonksiyonu — scheduler tarafindan her N dakikada bir cagirilir.
-    1. Config'i yukle, enabled mi kontrol et
-    2. Her hesap icin son tweetleri cek
-    3. Daha once yanit verilmemis tweetleri bul
-    4. AI ile yanit uret
-    5. Yaniti paylas
-    6. Log'a kaydet
+    Ana worker fonksiyonu — scheduler tarafindan her 5 dakikada bir cagirilir.
+
+    ROTASYON: Her saat sadece 1-2 hesap kontrol edilir (38 hesap / 24 saat).
+    Aynı saat içinde tekrar çağrılırsa çalışmaz (duplicate koruması).
     """
+    global _last_processed_hour
+
     from backend.modules.style_manager import (
         load_auto_reply_config,
         load_auto_reply_logs,
@@ -40,10 +69,34 @@ def check_and_reply():
     if not accounts:
         return
 
+    now = datetime.datetime.now(TZ_TR)
+    current_hour_key = now.strftime("%Y-%m-%d-%H")
+
+    # Aynı saat içinde tekrar çalışma
+    if _last_processed_hour == current_hour_key:
+        return
+    _last_processed_hour = current_hour_key
+
+    # Bu saate ait hesapları al
+    hour = now.hour
+    hourly_accounts = _get_accounts_for_hour(accounts, hour)
+
+    if not hourly_accounts:
+        logger.info(
+            "Auto-reply: Saat %02d — bu saatte kontrol edilecek hesap yok", hour
+        )
+        return
+
+    logger.info(
+        "Auto-reply: Saat %02d — %d hesap kontrol ediliyor: %s",
+        hour,
+        len(hourly_accounts),
+        ", ".join(f"@{a}" for a in hourly_accounts),
+    )
+
     # Rate limit: max replies per hour
     max_per_hour = config.get("max_replies_per_hour", 5)
     logs = load_auto_reply_logs()
-    now = datetime.datetime.now(TZ_TR)
     one_hour_ago = now - datetime.timedelta(hours=1)
 
     recent_replies = 0
@@ -80,7 +133,7 @@ def check_and_reply():
     replies_made = 0
     remaining = max_per_hour - recent_replies
 
-    for account in accounts:
+    for account in hourly_accounts:
         if replies_made >= remaining:
             break
 
@@ -116,7 +169,7 @@ def check_and_reply():
             # Mark as seen immediately to avoid duplicate processing
             seen.add(tweet_id)
 
-            # Optional delay
+            # Optional delay between replies
             if reply_delay > 0 and replies_made > 0:
                 time.sleep(min(reply_delay, 120))  # Cap at 2 minutes
 
@@ -170,7 +223,7 @@ def check_and_reply():
                     "status": "published",
                 })
                 replies_made += 1
-                logger.info("Auto-reply: Replied to @%s tweet %s", account, tweet_id)
+                logger.info("Auto-reply: Replied to @%s tweet %s — %s", account, tweet_id, result.get("url", ""))
             else:
                 add_auto_reply_log({
                     "account": account,
@@ -185,7 +238,9 @@ def check_and_reply():
     save_auto_reply_seen(seen)
 
     if replies_made > 0:
-        logger.info("Auto-reply: Made %d replies this cycle", replies_made)
+        logger.info("Auto-reply: Saat %02d — %d reply atildi", hour, replies_made)
+    else:
+        logger.info("Auto-reply: Saat %02d — yeni tweet bulunamadi", hour)
 
 
 def _get_twikit_client():

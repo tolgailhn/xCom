@@ -116,12 +116,31 @@ async def get_status():
         except (ValueError, TypeError):
             continue
 
+    # Rotation schedule: which accounts at which hour
+    accounts = config.get("accounts", [])
+    from backend.auto_reply_worker import _get_accounts_for_hour
+    current_hour_accounts = _get_accounts_for_hour(accounts, now.hour)
+    next_hour = (now.hour + 1) % 24
+    next_hour_accounts = _get_accounts_for_hour(accounts, next_hour)
+
+    # Full 24-hour schedule
+    schedule = {}
+    for h in range(24):
+        h_accounts = _get_accounts_for_hour(accounts, h)
+        if h_accounts:
+            schedule[f"{h:02d}:00"] = [f"@{a}" for a in h_accounts]
+
     return {
         "enabled": config.get("enabled", False),
-        "accounts_count": len(config.get("accounts", [])),
+        "accounts_count": len(accounts),
         "replies_last_hour": recent_replies,
         "max_per_hour": config.get("max_replies_per_hour", 5),
         "last_reply_time": last_reply_time,
         "total_replies": sum(1 for l in logs if l.get("status") == "published"),
         "total_failures": sum(1 for l in logs if "failed" in l.get("status", "")),
+        "current_hour": f"{now.hour:02d}:00",
+        "current_hour_accounts": [f"@{a}" for a in current_hour_accounts],
+        "next_hour": f"{next_hour:02d}:00",
+        "next_hour_accounts": [f"@{a}" for a in next_hour_accounts],
+        "schedule": schedule,
     }
