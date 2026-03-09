@@ -185,6 +185,11 @@ export function findMedia(topic: string, source: string = "x") {
   });
 }
 
+// Media Download — proxy through backend with random filename
+export function getMediaDownloadUrl(url: string): string {
+  return `${API_BASE}/api/generator/download-media?url=${encodeURIComponent(url)}`;
+}
+
 // Fact Check
 export function factCheck(text: string, topic: string = "") {
   return apiFetch("/api/generator/fact-check", {

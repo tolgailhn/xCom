@@ -705,12 +705,62 @@ class TwikitSearchClient:
         # User info
         user = getattr(tweet, 'user', None)
 
-        # Media URLs
+        # Media URLs (legacy) + rich media_items
         media_urls = []
+        media_items = []
         for m in (getattr(tweet, 'media', None) or []):
-            url = getattr(m, 'url', None) or getattr(m, 'media_url_https', None)
-            if url:
-                media_urls.append(url)
+            thumb = getattr(m, 'media_url_https', None) or getattr(m, 'url', None) or ''
+            media_type_raw = getattr(m, 'type', 'photo')  # photo, video, animated_gif
+
+            if media_type_raw in ('video', 'animated_gif'):
+                # Extract best mp4 variant from video_info
+                video_url = ''
+                video_info = getattr(m, 'video_info', None)
+                if video_info:
+                    variants = getattr(video_info, 'variants', None) or []
+                    # If variants is a list of dicts or objects
+                    best_bitrate = -1
+                    for v in variants:
+                        ct = v.get('content_type', '') if isinstance(v, dict) else getattr(v, 'content_type', '')
+                        br = v.get('bitrate', 0) if isinstance(v, dict) else getattr(v, 'bitrate', 0)
+                        vurl = v.get('url', '') if isinstance(v, dict) else getattr(v, 'url', '')
+                        if 'mp4' in ct and int(br or 0) > best_bitrate:
+                            best_bitrate = int(br or 0)
+                            video_url = vurl
+                if not video_url:
+                    # Fallback: check dict-style access
+                    try:
+                        vi = m if isinstance(m, dict) else m.__dict__
+                        for v in (vi.get('video_info', {}) or {}).get('variants', []):
+                            ct = v.get('content_type', '')
+                            br = int(v.get('bitrate', 0) or 0)
+                            if 'mp4' in ct and br > best_bitrate:
+                                best_bitrate = br
+                                video_url = v.get('url', '')
+                    except Exception:
+                        pass
+                if video_url:
+                    media_urls.append(video_url)
+                    media_items.append({
+                        'url': video_url,
+                        'thumbnail': thumb,
+                        'type': 'video',
+                    })
+                elif thumb:
+                    media_urls.append(thumb)
+                    media_items.append({
+                        'url': thumb,
+                        'thumbnail': thumb,
+                        'type': 'video',
+                    })
+            else:
+                if thumb:
+                    media_urls.append(thumb)
+                    media_items.append({
+                        'url': thumb,
+                        'thumbnail': thumb,
+                        'type': 'image',
+                    })
 
         return {
             'id': str(getattr(tweet, 'id', '')),
@@ -727,6 +777,7 @@ class TwikitSearchClient:
             'reply_count': _safe_int(getattr(tweet, 'reply_count', 0)),
             'impression_count': _safe_int(getattr(tweet, 'view_count', 0)),
             'media_urls': media_urls,
+            'media_items': media_items,
         }
 
     def get_tweet_by_id(self, tweet_id: str) -> dict | None:

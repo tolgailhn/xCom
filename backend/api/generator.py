@@ -5,7 +5,10 @@ import asyncio
 import json
 import logging
 import queue
-from fastapi import APIRouter, HTTPException
+import uuid
+import time
+import re
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -682,6 +685,7 @@ async def extract_tweet_endpoint(request: ExtractTweetRequest):
                             "like_count": main.get("like_count", 0),
                             "retweet_count": main.get("retweet_count", 0),
                             "reply_count": main.get("reply_count", 0),
+                            "media_items": main.get("media_items", []),
                         }
                         if len(thread_data) > 1:
                             thread_tweets = [t.get("text", "") for t in thread_data if t.get("text")]
@@ -696,6 +700,7 @@ async def extract_tweet_endpoint(request: ExtractTweetRequest):
                                 "like_count": result.get("like_count", 0),
                                 "retweet_count": result.get("retweet_count", 0),
                                 "reply_count": result.get("reply_count", 0),
+                                "media_items": result.get("media_items", []),
                             }
             except Exception as e:
                 logger.warning(f"Twikit tweet fetch failed: {e}")
@@ -710,6 +715,7 @@ async def extract_tweet_endpoint(request: ExtractTweetRequest):
                 "like_count": tweet_data.get("like_count", 0),
                 "retweet_count": tweet_data.get("retweet_count", 0),
                 "reply_count": tweet_data.get("reply_count", 0),
+                "media_items": tweet_data.get("media_items", []),
             }
             # Include thread data if available
             if thread_tweets and len(thread_tweets) > 1:
@@ -797,6 +803,70 @@ async def find_media_endpoint(request: MediaRequest):
 
     except Exception as e:
         return {"media": [], "total": 0, "error": str(e)}
+
+
+# ── Media Download (proxy) ─────────────────────────────
+
+@router.get("/download-media")
+async def download_media_endpoint(url: str = Query(..., description="Media URL to download")):
+    """Video/gorsel URL'sini proxy olarak indir, rastgele dosya adiyla serve et.
+    Tarayici/telefon otomatik indirir (Content-Disposition: attachment)."""
+    import httpx
+
+    # Validate URL — only allow twitter/x CDN domains
+    allowed_domains = [
+        "video.twimg.com",
+        "pbs.twimg.com",
+        "abs.twimg.com",
+        "ton.twitter.com",
+        "ton.x.com",
+    ]
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        if not any(parsed.hostname and parsed.hostname.endswith(d) for d in allowed_domains):
+            raise HTTPException(status_code=400, detail="Sadece Twitter/X CDN URL'leri desteklenir")
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=400, detail="Gecersiz URL")
+
+    # Determine file extension from URL
+    ext = "mp4"
+    if ".mp4" in url:
+        ext = "mp4"
+    elif ".jpg" in url or ".jpeg" in url:
+        ext = "jpg"
+    elif ".png" in url:
+        ext = "png"
+    elif ".gif" in url:
+        ext = "gif"
+
+    # Generate random filename
+    random_name = f"xc_{int(time.time())}_{uuid.uuid4().hex[:6]}.{ext}"
+
+    try:
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+            resp = await client.get(url, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "Referer": "https://x.com/",
+            })
+            resp.raise_for_status()
+
+            content_type = resp.headers.get("content-type", "application/octet-stream")
+
+            return StreamingResponse(
+                iter([resp.content]),
+                media_type=content_type,
+                headers={
+                    "Content-Disposition": f'attachment; filename="{random_name}"',
+                    "Content-Length": str(len(resp.content)),
+                },
+            )
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=f"CDN download failed: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Download error: {str(e)}")
 
 
 # ── Fact Check ──────────────────────────────────────────

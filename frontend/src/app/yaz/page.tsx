@@ -12,6 +12,7 @@ import {
   addDraft,
   scoreTweet,
   findMedia,
+  getMediaDownloadUrl,
   factCheck,
   getStyles,
   getProviders,
@@ -1155,6 +1156,7 @@ function TabQuoteTweet({
     thread_tweets?: string[];
     thread_count?: number;
     full_thread_text?: string;
+    media_items?: { url: string; thumbnail: string; type: string }[];
   } | null>(null);
   const [extracting, setExtracting] = useState(false);
 
@@ -1213,6 +1215,7 @@ function TabQuoteTweet({
           thread_tweets?: string[];
           thread_count?: number;
           full_thread_text?: string;
+          media_items?: { url: string; thumbnail: string; type: string }[];
           error?: string;
         };
         if (res.success && res.tweet_id) {
@@ -1229,6 +1232,7 @@ function TabQuoteTweet({
               thread_tweets: res.thread_tweets || [],
               thread_count: res.thread_count || 1,
               full_thread_text: res.full_thread_text || "",
+              media_items: res.media_items || [],
             });
           } else {
             setOriginalTweet(null);
@@ -1409,6 +1413,51 @@ function TabQuoteTweet({
               <span>RT {originalTweet.retweet_count}</span>
               <span>Reply {originalTweet.reply_count}</span>
             </div>
+
+            {/* Media items from original tweet — video download */}
+            {originalTweet.media_items && originalTweet.media_items.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-[var(--border)]">
+                <p className="text-xs font-medium text-[var(--accent-cyan)] mb-2">
+                  Tweet Medyasi ({originalTweet.media_items.length})
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {originalTweet.media_items.map((mi, idx) => (
+                    <div key={idx} className="relative group">
+                      {mi.thumbnail ? (
+                        <img
+                          src={mi.thumbnail}
+                          alt={`Media ${idx + 1}`}
+                          className="w-40 h-24 object-cover rounded-lg border border-[var(--border)]"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-40 h-24 flex items-center justify-center bg-[var(--bg-secondary)] rounded-lg border border-[var(--border)]">
+                          <span className="text-xs text-[var(--text-secondary)]">
+                            {mi.type === "video" ? "Video" : "Gorsel"}
+                          </span>
+                        </div>
+                      )}
+                      {mi.type === "video" && (
+                        <div className="absolute top-1 left-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded">
+                          Video
+                        </div>
+                      )}
+                      <a
+                        href={getMediaDownloadUrl(mi.url)}
+                        download
+                        className="mt-1.5 flex items-center justify-center gap-1 w-full bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/80 text-white text-xs py-1.5 rounded-lg transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Indir
+                      </a>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-[var(--text-secondary)] mt-1.5">
+                  Indirilen dosya rastgele isimle kaydedilir (duplicate detection onlemi)
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -1849,6 +1898,8 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
   const [generatedReply, setGeneratedReply] = useState("");
   const [replyStyle, setReplyStyle] = useState("reply");
   const [generating, setGenerating] = useState(false);
+  const [publishingReply, setPublishingReply] = useState(false);
+  const [publishReplyResult, setPublishReplyResult] = useState<PublishResult | null>(null);
 
   const handleScan = async () => {
     setScanning(true);
@@ -2201,10 +2252,38 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
                 </p>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={async () => {
+                    if (!selectedTweet || !generatedReply) return;
+                    setPublishingReply(true);
+                    setPublishReplyResult(null);
+                    try {
+                      const result = await publishTweet({
+                        text: generatedReply,
+                        reply_to_id: selectedTweet.id || undefined,
+                      });
+                      setPublishReplyResult(result);
+                    } catch (e) {
+                      setPublishReplyResult({
+                        success: false,
+                        tweet_id: "",
+                        url: "",
+                        error: e instanceof Error ? e.message : "Reply paylasim hatasi",
+                        thread_results: [],
+                      });
+                    } finally {
+                      setPublishingReply(false);
+                    }
+                  }}
+                  disabled={publishingReply}
+                  className="btn-primary text-sm"
+                >
+                  {publishingReply ? "Gonderiliyor..." : "API ile Reply Gonder"}
+                </button>
                 <button
                   onClick={handleOpenReplyInX}
-                  className="btn-primary text-sm"
+                  className="btn-secondary text-sm"
                 >
                   X&apos;te Ac (Kopyala + Ac)
                 </button>
@@ -2223,6 +2302,24 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
                   Kopyala
                 </button>
               </div>
+
+              {/* Reply publish result */}
+              {publishReplyResult && (
+                <div className={`rounded-lg p-3 text-sm ${publishReplyResult.success ? "bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/30" : "bg-[var(--accent-red)]/10 border border-[var(--accent-red)]/30"}`}>
+                  {publishReplyResult.success ? (
+                    <div>
+                      <p className="font-semibold text-[var(--accent-green)] text-xs">Reply basariyla gonderildi!</p>
+                      {publishReplyResult.url && (
+                        <a href={publishReplyResult.url} target="_blank" rel="noopener noreferrer" className="text-[var(--accent-blue)] hover:underline text-xs">
+                          Reply&apos;i gor
+                        </a>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-[var(--accent-red)] text-xs">{publishReplyResult.error || "Reply gonderilemedi"}</p>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
