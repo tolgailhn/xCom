@@ -300,16 +300,16 @@ def bulk_fetch_accounts(twikit_client, accounts: list[str],
         )
         results.append(result)
 
-        # Rate limit hatası varsa 60sn bekle
+        # Rate limit hatası varsa dur — sonraki hesaplar da aynı hatayı alacak
         if result.get("error") and "rate limit" in result["error"].lower():
             if progress_callback:
-                progress_callback(f"Rate limit! 60 saniye bekleniyor...")
-            time.sleep(60)
+                progress_callback(f"Rate limit! Kalan hesaplar atlanıyor. Birkaç dakika sonra tekrar deneyin.")
+            break
         elif i < len(accounts) - 1:
-            # Hesaplar arası 3sn delay (rate limit koruması)
+            # Hesaplar arası 5sn delay (rate limit koruması)
             if progress_callback:
-                progress_callback(f"Sonraki hesap için 3sn bekleniyor...")
-            time.sleep(3)
+                progress_callback(f"Sonraki hesap için 5sn bekleniyor...")
+            time.sleep(5)
 
     return results
 

@@ -610,8 +610,19 @@ class TwikitSearchClient:
 
                 except Exception as page_err:
                     err_name = type(page_err).__name__
+                    err_str = str(page_err)
                     if err_name in ("StopIteration", "StopAsyncIteration"):
                         break  # No more pages
+                    # Rate limit (429) — stop immediately, don't retry pages
+                    if "429" in err_str or "Rate limit" in err_str or err_name == "TooManyRequests":
+                        self.last_error = f"@{username}: Rate limit. Bir süre bekleyip tekrar deneyin."
+                        print(f"Twikit pagination rate limit (@{username} page {page + 1}) — stopping")
+                        break
+                    # Recursion depth — stop immediately
+                    if "recursion" in err_str.lower():
+                        self.last_error = f"@{username}: Recursion hatası. Uygulamayı yeniden başlatın."
+                        print(f"Twikit pagination recursion error (@{username}) — stopping")
+                        break
                     print(f"Twikit pagination error (page {page + 1}): {page_err}")
                     self.last_error = f"Sayfa {page + 1} hatası: {err_name}: {page_err}"
                     break

@@ -33,6 +33,7 @@ class PoolAccountsRequest(BaseModel):
 class PoolFetchRequest(BaseModel):
     min_engagement: int = 100
     tweet_count: int = 500
+    accounts: list[str] | None = None  # None = tüm kayıtlı hesaplar
 
 
 class PoolImportRequest(BaseModel):
@@ -336,11 +337,17 @@ async def fetch_pool_tweets(request: PoolFetchRequest):
     from backend.modules.tweet_pool import load_pool_accounts, bulk_fetch_accounts
     from backend.modules.twikit_client import TwikitSearchClient
 
-    accounts = load_pool_accounts()
+    accounts = request.accounts or load_pool_accounts()
     if not accounts:
         raise HTTPException(status_code=400, detail="Hesap listesi bos. Once 'Hesap Listesini Kaydet' butonuyla hesap ekleyin.")
 
-    twikit = TwikitSearchClient()
+    from backend.config import get_settings
+    s = get_settings()
+    twikit = TwikitSearchClient(
+        username=s.twikit_username or "",
+        password=s.twikit_password or "",
+        email=s.twikit_email or "",
+    )
     if not twikit.authenticate():
         raise HTTPException(status_code=503, detail="Twitter auth failed")
 
