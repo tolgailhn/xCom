@@ -189,7 +189,7 @@ def _generate_with_gemini(prompt: str, gemini_api_key: str) -> InfographicResult
         client = genai.Client(api_key=gemini_api_key)
 
         response = client.models.generate_content(
-            model="gemini-2.0-flash-preview-image-generation",
+            model="gemini-3-pro-image-preview",
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_modalities=["TEXT", "IMAGE"],

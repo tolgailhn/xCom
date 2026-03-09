@@ -178,11 +178,11 @@ async def test_gemini_connection():
         client = genai.Client(api_key=s.gemini_api_key)
         # Simple text generation to verify key works
         response = client.models.generate_content(
-            model="gemini-2.0-flash-preview-image-generation",
+            model="gemini-3-pro-image-preview",
             contents="Say 'OK' in one word.",
         )
         if response and response.text:
-            return {"success": True, "model": "gemini-2.0-flash-preview-image-generation"}
+            return {"success": True, "model": "gemini-3-pro-image-preview"}
         return {"success": False, "error": "Bos yanit alindi"}
     except ImportError:
         return {"success": False, "error": "google-genai paketi yuklu degil"}
