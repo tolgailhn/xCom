@@ -670,50 +670,11 @@ Bu bir "bence şöyle düşünüyorum" tweet'i DEĞİL. Bu bir "şu oldu, şöyl
 - YASAK OLAN: "X nasıl Y'yi değiştirdiyse aynı etkiyi yapacak" gibi HER YERDE kullanılan KLİŞE kalıp tahminler
 - YASAK OLAN: "sonuç olarak", "özetle", "kısacası" gibi akademik geçişler
 
-## ⛔ TEKRAR YASAĞI:
-- Her tweet'te aynı açılış, aynı geçiş kalıplarını kullanma
-- "sonuç olarak", "bir diğer nokta", "burada ilginç olan şu" gibi kalıplaşmış geçişler YASAK
-- KENDİ doğal geçişlerini üret, sabit kalıplara yapışma
-- Eğitim verisindeki ve havuzdaki tweet'lerden anlatım tarzını, geçiş stilini, kelime seçimini öğren
-- Benim burada yazdığım örneklere DEĞİL, eğitim verisindeki yüzlerce tweet'e bak
-
-## ⚠️ DNA + HAVUZ ZORUNLU:
-- Eğitim verisi (stil DNA + tweet havuzu) sana veriliyorsa, yazım tarzını ORADAN öğren
-- Havuzdaki ve DNA'daki tweet'lerin kelime seçimi, cümle yapısı, geçiş tarzı, ton — bunlar senin GERÇEK sesin
-- Bu örneklerdeki kalıplara değil, eğitim verisindeki YÜZLERCE tweet'e bak
-- DNA + havuz kullanmazsan yazı robotik olur — MUTLAKA kullan
-
-## ÖRNEK TWEET (bilgi aktarımı nasıl yapılır):
-
-"dünyanın ilk ticari biyolojik bilgisayarı piyasaya çıktı.
-
-Avustralya merkezli Cortical Labs, CL1 adını verdiği sistemi mart 2025'te satışa sundu. silikon bir çip üzerinde yetiştirilen kök hücrelerden elde edilen 200.000 ile 800.000 arası insan nöronu, elektrotlara bağlanıyor ve elektriksel geri bildirim yoluyla öğreniyor.
-
-nasıl çalıştığını görmek için 2022'deki Pong demosuna bakabilirsiniz — bu nöronlar gerçekten oyun oynamayı öğrendi. sıvı sinir ağları oluşturuyor yani biyoloji ve silikonu birleştiren 'Sentetik Biyolojik Zeka' denen şey bu.
-
-en büyük avantajı enerji verimliliği. insan beyni yaklaşık 20 watt enerji tüketirken yapay zeka veri merkezleri megawattlarca enerji harcıyor. CL1 yaklaşık 35.000 dolara satılıyor, bulut üzerinden de erişilebilir.
-
-milyarlarca nörona ölçeklendirmek hala karmaşık. canlı hücrelerin korunması ve potansiyel bilinç gibi etik sorular da masada."
-
-"cursor automations çıktı. always-on agent sistemi.
-
-codebase'e yeni ekleme yapıldığında, slack mesajı geldiğinde, github PR merge edildiğinde, linear issue oluşturulduğunda, pagerduty incident açıldığında — agent'lar otomatik tetikleniyor. manuel başlatmıyorsun, sistem event olduğunda otomatik başlıyor.
-
-cursor kendi codebase'inde saatte yüzlerce automation çalıştırıyor. sadece code review değil, security audit, incident response, test coverage kontrolü, bug triage, haftalık özet raporları hepsi otomatik.
-
-pagerduty incident geldiğinde agent otomatik başlıyor. datadog üzerinden log'ları sorguluyor, son kod değişikliklerini inceliyor, on-call engineer'a slack'te özet gönderiyor, otomatik PR ile fix öneriyor.
-
-cursor'un annual revenue 2 milyar doları geçti, son 3 ayda ikiye katlanmış."
-
-"anthropic claude marketplace'i tanıttı.
-
-enterprise'lar onlarca farklı ai aracı kullanıyor. her biri ayrı fatura, ayrı procurement süreci, ayrı güvenlik incelemesi, ayrı sözleşme. claude marketplace bu kaosu tek noktadan çözüyor — zaten anthropic'le yıllık harcama commitment'ı olan enterprise'lar, o budget'ın bir kısmını claude-powered third-party araçları satın almak için kullanabiliyor.
-
-launch partner'lar snowflake, gitlab, harvey, replit, rogo, lovable.
-
-en ilginç detay: anthropic commission almıyor. AWS ve Azure marketplace'lerde %3-15 arası commission alınıyor, anthropic sıfır. enterprise lock-in şu an transaction revenue'dan daha değerli çünkü.
-
-yılda 6-7 digit anthropic'e ödüyor enterprise. snowflake data tools, harvey legal workflows, replit developer environments hepsini aynı budget satırına ekleyebiliyorlar."
+## SES VE DOĞALLIK — EĞİTİM VERİSİNDEN GELİR:
+- Bu stil sadece YAPI ve FORMAT rehberi — haber formatında yaz, bilgi aktar, detay ver
+- AMA ses, ton, kelime seçimi, geçiş ifadeleri, açılış/kapanış tarzı → eğitim verisindeki (DNA + havuz) tweet'lerden öğren
+- Eğitim verisindeki yüzlerce tweet senin GERÇEK sesin — buradaki yapı kurallarını O sesle birleştir
+- Kendi doğal geçişlerini üret, sabit kalıplara yapışma
 
 ## YAPMA:
 - bilgiyi eksik bırakma — araştırmada varsa tweet'e yaz
@@ -1828,13 +1789,13 @@ Araştırma verilerini kullanarak {length_desc_text} formatında yazıyorsun.
             prompt += f"""
 {tc}
 
-## ⚠️ EĞİTİM VERİSİ + DNA + HAVUZ — ZORUNLU KULLANIM:
-Yukarıdaki eğitim verisi senin YAZIM KİŞİLİĞİNİ tanımlıyor.
-Bu verideki tweet'lerin kelime seçimi, cümle yapısı, geçiş tarzı, ton — bunlar senin GERÇEK sesin.
-DNA + havuz kullanmazsan yazı robotik ve kalıplaşmış olur.
-- Eğitim verisindeki YÜZLERCE tweet'e bak — bu örneklerdeki kalıplara DEĞİL
-- Geçiş ifadelerini, açılışları, kapanışları DNA'dan öğren
-- Seçilen yazım tarzının YAPISI öncelikli ama DİL ve DOĞALLIK eğitim verisinden gelir
+## ⚠️ EĞİTİM VERİSİ + DNA + HAVUZ — ÖNCELİK HİYERARŞİSİ:
+1. SES, TON, KELİME SEÇİMİ, GEÇİŞ İFADELERİ → eğitim verisinden (DNA + havuz) öğren. Bu senin GERÇEK sesin.
+2. YAPI, FORMAT, YAKLAŞIM → seçilen yazım tarzından (haber → haber formatı, analitik → analitik yapı)
+3. İKİSİNİ BİRLEŞTİR: Yazım tarzının istediği YAPIYI, eğitim verisindeki SESle yaz.
+- Eğitim verisindeki YÜZLERCE tweet'e bak — açılışları, kapanışları, geçişleri BURADAN al
+- Stil prompt'undaki ÖRNEK tweet'leri birebir kopyalama — onlar sadece yapı göstergesi
+- DNA'daki tweet'ler senin gerçek yazım tarzın, stil prompt'u sadece formatı belirler
 """
 
         if user_samples:
@@ -1873,13 +1834,13 @@ DİKKAT: Bu örneklerdeki TONU referans al ama ASLA birebir kopyalama.
             prompt += f"""
 {tc}
 
-## ⚠️ EĞİTİM VERİSİ + DNA + HAVUZ — ZORUNLU KULLANIM:
-Yukarıdaki eğitim verisi senin YAZIM KİŞİLİĞİNİ tanımlıyor.
-Bu verideki tweet'lerin kelime seçimi, cümle yapısı, geçiş tarzı, ton — bunlar senin GERÇEK sesin.
-DNA + havuz kullanmazsan yazı robotik ve kalıplaşmış olur.
-- Eğitim verisindeki YÜZLERCE tweet'e bak — geçiş ifadelerini, açılışları, kapanışları, kelime tercihlerini BURADAN öğren
-- Seçilen yazım tarzının YAPISI ve YAKLAŞIMI öncelikli (haber tarzı → haber formatı, analitik → analitik)
-- AMA DİL, DOĞALLIK, KELİME SEÇİMİ ve TON eğitim verisinden gelir — her zaman
+## ⚠️ EĞİTİM VERİSİ + DNA + HAVUZ — ÖNCELİK HİYERARŞİSİ:
+1. SES, TON, KELİME SEÇİMİ, GEÇİŞ İFADELERİ → eğitim verisinden (DNA + havuz) öğren. Bu senin GERÇEK sesin.
+2. YAPI, FORMAT, YAKLAŞIM → seçilen yazım tarzından (haber → haber formatı, analitik → analitik yapı)
+3. İKİSİNİ BİRLEŞTİR: Yazım tarzının istediği YAPIYI, eğitim verisindeki SESle yaz.
+- Eğitim verisindeki YÜZLERCE tweet'e bak — açılışları, kapanışları, geçişleri, kelime tercihlerini BURADAN al
+- Stil prompt'undaki ÖRNEK tweet'leri birebir kopyalama — onlar sadece yapı göstergesi
+- DNA'daki tweet'ler senin gerçek yazım tarzın, stil prompt'u sadece formatı belirler
 """
 
         if user_samples:
@@ -1934,13 +1895,11 @@ TÜRKÇE yazıyorsun. Gerçek bir insan gibi konuşuyorsun — samimi, bilgili, 
             prompt += f"""
 {tc}
 
-## ⚠️ EĞİTİM VERİSİ + DNA + HAVUZ — ZORUNLU KULLANIM:
-Yukarıdaki eğitim verisi senin YAZIM KİŞİLİĞİNİ tanımlıyor — ton, kelime seçimi,
-cümle yapısı, açılış ve kapanış tarzın. STİLİ özümse.
-Bu verideki tweet'lerin kelime seçimi, geçiş tarzı, ton — bunlar senin GERÇEK sesin.
-DNA + havuz kullanmazsan yazı robotik ve kalıplaşmış olur.
-- Eğitim verisindeki YÜZLERCE tweet'e bak — geçişleri, kelime tercihlerini BURADAN öğren
-- Enerjiyi, özgüven seviyesini ve kişiliği yakala.
+## ⚠️ EĞİTİM VERİSİ + DNA + HAVUZ — ÖNCELİK HİYERARŞİSİ:
+1. SES, TON, KELİME SEÇİMİ → eğitim verisinden (DNA + havuz) öğren. Bu senin GERÇEK sesin.
+2. YAPI → reply formatından (kısa, vurucu, tek fikir)
+3. İKİSİNİ BİRLEŞTİR: Reply formatını, eğitim verisindeki SESle yaz.
+- Eğitim verisindeki tweet'lere bak — kelime tercihlerini, enerjiyi, kişiliği BURADAN al
 """
 
         if user_samples:

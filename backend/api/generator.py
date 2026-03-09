@@ -755,12 +755,18 @@ async def find_media_endpoint(request: MediaRequest):
     try:
         from backend.modules.media_finder import find_media as do_find_media
 
-        # Get twikit client for X search
+        # Get twikit client for X search (with credentials from config)
         twikit_client = None
         if request.source in ("x", "both"):
             try:
                 from backend.modules.twikit_client import TwikitSearchClient
-                twikit_client = TwikitSearchClient()
+                from backend.config import get_settings
+                s = get_settings()
+                twikit_client = TwikitSearchClient(
+                    username=s.twikit_username or "",
+                    password=s.twikit_password or "",
+                    email=s.twikit_email or "",
+                )
                 if not twikit_client.authenticate():
                     twikit_client = None
             except Exception:
