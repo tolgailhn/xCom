@@ -389,13 +389,10 @@ async def do_research_endpoint(request: ResearchRequest):
         # DuckDuckGo / standard research (run in thread to avoid blocking event loop)
         from backend.modules.deep_research import research_topic as do_research
 
-        # Build scanner for X search and thread fetching
-        # Scanner is needed whenever "x" is in research_sources, not just when tweet_id exists
+        # Build scanner only when "x" is explicitly in research_sources
         scanner = None
-        needs_scanner = bool(request.tweet_id) or (
-            request.research_sources and "x" in request.research_sources
-        ) or not request.research_sources  # default sources include "x"
-        if needs_scanner:
+        sources = request.research_sources or []
+        if "x" in sources:
             try:
                 from backend.modules.twitter_scanner import TwitterScanner
                 from backend.config import get_settings
@@ -414,7 +411,7 @@ async def do_research_endpoint(request: ResearchRequest):
             do_research,
             tweet_text=request.topic,
             tweet_author=request.tweet_author,
-            tweet_id=request.tweet_id,
+            tweet_id=request.tweet_id if scanner else "",
             scanner=scanner,
             engine=request.engine if request.engine != "default" else "standard",
             use_agentic=request.agentic,
@@ -470,7 +467,17 @@ async def research_stream(request: ResearchRequest):
         progress_queue.put(msg)
 
     def _run_research():
-        """Run research in thread, returns ResearchResult or dict."""
+        """Run research in thread, returns ResearchResult or dict.
+        All exceptions are caught to prevent backend crash."""
+        try:
+            return _do_research_inner()
+        except Exception as e:
+            logger.exception("Research inner error")
+            progress_callback(f"Arastirma hatasi: {e}")
+            # Return a minimal result so the SSE stream can still send something
+            return {"_type": "error", "summary": f"Arastirma sirasinda hata olustu: {e}"}
+
+    def _do_research_inner():
         # Build AI client
         ai_client = None
         ai_model = None
@@ -513,13 +520,10 @@ async def research_stream(request: ResearchRequest):
         # DuckDuckGo / standard
         from backend.modules.deep_research import research_topic as do_research
 
-        # Build scanner for X search and thread fetching
-        # Scanner is needed whenever "x" is in research_sources, not just when tweet_id exists
+        # Build scanner only when "x" is explicitly in research_sources
         scanner = None
-        needs_scanner = bool(request.tweet_id) or (
-            request.research_sources and "x" in request.research_sources
-        ) or not request.research_sources  # default sources include "x"
-        if needs_scanner:
+        sources = request.research_sources or []
+        if "x" in sources:
             try:
                 from backend.modules.twitter_scanner import TwitterScanner
                 from backend.config import get_settings
@@ -531,13 +535,13 @@ async def research_stream(request: ResearchRequest):
                         twikit_password=s.twikit_password or "",
                         twikit_email=s.twikit_email or "",
                     )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Scanner creation failed: %s", e)
 
         return do_research(
             tweet_text=request.topic,
             tweet_author=request.tweet_author,
-            tweet_id=request.tweet_id,
+            tweet_id=request.tweet_id if scanner else "",  # Only pass tweet_id when scanner exists
             scanner=scanner,
             engine=request.engine if request.engine != "default" else "standard",
             use_agentic=request.agentic,
@@ -568,7 +572,15 @@ async def research_stream(request: ResearchRequest):
         try:
             result = future.result()
 
-            if isinstance(result, dict) and result.get("_type") == "grok":
+            if isinstance(result, dict) and result.get("_type") == "error":
+                # Research failed but didn't crash — return error as result
+                data = {
+                    "summary": result.get("summary", "Arastirma hatasi"),
+                    "key_points": [],
+                    "sources": [],
+                    "media_urls": [],
+                }
+            elif isinstance(result, dict) and result.get("_type") == "grok":
                 summary = result["summary"]
                 lines = [l.strip() for l in summary.split("\n") if l.strip()]
                 key_points = [l.lstrip("•-* ") for l in lines[1:]

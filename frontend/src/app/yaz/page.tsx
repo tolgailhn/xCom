@@ -1259,12 +1259,13 @@ function TabQuoteTweet({
       // Use full thread text if available, otherwise single tweet text
       const researchTopic = originalTweet?.full_thread_text || originalTweet?.text || quoteUrl;
 
+      // Tweet bilgisi zaten extract-tweet ile çekildi, tekrar Twikit kullanmaya gerek yok.
+      // Sadece web + haber araştırması yap — Twikit 404 sorununu tamamen atla.
       const research = await researchTopicStream(
         {
           topic: researchTopic,
           engine,
-          research_sources: ["x", "web", "news"],
-          tweet_id: tweetId || undefined,
+          research_sources: ["web", "news"],
           tweet_author: originalTweet?.author || undefined,
         },
         (msg) => setProgressMessages((prev) => [...prev, msg]),

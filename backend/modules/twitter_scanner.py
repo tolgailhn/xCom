@@ -681,8 +681,9 @@ class TwitterScanner:
                     # Only add unique errors (avoid flooding with same message)
                     if err not in self.search_errors:
                         self.search_errors.append(err)
-                    # If 403/Forbidden, disable Twikit for remaining queries in this session
-                    if "403" in err or "reddedildi" in err.lower():
+                    # If 403/404/Forbidden/NotFound, disable Twikit for remaining queries
+                    if ("403" in err or "404" in err or "reddedildi" in err.lower()
+                            or "NotFound" in err):
                         self._twikit_search_disabled = True
                 topics = []
                 for d in results:
@@ -693,8 +694,9 @@ class TwitterScanner:
                 err_msg = f"Twikit arama hatası: {type(e).__name__}: {e}"
                 if err_msg not in self.search_errors:
                     self.search_errors.append(err_msg)
-                # Disable Twikit SEARCH on 403 (user_tweets uses different endpoint, keep working)
-                if "403" in str(e) or "Forbidden" in type(e).__name__:
+                # Disable Twikit SEARCH on 403/404 (user_tweets uses different endpoint, keep working)
+                err_str = str(e)
+                if "403" in err_str or "404" in err_str or "Forbidden" in type(e).__name__ or "NotFound" in type(e).__name__:
                     self._twikit_search_disabled = True
 
         # Fallback: Twitter API v2

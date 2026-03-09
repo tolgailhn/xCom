@@ -154,19 +154,23 @@ async def scan_topics(request: ScanRequest):
             )
         else:
             # ── Default engine: use Twikit/Bearer Token ──
-            scanner = _create_scanner()
+            try:
+                scanner = _create_scanner()
 
-            custom_queries = []
-            if request.custom_query:
-                custom_queries.append(f"{request.custom_query} -is:retweet")
+                custom_queries = []
+                if request.custom_query:
+                    custom_queries.append(f"{request.custom_query} -is:retweet")
 
-            ai_topics = scanner.scan_ai_topics(
-                time_range_hours=hours,
-                max_results_per_query=request.max_results,
-                custom_accounts=custom_accounts,
-                custom_queries=custom_queries,
-            )
-            errors = getattr(scanner, "search_errors", [])
+                ai_topics = scanner.scan_ai_topics(
+                    time_range_hours=hours,
+                    max_results_per_query=request.max_results,
+                    custom_accounts=custom_accounts,
+                    custom_queries=custom_queries,
+                )
+                errors = getattr(scanner, "search_errors", [])
+            except Exception as scan_err:
+                ai_topics = []
+                errors = [f"Twikit tarama hatasi: {scan_err}"]
 
         # Apply filters
         if request.category and request.category not in ("all", "Tumu"):
@@ -282,7 +286,11 @@ async def discover_topics(request: DiscoverRequest):
             return DiscoverResponse(errors=[f"Grok kesfet hatasi: {e}"])
 
     try:
-        scanner = _create_scanner()
+        try:
+            scanner = _create_scanner()
+        except Exception as e:
+            return DiscoverResponse(errors=[f"Scanner olusturulamadi: {e}"])
+
         start_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=hours)
 
         all_discover = []
@@ -305,7 +313,7 @@ async def discover_topics(request: DiscoverRequest):
             t.content_summary = generate_content_summary(t.text, t.category)
             target_list.append(t)
 
-        # AI discovery queries
+        # AI discovery queries — stop on first error to prevent repeated 404s
         for query in DISCOVER_QUERIES:
             try:
                 results = scanner._search_tweets(query, start_time, request.max_results)
@@ -313,15 +321,18 @@ async def discover_topics(request: DiscoverRequest):
                     _process_tweet(t, all_discover)
             except Exception as e:
                 errors.append(str(e))
+                break  # Stop further queries if Twikit is failing
 
-        # GitHub queries
-        for query in GITHUB_QUERIES:
-            try:
-                results = scanner._search_tweets(query, start_time, request.max_results)
-                for t in results:
-                    _process_tweet(t, github_discover)
-            except Exception as e:
-                errors.append(str(e))
+        # GitHub queries — skip if already errored
+        if not errors:
+            for query in GITHUB_QUERIES:
+                try:
+                    results = scanner._search_tweets(query, start_time, request.max_results)
+                    for t in results:
+                        _process_tweet(t, github_discover)
+                except Exception as e:
+                    errors.append(str(e))
+                    break
 
         # Separate tracked vs new
         custom_accs = load_monitored_accounts()
