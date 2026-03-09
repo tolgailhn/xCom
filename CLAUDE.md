@@ -143,24 +143,24 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 
 ### ADIM 1: Sunucuda Kodu Guncelle
 Her degisiklikten sonra sunucuya baglanip kodu cek:
-```bash
-cd /home/user/xCom
-git pull origin claude/connect-github-xcom-VfFR0
+```powershell
+cd C:\Users\Administrator\xCom
+git pull origin claude/fix-generator-api-endpoints-Oi1Pa
 ```
 
 ### ADIM 2: Backend Baslat
-```bash
-cd /home/user/xCom/backend
-pip install -r ../requirements.txt   # sadece ilk sefer veya yeni paket eklendiginde
+```powershell
+cd C:\Users\Administrator\xCom\backend
+pip install -r ..\requirements.txt   # sadece ilk sefer veya yeni paket eklendiginde
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 Backend http://localhost:8000 adresinde calisir. `--reload` ile dosya degisikliklerini otomatik algilar.
 
 ### ADIM 3: Frontend Baslat
-```bash
-cd /home/user/xCom/frontend
+```powershell
+cd C:\Users\Administrator\xCom\frontend
 npm install         # sadece ilk sefer veya yeni paket eklendiginde
-rm -rf .next        # stale cache temizligi (hata alirsan yap)
+Remove-Item -Recurse -Force .next        # stale cache temizligi (hata alirsan yap)
 npm run dev -- --hostname 0.0.0.0 --port 3000
 ```
 Frontend http://sunucu-ip:3000 adresinde calisir.
