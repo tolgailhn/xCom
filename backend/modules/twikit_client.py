@@ -102,7 +102,8 @@ def adapt_query_for_web(query: str, since_date: str = None) -> str:
     """Adapt Twitter API v2 search operators to web search format."""
     q = query.replace("-is:retweet", "-filter:retweets")
     q = q.replace("-is:reply", "-filter:replies")
-    # lang: filtresi korunuyor — Türkçe tweet filtrelemesi için gerekli
+    # lang: filtresi twikit web arama formatında 404 veriyor — kaldır
+    q = re.sub(r'\s*lang:\w+', '', q)
     if since_date:
         q += f" since:{since_date}"
     return re.sub(r'\s+', ' ', q).strip()

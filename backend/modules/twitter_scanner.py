@@ -602,30 +602,50 @@ class TwitterScanner:
         if custom_queries:
             queries.extend(custom_queries)
 
-        # Search by queries
-        for query in queries:
+        import time as _time
+
+        # Search by queries (with delay between requests)
+        for i, query in enumerate(queries):
             try:
                 topics = self._search_tweets(query, start_time, max_results_per_query)
                 for topic in topics:
                     if topic.id not in seen_ids:
                         seen_ids.add(topic.id)
                         all_topics.append(topic)
+                # Delay between search queries to avoid rate limits
+                if i < len(queries) - 1:
+                    _time.sleep(0.5)
             except Exception as e:
                 self.search_errors.append(f"Sorgu hatası: {e}")
                 continue
 
-        # Search by monitored accounts
+        # Search by monitored accounts (with rate limit protection)
         accounts = list(DEFAULT_AI_ACCOUNTS)
         if custom_accounts:
             accounts.extend(custom_accounts)
 
-        for account in accounts:
+        rate_limited = False
+        for i, account in enumerate(accounts):
+            # If rate limited, stop querying more accounts
+            if rate_limited:
+                break
             try:
-                topics = self._get_user_tweets(account, start_time, 10)
+                topics = self._get_user_tweets(account, start_time, 3)
                 for topic in topics:
                     if topic.id not in seen_ids:
                         seen_ids.add(topic.id)
                         all_topics.append(topic)
+                # Check if twikit hit rate limit
+                if self.use_twikit and self.twikit_client:
+                    last_err = self.twikit_client.last_error or ""
+                    if "Rate limit" in last_err or "429" in last_err:
+                        rate_limited = True
+                        break
+                # Delay between account requests (1s every 5 accounts)
+                if (i + 1) % 5 == 0:
+                    _time.sleep(1.0)
+                elif i < len(accounts) - 1:
+                    _time.sleep(0.3)
             except Exception as e:
                 self.search_errors.append(f"Hesap hatası (@{account}): {e}")
                 continue

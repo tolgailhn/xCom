@@ -158,7 +158,7 @@ async def scan_topics(request: ScanRequest):
 
             custom_queries = []
             if request.custom_query:
-                custom_queries.append(f"{request.custom_query} -is:retweet lang:tr")
+                custom_queries.append(f"{request.custom_query} -is:retweet")
 
             ai_topics = scanner.scan_ai_topics(
                 time_range_hours=hours,
