@@ -103,7 +103,7 @@ adın tolga. AI ve teknoloji konularında tutkulu, güncel gelişmeleri takip ed
 - ASLA "İşte detaylar:", "Gelin birlikte bakalım", "Özetlemek gerekirse" gibi sunum kalıpları kullanma
 - ASLA "dikkat çekici", "çığır açan", "devrim niteliğinde", "oyun değiştirici" gibi abartılı sıfatlar kullanma
 - ASLA "bu bağlamda", "bu doğrultuda", "son olarak", "sonuç olarak", "bir diğer nokta", "burada ilginç olan şu" gibi kalıplaşmış geçişler kullanma
-- ASLA "nasıl çalışıyor:", "neden önemli:", "ama asıl soru şu:", "pratik anlamı:", "en ilginç kısım:", "avantajları:", "dezavantajı:", "farklı açıdan bakınca:", "bunu kimler kullanır:", "teknik detaylar:", "sonuç:" gibi alt başlık/etiket geçişleri KOYMA — bunlar yazıyı blog yazısına çeviriyor. düşünce bir paragraftan diğerine DOĞAL akmalı, etiketlemeden. iki nokta ile biten hiçbir "bölüm başlığı" olmamalı.
+- ASLA bir cümleyi/ifadeyi iki nokta (:) ile bitirip ardından yeni bir bölüm/konu AÇMA. Örnekler: "nasıl çalışıyor:", "neden önemli:", "pratik anlamı:", "en ilginç kısım şu:", "avantajları:", "dezavantajı:", "kullanım senaryoları oldukça geniş:", "karşıt görüşlere bakalım:", "performans tarafında:", "teknik detaylara bakarsak:" — bunların HEPSİ YASAK. Bilgiyi cümlelerin İÇİNE göm, ayrı bölüm başlığı açma. Tweet blog yazısı DEĞİL, doğal düzyazı akışı olmalı.
 - ASLA hashtag kullanma — X algoritması artık hashtag'leri ödüllendirmiyor, erişimi düşürüyor
 - Teknik kısaltmaları (eval, CLI, MCP, CI/CD vb.) Türkçe açıkla veya parantezle belirt — takipçiler teknik olmayabilir
 
@@ -671,7 +671,7 @@ Sonda güçlü, akılda kalan bir tespit veya gözlemle bitir.
 - büyük harf kullanma — her şey küçük harfle
 - kısa yazma — bilgi yoğunluğu öncelikli, gerekirse uzun yaz
 - aynı geçiş kalıplarını tekrarlama — her tweet farklı hissetmeli
-- "nasıl çalışıyor:", "neden önemli:", "pratik anlamı:", "ama asıl soru şu:", "avantajları:", "dezavantajı:", "farklı açıdan bakınca:", "bunu kimler kullanır:", "teknik detaylar:", "sonuç:" gibi ETİKET/ALT BAŞLIK KOYMA — iki nokta ile biten hiçbir bölüm başlığı olmamalı. paragraflar arası geçişler doğal düzyazı akışıyla olmalı, blog yazısı gibi etiketlenmemeli. bilgiyi paragrafların içine göm, ayrı başlık altına koyma.
+- bir cümleyi/ifadeyi iki nokta (:) ile bitirip ardından yeni bölüm AÇMA. "kullanım senaryoları oldukça geniş:", "karşıt görüşlere bakalım:", "en ilginç kısım şu:", "performans tarafında:", "teknik detaylara bakarsak:" gibi HER TÜRLÜ etiket/başlık YASAK. bilgiyi cümlelerin İÇİNE göm, ayrı bölüm açma. araştırma sentezindeki ## başlıkları tweet'e yansıtma.
 """,
     },
     "hurricane": {
@@ -1552,6 +1552,8 @@ ZORUNLU:
 
 FORMAT: İlk paragraf = konuyu tanıt. Orta paragraflar = detaylar. Son paragraf = pratik etki veya gözlem. Paragraflar arası boş satır bırak. Klişe tahmin kalıbı YASAK, SORU SORMA. Hashtag KULLANMA.
 
+ETİKET YASAK: Bir cümleyi iki nokta (:) ile bitirip yeni bölüm AÇMA. "kullanım senaryoları:", "karşıt görüşlere bakalım:", "en ilginç kısım şu:" gibi etiketler KOYMA. Bilgiyi cümlelerin İÇİNE göm.
+
 Sadece tweet metnini yaz."""
 
         return self._dispatch(system_prompt, user_prompt)
@@ -1750,6 +1752,26 @@ Araştırma verilerini kullanarak {length_desc_text} formatında yazıyorsun.
    ÖNEMLİ: Her tweet'te aynı geçiş ifadelerini kullanma. KENDİ doğal geçişlerini üret.
    Eğitim verisinde ve havuzda gördüğün tweet'lerdeki yazım tarzını, geçiş stilini, kelime seçimini öğren.
 
+## ⛔ ETİKET/BÖLÜM BAŞLIĞI YASAĞI (ÇOK KRİTİK):
+Tweet'te hiçbir cümle veya ifade iki nokta (:) ile bitip ardından yeni bir konu/bölüm AÇMAMALI.
+Araştırma sentezinde ## başlıklar var ama bunlar tweet'e YANSIMAMALI — araştırmadaki bilgiyi doğal paragraflar halinde yaz.
+
+YASAK ÖRNEKLER (bunları ve benzerlerini ASLA yazma):
+- "kullanım senaryoları oldukça geniş:" ❌
+- "karşıt görüşlere bakalım:" ❌
+- "en ilginç kısım şu:" ❌
+- "nasıl çalışıyor:" ❌
+- "avantajları:" ❌
+- "dezavantajı:" ❌
+- "farklı açıdan bakınca:" ❌
+- "bunu kimler kullanır:" ❌
+- "performans tarafında:" ❌
+- "teknik detaylara bakarsak:" ❌
+
+DOĞRU YAKLAŞIM: Bilgiyi cümlelerin İÇİNE göm, ayrı bölüm açma.
+YANLIŞ: "kullanım senaryoları oldukça geniş: eski belgeler, fatura işleme, navigasyon..."
+DOĞRU: "eski belgeleri dijitalleştirmekten fatura okumaya, sokak tabelalarını tanımaktan erişilebilirlik araçlarına kadar her yerde kullanılabilir."
+
 ## ⛔ BİLGİ UYDURMA YASAĞI:
 - SADECE araştırma verisinde ve orijinal tweet'te bulunan bilgileri kullan.
 - "X'te bazıları şöyle diyor", "kullanıcılar şüpheli" gibi KAYNAKSIZ İDDİALAR UYDURMA.
@@ -1844,7 +1866,7 @@ Kendi orijinal cümlelerini kur ama aynı doğallık ve samimiyet olsun.
 7. ASLA "İşte" ile başlama
 8. Tırnak işareti kullanma, tweet metnini direkt yaz
 9. SORU İLE BİTİRME YASAK - "Sizce?", "Denediniz mi?" gibi CTA soruları YASAK
-10. ETİKET/BAŞLIK YASAK - "nasıl çalışıyor:", "avantajları:", "dezavantajı:", "farklı açıdan bakınca:", "bunu kimler kullanır:" gibi alt başlıklar KOYMA — iki nokta ile biten bölüm başlığı YASAK. bilgiyi doğal paragraflar içinde ver.
+10. ETİKET/BAŞLIK YASAK - Bir cümleyi iki nokta (:) ile bitirip ardından yeni bölüm AÇMA. Örnekler: "kullanım senaryoları oldukça geniş:", "karşıt görüşlere bakalım:", "en ilginç kısım şu:", "performans tarafında:", "avantajları:", "dezavantajı:" — HEPSİ YASAK. Bilgiyi cümlelerin İÇİNE göm.
 """
 
         # Final safety: hard-cap total prompt length (~35K chars ≈ ~9K tokens)
@@ -1958,6 +1980,7 @@ FORMAT:
 - Son satır güçlü görüş, kuru tespit veya ironi (klişe tahmin kalıbı YASAK, SORU SORMA, CTA YASAK)
 - Hashtag KULLANMA
 - Metin duvarı YAZMA
+- ETİKET/BAŞLIK YASAK: Bir cümleyi iki nokta (:) ile bitirip yeni bölüm açma. "kullanım senaryoları:", "en ilginç kısım şu:", "karşıt görüşlere bakalım:" gibi etiketler KOYMA. Bilgiyi cümlelerin İÇİNE göm.
 
 Sadece tweet metnini yaz, başka bir şey yazma. Tırnak işareti kullanma."""
 
