@@ -486,7 +486,14 @@ class TwikitSearchClient:
                     "Grok motorunu kullanmayı deneyin."
                 )
                 print(f"Twikit search 403 — NOT re-authing (preserving cookies): {e}")
+            elif err_name in ("NotFound", "TypeError", "AttributeError"):
+                # NotFound = search returned no results or endpoint changed
+                # TypeError/AttributeError = parsing issue, not auth
+                # Do NOT re-auth — it blocks the thread and won't fix these errors.
+                self.last_error = f"Arama hatası ({err_name}): {e}"
+                print(f"Twikit search {err_name} — NOT re-authing (not an auth issue): {e}")
             else:
+                # Only Unauthorized should trigger re-auth
                 print(f"Twikit search {err_name}, attempting re-auth...")
                 self.last_error = f"Arama hatası ({err_name}): {e}"
                 if self.username and self.password:
@@ -620,7 +627,12 @@ class TwikitSearchClient:
                     "Uygulamayı yeniden başlatmayı deneyin."
                 )
                 print(f"Twikit user tweets transport error: {err_name}: {e}")
+            elif err_name in ("NotFound", "Forbidden", "TypeError", "AttributeError"):
+                # These are NOT auth issues — re-auth blocks thread and won't fix them
+                self.last_error = f"Kullanıcı tweet hatası (@{username}): {err_name}: {e}"
+                print(f"Twikit user tweets {err_name} — NOT re-authing (not an auth issue): {e}")
             else:
+                # Only Unauthorized should trigger re-auth
                 self.last_error = f"Kullanıcı tweet hatası (@{username}): {err_name}: {e}"
                 print(f"Twikit user tweets {err_name}, attempting re-auth...")
                 if self.username and self.password:
