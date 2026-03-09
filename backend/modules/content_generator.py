@@ -1476,7 +1476,8 @@ SADECE yanıt metnini yaz, başka bir şey yazma."""
                             style: str = "samimi",
                             additional_context: str = "",
                             research_context: str = "",
-                            user_samples: list = None) -> str:
+                            user_samples: list = None,
+                            previous_replies: list = None) -> str:
         """
         Generate a self-reply to the user's OWN tweet.
         This is NOT a reply to someone else — this is a continuation of YOUR tweet.
@@ -1509,20 +1510,34 @@ ARAŞTIRMA VERİSİ (self-reply'da kullanabilirsin):
 {research_context[:3000]}
 """
 
+        previous_block = ""
+        if previous_replies:
+            prev_lines = "\n".join([f"  Reply {i+1}: \"{r}\"" for i, r in enumerate(previous_replies) if r.strip()])
+            if prev_lines:
+                previous_block = f"""
+ÖNCEKİ REPLY'LAR (bunları TEKRARLAMA ve aynı şekilde BAŞLAMA):
+{prev_lines}
+
+ÖNEMLİ: Yukarıdaki reply'larda kullanılan açılış kalıplarını, cümle yapılarını ve kelime seçimlerini KULLANMA.
+Tamamen FARKLI bir açılışla başla. Aynı bilgileri TEKRARLAMA."""
+
         user_prompt = f"""SENİN TWEET'İN (bu senin kendi attığın tweet):
 "{my_tweet}"
 
 Bu tweet'e KENDİ SELF-REPLY'ını yaz. Bu {reply_number}. reply ({total_replies} reply planlanıyor).
 
 SELF-REPLY ROLÜ: {role}
+{previous_block}
 
 KURALLAR:
 - Bu SENİN tweet'in — başka birine yanıt değil. Devam ediyorsun, ek bilgi veriyorsun.
-- "Buna ek olarak", "Şunu da eklemek lazım", "Bi de şu var" gibi doğal geçişler kullan
+- FARKLI BİR ŞEKİLDE BAŞLA — "buna ek olarak" gibi aynı kalıpla başlama. Direkt konuya gir, kişisel deneyimle aç, soru sor, rakam ver — her reply benzersiz başlamalı.
+- Diğer reply'larda kullandığın açılış kalıbını TEKRARLAMA.
 - 1-4 cümle, max 400 karakter (kısa ve vurucu)
 - Hashtag KULLANMA
 - Ana tweet'i tekrarlama — YENİ değer ekle
 - Samimi Türkçe, sohbet tonu
+- Uydurma bilgi, halüsinasyon YASAK — bilmediğin şeyi uydurup yazma, sadece araştırma verisindeki gerçek bilgileri kullan
 {f"- Ek not: {additional_context}" if additional_context else ""}
 {research_block}
 
@@ -2075,10 +2090,16 @@ X algoritması bunu "devam eden konuşma" olarak görür → Phoenix ranking boo
 ## SELF-REPLY KURALLARI:
 1. DEVAM NİTELİĞİNDE — ana tweet'in üzerine YENİ bilgi ekle
 2. TEKRAR ETME — ana tweet'te söylediklerini tekrarlama, FARKLI açı ver
-3. DOĞAL GEÇİŞ — "buna ek olarak", "bi de şunu söyleyeyim", "asıl ilginç olan", "ama asıl mesele şu"
+3. HER REPLY FARKLI BAŞLASIN — "buna ek olarak" gibi kalıpları tekrar tekrar KULLANMA. Her reply farklı bir şekilde başlamalı:
+   - Direkt konuya gir: "Aslında burada kritik olan şey..."
+   - Kişisel deneyim: "Ben bunu denerken..."
+   - Soru ile aç: "Peki ama neden...?"
+   - Veri/rakam ile aç: "Rakamlarla bakınca..."
+   - Karşıt açı: "Ama madalyonun diğer yüzü..."
+   AYNI AÇILIŞ KALIBINI İKİ KEZ KULLANMA — her reply benzersiz başlamalı
 4. KISA TUT — 1-4 cümle, max 400 karakter
 5. HASHTAG KULLANMA
-6. "Ne düşünüyorsun?" ile BİTİRME (son reply hariç)
+6. "Ne düşünüyorsun?" ile BİTİRME (son reply hariç — son reply'da CTA olabilir)
 7. Her reply'da FARKLI değer: bilgi, deneyim, veri, CTA
 8. Samimi Türkçe, sohbet tonu — kendi sesinle yaz
 """
@@ -2094,7 +2115,7 @@ X algoritması bunu "devam eden konuşma" olarak görür → Phoenix ranking boo
 ## ⚠️ EĞİTİM VERİSİ — SELF-REPLY İÇİN:
 - Eğitim verisindeki SESİ, TONU kullan
 - Self-reply kısa olmalı ama kişiliğin AYNI kalmalı
-- Doğal geçişler kullan: "buna ek olarak", "bi de şu var", "asıl mesele şu ki"
+- Her reply FARKLI bir şekilde başlasın — aynı kalıpları (buna ek olarak, bi de şu var) tekrarlama
 """
 
         if user_samples:

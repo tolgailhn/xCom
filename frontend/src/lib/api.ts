@@ -92,6 +92,7 @@ export function generateSelfReply(params: {
   additional_context?: string;
   research_context?: string;
   provider?: string;
+  previous_replies?: string[];
 }) {
   return apiFetch("/api/generator/self-reply", {
     method: "POST",

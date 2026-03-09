@@ -96,6 +96,7 @@ class SelfReplyRequest(BaseModel):
     additional_context: str = ""
     research_context: str = ""
     provider: str = ""
+    previous_replies: list[str] = []
 
 
 class ImageAnalysisRequest(BaseModel):
@@ -332,6 +333,7 @@ async def generate_self_reply_endpoint(request: SelfReplyRequest):
             style=request.style,
             additional_context=request.additional_context,
             research_context=request.research_context,
+            previous_replies=request.previous_replies,
         )
         return GenerateResponse(text=text, score=_score_text(text))
 

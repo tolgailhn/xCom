@@ -2077,6 +2077,7 @@ function TabSelfReply({ styles }: { styles: StyleOption[] }) {
           reply_number: i,
           total_replies: replyCount,
           additional_context: additional,
+          previous_replies: replies.filter((r) => r.trim()),
         });
         replies.push(r.text || "");
       } catch {
