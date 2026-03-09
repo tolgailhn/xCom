@@ -116,7 +116,8 @@ async def schedule_self_reply_chain(request: SelfReplyChainRequest):
     chain_id = now.strftime("%Y%m%d%H%M%S") + "_chain"
     interval = max(1, request.interval_minutes)
 
-    FIRST_REPLY_DELAY = 5  # First reply 5 minutes after scheduling
+    # Tek reply → 2dk, birden fazla → 5dk sonra başla
+    FIRST_REPLY_DELAY = 2 if len(request.replies) == 1 else 5
 
     created_posts = []
     for i, reply_text in enumerate(request.replies):
