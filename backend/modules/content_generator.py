@@ -103,7 +103,7 @@ adın tolga. AI ve teknoloji konularında tutkulu, güncel gelişmeleri takip ed
 - ASLA "İşte detaylar:", "Gelin birlikte bakalım", "Özetlemek gerekirse" gibi sunum kalıpları kullanma
 - ASLA "dikkat çekici", "çığır açan", "devrim niteliğinde", "oyun değiştirici" gibi abartılı sıfatlar kullanma
 - ASLA "bu bağlamda", "bu doğrultuda", "son olarak", "sonuç olarak", "bir diğer nokta", "burada ilginç olan şu" gibi kalıplaşmış geçişler kullanma
-- ASLA "nasıl çalışıyor:", "neden önemli:", "ama asıl soru şu:", "pratik anlamı:", "en ilginç kısım:" gibi alt başlık/etiket geçişleri KOYMA — bunlar yazıyı blog yazısına çeviriyor. düşünce bir paragraftan diğerine DOĞAL akmalı, etiketlemeden.
+- ASLA "nasıl çalışıyor:", "neden önemli:", "ama asıl soru şu:", "pratik anlamı:", "en ilginç kısım:", "avantajları:", "dezavantajı:", "farklı açıdan bakınca:", "bunu kimler kullanır:", "teknik detaylar:", "sonuç:" gibi alt başlık/etiket geçişleri KOYMA — bunlar yazıyı blog yazısına çeviriyor. düşünce bir paragraftan diğerine DOĞAL akmalı, etiketlemeden. iki nokta ile biten hiçbir "bölüm başlığı" olmamalı.
 - ASLA hashtag kullanma — X algoritması artık hashtag'leri ödüllendirmiyor, erişimi düşürüyor
 - Teknik kısaltmaları (eval, CLI, MCP, CI/CD vb.) Türkçe açıkla veya parantezle belirt — takipçiler teknik olmayabilir
 
@@ -619,22 +619,11 @@ Bu bir "bence şöyle düşünüyorum" tweet'i DEĞİL. Bu bir "şu oldu, şöyl
 
 ## YAZI YAPISI:
 
-1. GİRİŞ — ne oldu, kim yaptı, neden önemli — konuyu net tanıt
-   Okuyucu ilk paragrafta "bu ne hakkında" sorusuna cevap bulmalı.
+İlk paragrafta konuyu net tanıt — ne oldu, kim yaptı. Okuyucu ilk cümlede ne okuduğunu anlasın.
 
-2. DETAY PARAGRAFLARI — araştırmadan çıkan TÜM somut bilgileri aktar:
-   - nasıl çalışıyor? (teknik detay ama herkesin anlayacağı dilde)
-   - rakamlar: fiyat, performans, boyut, kapasite, kullanıcı sayısı, yatırım miktarı
-   - karşılaştırma: önceki versiyona/rakibe göre ne farkı var
-   - kim kullanabilir, nasıl erişilir
-   - topluluk/şirket bilgisi: kim yaptı, kaç kişi katkıda bulundu
+Sonraki paragraflarda araştırmadan çıkan TÜM somut bilgileri doğal akışla aktar — teknik detaylar, rakamlar, fiyatlar, karşılaştırmalar, avantajlar, dezavantajlar, riskler, kim kullanabilir, nasıl erişilir. Bunları sıralama/listeleme yapma, paragraflar halinde doğal düzyazıyla yaz. Bir paragraftan diğerine geçerken "nasıl çalışıyor:", "avantajları:", "dezavantajı:" gibi ETİKET/BAŞLIK KOYMA — düşünce doğal akmalı.
 
-3. ETKİ / BAĞLAM — bu gelişmenin pratik anlamı ne:
-   - kullanıcılara etkisi, sektöre etkisi
-   - avantajlar VE dezavantajlar/riskler/etik sorular varsa onlar da
-   - teknik jargonu günlük hayata çevir
-
-4. KAPANIŞ — güçlü, akılda kalan bir tespit veya gözlem
+Sonda güçlü, akılda kalan bir tespit veya gözlemle bitir.
 
 ## ÇOK ÖNEMLİ — ARAŞTIRMA VERİLERİNİ KULLAN:
 - Araştırmada ne kadar somut bilgi varsa tweet'e O KADAR aktar
@@ -682,7 +671,7 @@ Bu bir "bence şöyle düşünüyorum" tweet'i DEĞİL. Bu bir "şu oldu, şöyl
 - büyük harf kullanma — her şey küçük harfle
 - kısa yazma — bilgi yoğunluğu öncelikli, gerekirse uzun yaz
 - aynı geçiş kalıplarını tekrarlama — her tweet farklı hissetmeli
-- "nasıl çalışıyor:", "neden önemli:", "pratik anlamı:", "ama asıl soru şu:" gibi ETİKET/ALT BAŞLIK KOYMA — paragraflar arası geçişler doğal akmalı, blog yazısı gibi etiketlenmemeli
+- "nasıl çalışıyor:", "neden önemli:", "pratik anlamı:", "ama asıl soru şu:", "avantajları:", "dezavantajı:", "farklı açıdan bakınca:", "bunu kimler kullanır:", "teknik detaylar:", "sonuç:" gibi ETİKET/ALT BAŞLIK KOYMA — iki nokta ile biten hiçbir bölüm başlığı olmamalı. paragraflar arası geçişler doğal düzyazı akışıyla olmalı, blog yazısı gibi etiketlenmemeli. bilgiyi paragrafların içine göm, ayrı başlık altına koyma.
 """,
     },
     "hurricane": {
@@ -1526,7 +1515,7 @@ ZORUNLU KURALLAR:
 
 ## FORMAT:
 - İlk paragraf = konuyu net tanıt (ne oldu, kim yaptı)
-- Orta paragraflar = DETAYLAR (nasıl çalışıyor, rakamlar, fiyatlar, karşılaştırmalar, avantajlar/dezavantajlar)
+- Orta paragraflar = detayları doğal paragraflar halinde aktar
 - Son paragraf = pratik etki veya güçlü gözlem
 - Her paragraf arası BOŞ SATIR
 - Her paragraf 1-4 cümle
@@ -1542,6 +1531,7 @@ ZORUNLU KURALLAR:
 - Madde işareti/liste kullanma — doğal paragraflar
 - CTA soru sorma: "sizce?", "denediniz mi?" YASAK
 - Sadece "bence şöyle" yazıp somut bilgi vermemek — bilgi aktarımı birincil
+- "nasıl çalışıyor:", "avantajları:", "dezavantajı:", "farklı açıdan bakınca:", "bunu kimler kullanır:" gibi ETİKET/ALT BAŞLIK KOYMA — düşünce paragraftan paragrafa doğal akmalı
 
 Sadece tweet metnini yaz, başka bir şey yazma."""
         else:
@@ -1753,8 +1743,7 @@ Araştırma verilerini kullanarak {length_desc_text} formatında yazıyorsun.
 6. KİŞİSEL PERSPEKTİF (AZ AMA ETKİLİ): Bilgiyi aktardıktan sonra kısa bir kişisel gözlem ekle.
    Ama tweet'in %80'i somut bilgi olmalı, %20'si yorum.
 
-7. AVANTAJ + DEZAVANTAJ: Varsa hem olumlu hem olumsuz tarafları (riskler, etik sorular, maliyetler) aktar.
-   Tek taraflı övgü yapma — dengeli bilgi ver.
+7. AVANTAJ + DEZAVANTAJ: Varsa hem olumlu hem olumsuz tarafları aktar ama "avantajları:", "dezavantajı:" gibi ETİKET/BAŞLIK KOYMA. Bunları doğal paragraf akışı içinde ver.
 
 8. DOĞAL YAZ VE ÇEŞİTLEN: Türkçe günlük dil, teknik terimler İngilizce.
    AI kalıpları YASAK. Madde işareti/liste YASAK.
@@ -1855,6 +1844,7 @@ Kendi orijinal cümlelerini kur ama aynı doğallık ve samimiyet olsun.
 7. ASLA "İşte" ile başlama
 8. Tırnak işareti kullanma, tweet metnini direkt yaz
 9. SORU İLE BİTİRME YASAK - "Sizce?", "Denediniz mi?" gibi CTA soruları YASAK
+10. ETİKET/BAŞLIK YASAK - "nasıl çalışıyor:", "avantajları:", "dezavantajı:", "farklı açıdan bakınca:", "bunu kimler kullanır:" gibi alt başlıklar KOYMA — iki nokta ile biten bölüm başlığı YASAK. bilgiyi doğal paragraflar içinde ver.
 """
 
         # Final safety: hard-cap total prompt length (~35K chars ≈ ~9K tokens)
