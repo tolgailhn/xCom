@@ -1346,6 +1346,12 @@ class ContentGenerator:
                 api_key=api_key,
                 base_url="https://api.minimax.io/v1",
             ) if api_key else None
+        elif provider == "groq":
+            self.model = model or "qwen/qwen3-32b"
+            self.client = openai.OpenAI(
+                api_key=api_key,
+                base_url="https://api.groq.com/openai/v1",
+            ) if api_key else None
         else:
             raise ValueError(f"Unsupported provider: {provider}")
 
@@ -1852,7 +1858,7 @@ Kendi orijinal cümlelerini kur ama aynı doğallık ve samimiyet olsun.
 """
 
         # Extra guardrails for MiniMax and other non-Claude models
-        if self.provider in ("minimax", "openai"):
+        if self.provider in ("minimax", "openai", "groq"):
             prompt += """
 ## EK DOĞALLIK KURALLARI:
 1. KISA YAZ - Gereksiz açıklama yapma. Direkt konuya gir.
@@ -1910,7 +1916,7 @@ Bu tweet'leri ASLA kopyalama. Aynı doğal sesle orijinal cümleler yaz.
 """
 
         # Extra guardrails for non-Claude models
-        if self.provider in ("minimax", "openai"):
+        if self.provider in ("minimax", "openai", "groq"):
             prompt += """
 ## DOĞALLIK KURALLARI:
 1. KISA YAZ — Konuya gel. Dolgu yok.
@@ -2217,8 +2223,8 @@ Paragraflari kısa tut, metin duvarı olmasın. Sadece içerik metnini yaz."""
         if not self.client:
             return ""
 
-        # MiniMax doesn't support vision — skip
-        if self.provider == "minimax":
+        # MiniMax and Groq don't support vision — skip
+        if self.provider in ("minimax", "groq"):
             return ""
 
         system_prompt = (

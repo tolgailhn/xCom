@@ -20,6 +20,7 @@ def get_ai_provider(preferred: str = "") -> tuple[str, str, str | None]:
 
     providers = {
         "minimax": s.minimax_api_key,
+        "groq": s.groq_api_key,
         "anthropic": s.anthropic_api_key,
         "openai": s.openai_api_key,
     }
@@ -28,9 +29,11 @@ def get_ai_provider(preferred: str = "") -> tuple[str, str, str | None]:
     if preferred and preferred in providers and providers[preferred]:
         return preferred, providers[preferred], None
 
-    # Auto: priority order
+    # Auto: priority order (MiniMax > Groq > Anthropic > OpenAI)
     if s.minimax_api_key:
         return "minimax", s.minimax_api_key, None
+    if s.groq_api_key:
+        return "groq", s.groq_api_key, None
     if s.anthropic_api_key:
         return "anthropic", s.anthropic_api_key, None
     if s.openai_api_key:
@@ -45,6 +48,8 @@ def get_available_providers() -> list[dict]:
     providers = []
     if s.minimax_api_key:
         providers.append({"id": "minimax", "name": "MiniMax M2.5", "available": True})
+    if s.groq_api_key:
+        providers.append({"id": "groq", "name": "Groq (Qwen3-32B)", "available": True})
     if s.anthropic_api_key:
         providers.append({"id": "anthropic", "name": "Anthropic Claude", "available": True})
     if s.openai_api_key:

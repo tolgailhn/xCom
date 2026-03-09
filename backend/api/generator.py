@@ -27,7 +27,7 @@ class GenerateRequest(BaseModel):
     media_urls: list[str] = []
     content_format: str = ""
     quote_url: str = ""
-    provider: str = ""  # "", "minimax", "anthropic", "openai" — empty = auto
+    provider: str = ""  # "", "minimax", "groq", "anthropic", "openai" — empty = auto
 
 
 class QuoteTweetRequest(BaseModel):
@@ -230,9 +230,13 @@ async def generate_quote_tweet_endpoint(request: QuoteTweetRequest):
                 if provider == "anthropic":
                     import anthropic
                     ai_client = anthropic.Anthropic(api_key=api_key)
-                elif provider in ("openai", "minimax"):
+                elif provider in ("openai", "minimax", "groq"):
                     from openai import OpenAI
-                    base_url = "https://api.minimaxi.chat/v1" if provider == "minimax" else None
+                    base_url = (
+                        "https://api.minimaxi.chat/v1" if provider == "minimax"
+                        else "https://api.groq.com/openai/v1" if provider == "groq"
+                        else None
+                    )
                     ai_client = OpenAI(api_key=api_key, base_url=base_url)
 
                 claims = await asyncio.to_thread(
@@ -345,9 +349,13 @@ async def do_research_endpoint(request: ResearchRequest):
             if ai_provider == "anthropic":
                 import anthropic
                 ai_client = anthropic.Anthropic(api_key=api_key)
-            elif ai_provider in ("openai", "minimax"):
+            elif ai_provider in ("openai", "minimax", "groq"):
                 from openai import OpenAI
-                base_url = "https://api.minimaxi.chat/v1" if ai_provider == "minimax" else None
+                base_url = (
+                    "https://api.minimaxi.chat/v1" if ai_provider == "minimax"
+                    else "https://api.groq.com/openai/v1" if ai_provider == "groq"
+                    else None
+                )
                 ai_client = OpenAI(api_key=api_key, base_url=base_url)
         except Exception:
             pass  # AI client is optional, research can work without it
@@ -469,9 +477,13 @@ async def research_stream(request: ResearchRequest):
             if ai_provider == "anthropic":
                 import anthropic
                 ai_client = anthropic.Anthropic(api_key=api_key)
-            elif ai_provider in ("openai", "minimax"):
+            elif ai_provider in ("openai", "minimax", "groq"):
                 from openai import OpenAI
-                base_url = "https://api.minimaxi.chat/v1" if ai_provider == "minimax" else None
+                base_url = (
+                    "https://api.minimaxi.chat/v1" if ai_provider == "minimax"
+                    else "https://api.groq.com/openai/v1" if ai_provider == "groq"
+                    else None
+                )
                 ai_client = OpenAI(api_key=api_key, base_url=base_url)
         except Exception:
             pass

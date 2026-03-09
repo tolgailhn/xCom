@@ -37,7 +37,7 @@ async def get_dashboard_stats():
     settings = get_settings()
 
     has_twitter = bool(settings.twitter_bearer_token)
-    has_ai = bool(settings.minimax_api_key or settings.anthropic_api_key or settings.openai_api_key)
+    has_ai = bool(settings.minimax_api_key or settings.groq_api_key or settings.anthropic_api_key or settings.openai_api_key)
 
     post_history = load_post_history()
     drafts = load_draft_tweets()

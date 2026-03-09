@@ -19,6 +19,7 @@ router = APIRouter()
 
 class APIStatus(BaseModel):
     minimax: bool
+    groq: bool
     anthropic: bool
     openai: bool
     xai: bool
@@ -62,6 +63,7 @@ async def get_api_status():
     has_twikit = bool(s.twikit_username) or bool(s.twikit_auth_token or s.twitter_auth_token)
     return APIStatus(
         minimax=bool(s.minimax_api_key),
+        groq=bool(s.groq_api_key),
         anthropic=bool(s.anthropic_api_key),
         openai=bool(s.openai_api_key),
         xai=bool(s.xai_api_key),

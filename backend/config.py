@@ -21,8 +21,9 @@ class Settings(BaseSettings):
     app_password: str = ""
     debug: bool = False
 
-    # AI Providers (priority: MiniMax > Anthropic > OpenAI)
+    # AI Providers (priority: MiniMax > Groq > Anthropic > OpenAI)
     minimax_api_key: str = ""
+    groq_api_key: str = ""
     anthropic_api_key: str = ""
     openai_api_key: str = ""
 

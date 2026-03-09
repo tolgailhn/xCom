@@ -31,6 +31,7 @@ import {
 
 interface APIStatusData {
   minimax: boolean;
+  groq: boolean;
   anthropic: boolean;
   openai: boolean;
   xai: boolean;
@@ -95,6 +96,7 @@ const API_FIELDS = [
   { key: "twikit_email", label: "Twikit E-posta", group: "Twikit (Ucretsiz Arama)" },
   { key: "twikit_totp_secret", label: "TOTP Secret (2FA)", group: "Twikit (Ucretsiz Arama)" },
   { key: "minimax_api_key", label: "MiniMax API Key", group: "AI API" },
+  { key: "groq_api_key", label: "Groq API Key (Ucretsiz)", group: "AI API" },
   { key: "anthropic_api_key", label: "Anthropic API Key", group: "AI API" },
   { key: "openai_api_key", label: "OpenAI API Key", group: "AI API" },
   { key: "xai_api_key", label: "xAI (Grok) API Key", group: "xAI / Grok" },
@@ -295,7 +297,7 @@ function TabAPIKeys({
           )}
           {group === "AI API" && (
             <p className="text-xs text-zinc-400">
-              Oncelik sirasi: MiniMax &gt; Anthropic Claude &gt; OpenAI GPT. En az birini doldurun.
+              Oncelik sirasi: MiniMax &gt; Groq &gt; Anthropic Claude &gt; OpenAI GPT. En az birini doldurun.
             </p>
           )}
           {group === "xAI / Grok" && (
@@ -394,7 +396,7 @@ function TabAPIKeys({
           {[
             { name: "twitter", label: "Twitter API", fn: testTwitter, show: status?.twitter },
             { name: "twikit", label: "Twikit", fn: testTwikit, show: status?.twikit },
-            { name: "ai", label: "AI API", fn: testAI, show: status?.minimax || status?.anthropic || status?.openai },
+            { name: "ai", label: "AI API", fn: testAI, show: status?.minimax || status?.groq || status?.anthropic || status?.openai },
             { name: "grok", label: "Grok", fn: testGrok, show: status?.xai },
             { name: "telegram", label: "Telegram", fn: testTelegram, show: status?.telegram },
           ].map((t) => (
