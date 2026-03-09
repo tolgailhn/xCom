@@ -885,25 +885,15 @@ class TwikitSearchClient:
                 author_id = getattr(user, 'id', None) or getattr(user, 'rest_id', None)
             author_screen = getattr(user, 'screen_name', '') if user else ''
 
-            # Strategy 1: Use conversation_id to search all thread tweets
-            conv_id = getattr(tweet, 'conversation_id', None)
-
             thread_tweets = {}  # id -> tweet dict
             main_tweet_dict = self._tweet_to_dict(tweet)
             thread_tweets[str(getattr(tweet, 'id', tweet_id))] = main_tweet_dict
 
-            if conv_id and author_screen:
-                try:
-                    query = f"conversation_id:{conv_id} from:{author_screen}"
-                    results = await client.search_tweet(query, 'Latest', count=40)
-                    for t in (results or []):
-                        tid = str(getattr(t, 'id', ''))
-                        if tid and tid not in thread_tweets:
-                            thread_tweets[tid] = self._tweet_to_dict(t)
-                except Exception as e:
-                    print(f"Twikit thread conversation search error: {e}")
+            # Strategy 1: Walk DOWN through replies (same author = self-thread)
+            # twikit's get_tweet_by_id returns a Tweet with .replies attribute
+            await self._walk_thread_down(client, tweet, author_id, thread_tweets)
 
-            # Strategy 2: Walk up the reply chain (in_reply_to)
+            # Strategy 2: Walk UP the reply chain (in_reply_to)
             current = tweet
             walk_count = 0
             while walk_count < 15:
@@ -929,8 +919,23 @@ class TwikitSearchClient:
                     thread_tweets[reply_to_id] = self._tweet_to_dict(parent)
                     current = parent
                     walk_count += 1
+                    # Also walk DOWN from parent to find siblings in thread
+                    await self._walk_thread_down(client, parent, author_id, thread_tweets)
                 except Exception:
                     break
+
+            # Strategy 3: conversation_id search (may fail with 404 — non-fatal)
+            conv_id = getattr(tweet, 'conversation_id', None)
+            if conv_id and author_screen and len(thread_tweets) <= 1:
+                try:
+                    query = f"conversation_id:{conv_id} from:{author_screen}"
+                    results = await client.search_tweet(query, 'Latest', count=40)
+                    for t in (results or []):
+                        tid = str(getattr(t, 'id', ''))
+                        if tid and tid not in thread_tweets:
+                            thread_tweets[tid] = self._tweet_to_dict(t)
+                except Exception as e:
+                    print(f"Twikit thread conversation search error (non-fatal): {e}")
 
             # Sort by created_at (oldest first)
             sorted_tweets = sorted(
@@ -949,6 +954,48 @@ class TwikitSearchClient:
                 return [single] if single else []
             except Exception:
                 return []
+
+    async def _walk_thread_down(self, client, tweet, author_id, thread_tweets,
+                                depth: int = 0, max_depth: int = 20):
+        """Walk DOWN through replies to find self-thread continuation.
+
+        twikit's get_tweet_by_id populates tweet.replies with direct replies.
+        We follow same-author replies to reconstruct the thread downward.
+        """
+        if depth >= max_depth:
+            return
+        replies = getattr(tweet, 'replies', None)
+        if not replies:
+            return
+        try:
+            reply_list = list(replies) if replies else []
+        except Exception:
+            return
+        for reply in reply_list:
+            try:
+                reply_user = getattr(reply, 'user', None)
+                reply_author_id = None
+                if reply_user:
+                    reply_author_id = (getattr(reply_user, 'id', None)
+                                       or getattr(reply_user, 'rest_id', None))
+                # Only follow same-author replies (self-thread)
+                if author_id and reply_author_id and str(reply_author_id) != str(author_id):
+                    continue
+                rid = str(getattr(reply, 'id', ''))
+                if rid and rid not in thread_tweets:
+                    thread_tweets[rid] = self._tweet_to_dict(reply)
+                    # Recurse: fetch full tweet to get its replies
+                    try:
+                        full_reply = await client.get_tweet_by_id(rid)
+                        if full_reply:
+                            await self._walk_thread_down(
+                                client, full_reply, author_id, thread_tweets,
+                                depth + 1, max_depth
+                            )
+                    except Exception:
+                        pass
+            except Exception:
+                continue
 
     def get_user_info(self, username: str) -> dict | None:
         """Get user profile info. Returns dict with user data."""
