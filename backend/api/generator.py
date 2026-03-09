@@ -48,7 +48,7 @@ class ResearchRequest(BaseModel):
     topic: str
     depth: str = "normal"
     engine: str = "default"
-    agentic: bool = False
+    agentic: bool = True  # Always agentic — AI browses autonomously for best results
     research_sources: list[str] = []  # ["web", "reddit", "news", "x"]
     tweet_id: str = ""  # For thread fetching
     tweet_author: str = ""

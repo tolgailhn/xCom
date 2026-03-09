@@ -1327,7 +1327,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                    ai_client=None, ai_model: str = None,
                    ai_provider: str = "minimax",
                    research_sources: list = None,
-                   use_agentic: bool = False,
+                   use_agentic: bool = True,
                    engine: str = "standard",
                    use_grok_agentic: bool = False) -> ResearchResult:
     """
@@ -2448,7 +2448,7 @@ def research_topic_from_text(
     ai_client=None,
     ai_model: str = None,
     ai_provider: str = "minimax",
-    use_agentic: bool = False,
+    use_agentic: bool = True,
     engine: str = "standard",
     use_grok_agentic: bool = False,
 ) -> TopicResearchResult:

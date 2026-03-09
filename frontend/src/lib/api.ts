@@ -108,7 +108,6 @@ export function researchTopic(params: {
   topic: string;
   depth?: string;
   engine?: string;
-  agentic?: boolean;
 }) {
   return apiFetch("/api/generator/research", {
     method: "POST",
@@ -118,7 +117,7 @@ export function researchTopic(params: {
 
 // Research Stream (SSE - live progress)
 export async function researchTopicStream(
-  params: { topic: string; engine?: string; agentic?: boolean; research_sources?: string[]; tweet_id?: string; tweet_author?: string },
+  params: { topic: string; engine?: string; research_sources?: string[]; tweet_id?: string; tweet_author?: string },
   onProgress: (message: string) => void,
 ): Promise<{ summary: string; key_points: string[]; sources: { title: string; url?: string; body?: string }[]; media_urls: string[] }> {
   const token = getToken();

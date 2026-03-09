@@ -352,7 +352,6 @@ function TabTweetYaz({
   const [contentFormat, setContentFormat] = useState("");
   const [isThread, setIsThread] = useState(false);
   const [engine, setEngine] = useState("default");
-  const [agentic, setAgentic] = useState(false);
   const [provider, setProvider] = useState("");
 
   const [researchContext, setResearchContext] = useState("");
@@ -400,7 +399,7 @@ function TabTweetYaz({
     setResearchSources([]);
     try {
       const result = await researchTopicStream(
-        { topic, engine, agentic },
+        { topic, engine },
         (msg) => setProgressMessages((prev) => [...prev, msg]),
       );
       const parts = [result.summary];
@@ -676,18 +675,6 @@ function TabTweetYaz({
             </label>
           </div>
 
-          {/* Agentic toggle */}
-          <div className="flex items-end">
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={agentic}
-                onChange={(e) => setAgentic(e.target.checked)}
-                className="rounded"
-              />
-              Agentic
-            </label>
-          </div>
         </div>
 
         <div className="flex gap-3">
@@ -1146,7 +1133,6 @@ function TabQuoteTweet({
   const [style, setStyle] = useState("quote_tweet");
   const [contentFormat, setContentFormat] = useState("spark");
   const [engine, setEngine] = useState("default");
-  const [agentic, setAgentic] = useState(false);
   const [deepVerify, setDeepVerify] = useState(false);
   const [provider, setProvider] = useState("");
 
@@ -1287,7 +1273,6 @@ function TabQuoteTweet({
         {
           topic: researchTopic,
           engine,
-          agentic,
           research_sources: researchSources,
           tweet_id: tweetId || undefined,
           tweet_author: originalTweet?.author || undefined,
@@ -1493,12 +1478,6 @@ function TabQuoteTweet({
               </select>
             </div>
 
-            <div className="flex items-end gap-4">
-              <label className="flex items-center gap-1 text-xs cursor-pointer">
-                <input type="checkbox" checked={agentic} onChange={(e) => setAgentic(e.target.checked)} className="rounded" />
-                Agentic
-              </label>
-            </div>
           </div>
 
           <button

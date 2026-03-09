@@ -190,7 +190,6 @@ function TabDiscover({
   const [genExtra, setGenExtra] = useState("");
   const [researchMode, setResearchMode] = useState("x_and_web");
   const [genEngine, setGenEngine] = useState("default");
-  const [genAgentic, setGenAgentic] = useState(false);
 
   /* Generated content */
   const [generatedContent, setGeneratedContent] = useState("");
@@ -240,7 +239,6 @@ function TabDiscover({
         const research = (await researchTopic({
           topic: topic.title,
           engine: genEngine,
-          agentic: genAgentic,
         })) as { summary: string; key_points: string[] };
         researchContext = `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}`;
       } catch {
@@ -445,17 +443,6 @@ function TabDiscover({
                   <option value="grok">Grok</option>
                 </select>
               </div>
-              <div className="flex items-end">
-                <label className="flex items-center gap-1 text-xs cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={genAgentic}
-                    onChange={(e) => setGenAgentic(e.target.checked)}
-                    className="rounded"
-                  />
-                  Agentic
-                </label>
-              </div>
             </div>
           </details>
 
@@ -533,7 +520,6 @@ function TabGenerate({
   const [doResearch, setDoResearch] = useState(true);
   const [researchMode, setResearchMode] = useState("x_and_web");
   const [engine, setEngine] = useState("default");
-  const [agentic, setAgentic] = useState(false);
 
   const [generatedContent, setGeneratedContent] = useState("");
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
@@ -564,7 +550,6 @@ function TabGenerate({
           const research = (await researchTopic({
             topic,
             engine,
-            agentic,
           })) as { summary: string; key_points: string[] };
           researchContext = `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}`;
           setResearchData(researchContext);
@@ -697,17 +682,6 @@ function TabGenerate({
                   <option value="default">DuckDuckGo</option>
                   <option value="grok">Grok</option>
                 </select>
-              </div>
-              <div className="flex items-end">
-                <label className="flex items-center gap-1 text-xs cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={agentic}
-                    onChange={(e) => setAgentic(e.target.checked)}
-                    className="rounded"
-                  />
-                  Agentic
-                </label>
               </div>
             </div>
           </details>
