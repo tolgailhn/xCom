@@ -35,7 +35,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 p-6 md:p-8 ml-0 md:ml-64">{children}</main>
+      {/* pt-14: mobile header height, pb-20: mobile bottom nav height */}
+      <main className="flex-1 pt-14 pb-20 px-4 md:pt-0 md:pb-0 md:p-8 md:ml-64">
+        {children}
+      </main>
     </div>
   );
 }
