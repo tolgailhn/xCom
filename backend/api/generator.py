@@ -88,6 +88,16 @@ class ReplyRequest(BaseModel):
     thread_count: int = 1
 
 
+class SelfReplyRequest(BaseModel):
+    my_tweet: str
+    reply_number: int = 1
+    total_replies: int = 3
+    style: str = "samimi"
+    additional_context: str = ""
+    research_context: str = ""
+    provider: str = ""
+
+
 class ImageAnalysisRequest(BaseModel):
     url: str
     context: str = ""
@@ -299,6 +309,29 @@ async def generate_reply_endpoint(request: ReplyRequest):
             additional_context=request.additional_context,
             is_thread=request.is_thread,
             thread_count=request.thread_count,
+        )
+        return GenerateResponse(text=text, score=_score_text(text))
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/self-reply", response_model=GenerateResponse)
+async def generate_self_reply_endpoint(request: SelfReplyRequest):
+    """Self-reply uret — kendi tweet'ine devam nitelginde yanit"""
+    from backend.api.helpers import create_generator
+
+    try:
+        generator = create_generator(topic=request.my_tweet, preferred_provider=request.provider)
+
+        text = await asyncio.to_thread(
+            generator.generate_self_reply,
+            my_tweet=request.my_tweet,
+            reply_number=request.reply_number,
+            total_replies=request.total_replies,
+            style=request.style,
+            additional_context=request.additional_context,
+            research_context=request.research_context,
         )
         return GenerateResponse(text=text, score=_score_text(text))
 

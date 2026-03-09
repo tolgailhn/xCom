@@ -491,3 +491,39 @@ def save_auto_reply_seen(seen: set):
     seen_list = list(seen)[-2000:]
     with open(path, "w", encoding="utf-8") as f:
         json.dump(seen_list, f)
+
+
+# ── Prompt Templates ───────────────────────────────────
+def load_prompt_templates() -> list[dict]:
+    """Load saved prompt templates"""
+    path = DATA_DIR / "prompt_templates.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+
+def save_prompt_templates(templates: list[dict]):
+    """Save prompt templates"""
+    path = DATA_DIR / "prompt_templates.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(templates, f, ensure_ascii=False, indent=2)
+
+
+def add_prompt_template(template: dict) -> list[dict]:
+    """Add a new prompt template. Returns updated list."""
+    templates = load_prompt_templates()
+    template["id"] = datetime.datetime.now(TZ_TR).strftime("%Y%m%d%H%M%S") + f"_{len(templates)}"
+    template["created_at"] = datetime.datetime.now(TZ_TR).isoformat()
+    templates.append(template)
+    save_prompt_templates(templates)
+    return templates
+
+
+def delete_prompt_template(template_id: str) -> list[dict]:
+    """Delete a prompt template by id. Returns updated list."""
+    templates = load_prompt_templates()
+    templates = [t for t in templates if t.get("id") != template_id]
+    save_prompt_templates(templates)
+    return templates

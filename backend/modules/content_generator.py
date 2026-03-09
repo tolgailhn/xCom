@@ -1470,6 +1470,66 @@ SADECE yanıt metnini yaz, başka bir şey yazma."""
 
         return self._dispatch(system_prompt, user_prompt)
 
+    def generate_self_reply(self, my_tweet: str,
+                            reply_number: int = 1,
+                            total_replies: int = 3,
+                            style: str = "samimi",
+                            additional_context: str = "",
+                            research_context: str = "",
+                            user_samples: list = None) -> str:
+        """
+        Generate a self-reply to the user's OWN tweet.
+        This is NOT a reply to someone else — this is a continuation of YOUR tweet.
+
+        Args:
+            my_tweet: The user's own tweet text (the one they posted)
+            reply_number: Which self-reply this is (1, 2, or 3)
+            total_replies: How many total self-replies planned
+            style: Writing style
+            additional_context: Extra instructions
+            research_context: Research data to use for added value
+            user_samples: Sample tweets for tone matching
+        """
+        if not self.client:
+            raise ValueError("API client not initialized. Check your API key.")
+
+        system_prompt = self._build_self_reply_system_prompt(user_samples)
+
+        reply_role_map = {
+            1: "EK BİLGİ / BAĞLAM — Ana tweet'te söylediğin şeyi destekleyen bir veri, örnek veya arka plan bilgisi ver.",
+            2: "KİŞİSEL DENEYİM / SONUÇ — Kendi deneyimini, gözlemini veya somut bir sonucu paylaş. Rakam varsa kullan.",
+            3: "CTA / KAPANIŞ — Takipçilere bir soru sor, bir aksiyon öner veya güçlü bir kapanış cümlesi yaz.",
+        }
+        role = reply_role_map.get(reply_number, reply_role_map[1])
+
+        research_block = ""
+        if research_context:
+            research_block = f"""
+ARAŞTIRMA VERİSİ (self-reply'da kullanabilirsin):
+{research_context[:3000]}
+"""
+
+        user_prompt = f"""SENİN TWEET'İN (bu senin kendi attığın tweet):
+"{my_tweet}"
+
+Bu tweet'e KENDİ SELF-REPLY'ını yaz. Bu {reply_number}. reply ({total_replies} reply planlanıyor).
+
+SELF-REPLY ROLÜ: {role}
+
+KURALLAR:
+- Bu SENİN tweet'in — başka birine yanıt değil. Devam ediyorsun, ek bilgi veriyorsun.
+- "Buna ek olarak", "Şunu da eklemek lazım", "Bi de şu var" gibi doğal geçişler kullan
+- 1-4 cümle, max 400 karakter (kısa ve vurucu)
+- Hashtag KULLANMA
+- Ana tweet'i tekrarlama — YENİ değer ekle
+- Samimi Türkçe, sohbet tonu
+{f"- Ek not: {additional_context}" if additional_context else ""}
+{research_block}
+
+SADECE self-reply metnini yaz, başka bir şey yazma."""
+
+        return self._dispatch(system_prompt, user_prompt)
+
     def generate_quote_tweet(self, original_tweet: str, original_author: str,
                              style: str = "quote_tweet",
                              additional_context: str = "",
@@ -1994,6 +2054,64 @@ Bu tweet'leri ASLA kopyalama. Aynı doğal sesle orijinal cümleler yaz.
 6. ASLA "Ben" ile başlama — açılışlarını çeşitlendir
 7. Yanıt metninin etrafında tırnak işareti KOYMA
 8. "Ne düşünüyorsun?" gibi sorularla BİTİRME — güçlü bir görüşle kapat
+"""
+
+        MAX_PROMPT_CHARS = 35000
+        if len(prompt) > MAX_PROMPT_CHARS:
+            prompt = prompt[:MAX_PROMPT_CHARS]
+
+        return prompt
+
+    def _build_self_reply_system_prompt(self, user_samples: list = None) -> str:
+        """Build system prompt for self-reply generation — replying to YOUR OWN tweet."""
+
+        prompt = """Sen X (Twitter) üzerinde kendi tweet'lerine SELF-REPLY atan bir kullanıcısın.
+TÜRKÇE yazıyorsun. Bu BİR BAŞKASINA YANIT DEĞİL — kendi tweet'ine devam ediyorsun.
+
+## SELF-REPLY NEDİR?
+Self-reply = kendi tweet'ine yanıt atarak ek bilgi, bağlam veya CTA eklemek.
+X algoritması bunu "devam eden konuşma" olarak görür → Phoenix ranking boost → 3x engagement.
+
+## SELF-REPLY KURALLARI:
+1. DEVAM NİTELİĞİNDE — ana tweet'in üzerine YENİ bilgi ekle
+2. TEKRAR ETME — ana tweet'te söylediklerini tekrarlama, FARKLI açı ver
+3. DOĞAL GEÇİŞ — "buna ek olarak", "bi de şunu söyleyeyim", "asıl ilginç olan", "ama asıl mesele şu"
+4. KISA TUT — 1-4 cümle, max 400 karakter
+5. HASHTAG KULLANMA
+6. "Ne düşünüyorsun?" ile BİTİRME (son reply hariç)
+7. Her reply'da FARKLI değer: bilgi, deneyim, veri, CTA
+8. Samimi Türkçe, sohbet tonu — kendi sesinle yaz
+"""
+
+        if self.training_context:
+            tc = self.training_context
+            max_training_chars = 15000
+            if len(tc) > max_training_chars:
+                tc = tc[:max_training_chars]
+            prompt += f"""
+{tc}
+
+## ⚠️ EĞİTİM VERİSİ — SELF-REPLY İÇİN:
+- Eğitim verisindeki SESİ, TONU kullan
+- Self-reply kısa olmalı ama kişiliğin AYNI kalmalı
+- Doğal geçişler kullan: "buna ek olarak", "bi de şu var", "asıl mesele şu ki"
+"""
+
+        if user_samples:
+            samples_text = "\n".join([f"- {s}" for s in user_samples[:5]])
+            prompt += f"""
+## KULLANICININ TWEET ÖRNEKLERİ (TON referansı):
+{samples_text}
+"""
+
+        if self.provider in ("minimax", "openai", "groq"):
+            prompt += """
+## DOĞALLIK KURALLARI:
+1. AI KALIPLARI YOK — "Şunu belirtmek gerekir" YASAK
+2. SAMİMİ TÜRKÇE — "ya", "aslında", "bence", "harbiden" kullan
+3. KISA — max 400 karakter
+4. KİŞİSEL — "denedim", "gördüm", "bence" gibi ifadeler
+5. Yanıt metninin etrafında tırnak işareti KOYMA
 """
 
         MAX_PROMPT_CHARS = 35000

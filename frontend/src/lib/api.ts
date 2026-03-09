@@ -83,6 +83,22 @@ export function generateReply(params: {
   });
 }
 
+// Self-Reply Generation
+export function generateSelfReply(params: {
+  my_tweet: string;
+  reply_number?: number;
+  total_replies?: number;
+  style?: string;
+  additional_context?: string;
+  research_context?: string;
+  provider?: string;
+}) {
+  return apiFetch("/api/generator/self-reply", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
 // Image Analysis (Vision)
 export function analyzeImage(url: string, context: string = "") {
   return apiFetch("/api/generator/analyze-image", {
@@ -732,4 +748,20 @@ export function getPostHistory() {
 
 export function clearPostHistory() {
   return apiFetch("/api/settings/post-history", { method: "DELETE" });
+}
+
+// Prompt Templates
+export function getPromptTemplates() {
+  return apiFetch("/api/settings/prompt-templates");
+}
+
+export function addPromptTemplate(name: string, prompt: string, category: string = "genel") {
+  return apiFetch("/api/settings/prompt-templates", {
+    method: "POST",
+    body: JSON.stringify({ name, prompt, category }),
+  });
+}
+
+export function deletePromptTemplate(templateId: string) {
+  return apiFetch(`/api/settings/prompt-templates/${templateId}`, { method: "DELETE" });
 }

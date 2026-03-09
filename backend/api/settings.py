@@ -10,6 +10,7 @@ from backend.modules.style_manager import (
     load_custom_persona, save_custom_persona,
     load_monitored_accounts, save_monitored_accounts,
     load_post_history, save_post_history,
+    load_prompt_templates, add_prompt_template, delete_prompt_template,
 )
 
 router = APIRouter()
@@ -451,3 +452,31 @@ async def clear_post_history():
     """Paylasim gecmisini temizle"""
     save_post_history([])
     return {"status": "ok"}
+
+
+# ── Prompt Templates ──────────────────────────────────
+
+@router.get("/prompt-templates")
+async def get_prompt_templates():
+    """Kayitli prompt sablonlarini getir"""
+    templates = load_prompt_templates()
+    return {"templates": templates}
+
+
+@router.post("/prompt-templates")
+async def create_prompt_template(request: dict):
+    """Yeni prompt sablonu ekle"""
+    name = request.get("name", "").strip()
+    prompt = request.get("prompt", "").strip()
+    category = request.get("category", "genel")
+    if not name or not prompt:
+        return {"error": "name ve prompt alanlari zorunlu"}
+    templates = add_prompt_template({"name": name, "prompt": prompt, "category": category})
+    return {"templates": templates}
+
+
+@router.delete("/prompt-templates/{template_id}")
+async def remove_prompt_template(template_id: str):
+    """Prompt sablonunu sil"""
+    templates = delete_prompt_template(template_id)
+    return {"templates": templates}
