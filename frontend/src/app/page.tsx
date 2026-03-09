@@ -41,25 +41,19 @@ function HowToUse() {
             </p>
           </div>
           <div>
-            <h4 className="font-semibold">2. AI Gundem Tara</h4>
-            <p className="text-xs text-[var(--text-secondary)]">
-              <a href="/tara" className="text-[var(--accent-blue)] hover:underline">Tara</a> sayfasindan zaman araligini secin, AI gelismelerini inceleyin.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-semibold">3. Tweet / Icerik Yaz</h4>
+            <h4 className="font-semibold">2. Tweet / Icerik Yaz</h4>
             <p className="text-xs text-[var(--text-secondary)]">
               <a href="/yaz" className="text-[var(--accent-blue)] hover:underline">Yaz</a> veya <a href="/icerik" className="text-[var(--accent-blue)] hover:underline">Icerik</a> sayfasindan konu girin, tarzi secin, AI uretsin. Begendiyseniz paylasin.
             </p>
           </div>
           <div>
-            <h4 className="font-semibold">4. Tweet Analizi</h4>
+            <h4 className="font-semibold">3. Tweet Analizi</h4>
             <p className="text-xs text-[var(--text-secondary)]">
               <a href="/analiz" className="text-[var(--accent-blue)] hover:underline">Analiz</a> sayfasindan hesap tweet'lerini analiz edin. AI bu verilerle daha iyi tweet yazar.
             </p>
           </div>
           <div>
-            <h4 className="font-semibold">5. Takipci Kesfi</h4>
+            <h4 className="font-semibold">4. Takipci Kesfi</h4>
             <p className="text-xs text-[var(--text-secondary)]">
               <a href="/analiz" className="text-[var(--accent-blue)] hover:underline">Analiz &gt; Takipci Kesfi</a> tab'indan nisinizdeki hesaplarin takipcilerini kesfedin.
             </p>
@@ -119,7 +113,7 @@ export default function Dashboard() {
         <div className="text-5xl mb-3">🤖</div>
         <h1 className="text-3xl font-bold gradient-text">X AI Otomasyon</h1>
         <p className="text-[var(--text-secondary)] mt-2">
-          Tara &middot; Yaz &middot; Paylas
+          Yaz &middot; Uret &middot; Paylas
         </p>
       </div>
 
@@ -142,12 +136,6 @@ export default function Dashboard() {
       <div>
         <h3 className="text-lg font-semibold mb-4">Hizli Islemler</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <ActionCard
-            href="/tara"
-            icon="🔍"
-            title="AI Gundem Tara"
-            description="X'te AI gelismelerini kesfet"
-          />
           <ActionCard
             href="/yaz"
             icon="✍️"
@@ -231,7 +219,7 @@ export default function Dashboard() {
             <p className="text-[var(--text-secondary)]">
               Henuz paylasim yapilmamis.
               <br />
-              <strong>Tara</strong> sayfasindan baslayarak ilk tweet&apos;ini
+              <strong>Yaz</strong> sayfasindan baslayarak ilk tweet&apos;ini
               olustur!
             </p>
           </div>

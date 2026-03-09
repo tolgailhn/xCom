@@ -5,8 +5,7 @@ import { useEffect, useState } from "react";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: "home" },
-  { href: "/tara", label: "AI Gundem Tara", icon: "search" },
-  { href: "/yaz", label: "Tweet Yaz", icon: "edit" },
+{ href: "/yaz", label: "Tweet Yaz", icon: "edit" },
   { href: "/icerik", label: "Icerik Uret", icon: "lightbulb" },
   { href: "/analiz", label: "Tweet Analizi", icon: "bar_chart" },
   { href: "/taslaklarim", label: "Taslaklarim", icon: "draft" },
@@ -17,8 +16,7 @@ const navItems = [
 
 const iconMap: Record<string, string> = {
   home: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1",
-  search: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
-  edit: "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z",
+edit: "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z",
   lightbulb: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z",
   bar_chart: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
   calendar_today: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
@@ -66,7 +64,7 @@ export default function Sidebar() {
         <div className="p-6 border-b border-[var(--border)]">
           <h1 className="text-2xl font-bold gradient-text">X AI Otomasyon</h1>
           <p className="text-xs text-[var(--text-secondary)] mt-1">
-            Tara &middot; Yaz &middot; Paylas
+            Yaz &middot; Uret &middot; Paylas
           </p>
         </div>
 

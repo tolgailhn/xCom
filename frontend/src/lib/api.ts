@@ -46,21 +46,6 @@ export function scanTopics(params: {
   });
 }
 
-export function discoverTopics(params: {
-  time_range: string;
-  max_results?: number;
-  engine?: string;
-}) {
-  return apiFetch("/api/scanner/discover", {
-    method: "POST",
-    body: JSON.stringify(params),
-  });
-}
-
-export function getCategories() {
-  return apiFetch("/api/scanner/categories");
-}
-
 // Generator
 export function generateTweet(params: {
   topic: string;
