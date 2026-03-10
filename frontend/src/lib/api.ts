@@ -733,6 +733,89 @@ export function getSelfReplyStatus(): Promise<SelfReplyStatus> {
   return apiFetch("/api/self-reply/status");
 }
 
+// ── Discovery ──────────────────────────────────────────
+
+export interface DiscoveryConfig {
+  enabled: boolean;
+  priority_accounts: string[];
+  normal_accounts: string[];
+  check_interval_hours: number;
+  work_hour_start: number;
+  work_hour_end: number;
+}
+
+export interface DiscoveryTweet {
+  tweet_id: string;
+  account: string;
+  text: string;
+  created_at: string;
+  like_count: number;
+  retweet_count: number;
+  reply_count: number;
+  bookmark_count: number;
+  engagement_score: number;
+  display_score: number;
+  is_priority: boolean;
+  importance: "yuksek" | "orta" | "dusuk";
+  thread_parts: { text: string; id: string }[];
+  is_thread: boolean;
+  summary_tr: string;
+  tweet_url: string;
+  scanned_at: string;
+}
+
+export interface DiscoveryStatus {
+  enabled: boolean;
+  total_tweets: number;
+  priority_count: number;
+  normal_count: number;
+  last_scan: string | null;
+  current_time: string;
+  account_counts: Record<string, number>;
+  check_interval_hours: number;
+}
+
+export function getDiscoveryConfig(): Promise<{ config: DiscoveryConfig }> {
+  return apiFetch("/api/discovery/config");
+}
+
+export function updateDiscoveryConfig(config: DiscoveryConfig) {
+  return apiFetch("/api/discovery/config", {
+    method: "POST",
+    body: JSON.stringify(config),
+  });
+}
+
+export function addDiscoveryAccount(username: string, is_priority: boolean = false) {
+  return apiFetch("/api/discovery/add-account", {
+    method: "POST",
+    body: JSON.stringify({ username, is_priority }),
+  });
+}
+
+export function removeDiscoveryAccount(username: string) {
+  return apiFetch("/api/discovery/remove-account", {
+    method: "POST",
+    body: JSON.stringify({ username }),
+  });
+}
+
+export function getDiscoveryTweets(): Promise<{ tweets: DiscoveryTweet[]; total: number }> {
+  return apiFetch("/api/discovery/tweets");
+}
+
+export function triggerDiscoveryScan(): Promise<{ success: boolean; message: string; total: number }> {
+  return apiFetch("/api/discovery/trigger", { method: "POST" });
+}
+
+export function getDiscoveryStatus(): Promise<DiscoveryStatus> {
+  return apiFetch("/api/discovery/status");
+}
+
+export function clearDiscoveryCache() {
+  return apiFetch("/api/discovery/clear", { method: "DELETE" });
+}
+
 // ── Settings ───────────────────────────────────────────
 
 export function getAPIStatus() {

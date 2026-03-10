@@ -220,6 +220,15 @@ def _check_self_replies():
         logger.exception("Self-reply check error")
 
 
+def _check_discovery():
+    """Discovery worker — her 2 saatte bir hesap tweetlerini tara."""
+    try:
+        from backend.discovery_worker import scan_accounts
+        scan_accounts()
+    except Exception:
+        logger.exception("Discovery check error")
+
+
 def start_scheduler():
     """Scheduler'i baslat — FastAPI startup'ta cagirilir."""
     if not scheduler.running:
@@ -251,8 +260,15 @@ def start_scheduler():
             id="self_reply_checker",
             replace_existing=True,
         )
+        scheduler.add_job(
+            _check_discovery,
+            "interval",
+            minutes=120,
+            id="discovery_checker",
+            replace_existing=True,
+        )
         scheduler.start()
-        logger.info("Scheduler started — publish 1m, metrics 30m, auto-reply 5m, self-reply 15m")
+        logger.info("Scheduler started — publish 1m, metrics 30m, auto-reply 5m, self-reply 15m, discovery 120m")
 
 
 def stop_scheduler():

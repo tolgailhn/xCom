@@ -623,3 +623,74 @@ def add_self_reply_log(entry: dict):
     logs = logs[:500]
     save_self_reply_logs(logs)
     return entry
+
+
+# ── Discovery (Hesap Keşif Sistemi) ───────────────────────
+
+DEFAULT_DISCOVERY_ACCOUNTS_PRIORITY = [
+    "testingcatalog", "rowancheung", "karpathy", "chrysb",
+]
+
+DEFAULT_DISCOVERY_ACCOUNTS_NORMAL = [
+    "jeremyphoward", "swyx", "DataChaz", "OfficialLoganK",
+    "huggingface", "GoogleDeepMind", "OpenAI", "amasad", "JulienBek",
+]
+
+
+def load_discovery_config() -> dict:
+    """Load discovery configuration"""
+    path = DATA_DIR / "discovery_config.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {
+        "enabled": False,
+        "priority_accounts": DEFAULT_DISCOVERY_ACCOUNTS_PRIORITY.copy(),
+        "normal_accounts": DEFAULT_DISCOVERY_ACCOUNTS_NORMAL.copy(),
+        "check_interval_hours": 2,
+        "work_hour_start": 8,
+        "work_hour_end": 23,
+    }
+
+
+def save_discovery_config(config: dict):
+    """Save discovery configuration"""
+    path = DATA_DIR / "discovery_config.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(config, f, ensure_ascii=False, indent=2)
+
+
+def load_discovery_cache() -> list[dict]:
+    """Load cached discovery tweets (sorted by score)"""
+    path = DATA_DIR / "discovery_cache.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+
+def save_discovery_cache(cache: list[dict]):
+    """Save discovery cache"""
+    path = DATA_DIR / "discovery_cache.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(cache, f, ensure_ascii=False, indent=2)
+
+
+def load_discovery_seen() -> set:
+    """Load set of already-seen discovery tweet IDs"""
+    path = DATA_DIR / "discovery_seen.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return set(json.load(f))
+    return set()
+
+
+def save_discovery_seen(seen: set):
+    """Save set of already-seen discovery tweet IDs (keep last 5000)"""
+    path = DATA_DIR / "discovery_seen.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    seen_list = list(seen)[-5000:]
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(seen_list, f)

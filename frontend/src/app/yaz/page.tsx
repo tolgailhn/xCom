@@ -1052,35 +1052,21 @@ function TabQuoteTweet({
           )}
 
           <div className="flex flex-wrap gap-3">
+            <button onClick={handleOpenInX} className="btn-primary text-sm">
+              X&apos;te Ac
+            </button>
             <button
-              onClick={async () => {
-                setPublishingQt(true);
-                setPublishResultQt(null);
-                try {
-                  const result = await publishTweet({
-                    text: generatedText,
-                    quote_tweet_id: tweetId || undefined,
-                  });
-                  setPublishResultQt(result);
-                } catch (e) {
-                  setPublishResultQt({
-                    success: false,
-                    tweet_id: "",
-                    url: "",
-                    error: e instanceof Error ? e.message : "Paylasim hatasi",
-                    thread_results: [],
-                  });
-                } finally {
-                  setPublishingQt(false);
+              onClick={() => {
+                // Quote tweet sayfasını aç — kullanıcı metni kopyalayıp manuel quote yapar
+                const canonicalUrl = quoteUrl.trim() || (tweetId ? `https://x.com/i/status/${tweetId}` : "");
+                if (canonicalUrl) {
+                  copyText(generatedText);
+                  window.open(canonicalUrl, "_blank");
                 }
               }}
-              disabled={publishingQt}
-              className="btn-primary text-sm"
+              className="btn-secondary text-sm"
             >
-              {publishingQt ? "Paylasiliyor..." : "API ile Paylas"}
-            </button>
-            <button onClick={handleOpenInX} className="btn-secondary text-sm">
-              X&apos;te Ac
+              X Quote Ac
             </button>
             <button
               onClick={() => copyText(generatedText)}
