@@ -1187,11 +1187,13 @@ KURALLAR:
 }
 
 # Content format mapping for long-form content (İçerik page)
-# Long-form uses Spark, Storm, Thunder (Micro/Punch too short)
+# DEPRECATED: Use CONTENT_FORMATS directly — this map was incomplete and had
+# inconsistent char ranges. Kept for backward compat only.
 LONG_CONTENT_FORMAT_MAP = {
-    "spark": {"range": "300-500 karakter", "char_min": 300, "char_max": 500},
-    "storm": {"range": "500-1000 karakter", "char_min": 500, "char_max": 1000},
-    "thunder": {"range": "1000-2000 karakter", "char_min": 1000, "char_max": 2000},
+    "spark": {"range": "400-600 karakter", "char_min": 400, "char_max": 600},
+    "storm": {"range": "700-1000 karakter", "char_min": 700, "char_max": 1000},
+    "thunder": {"range": "1200-1500 karakter", "char_min": 1200, "char_max": 1500},
+    "mega": {"range": "1500-2000 karakter", "char_min": 1500, "char_max": 2000},
 }
 
 # Backward compatibility: old length keys → new format keys
@@ -2268,9 +2270,9 @@ Sadece tweet metnini yaz, başka bir şey yazma. Tırnak işareti kullanma."""
 
         # Length instructions — support both legacy (kisa/orta/uzun) and new format keys
         format_key = _LENGTH_TO_FORMAT.get(length, length)
-        long_fmt = LONG_CONTENT_FORMAT_MAP.get(format_key)
-        if long_fmt:
-            length_inst = f"UZUNLUK: {long_fmt['range']}. {long_fmt['char_min']}-{long_fmt['char_max']} karakter arası yaz."
+        fmt = CONTENT_FORMATS.get(format_key)
+        if fmt:
+            length_inst = f"UZUNLUK: {fmt['range']}. {fmt['char_min']}-{fmt['char_max']} karakter arası yaz."
         else:
             # Fallback for any remaining legacy values
             length_map = {

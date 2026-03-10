@@ -367,12 +367,27 @@ async def generate_long_content(request: GenerateRequest):
 
     try:
         generator = create_generator(topic=request.topic, preferred_provider=request.provider)
+
+        # Use content_format if provided, otherwise fall back to length
+        effective_length = request.content_format or request.length
+
+        # "thread" format → delegate to generate_thread
+        if effective_length == "thread":
+            parts = await asyncio.to_thread(
+                generator.generate_thread,
+                topic_text=request.topic,
+                style=request.style,
+                additional_context=request.research_context,
+            )
+            full_text = "\n\n---\n\n".join(parts) if parts else ""
+            return GenerateResponse(text=full_text, thread_parts=parts or [], score=_score_text(full_text))
+
         text = await asyncio.to_thread(
             generator.generate_long_content,
             topic=request.topic,
             research_context=request.research_context,
             style=request.style,
-            length=request.length,
+            length=effective_length,
         )
         return GenerateResponse(text=text, score=_score_text(text))
     except Exception as e:
