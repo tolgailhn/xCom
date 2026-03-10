@@ -11,6 +11,7 @@ from backend.modules.style_manager import (
     save_auto_reply_config,
     load_auto_reply_logs,
     save_auto_reply_logs,
+    update_auto_reply_log,
 )
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,11 @@ class AutoReplyConfigRequest(BaseModel):
     min_likes_to_reply: int = 0
     only_original_tweets: bool = True
     language: str = "tr"
+    draft_only: bool = True
+
+
+class LogStatusUpdate(BaseModel):
+    status: str  # "manually_posted" or other
 
 
 # ── Endpoints ───────────────────────────────────────────
@@ -76,6 +82,23 @@ async def delete_log(log_id: str):
         raise HTTPException(status_code=404, detail="Log bulunamadi")
     save_auto_reply_logs(new_logs)
     return {"success": True}
+
+
+@router.patch("/log/{log_id}/status")
+async def update_log_status(log_id: str, request: LogStatusUpdate):
+    """Update a log entry's status (e.g. mark as manually posted)"""
+    import datetime
+    from zoneinfo import ZoneInfo
+    TZ_TR = ZoneInfo("Europe/Istanbul")
+
+    updates = {"status": request.status}
+    if request.status == "manually_posted":
+        updates["manually_posted_at"] = datetime.datetime.now(TZ_TR).isoformat()
+
+    result = update_auto_reply_log(log_id, updates)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Log bulunamadi")
+    return {"success": True, "log": result}
 
 
 @router.post("/trigger")
@@ -132,11 +155,14 @@ async def get_status():
 
     return {
         "enabled": config.get("enabled", False),
+        "draft_only": config.get("draft_only", True),
         "accounts_count": len(accounts),
         "replies_last_hour": recent_replies,
         "max_per_hour": config.get("max_replies_per_hour", 5),
         "last_reply_time": last_reply_time,
         "total_replies": sum(1 for l in logs if l.get("status") == "published"),
+        "total_ready": sum(1 for l in logs if l.get("status") == "ready"),
+        "total_manually_posted": sum(1 for l in logs if l.get("status") == "manually_posted"),
         "total_failures": sum(1 for l in logs if "failed" in l.get("status", "")),
         "current_hour": f"{now.hour:02d}:00",
         "current_hour_accounts": [f"@{a}" for a in current_hour_accounts],

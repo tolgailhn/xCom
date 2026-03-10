@@ -143,7 +143,7 @@ def check_and_reply():
             log_time = datetime.datetime.fromisoformat(log.get("created_at", ""))
             if log_time.tzinfo is None:
                 log_time = log_time.replace(tzinfo=TZ_TR)
-            if log_time >= one_hour_ago and log.get("status") == "published":
+            if log_time >= one_hour_ago and log.get("status") in ("published", "ready"):
                 recent_replies += 1
         except (ValueError, TypeError):
             continue
@@ -167,6 +167,7 @@ def check_and_reply():
     min_likes = config.get("min_likes_to_reply", 0)
     only_original = config.get("only_original_tweets", True)
     language = config.get("language", "tr")
+    draft_only = config.get("draft_only", True)  # Varsayılan: sadece üret, paylaşma
 
     replies_made = 0
     remaining = max_per_hour - recent_replies
@@ -251,14 +252,36 @@ def check_and_reply():
             add_auto_reply_log({
                 "account": account,
                 "tweet_id": tweet_id,
-                "tweet_text": tweet_text[:200],
+                "tweet_text": tweet_text,
                 "reply_text": "",
                 "status": "generation_failed",
                 "error": str(e),
+                "engagement_score": _engagement_score(best_tweet),
+                "like_count": best_tweet.get("like_count", 0),
+                "retweet_count": best_tweet.get("retweet_count", 0),
             })
             continue
 
         if not reply_text:
+            continue
+
+        # Draft-only mode: sadece üret, paylaşma (kullanıcı manuel paylaşacak)
+        if draft_only:
+            add_auto_reply_log({
+                "account": account,
+                "tweet_id": tweet_id,
+                "tweet_text": tweet_text,
+                "reply_text": reply_text,
+                "status": "ready",
+                "engagement_score": _engagement_score(best_tweet),
+                "like_count": best_tweet.get("like_count", 0),
+                "retweet_count": best_tweet.get("retweet_count", 0),
+            })
+            replies_made += 1
+            logger.info(
+                "Auto-reply: DRAFT for @%s tweet %s — ready for manual posting",
+                account, tweet_id,
+            )
             continue
 
         # Publish: önce reply dene, 403 alırsa quote tweet yap
@@ -273,12 +296,15 @@ def check_and_reply():
             add_auto_reply_log({
                 "account": account,
                 "tweet_id": tweet_id,
-                "tweet_text": tweet_text[:200],
+                "tweet_text": tweet_text,
                 "reply_text": reply_text,
                 "reply_tweet_id": result.get("tweet_id", ""),
                 "reply_url": result.get("url", ""),
                 "status": "published",
                 "publish_type": publish_type,
+                "engagement_score": _engagement_score(best_tweet),
+                "like_count": best_tweet.get("like_count", 0),
+                "retweet_count": best_tweet.get("retweet_count", 0),
             })
             replies_made += 1
             logger.info(
@@ -292,10 +318,13 @@ def check_and_reply():
             add_auto_reply_log({
                 "account": account,
                 "tweet_id": tweet_id,
-                "tweet_text": tweet_text[:200],
+                "tweet_text": tweet_text,
                 "reply_text": reply_text,
                 "status": "publish_failed",
                 "error": result.get("error", "Unknown error"),
+                "engagement_score": _engagement_score(best_tweet),
+                "like_count": best_tweet.get("like_count", 0),
+                "retweet_count": best_tweet.get("retweet_count", 0),
             })
 
     # Save seen IDs

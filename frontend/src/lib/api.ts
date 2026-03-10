@@ -587,6 +587,7 @@ export interface AutoReplyConfig {
   min_likes_to_reply: number;
   only_original_tweets: boolean;
   language: string;
+  draft_only: boolean;
 }
 
 export interface AutoReplyLog {
@@ -597,18 +598,26 @@ export interface AutoReplyLog {
   reply_text: string;
   reply_tweet_id?: string;
   reply_url?: string;
-  status: "published" | "generation_failed" | "publish_failed";
+  status: "published" | "ready" | "manually_posted" | "generation_failed" | "publish_failed";
+  publish_type?: string;
   error?: string;
   created_at: string;
+  engagement_score?: number;
+  like_count?: number;
+  retweet_count?: number;
+  manually_posted_at?: string;
 }
 
 export interface AutoReplyStatus {
   enabled: boolean;
+  draft_only: boolean;
   accounts_count: number;
   replies_last_hour: number;
   max_per_hour: number;
   last_reply_time: string | null;
   total_replies: number;
+  total_ready: number;
+  total_manually_posted: number;
   total_failures: number;
 }
 
@@ -637,6 +646,13 @@ export function deleteAutoReplyLog(logId: string) {
 
 export function triggerAutoReplyCheck() {
   return apiFetch("/api/auto-reply/trigger", { method: "POST" });
+}
+
+export function markAutoReplyLogPosted(logId: string) {
+  return apiFetch(`/api/auto-reply/log/${encodeURIComponent(logId)}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "manually_posted" }),
+  });
 }
 
 export function getAutoReplyStatus(): Promise<AutoReplyStatus> {

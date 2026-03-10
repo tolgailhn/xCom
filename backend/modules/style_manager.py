@@ -475,6 +475,17 @@ def add_auto_reply_log(entry: dict):
     return entry
 
 
+def update_auto_reply_log(log_id: str, updates: dict) -> dict | None:
+    """Update a specific auto-reply log entry by ID. Returns updated entry or None."""
+    logs = load_auto_reply_logs()
+    for log in logs:
+        if log.get("id") == log_id:
+            log.update(updates)
+            save_auto_reply_logs(logs)
+            return log
+    return None
+
+
 def load_auto_reply_seen() -> set:
     """Load set of already-replied tweet IDs"""
     path = DATA_DIR / "auto_reply_seen.json"

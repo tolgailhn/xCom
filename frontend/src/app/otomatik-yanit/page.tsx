@@ -10,11 +10,13 @@ import {
   triggerAutoReplyCheck,
   getAutoReplyStatus,
   getStyles,
-  publishTweet,
+  markAutoReplyLogPosted,
   type AutoReplyConfig,
   type AutoReplyLog,
   type AutoReplyStatus,
 } from "@/lib/api";
+
+type LogFilter = "all" | "ready" | "manually_posted" | "failed";
 
 export default function OtomatikYanitPage() {
   const [tab, setTab] = useState<"config" | "logs">("config");
@@ -29,6 +31,7 @@ export default function OtomatikYanitPage() {
     min_likes_to_reply: 0,
     only_original_tweets: true,
     language: "tr",
+    draft_only: true,
   });
   const [logs, setLogs] = useState<AutoReplyLog[]>([]);
   const [status, setStatus] = useState<AutoReplyStatus | null>(null);
@@ -39,8 +42,8 @@ export default function OtomatikYanitPage() {
   const [accountInput, setAccountInput] = useState("");
   const [message, setMessage] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [publishingId, setPublishingId] = useState<string | null>(null);
-  const [publishResult, setPublishResult] = useState<Record<string, { success: boolean; message: string }>>({});
+  const [logFilter, setLogFilter] = useState<LogFilter>("all");
+  const [markingId, setMarkingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadAll();
@@ -51,7 +54,7 @@ export default function OtomatikYanitPage() {
     try {
       const [configRes, logsRes, statusRes, stylesRes] = await Promise.all([
         getAutoReplyConfig(),
-        getAutoReplyLogs(100),
+        getAutoReplyLogs(200),
         getAutoReplyStatus(),
         getStyles().catch(() => ({ styles: [] })),
       ]);
@@ -87,9 +90,8 @@ export default function OtomatikYanitPage() {
     try {
       await triggerAutoReplyCheck();
       setMessage("Kontrol tamamlandi!");
-      // Refresh logs and status
       const [logsRes, statusRes] = await Promise.all([
-        getAutoReplyLogs(100),
+        getAutoReplyLogs(200),
         getAutoReplyStatus(),
       ]);
       setLogs(logsRes.logs);
@@ -121,34 +123,37 @@ export default function OtomatikYanitPage() {
     }
   }
 
-  async function handlePublishReply(log: AutoReplyLog) {
-    if (!log.reply_text || !log.tweet_id) return;
-    setPublishingId(log.id);
-    setPublishResult((prev) => ({ ...prev, [log.id]: { success: false, message: "" } }));
+  async function handleMarkPosted(logId: string) {
+    setMarkingId(logId);
     try {
-      const result = await publishTweet({
-        text: log.reply_text,
-        reply_to_id: log.tweet_id,
-      });
-      if (result.success) {
-        setPublishResult((prev) => ({
-          ...prev,
-          [log.id]: { success: true, message: `Yayinlandi! ${result.url || ""}` },
-        }));
-      } else {
-        setPublishResult((prev) => ({
-          ...prev,
-          [log.id]: { success: false, message: result.error || "Bilinmeyen hata" },
-        }));
-      }
-    } catch (err: unknown) {
-      setPublishResult((prev) => ({
-        ...prev,
-        [log.id]: { success: false, message: err instanceof Error ? err.message : String(err) },
-      }));
+      await markAutoReplyLogPosted(logId);
+      setLogs((prev) =>
+        prev.map((l) =>
+          l.id === logId ? { ...l, status: "manually_posted" as const } : l
+        )
+      );
+    } catch (err) {
+      console.error(err);
     } finally {
-      setPublishingId(null);
+      setMarkingId(null);
     }
+  }
+
+  function copyToClipboard(text: string, logId: string) {
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    } catch {
+      navigator.clipboard?.writeText(text);
+    }
+    setCopiedId(logId);
+    setTimeout(() => setCopiedId(null), 2000);
   }
 
   function addAccount() {
@@ -186,10 +191,50 @@ export default function OtomatikYanitPage() {
     }
   }
 
+  // Filter logs
+  const filteredLogs = logs.filter((log) => {
+    if (logFilter === "all") return true;
+    if (logFilter === "ready") return log.status === "ready";
+    if (logFilter === "manually_posted") return log.status === "manually_posted" || log.status === "published";
+    if (logFilter === "failed") return log.status === "generation_failed" || log.status === "publish_failed";
+    return true;
+  });
+
+  // Counts
+  const readyCount = logs.filter((l) => l.status === "ready").length;
+  const postedCount = logs.filter((l) => l.status === "manually_posted" || l.status === "published").length;
+  const failedCount = logs.filter((l) => l.status === "generation_failed" || l.status === "publish_failed").length;
+
+  function getStatusBadge(log: AutoReplyLog) {
+    switch (log.status) {
+      case "ready":
+        return { label: "Bekliyor", cls: "bg-yellow-500/20 text-yellow-400" };
+      case "manually_posted":
+        return { label: "Manuel Paylasildi", cls: "bg-green-500/20 text-green-400" };
+      case "published":
+        return { label: "API ile Yayinlandi", cls: "bg-green-500/20 text-green-400" };
+      case "generation_failed":
+        return { label: "Uretim Hatasi", cls: "bg-red-500/20 text-red-400" };
+      case "publish_failed":
+        return { label: "Paylasim Hatasi", cls: "bg-red-500/20 text-red-400" };
+      default:
+        return { label: log.status, cls: "bg-gray-500/20 text-gray-400" };
+    }
+  }
+
+  function getStatusBorderColor(log: AutoReplyLog) {
+    switch (log.status) {
+      case "ready": return "border-l-yellow-500";
+      case "manually_posted": return "border-l-green-500";
+      case "published": return "border-l-green-500";
+      default: return "border-l-red-500";
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold gradient-text">Otomatik Yanit</h1>
+        <h1 className="text-2xl md:text-3xl font-bold gradient-text">Otomatik Yanit</h1>
         {status && (
           <div className="flex items-center gap-3">
             <span
@@ -204,10 +249,7 @@ export default function OtomatikYanitPage() {
                   status.enabled ? "bg-green-400 animate-pulse" : "bg-red-400"
                 }`}
               />
-              {status.enabled ? "Aktif" : "Pasif"}
-            </span>
-            <span className="text-xs text-[var(--text-secondary)]">
-              {status.replies_last_hour}/{status.max_per_hour} yanit/saat
+              {status.enabled ? (status.draft_only ? "Taslak Modu" : "Aktif") : "Pasif"}
             </span>
           </div>
         )}
@@ -215,38 +257,36 @@ export default function OtomatikYanitPage() {
 
       {/* Status Cards */}
       {status && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <div className="card p-4 text-center">
             <div className="text-2xl font-bold text-[var(--accent-blue)]">
               {status.accounts_count}
             </div>
-            <div className="text-xs text-[var(--text-secondary)]">
-              Takip Edilen
-            </div>
-          </div>
-          <div className="card p-4 text-center">
-            <div className="text-2xl font-bold text-green-400">
-              {status.total_replies}
-            </div>
-            <div className="text-xs text-[var(--text-secondary)]">
-              Toplam Yanit
-            </div>
+            <div className="text-xs text-[var(--text-secondary)]">Takip Edilen</div>
           </div>
           <div className="card p-4 text-center">
             <div className="text-2xl font-bold text-yellow-400">
-              {status.replies_last_hour}
+              {status.total_ready}
             </div>
-            <div className="text-xs text-[var(--text-secondary)]">
-              Son 1 Saat
+            <div className="text-xs text-[var(--text-secondary)]">Bekleyen</div>
+          </div>
+          <div className="card p-4 text-center">
+            <div className="text-2xl font-bold text-green-400">
+              {status.total_manually_posted}
             </div>
+            <div className="text-xs text-[var(--text-secondary)]">Paylasilan</div>
+          </div>
+          <div className="card p-4 text-center">
+            <div className="text-2xl font-bold text-purple-400">
+              {status.total_replies}
+            </div>
+            <div className="text-xs text-[var(--text-secondary)]">API Yanit</div>
           </div>
           <div className="card p-4 text-center">
             <div className="text-2xl font-bold text-red-400">
               {status.total_failures}
             </div>
-            <div className="text-xs text-[var(--text-secondary)]">
-              Basarisiz
-            </div>
+            <div className="text-xs text-[var(--text-secondary)]">Basarisiz</div>
           </div>
         </div>
       )}
@@ -266,15 +306,20 @@ export default function OtomatikYanitPage() {
         <button
           onClick={() => {
             setTab("logs");
-            getAutoReplyLogs(100).then((res) => setLogs(res.logs));
+            getAutoReplyLogs(200).then((res) => setLogs(res.logs));
           }}
-          className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-all ${
+          className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-all flex items-center gap-2 ${
             tab === "logs"
               ? "bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] border-b-2 border-[var(--accent-blue)]"
               : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
           }`}
         >
-          Loglar ({logs.length})
+          Yanitlar
+          {readyCount > 0 && (
+            <span className="bg-yellow-500/20 text-yellow-400 text-xs px-1.5 py-0.5 rounded-full font-bold">
+              {readyCount}
+            </span>
+          )}
         </button>
       </div>
 
@@ -294,13 +339,13 @@ export default function OtomatikYanitPage() {
       {/* Config Tab */}
       {tab === "config" && (
         <div className="space-y-6">
-          {/* Enable Toggle */}
+          {/* Enable Toggle + Draft Mode */}
           <div className="card p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold">Otomatik Yanit Sistemi</h3>
                 <p className="text-sm text-[var(--text-secondary)]">
-                  Takip ettigin hesaplarin yeni tweetlerine AI ile otomatik yanit ver
+                  Takip ettigin hesaplarin yeni tweetlerine AI ile yanit uret
                 </p>
               </div>
               <button
@@ -318,13 +363,39 @@ export default function OtomatikYanitPage() {
                 />
               </button>
             </div>
+
+            {/* Draft Only Toggle */}
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
+              <button
+                onClick={() =>
+                  setConfig((prev) => ({ ...prev, draft_only: !prev.draft_only }))
+                }
+                className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${
+                  config.draft_only ? "bg-yellow-500" : "bg-gray-600"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                    config.draft_only ? "left-5" : "left-0.5"
+                  }`}
+                />
+              </button>
+              <div>
+                <span className="text-sm font-medium">Taslak Modu</span>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  {config.draft_only
+                    ? "Yanitlar sadece uretilir, paylasim yapilmaz. Log'dan kopyalayip manuel paylasirsin."
+                    : "Yanitlar uretilir ve API ile otomatik paylasimaya calisilir."}
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Accounts */}
           <div className="card p-6">
             <h3 className="text-lg font-semibold mb-3">Yanit Verilecek Hesaplar</h3>
             <p className="text-sm text-[var(--text-secondary)] mb-4">
-              Bu hesaplarin yeni tweetlerine otomatik yanit verilecek. Turkce icerik ureten hesaplar ekle.
+              Bu hesaplarin yeni tweetlerine yanit uretilecek.
             </p>
             <div className="flex gap-2 mb-4">
               <input
@@ -403,7 +474,7 @@ export default function OtomatikYanitPage() {
               {/* Max replies per hour */}
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Saatlik Maks Yanit
+                  Saatlik Maks Uretim
                 </label>
                 <input
                   type="number"
@@ -419,7 +490,7 @@ export default function OtomatikYanitPage() {
                   className="input w-full"
                 />
                 <p className="text-xs text-[var(--text-secondary)] mt-1">
-                  Cok fazla yanit spam gibi gorunur. 3-5 ideal.
+                  Saatte max kac yanit uretilsin. 3-5 ideal.
                 </p>
               </div>
 
@@ -461,7 +532,7 @@ export default function OtomatikYanitPage() {
                   className="input w-full"
                 />
                 <p className="text-xs text-[var(--text-secondary)] mt-1">
-                  0 = tum tweetlere yanit ver
+                  0 = tum tweetlere yanit uret
                 </p>
               </div>
 
@@ -505,7 +576,7 @@ export default function OtomatikYanitPage() {
                   }`}
                 />
               </button>
-              <span className="text-sm">Sadece orijinal tweetlere yanit ver (reply&apos;lari atla)</span>
+              <span className="text-sm">Sadece orijinal tweetlere yanit uret (reply&apos;lari atla)</span>
             </div>
           </div>
 
@@ -513,7 +584,7 @@ export default function OtomatikYanitPage() {
           <div className="card p-6">
             <h3 className="text-lg font-semibold mb-2">Ek Talimat</h3>
             <p className="text-sm text-[var(--text-secondary)] mb-3">
-              AI&apos;a yanitlar icin ek talimat ver (orn: &quot;Turkce AI haberlerine odaklan&quot;, &quot;Kisa ve oz yaz&quot;)
+              AI&apos;a yanitlar icin ek talimat ver
             </p>
             <textarea
               value={config.additional_context}
@@ -552,172 +623,185 @@ export default function OtomatikYanitPage() {
       {/* Logs Tab */}
       {tab === "logs" && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">
-              Yanit Gecmisi ({logs.length})
-            </h3>
+          {/* Filter Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex gap-2 flex-wrap">
+              {([
+                { key: "all" as LogFilter, label: "Tumu", count: logs.length },
+                { key: "ready" as LogFilter, label: "Bekleyen", count: readyCount },
+                { key: "manually_posted" as LogFilter, label: "Paylasilan", count: postedCount },
+                { key: "failed" as LogFilter, label: "Hatali", count: failedCount },
+              ]).map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => setLogFilter(f.key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    logFilter === f.key
+                      ? "bg-[var(--accent-blue)]/20 text-[var(--accent-blue)]"
+                      : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  }`}
+                >
+                  {f.label} ({f.count})
+                </button>
+              ))}
+            </div>
             {logs.length > 0 && (
               <button
                 onClick={handleClearLogs}
-                className="text-sm text-red-400 hover:text-red-300 transition-colors"
+                className="text-xs text-red-400 hover:text-red-300 transition-colors"
               >
                 Tum Loglari Temizle
               </button>
             )}
           </div>
 
-          {logs.length === 0 ? (
+          {filteredLogs.length === 0 ? (
             <div className="card p-8 text-center text-[var(--text-secondary)]">
-              Henuz otomatik yanit yapilmadi
+              {logFilter === "ready"
+                ? "Bekleyen yanit yok"
+                : logFilter === "manually_posted"
+                ? "Henuz paylasilan yanit yok"
+                : "Henuz yanit uretilmedi"}
             </div>
           ) : (
-            <div className="space-y-3">
-              {logs.map((log) => (
-                <div
-                  key={log.id}
-                  className={`card p-4 border-l-4 ${
-                    log.status === "published"
-                      ? "border-l-green-500"
-                      : "border-l-red-500"
-                  }`}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-[var(--accent-blue)]">
-                        @{log.account}
-                      </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                          log.status === "published"
-                            ? "bg-green-500/20 text-green-400"
-                            : "bg-red-500/20 text-red-400"
-                        }`}
-                      >
-                        {log.status === "published"
-                          ? "Yayinlandi"
-                          : log.status === "generation_failed"
-                          ? "Uretim Hatasi"
-                          : "Paylasim Hatasi"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-[var(--text-secondary)]">
-                        {formatTime(log.created_at)}
-                      </span>
-                      <button
-                        onClick={() => handleDeleteLog(log.id)}
-                        className="text-xs text-[var(--text-secondary)] hover:text-red-400"
-                      >
-                        &times;
-                      </button>
-                    </div>
-                  </div>
+            <div className="space-y-4">
+              {filteredLogs.map((log) => {
+                const badge = getStatusBadge(log);
+                const borderColor = getStatusBorderColor(log);
 
-                  {/* Original tweet */}
-                  <div className="mb-2 p-2 rounded bg-[var(--bg-primary)] text-sm">
-                    <span className="text-[var(--text-secondary)]">Tweet: </span>
-                    {log.tweet_text}
-                  </div>
-
-                  {/* Reply */}
-                  {log.reply_text && (
-                    <div className="p-2 rounded bg-[var(--accent-blue)]/5 text-sm">
-                      <span className="text-[var(--accent-blue)]">Yanit: </span>
-                      {log.reply_text}
-                    </div>
-                  )}
-
-                  {/* Error */}
-                  {log.error && (
-                    <div className="mt-2 text-xs text-red-400">{log.error}</div>
-                  )}
-
-                  {/* Action Buttons: Kopyala + X'te Aç */}
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    {/* Copy reply text */}
-                    {log.reply_text && (
-                      <button
-                        onClick={() => {
-                          try {
-                            // Fallback for non-HTTPS contexts
-                            const textarea = document.createElement("textarea");
-                            textarea.value = log.reply_text;
-                            textarea.style.position = "fixed";
-                            textarea.style.opacity = "0";
-                            document.body.appendChild(textarea);
-                            textarea.select();
-                            document.execCommand("copy");
-                            document.body.removeChild(textarea);
-                          } catch {
-                            navigator.clipboard?.writeText(log.reply_text);
-                          }
-                          setCopiedId(log.id);
-                          setTimeout(() => setCopiedId(null), 2000);
-                        }}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                          copiedId === log.id
-                            ? "bg-green-500/20 text-green-400"
-                            : "bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)]/80"
-                        }`}
-                      >
-                        {copiedId === log.id ? (
-                          <>&#10003; Kopyalandi</>
-                        ) : (
-                          <>&#128203; Yaniti Kopyala</>
+                return (
+                  <div
+                    key={log.id}
+                    className={`card p-4 md:p-5 border-l-4 ${borderColor}`}
+                  >
+                    {/* Header */}
+                    <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <a
+                          href={`https://x.com/${log.account}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-semibold text-[var(--accent-blue)] hover:underline"
+                        >
+                          @{log.account}
+                        </a>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${badge.cls}`}>
+                          {badge.label}
+                        </span>
+                        {log.engagement_score != null && log.engagement_score > 0 && (
+                          <span className="text-xs text-[var(--text-secondary)]">
+                            Score: {Math.round(log.engagement_score)}
+                          </span>
                         )}
-                      </button>
+                        {(log.like_count != null && log.like_count > 0) && (
+                          <span className="text-xs text-[var(--text-secondary)]">
+                            {log.like_count} like
+                          </span>
+                        )}
+                        {(log.retweet_count != null && log.retweet_count > 0) && (
+                          <span className="text-xs text-[var(--text-secondary)]">
+                            {log.retweet_count} RT
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-[var(--text-secondary)]">
+                          {formatTime(log.created_at)}
+                        </span>
+                        <button
+                          onClick={() => handleDeleteLog(log.id)}
+                          className="text-xs text-[var(--text-secondary)] hover:text-red-400"
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Original tweet — full text */}
+                    <div className="mb-3 p-3 rounded-lg bg-[var(--bg-primary)] text-sm leading-relaxed">
+                      <div className="text-xs text-[var(--text-secondary)] mb-1 font-medium">Orijinal Tweet</div>
+                      <div className="whitespace-pre-wrap">{log.tweet_text}</div>
+                    </div>
+
+                    {/* Generated reply — full text, prominent */}
+                    {log.reply_text && (
+                      <div className="mb-3 p-3 rounded-lg bg-[var(--accent-blue)]/5 border border-[var(--accent-blue)]/20 text-sm leading-relaxed">
+                        <div className="text-xs text-[var(--accent-blue)] mb-1 font-medium">Uretilen Yanit</div>
+                        <div className="whitespace-pre-wrap">{log.reply_text}</div>
+                      </div>
                     )}
 
-                    {/* API ile Reply At */}
-                    {log.reply_text && log.tweet_id && log.status !== "published" && !publishResult[log.id]?.success && (
-                      <button
-                        onClick={() => handlePublishReply(log)}
-                        disabled={publishingId === log.id}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/30 transition-all disabled:opacity-50"
-                      >
-                        {publishingId === log.id ? "Gonderiliyor..." : "API ile Reply At"}
-                      </button>
+                    {/* Error */}
+                    {log.error && (
+                      <div className="mb-3 text-xs text-red-400 bg-red-500/5 p-2 rounded">
+                        {log.error}
+                      </div>
                     )}
 
-                    {/* Publish result message */}
-                    {publishResult[log.id] && (
-                      <span
-                        className={`text-xs px-2 py-1 rounded ${
-                          publishResult[log.id].success
-                            ? "bg-green-500/20 text-green-400"
-                            : "bg-red-500/20 text-red-400"
-                        }`}
-                      >
-                        {publishResult[log.id].message}
-                      </span>
-                    )}
+                    {/* Action Buttons — prominent layout */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* COPY — big and prominent for ready status */}
+                      {log.reply_text && (
+                        <button
+                          onClick={() => copyToClipboard(log.reply_text, log.id)}
+                          className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            copiedId === log.id
+                              ? "bg-green-500/20 text-green-400"
+                              : log.status === "ready"
+                              ? "bg-[var(--accent-blue)] text-white hover:bg-[var(--accent-blue)]/80"
+                              : "bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                          }`}
+                        >
+                          {copiedId === log.id ? (
+                            <>&#10003; Kopyalandi</>
+                          ) : (
+                            <>&#128203; Yaniti Kopyala</>
+                          )}
+                        </button>
+                      )}
 
-                    {/* Open tweet on X */}
-                    {log.tweet_id && (
-                      <a
-                        href={`https://x.com/${log.account}/status/${log.tweet_id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-primary)] text-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/10 transition-all"
-                      >
-                        &#120143; X&apos;te Ac
-                      </a>
-                    )}
+                      {/* Open tweet on X */}
+                      {log.tweet_id && (
+                        <a
+                          href={`https://x.com/${log.account}/status/${log.tweet_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            log.status === "ready"
+                              ? "bg-[var(--bg-primary)] text-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/10 border border-[var(--accent-blue)]/30"
+                              : "bg-[var(--bg-primary)] text-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/10"
+                          }`}
+                        >
+                          &#120143; Tweet&apos;i Ac
+                        </a>
+                      )}
 
-                    {/* Reply URL (if published successfully) */}
-                    {log.reply_url && (
-                      <a
-                        href={log.reply_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-all"
-                      >
-                        &#10003; Yaniti Gor
-                      </a>
-                    )}
+                      {/* Mark as manually posted */}
+                      {log.status === "ready" && (
+                        <button
+                          onClick={() => handleMarkPosted(log.id)}
+                          disabled={markingId === log.id}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-all border border-green-500/20 disabled:opacity-50"
+                        >
+                          {markingId === log.id ? "Isleniyor..." : "&#10003; Paylasildı Olarak Isaretle"}
+                        </button>
+                      )}
+
+                      {/* Reply URL (if published via API) */}
+                      {log.reply_url && (
+                        <a
+                          href={log.reply_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-all"
+                        >
+                          &#10003; Yaniti Gor
+                        </a>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
