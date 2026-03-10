@@ -665,8 +665,14 @@ def load_discovery_cache() -> list[dict]:
     """Load cached discovery tweets (sorted by score)"""
     path = DATA_DIR / "discovery_cache.json"
     if path.exists():
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    return data
+        except (json.JSONDecodeError, ValueError):
+            # Bozuk dosya — sifirla
+            path.unlink(missing_ok=True)
     return []
 
 
