@@ -16,6 +16,7 @@ import {
   generateInfographic,
   addDraft,
   extractTweet,
+  getStyles,
   type DiscoveryConfig,
   type DiscoveryTweet,
   type DiscoveryStatus,
@@ -66,20 +67,17 @@ const importanceBadge: Record<string, { label: string; cls: string }> = {
   dusuk: { label: "Dusuk", cls: "bg-[var(--text-secondary)]/20 text-[var(--text-secondary)] border-[var(--text-secondary)]/30" },
 };
 
-const STYLES = [
-  { value: "bilgilendirici", label: "Bilgilendirici" },
-  { value: "samimi", label: "Samimi" },
-  { value: "provoke_edici", label: "Provoke Edici" },
-  { value: "teknik", label: "Teknik" },
-  { value: "ilham_verici", label: "Ilham Verici" },
-  { value: "quote_tweet", label: "Quote Tweet" },
-];
+interface StyleOption {
+  id: string;
+  name: string;
+  desc: string;
+}
 
-const LENGTHS = [
-  { value: "spark", label: "Kisa (1-2 cumle)" },
-  { value: "punch", label: "Orta (3-4 cumle)" },
-  { value: "story", label: "Uzun (5+ cumle)" },
-];
+interface FormatOption {
+  id: string;
+  name: string;
+  desc: string;
+}
 
 // ── Main Component ─────────────────────────────────────
 
@@ -104,6 +102,8 @@ export default function KesifPage() {
   const [generatingId, setGeneratingId] = useState<string | null>(null);
 
   // Style & length per tweet
+  const [styles, setStyles] = useState<StyleOption[]>([]);
+  const [formats, setFormats] = useState<FormatOption[]>([]);
   const [tweetStyle, setTweetStyle] = useState("quote_tweet");
   const [tweetLength, setTweetLength] = useState("spark");
   const [provider, setProvider] = useState("");
@@ -149,6 +149,16 @@ export default function KesifPage() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Fetch styles & formats from backend
+  useEffect(() => {
+    getStyles()
+      .then((r: { styles: StyleOption[]; formats: FormatOption[] }) => {
+        setStyles(r.styles);
+        setFormats(r.formats);
+      })
+      .catch(() => {});
+  }, []);
 
   // Countdown timer — her saniye geri say
   useEffect(() => {
@@ -503,7 +513,7 @@ export default function KesifPage() {
             <select
               value={filterAccount}
               onChange={e => setFilterAccount(e.target.value)}
-              className="input-field text-xs py-1.5"
+              className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
             >
               <option value="">Tum Hesaplar</option>
               {uniqueAccounts.map(a => (
@@ -513,7 +523,7 @@ export default function KesifPage() {
             <select
               value={filterImportance}
               onChange={e => setFilterImportance(e.target.value)}
-              className="input-field text-xs py-1.5"
+              className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
             >
               <option value="">Tum Onem</option>
               <option value="yuksek">Yuksek</option>
@@ -558,6 +568,8 @@ export default function KesifPage() {
                   mediaLoading={mediaLoading === tweet.tweet_id}
                   infographicData={infographicData[tweet.tweet_id]}
                   infographicLoading={infographicLoading === tweet.tweet_id}
+                  styles={styles}
+                  formats={formats}
                   tweetStyle={tweetStyle}
                   setTweetStyle={setTweetStyle}
                   tweetLength={tweetLength}
@@ -603,6 +615,8 @@ function TweetCard({
   mediaLoading,
   infographicData,
   infographicLoading,
+  styles,
+  formats,
   tweetStyle,
   setTweetStyle,
   tweetLength,
@@ -634,6 +648,8 @@ function TweetCard({
   mediaLoading: boolean;
   infographicData?: { image: string; format: string };
   infographicLoading: boolean;
+  styles: StyleOption[];
+  formats: FormatOption[];
   tweetStyle: string;
   setTweetStyle: (s: string) => void;
   tweetLength: string;
@@ -807,13 +823,17 @@ function TweetCard({
           {/* Generate section */}
           <div className="pt-2 border-t border-[var(--border)] space-y-3">
             <div className="flex flex-wrap gap-2 items-center">
-              <select value={tweetStyle} onChange={e => setTweetStyle(e.target.value)} className="input-field text-xs py-1">
-                {STYLES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              <select value={tweetStyle} onChange={e => setTweetStyle(e.target.value)} className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs">
+                {styles.length > 0 ? styles.map(s => <option key={s.id} value={s.id}>{s.name}</option>) : (
+                  <option value="quote_tweet">Quote Tweet</option>
+                )}
               </select>
-              <select value={tweetLength} onChange={e => setTweetLength(e.target.value)} className="input-field text-xs py-1">
-                {LENGTHS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
+              <select value={tweetLength} onChange={e => setTweetLength(e.target.value)} className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs">
+                {formats.length > 0 ? formats.map(f => <option key={f.id} value={f.id}>{f.name}</option>) : (
+                  <option value="spark">Spark</option>
+                )}
               </select>
-              <select value={provider} onChange={e => setProvider(e.target.value)} className="input-field text-xs py-1">
+              <select value={provider} onChange={e => setProvider(e.target.value)} className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs">
                 <option value="">Otomatik</option>
                 <option value="anthropic">Claude</option>
                 <option value="openai">GPT</option>
@@ -845,7 +865,7 @@ function TweetCard({
               <textarea
                 value={editedText}
                 onChange={e => setEditedText(e.target.value)}
-                className="input-field text-sm w-full min-h-[80px] resize-y"
+                className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm w-full min-h-[80px] resize-y"
                 rows={3}
               />
               <div className="text-[10px] text-[var(--text-secondary)] text-right">
@@ -1083,7 +1103,7 @@ function SettingsTab({
               max={23}
               value={config.work_hour_start}
               onChange={e => setConfig({ ...config, work_hour_start: parseInt(e.target.value) || 8 })}
-              className="input-field text-sm w-full mt-1"
+              className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm w-full mt-1"
             />
           </div>
           <div>
@@ -1094,7 +1114,7 @@ function SettingsTab({
               max={23}
               value={config.work_hour_end}
               onChange={e => setConfig({ ...config, work_hour_end: parseInt(e.target.value) || 23 })}
-              className="input-field text-sm w-full mt-1"
+              className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm w-full mt-1"
             />
           </div>
         </div>
@@ -1194,7 +1214,7 @@ function SettingsTab({
             value={newAccount}
             onChange={e => setNewAccount(e.target.value)}
             placeholder="@kullaniciadi"
-            className="input-field text-sm flex-1"
+            className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm flex-1"
             onKeyDown={e => e.key === "Enter" && handleAdd()}
           />
           <label className="flex items-center gap-1 text-xs text-[var(--text-secondary)] shrink-0">
