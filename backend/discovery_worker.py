@@ -82,7 +82,7 @@ def _make_preview(tweet_text: str) -> str:
 
 
 def _generate_turkish_summary(tweets: list[dict]) -> dict[str, str]:
-    """Toplu Türkçe özet üret — tek API çağrısı ile tüm tweet'ler için."""
+    """Toplu Türkçe çeviri üret — tweet metinlerinin tamamını Türkçeye çevir."""
     if not tweets:
         return {}
 
@@ -99,16 +99,19 @@ def _generate_turkish_summary(tweets: list[dict]) -> dict[str, str]:
         # Tweet'leri numaralı liste yap
         tweet_list = []
         for i, t in enumerate(tweets):
-            text = t.get("text", "")[:300]
-            tweet_list.append(f"{i+1}. @{t.get('account','?')}: {text}")
+            text = t.get("text", "").strip()
+            tweet_list.append(f"[{i+1}]\n{text}\n[/{i+1}]")
 
         prompt = (
-            "Asagidaki tweet'lerin her biri icin 1 cumlelik Turkce ozet yaz. "
-            "Ozetin tweet'in ne hakkinda oldugunu aciklayici ve bilgilendirici olmali. "
-            "Teknik terimleri Turkce'ye cevirme, olduklari gibi birak (orn: AI, LLM, API). "
-            "Her ozeti numarasiyla yaz. Sadece ozetleri yaz, baska bir sey ekleme.\n\n"
+            "Asagidaki tweet'lerin her birini TAMAMEN Turkce'ye cevir. "
+            "Teknik terimleri (AI, LLM, API, benchmark, open-source vb.) cevirme, olduklari gibi birak. "
+            "Tweet'in tum anlamini koru, kisaltma yapma, tweet'in tamamini cevir. "
+            "Her ceviriyi numara etiketiyle yaz. Sadece cevirileri yaz, baska bir sey ekleme.\n\n"
+            "Format:\n[1]\nTurkce ceviri buraya\n[/1]\n[2]\nTurkce ceviri buraya\n[/2]\n\n"
             + "\n".join(tweet_list)
         )
+
+        system_msg = "Tweet cevirmen. Ingilizce tweet'leri dogal, akici Turkce'ye cevir. Teknik terimleri olduklari gibi birak."
 
         # OpenAI-compatible API kullan (MiniMax, Groq, OpenAI)
         if provider in ("minimax", "groq", "openai"):
@@ -130,10 +133,10 @@ def _generate_turkish_summary(tweets: list[dict]) -> dict[str, str]:
             payload = {
                 "model": models[provider],
                 "messages": [
-                    {"role": "system", "content": "Tweet ozetleyici. Kisa, oz Turkce ozetler yaz."},
+                    {"role": "system", "content": system_msg},
                     {"role": "user", "content": prompt},
                 ],
-                "max_tokens": 1500,
+                "max_tokens": 4000,
                 "temperature": 0.3,
             }
             data = _json.dumps(payload).encode("utf-8")
@@ -141,7 +144,7 @@ def _generate_turkish_summary(tweets: list[dict]) -> dict[str, str]:
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
             req = urllib.request.Request(url, data=data, headers=headers)
-            with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
+            with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
                 result = _json.loads(resp.read().decode("utf-8"))
                 ai_text = result.get("choices", [{}])[0].get("message", {}).get("content", "")
 
@@ -154,8 +157,8 @@ def _generate_turkish_summary(tweets: list[dict]) -> dict[str, str]:
             }
             payload = {
                 "model": "claude-sonnet-4-20250514",
-                "max_tokens": 1500,
-                "system": "Tweet ozetleyici. Kisa, oz Turkce ozetler yaz.",
+                "max_tokens": 4000,
+                "system": system_msg,
                 "messages": [{"role": "user", "content": prompt}],
             }
             data = _json.dumps(payload).encode("utf-8")
@@ -163,28 +166,46 @@ def _generate_turkish_summary(tweets: list[dict]) -> dict[str, str]:
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
             req = urllib.request.Request(url, data=data, headers=headers)
-            with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
+            with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
                 result = _json.loads(resp.read().decode("utf-8"))
                 ai_text = result.get("content", [{}])[0].get("text", "")
         else:
             return {}
 
-        # Parse: "1. özet\n2. özet\n..." formatını tweet_id'lere eşle
+        # Parse: [1]...[/1] blok formatını tweet_id'lere eşle
         import re
         summaries = {}
-        lines = ai_text.strip().split("\n")
-        for line in lines:
-            m = re.match(r"(\d+)\.\s*(.+)", line.strip())
+        for i, t in enumerate(tweets):
+            pattern = rf"\[{i+1}\]\s*(.*?)\s*\[/{i+1}\]"
+            m = re.search(pattern, ai_text, re.DOTALL)
             if m:
-                idx = int(m.group(1)) - 1
-                summary = m.group(2).strip()
-                if 0 <= idx < len(tweets):
-                    summaries[tweets[idx]["tweet_id"]] = summary
+                translation = m.group(1).strip()
+                if translation:
+                    summaries[t["tweet_id"]] = translation
+
+        # Fallback: blok format bulunamazsa satır bazlı dene
+        if not summaries:
+            lines = ai_text.strip().split("\n")
+            current_idx = None
+            current_text = []
+            for line in lines:
+                m = re.match(r"(\d+)\.\s*(.+)", line.strip())
+                if m:
+                    if current_idx is not None and current_text:
+                        if 0 <= current_idx < len(tweets):
+                            summaries[tweets[current_idx]["tweet_id"]] = " ".join(current_text)
+                    current_idx = int(m.group(1)) - 1
+                    current_text = [m.group(2).strip()]
+                elif current_idx is not None and line.strip():
+                    current_text.append(line.strip())
+            if current_idx is not None and current_text:
+                if 0 <= current_idx < len(tweets):
+                    summaries[tweets[current_idx]["tweet_id"]] = " ".join(current_text)
 
         return summaries
 
     except Exception as e:
-        logger.warning("Discovery: Turkce ozet uretilemedi: %s", e)
+        logger.warning("Discovery: Turkce ceviri uretilemedi: %s", e)
         return {}
 
 

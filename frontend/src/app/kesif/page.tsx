@@ -133,8 +133,10 @@ export default function KesifPage() {
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
   const [groupByAccount, setGroupByAccount] = useState(true);
 
-  // TR Özet: arka plan güncelleme
+  // TR Çeviri: arka plan güncelleme
   const [summarizing, setSummarizing] = useState(false);
+  const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
+  const [translatingAll, setTranslatingAll] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -158,20 +160,23 @@ export default function KesifPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Arka planda Türkçe özet üret (tweet'ler yüklendikten sonra)
+  // Arka planda Türkçe çeviri üret (tweet'ler yüklendikten sonra)
   useEffect(() => {
     if (tweets.length === 0 || summarizing) return;
-    const needsSummary = tweets.filter(t => {
+    const needsTranslation = tweets.filter(t => {
       const s = t.summary_tr || "";
-      return !s || s === t.text.slice(0, 200) || s === t.text.replace(/https?:\/\/\S+/g, "[link]").slice(0, 200);
+      if (!s) return true;
+      // summary_tr orijinal metinle aynıysa veya kırpılmış haliyse → çeviri yapılmamış
+      const textClean = t.text.replace(/https?:\/\/\S+/g, "[link]").trim();
+      const sClean = s.replace(/https?:\/\/\S+/g, "[link]").trim();
+      return sClean === textClean.slice(0, sClean.length) || s === t.text.slice(0, 200);
     });
-    if (needsSummary.length === 0) return;
+    if (needsTranslation.length === 0) return;
     setSummarizing(true);
-    const ids = needsSummary.map(t => t.tweet_id);
-    summarizeDiscoveryTweets(ids)
+    const ids = needsTranslation.map(t => t.tweet_id);
+    summarizeDiscoveryTweets(ids, true)
       .then(res => {
         if (res.updated > 0) {
-          // Tweet'leri yeniden yükle (güncel özetlerle)
           getDiscoveryTweets().then(r => setTweets(r.tweets)).catch(() => {});
         }
       })
@@ -314,6 +319,19 @@ export default function KesifPage() {
     } finally {
       setMediaLoading(null);
     }
+  };
+
+  const handleTranslate = async (tweet: DiscoveryTweet) => {
+    const id = tweet.tweet_id;
+    setTranslatingIds(prev => new Set(prev).add(id));
+    try {
+      const res = await summarizeDiscoveryTweets([id], true);
+      if (res.updated > 0) {
+        const r = await getDiscoveryTweets();
+        setTweets(r.tweets);
+      }
+    } catch { /* ignore */ }
+    setTranslatingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
   };
 
   const handleInfographic = async (tweet: DiscoveryTweet) => {
@@ -574,8 +592,26 @@ export default function KesifPage() {
             >
               {groupByAccount ? "Hesap Grubu: Acik" : "Hesap Grubu: Kapali"}
             </button>
-            {summarizing && (
-              <span className="text-[10px] text-[var(--accent-amber)] animate-pulse">TR ozet uretiliyor...</span>
+            <button
+              onClick={async () => {
+                setTranslatingAll(true);
+                try {
+                  const ids = filteredTweets.map(t => t.tweet_id);
+                  const res = await summarizeDiscoveryTweets(ids, true);
+                  if (res.updated > 0) {
+                    const r = await getDiscoveryTweets();
+                    setTweets(r.tweets);
+                  }
+                } catch { /* ignore */ }
+                setTranslatingAll(false);
+              }}
+              disabled={translatingAll || summarizing || filteredTweets.length === 0}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30 hover:bg-[var(--accent-amber)]/30 transition-colors disabled:opacity-50"
+            >
+              {translatingAll ? "Cevriliyor..." : `Tumunu Cevir (${filteredTweets.length})`}
+            </button>
+            {(summarizing || translatingAll) && (
+              <span className="text-[10px] text-[var(--accent-amber)] animate-pulse">TR ceviri uretiliyor...</span>
             )}
             <span className="text-xs text-[var(--text-secondary)]">
               {filteredTweets.length} tweet gosteriliyor
@@ -700,6 +736,8 @@ export default function KesifPage() {
                               }}
                               onSetActiveResearch={() => setActiveResearch(activeResearch === tweet.tweet_id ? null : tweet.tweet_id)}
                               onSetActiveGenerate={() => setActiveGenerate(activeGenerate === tweet.tweet_id ? null : tweet.tweet_id)}
+                              onTranslate={() => handleTranslate(tweet)}
+                              isTranslating={translatingIds.has(tweet.tweet_id)}
                             />
                           ))}
                         </div>
@@ -749,6 +787,8 @@ export default function KesifPage() {
                   }}
                   onSetActiveResearch={() => setActiveResearch(activeResearch === tweet.tweet_id ? null : tweet.tweet_id)}
                   onSetActiveGenerate={() => setActiveGenerate(activeGenerate === tweet.tweet_id ? null : tweet.tweet_id)}
+                  onTranslate={() => handleTranslate(tweet)}
+                  isTranslating={translatingIds.has(tweet.tweet_id)}
                 />
               ))}
             </div>
@@ -794,6 +834,8 @@ function TweetCard({
   onSaveDraft,
   onSetActiveResearch,
   onSetActiveGenerate,
+  onTranslate,
+  isTranslating,
 }: {
   tweet: DiscoveryTweet;
   index: number;
@@ -827,6 +869,8 @@ function TweetCard({
   onSaveDraft: (text: string) => Promise<void>;
   onSetActiveResearch: () => void;
   onSetActiveGenerate: () => void;
+  onTranslate: () => void;
+  isTranslating: boolean;
 }) {
   const badge = importanceBadge[tweet.importance] || importanceBadge.dusuk;
   const [draftSaved, setDraftSaved] = useState(false);
@@ -943,6 +987,13 @@ function TweetCard({
         </a>
         <button onClick={onOpenQuoteInX} className="btn-secondary text-xs">
           X Quote Ac
+        </button>
+        <button
+          onClick={onTranslate}
+          disabled={isTranslating}
+          className="text-xs px-2 py-1 rounded bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30 hover:bg-[var(--accent-amber)]/30 transition-colors disabled:opacity-50"
+        >
+          {isTranslating ? "Cevriliyor..." : "🇹🇷 Cevir"}
         </button>
       </div>
 

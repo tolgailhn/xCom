@@ -175,11 +175,12 @@ def get_status():
 
 class SummarizeRequest(BaseModel):
     tweet_ids: list[str] = []  # Boş = özeti eksik tüm tweet'ler
+    force: bool = False  # True = mevcut çevirileri yeniden üret
 
 
 @router.post("/summarize")
 def summarize_tweets(req: SummarizeRequest):
-    """Özeti eksik tweet'ler için arka planda Türkçe özet üret."""
+    """Tweet'ler için Türkçe çeviri üret."""
     from backend.modules.style_manager import load_discovery_cache, save_discovery_cache
     from backend.discovery_worker import _generate_turkish_summary, _make_preview
 
@@ -187,24 +188,27 @@ def summarize_tweets(req: SummarizeRequest):
     if not cache:
         return {"success": True, "updated": 0}
 
-    # Özeti eksik veya preview ile aynı olan tweet'leri bul
-    needs_summary = []
+    # Çevirisi eksik veya force=True olan tweet'leri bul
+    needs_translation = []
     for t in cache:
         if req.tweet_ids and t["tweet_id"] not in req.tweet_ids:
             continue
-        summary = t.get("summary_tr", "")
-        preview = _make_preview(t.get("text", ""))
-        if not summary or summary == preview or summary == t.get("text", "")[:200]:
-            needs_summary.append(t)
+        if req.force:
+            needs_translation.append(t)
+        else:
+            summary = t.get("summary_tr", "")
+            preview = _make_preview(t.get("text", ""))
+            if not summary or summary == preview or summary == t.get("text", "")[:200]:
+                needs_translation.append(t)
 
-    if not needs_summary:
+    if not needs_translation:
         return {"success": True, "updated": 0}
 
-    # Batch'ler halinde özetle (max 15 tweet per batch)
-    BATCH = 15
+    # Batch'ler halinde çevir (max 10 tweet per batch — tam çeviri daha uzun)
+    BATCH = 10
     total_updated = 0
-    for i in range(0, len(needs_summary), BATCH):
-        batch = needs_summary[i:i + BATCH]
+    for i in range(0, len(needs_translation), BATCH):
+        batch = needs_translation[i:i + BATCH]
         summaries = _generate_turkish_summary(batch)
         if summaries:
             # Cache'deki tweet'leri güncelle
