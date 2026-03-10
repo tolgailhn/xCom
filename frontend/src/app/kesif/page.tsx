@@ -106,6 +106,7 @@ export default function KesifPage() {
   // Filter
   const [filterAccount, setFilterAccount] = useState("");
   const [filterImportance, setFilterImportance] = useState("");
+  const [filterDate, setFilterDate] = useState("all");
 
   const loadData = useCallback(async () => {
     try {
@@ -280,6 +281,16 @@ export default function KesifPage() {
   const filteredTweets = tweets.filter(t => {
     if (filterAccount && t.account.toLowerCase() !== filterAccount.toLowerCase()) return false;
     if (filterImportance && t.importance !== filterImportance) return false;
+    if (filterDate !== "all") {
+      try {
+        const tweetDate = new Date(t.scanned_at || t.created_at);
+        const now = new Date();
+        const diffHours = (now.getTime() - tweetDate.getTime()) / (1000 * 60 * 60);
+        if (filterDate === "today" && diffHours > 24) return false;
+        if (filterDate === "2days" && diffHours > 48) return false;
+        if (filterDate === "7days" && diffHours > 168) return false;
+      } catch { /* keep */ }
+    }
     return true;
   });
 
@@ -383,6 +394,16 @@ export default function KesifPage() {
               <option value="yuksek">Yuksek</option>
               <option value="orta">Orta</option>
               <option value="dusuk">Dusuk</option>
+            </select>
+            <select
+              value={filterDate}
+              onChange={e => setFilterDate(e.target.value)}
+              className="input-field text-xs py-1.5"
+            >
+              <option value="all">Tum Tarihler</option>
+              <option value="today">Bugun (24 saat)</option>
+              <option value="2days">Son 2 Gun</option>
+              <option value="7days">Son 7 Gun</option>
             </select>
             <span className="text-xs text-[var(--text-secondary)]">
               {filteredTweets.length} tweet gosteriliyor
@@ -548,7 +569,7 @@ function TweetCard({
               )}
             </div>
             <div className="text-[10px] text-[var(--text-secondary)] mt-0.5">
-              {timeAgo(tweet.created_at)} once
+              {timeAgo(tweet.created_at)} once &middot; {(() => { try { return new Date(tweet.created_at).toLocaleDateString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); } catch { return ""; } })()}
             </div>
           </div>
         </div>

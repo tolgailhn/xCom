@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   getTodaySchedule,
+  getScheduleByDate,
   logPost,
   getWeeklySummary,
   getCalendarHistory,
@@ -224,6 +225,10 @@ function LogForm({
 
 /* ── Main Page ─────────────────────────────────── */
 
+function formatDateStr(d: Date): string {
+  return d.toISOString().split("T")[0];
+}
+
 export default function TakvimPage() {
   const [schedule, setSchedule] = useState<ScheduleData | null>(null);
   const [summary, setSummary] = useState<WeeklySummary | null>(null);
@@ -231,6 +236,7 @@ export default function TakvimPage() {
   const [historyLimit, setHistoryLimit] = useState(10);
   const [loading, setLoading] = useState(true);
   const [showStrategy, setShowStrategy] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>(formatDateStr(new Date()));
 
   /* Scheduled posts */
   const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([]);
@@ -283,10 +289,12 @@ export default function TakvimPage() {
     finally { setPerfRegistering(false); }
   };
 
-  const loadAll = useCallback(async () => {
+  const loadAll = useCallback(async (date?: string) => {
+    const targetDate = date || selectedDate;
+    const isToday = targetDate === formatDateStr(new Date());
     try {
       const [sched, sum, hist] = await Promise.all([
-        getTodaySchedule(),
+        isToday ? getTodaySchedule() : getScheduleByDate(targetDate),
         getWeeklySummary(),
         getCalendarHistory(30),
       ]);
@@ -299,13 +307,27 @@ export default function TakvimPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedDate]);
 
   useEffect(() => {
     loadAll();
     loadScheduledPosts();
     loadPerformance();
   }, [loadAll, loadScheduledPosts, loadPerformance]);
+
+  const goToDate = (offset: number) => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + offset);
+    const newDate = formatDateStr(d);
+    setSelectedDate(newDate);
+    loadAll(newDate);
+  };
+
+  const goToToday = () => {
+    const today = formatDateStr(new Date());
+    setSelectedDate(today);
+    loadAll(today);
+  };
 
   if (loading) {
     return (
@@ -327,11 +349,23 @@ export default function TakvimPage() {
         </p>
       </div>
 
+      {/* Date Navigation */}
+      <div className="flex items-center justify-center gap-3">
+        <button onClick={() => goToDate(-1)} className="btn-secondary text-sm px-3 py-1.5">&larr; Onceki</button>
+        <button onClick={goToToday} className={`text-sm px-3 py-1.5 rounded-lg font-medium transition-colors ${selectedDate === formatDateStr(new Date()) ? "bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] border border-[var(--accent-blue)]/30" : "btn-secondary"}`}>
+          Bugun
+        </button>
+        <span className="text-sm font-semibold min-w-[120px] text-center">
+          {schedule?.day_name || ""} &middot; {selectedDate}
+        </span>
+        <button onClick={() => goToDate(1)} className="btn-secondary text-sm px-3 py-1.5">Sonraki &rarr;</button>
+      </div>
+
       {/* Top Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatBox
           value={`${schedule?.today_posted || 0}/4`}
-          label="Bugun Paylasilan"
+          label={selectedDate === formatDateStr(new Date()) ? "Bugun Paylasilan" : "O Gun Paylasilan"}
         />
         <StatBox
           value={
@@ -356,7 +390,7 @@ export default function TakvimPage() {
         <>
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">
-              Bugunun Plani &mdash; {schedule.day_name}{" "}
+              {selectedDate === formatDateStr(new Date()) ? "Bugunun Plani" : `${selectedDate} Plani`} &mdash; {schedule.day_name}{" "}
               <span className="text-sm font-normal text-[var(--text-secondary)]">
                 ({schedule.is_weekend ? "Hafta Sonu" : "Hafta Ici"})
               </span>

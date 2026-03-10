@@ -426,6 +426,10 @@ export function getTodaySchedule() {
   return apiFetch("/api/calendar/today");
 }
 
+export function getScheduleByDate(date: string) {
+  return apiFetch(`/api/calendar/schedule/${encodeURIComponent(date)}`);
+}
+
 export function logPost(params: {
   slot_time: string;
   post_type?: string;

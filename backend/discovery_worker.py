@@ -258,12 +258,6 @@ def scan_accounts(force: bool = False):
     # Mevcut cache'e ekle ve sırala
     existing_cache = load_discovery_cache()
 
-    # 24 saatten eski entry'leri temizle
-    existing_cache = [
-        e for e in existing_cache
-        if _is_within_24h(e.get("scanned_at", ""), now)
-    ]
-
     # Yeni tweet'leri ekle (duplicate kontrolü)
     existing_ids = {e["tweet_id"] for e in existing_cache}
     for tweet in new_tweets:
@@ -273,8 +267,8 @@ def scan_accounts(force: bool = False):
     # display_score'a göre sırala (yüksekten düşüğe)
     existing_cache.sort(key=lambda x: x.get("display_score", 0), reverse=True)
 
-    # Maksimum 200 tweet tut
-    existing_cache = existing_cache[:200]
+    # Maksimum 500 tweet tut (eski tweetler de kalır, sadece limit)
+    existing_cache = existing_cache[:500]
 
     save_discovery_cache(existing_cache)
     save_discovery_seen(seen)
@@ -283,14 +277,3 @@ def scan_accounts(force: bool = False):
         "Discovery: Tarama tamamlandı — %d yeni tweet bulundu, cache'te toplam %d tweet",
         len(new_tweets), len(existing_cache),
     )
-
-
-def _is_within_24h(iso_str: str, now: datetime.datetime) -> bool:
-    """ISO string'in son 24 saat içinde olup olmadığını kontrol et."""
-    try:
-        dt = datetime.datetime.fromisoformat(iso_str)
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=TZ_TR)
-        return (now - dt).total_seconds() < 86400
-    except (ValueError, TypeError):
-        return True  # Parse edilemezse kalsın

@@ -196,6 +196,77 @@ async def get_today_schedule():
     }
 
 
+@router.get("/schedule/{date}")
+async def get_schedule_by_date(date: str):
+    """Belirli bir tarihin takvimini döndür (YYYY-MM-DD)"""
+    try:
+        target = datetime.datetime.strptime(date, "%Y-%m-%d")
+    except ValueError:
+        return {"error": "Gecersiz tarih formati. YYYY-MM-DD kullanin."}
+
+    target = target.replace(tzinfo=TZ_TR)
+    now = datetime.datetime.now(TZ_TR)
+    day_name_en = target.strftime("%A")
+    is_weekend = target.weekday() >= 5
+    slots = DAILY_SLOTS.get(day_name_en, DAILY_SLOTS["Monday"])
+
+    posting_log = load_posting_log()
+    day_logs = [e for e in posting_log if e.get("date") == date]
+    posted_slots = {e["slot_time"] for e in day_logs}
+
+    day_name = DAY_NAMES_TR.get(day_name_en, day_name_en)
+    is_today = date == now.strftime("%Y-%m-%d")
+    is_past = target.date() < now.date()
+
+    enriched_slots = []
+    for i, slot in enumerate(slots):
+        h, m = map(int, slot["time"].split(":"))
+        is_posted = slot["time"] in posted_slots
+
+        if is_posted:
+            status = "posted"
+        elif is_past:
+            status = "passed"
+        elif is_today:
+            slot_dt = now.replace(hour=h, minute=m, second=0, microsecond=0)
+            if slot_dt <= now and (i == len(slots) - 1 or
+                  now < now.replace(
+                      hour=int(slots[i+1]["time"].split(":")[0]),
+                      minute=int(slots[i+1]["time"].split(":")[1]),
+                      second=0, microsecond=0)):
+                status = "current"
+            elif slot_dt > now:
+                status = "upcoming"
+            else:
+                status = "passed"
+        else:
+            status = "upcoming"
+
+        log_entry = next((e for e in day_logs if e.get("slot_time") == slot["time"]), None)
+
+        enriched_slots.append({
+            **slot,
+            "status": status,
+            "posted": is_posted,
+            "log": log_entry,
+        })
+
+    next_slot = None
+    if is_today:
+        next_slot = _get_next_slot(slots, now)
+
+    return {
+        "date": date,
+        "day_name": day_name,
+        "is_weekend": is_weekend,
+        "is_today": is_today,
+        "slots": enriched_slots,
+        "next_slot": next_slot,
+        "today_posted": len(day_logs),
+        "post_types": POST_TYPES,
+    }
+
+
 @router.post("/log")
 async def log_post(entry: PostLogEntry):
     """Post kaydini ekle"""
