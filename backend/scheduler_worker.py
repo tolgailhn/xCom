@@ -221,7 +221,7 @@ def _check_self_replies():
 
 
 def _check_discovery():
-    """Discovery worker — her 2 saatte bir hesap tweetlerini tara."""
+    """Discovery worker — her 30 dakikada 3-4 hesap rotasyonla tara."""
     try:
         from backend.discovery_worker import scan_accounts
         scan_accounts()
@@ -263,12 +263,12 @@ def start_scheduler():
         scheduler.add_job(
             _check_discovery,
             "interval",
-            minutes=120,
+            minutes=30,
             id="discovery_checker",
             replace_existing=True,
         )
         scheduler.start()
-        logger.info("Scheduler started — publish 1m, metrics 30m, auto-reply 5m, self-reply 15m, discovery 120m")
+        logger.info("Scheduler started — publish 1m, metrics 30m, auto-reply 5m, self-reply 15m, discovery 30m (batch)")
 
 
 def stop_scheduler():

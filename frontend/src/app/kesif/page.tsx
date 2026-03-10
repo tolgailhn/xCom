@@ -382,6 +382,26 @@ export default function KesifPage() {
         </div>
       )}
 
+      {/* Rotation Info */}
+      {status?.last_scanned_per_account && Object.keys(status.last_scanned_per_account).length > 0 && (
+        <div className="card p-3">
+          <div className="text-xs font-medium mb-2 text-[var(--text-secondary)]">
+            Rotasyon &mdash; {status.scan_mode || "30dk batch"}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {Object.entries(status.last_scanned_per_account)
+              .sort(([, a], [, b]) => a.localeCompare(b))
+              .map(([account, lastScan]) => (
+                <span key={account} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[var(--bg-secondary)] text-[10px]">
+                  <span className="font-medium">@{account}</span>
+                  <span className="text-[var(--text-secondary)]">{timeAgo(lastScan)}</span>
+                </span>
+              ))
+            }
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex gap-2 border-b border-[var(--border)] pb-2">
         <button

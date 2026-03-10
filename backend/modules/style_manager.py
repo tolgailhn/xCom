@@ -694,3 +694,20 @@ def save_discovery_seen(seen: set):
     seen_list = list(seen)[-5000:]
     with open(path, "w", encoding="utf-8") as f:
         json.dump(seen_list, f)
+
+
+def load_discovery_rotation() -> dict:
+    """Load discovery rotation state (hangi hesap en son ne zaman tarandı)"""
+    path = DATA_DIR / "discovery_rotation.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"last_scanned": {}, "batch_index": 0}
+
+
+def save_discovery_rotation(rotation: dict):
+    """Save discovery rotation state"""
+    path = DATA_DIR / "discovery_rotation.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(rotation, f, ensure_ascii=False, indent=2)

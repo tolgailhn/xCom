@@ -1,17 +1,26 @@
 """
-Discovery Worker — Belirli hesaplarin son 24 saatteki tweetlerini tarayip
+Discovery Worker — Takip edilen hesapların tweetlerini rotasyonlu tarayıp
 engagement sırasına göre listeleyen sistem.
 
 ÇALIŞMA MANTIGI:
-- Scheduler tarafından her 2 saatte bir çağrılır
-- Öncelikli hesaplar (priority) 1.5x engagement bonus alır
+- Scheduler tarafından her 30 dakikada bir çağrılır
+- Her çalışmada sadece 3-4 hesap taranır (batch)
+- Hesaplar "en uzun süredir taranmayan önce" sırasına göre seçilir
+- Öncelikli hesaplar 2x sık taranır (her batch'te en az 1 priority)
+- 08:00-23:00 arası çalışır → günde ~30 tur → her hesap günde 6-8 kez
 - Thread'ler otomatik algılanır ve tüm parçaları çekilir
 - Her tweet için kısa Türkçe özet üretilir (AI ile)
-- Sonuçlar discovery_cache.json'a kaydedilir
+- Sonuçlar discovery_cache.json'a kaydedilir (kalıcı arşiv)
+
+BATCH SIZE HESABI:
+- 13 hesap, 30dk aralık, 15 saat/gün = 30 slot
+- Batch=3 → 30 slot × 3 = 90 tarama/gün → hesap başı ~7 tarama
+- Priority hesaplar ek slot alır → günde ~10 tarama
 
 ZAMANLAYICI ÇAKIŞMA:
 - Auto-reply: 5dk, Self-reply: 15dk, Metrics: 30dk
-- Discovery: 120dk — çakışma riski yok (sadece okuma yapıyor)
+- Discovery: 30dk — aynı periyotta metrics ile çakışabilir ama
+  ikisi de sadece okuma yapıyor, sorun olmaz
 """
 import datetime
 import logging
@@ -21,8 +30,8 @@ from zoneinfo import ZoneInfo
 logger = logging.getLogger(__name__)
 TZ_TR = ZoneInfo("Europe/Istanbul")
 
-# Son tarama zamanını takip et — aynı periyotta tekrar çalışmasın
-_last_scan_key: str | None = None
+# Batch başına kaç hesap taranacak
+BATCH_SIZE = 3
 
 
 def _engagement_score(tweet: dict) -> float:
@@ -99,19 +108,63 @@ def _importance_level(score: float) -> str:
     return "dusuk"
 
 
+def _pick_batch(priority_accounts: list[str], normal_accounts: list[str],
+                rotation: dict) -> list[str]:
+    """
+    Rotasyonla batch seç: en uzun süredir taranmayan hesapları öncelikle al.
+    Priority hesaplardan en az 1 tane her batch'te olsun.
+    """
+    last_scanned = rotation.get("last_scanned", {})
+    now_iso = datetime.datetime.now(TZ_TR).isoformat()
+
+    def sort_key(account: str) -> str:
+        """En eski taranan en başa gelsin (boş = hiç taranmamış = en öncelikli)."""
+        return last_scanned.get(account.lower().lstrip("@"), "2000-01-01")
+
+    # Priority hesapları sırala
+    sorted_priority = sorted(priority_accounts, key=sort_key)
+    # Normal hesapları sırala
+    sorted_normal = sorted(normal_accounts, key=sort_key)
+
+    batch: list[str] = []
+
+    # Her zaman en az 1 priority hesap al (varsa)
+    if sorted_priority:
+        batch.append(sorted_priority[0])
+
+    # Kalan slotları en eski tarananlardan doldur
+    remaining = BATCH_SIZE - len(batch)
+    candidates = []
+    for a in sorted_priority[1:]:  # priority'nin kalanları
+        candidates.append(a)
+    for a in sorted_normal:
+        candidates.append(a)
+
+    # En eski tarananlara göre sırala
+    candidates.sort(key=sort_key)
+
+    for a in candidates:
+        if len(batch) >= BATCH_SIZE:
+            break
+        if a not in batch:
+            batch.append(a)
+
+    return batch
+
+
 def scan_accounts(force: bool = False):
     """
-    Tüm discovery hesaplarının son 24 saatteki tweetlerini tara.
-    force=True ise zamanlama kontrolü atlanır (manuel tetikleme).
+    Rotasyonlu tarama: her çalışmada sadece BATCH_SIZE hesap tara.
+    force=True ise tüm hesapları tara (manuel tetikleme).
     """
-    global _last_scan_key
-
     from backend.modules.style_manager import (
         load_discovery_config,
         load_discovery_cache,
         save_discovery_cache,
         load_discovery_seen,
         save_discovery_seen,
+        load_discovery_rotation,
+        save_discovery_rotation,
     )
 
     config = load_discovery_config()
@@ -128,25 +181,28 @@ def scan_accounts(force: bool = False):
     if not force and (hour < work_start or hour >= work_end):
         return
 
-    # Tekrar çalışma kontrolü (2 saatlik periyot)
-    interval = config.get("check_interval_hours", 2)
-    scan_key = now.strftime(f"%Y-%m-%d-{hour // interval}")
-    if not force and _last_scan_key == scan_key:
-        return
-    _last_scan_key = scan_key
-
     priority_accounts = config.get("priority_accounts", [])
     normal_accounts = config.get("normal_accounts", [])
-    all_accounts = priority_accounts + normal_accounts
-    priority_set = set(a.lower().lstrip("@") for a in priority_accounts)
 
-    if not all_accounts:
+    if not priority_accounts and not normal_accounts:
         logger.info("Discovery: Hesap listesi boş")
         return
 
+    rotation = load_discovery_rotation()
+
+    # Batch seç veya force ile hepsini tara
+    if force:
+        accounts_to_scan = [a.strip().lstrip("@") for a in priority_accounts + normal_accounts if a.strip()]
+    else:
+        accounts_to_scan = _pick_batch(priority_accounts, normal_accounts, rotation)
+
+    priority_set = set(a.lower().lstrip("@") for a in priority_accounts)
+
     logger.info(
-        "Discovery: Tarama başlıyor — %d hesap (%d öncelikli)",
-        len(all_accounts), len(priority_accounts),
+        "Discovery: Tarama başlıyor — %d/%d hesap (batch): %s",
+        len(accounts_to_scan),
+        len(priority_accounts) + len(normal_accounts),
+        ", ".join(f"@{a}" for a in accounts_to_scan),
     )
 
     twikit = _get_twikit_client()
@@ -155,10 +211,9 @@ def scan_accounts(force: bool = False):
         return
 
     seen = load_discovery_seen()
-    cutoff = now - datetime.timedelta(hours=24)
     new_tweets: list[dict] = []
 
-    for account in all_accounts:
+    for account in accounts_to_scan:
         account = account.strip().lstrip("@")
         if not account:
             continue
@@ -187,17 +242,7 @@ def scan_accounts(force: bool = False):
                 seen.add(tweet_id)
                 continue
 
-            # 24 saat kontrolü
             created_at = tweet.get("created_at", "")
-            try:
-                tweet_time = datetime.datetime.fromisoformat(created_at)
-                if tweet_time.tzinfo is None:
-                    tweet_time = tweet_time.replace(tzinfo=TZ_TR)
-                if tweet_time < cutoff:
-                    seen.add(tweet_id)
-                    continue
-            except (ValueError, TypeError):
-                pass  # Zaman parse edilemezse yine de ekle
 
             # Engagement hesapla
             score = _engagement_score(tweet)
@@ -210,7 +255,6 @@ def scan_accounts(force: bool = False):
             thread_parts = []
             conversation_id = tweet.get("conversation_id", "")
             if conversation_id and conversation_id == tweet_id:
-                # Bu tweet bir conversation başlatıcı olabilir — thread kontrolü yap
                 try:
                     thread_data = _fetch_thread(twikit, tweet_id, account)
                     if thread_data:
@@ -246,11 +290,14 @@ def scan_accounts(force: bool = False):
                 "scanned_at": now.isoformat(),
             })
 
-        # Rate limit koruması
-        time.sleep(2)
+        # Rotasyon kaydı güncelle
+        rotation.setdefault("last_scanned", {})[account.lower()] = now.isoformat()
 
-    # AI özet üret (ilk 30 tweet için — maliyet kontrolü)
-    for item in new_tweets[:30]:
+        # Rate limit koruması
+        time.sleep(3)
+
+    # AI özet üret (yeni tweet'ler için — maliyet kontrolü, max 15)
+    for item in new_tweets[:15]:
         summary = _generate_summary(item["text"], item["account"])
         item["summary_tr"] = summary
         time.sleep(0.5)
@@ -267,13 +314,16 @@ def scan_accounts(force: bool = False):
     # display_score'a göre sırala (yüksekten düşüğe)
     existing_cache.sort(key=lambda x: x.get("display_score", 0), reverse=True)
 
-    # Maksimum 500 tweet tut (eski tweetler de kalır, sadece limit)
+    # Maksimum 500 tweet tut
     existing_cache = existing_cache[:500]
 
     save_discovery_cache(existing_cache)
     save_discovery_seen(seen)
+    save_discovery_rotation(rotation)
 
     logger.info(
-        "Discovery: Tarama tamamlandı — %d yeni tweet bulundu, cache'te toplam %d tweet",
+        "Discovery: Batch tamamlandı — %d yeni tweet, cache'te toplam %d tweet. "
+        "Taranan: %s",
         len(new_tweets), len(existing_cache),
+        ", ".join(f"@{a}" for a in accounts_to_scan),
     )

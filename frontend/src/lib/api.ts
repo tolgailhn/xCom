@@ -776,7 +776,8 @@ export interface DiscoveryStatus {
   last_scan: string | null;
   current_time: string;
   account_counts: Record<string, number>;
-  check_interval_hours: number;
+  last_scanned_per_account: Record<string, string>;
+  scan_mode: string;
 }
 
 export function getDiscoveryConfig(): Promise<{ config: DiscoveryConfig }> {

@@ -114,13 +114,16 @@ def trigger_scan():
 
 @router.get("/status")
 def get_status():
-    """Discovery sistemi durumunu döndür."""
-    from backend.modules.style_manager import load_discovery_config, load_discovery_cache
+    """Discovery sistemi durumunu döndür (rotasyon bilgisi dahil)."""
+    from backend.modules.style_manager import (
+        load_discovery_config, load_discovery_cache, load_discovery_rotation,
+    )
     import datetime
     from zoneinfo import ZoneInfo
 
     config = load_discovery_config()
     cache = load_discovery_cache()
+    rotation = load_discovery_rotation()
     TZ_TR = ZoneInfo("Europe/Istanbul")
 
     last_scan = cache[0]["scanned_at"] if cache else None
@@ -132,6 +135,9 @@ def get_status():
         acc = t.get("account", "")
         account_counts[acc] = account_counts.get(acc, 0) + 1
 
+    # Hesap başına son tarama zamanı
+    last_scanned_per_account = rotation.get("last_scanned", {})
+
     return {
         "enabled": config.get("enabled", False),
         "total_tweets": len(cache),
@@ -140,7 +146,8 @@ def get_status():
         "last_scan": last_scan,
         "current_time": now.isoformat(),
         "account_counts": account_counts,
-        "check_interval_hours": config.get("check_interval_hours", 2),
+        "last_scanned_per_account": last_scanned_per_account,
+        "scan_mode": "batch (30dk, 3 hesap/tur)",
     }
 
 
