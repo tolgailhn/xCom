@@ -112,6 +112,13 @@ def check_self_replies():
     cutoff_time = now - datetime.timedelta(days=max_age_days)
     min_age_cutoff = now - datetime.timedelta(minutes=min_age_minutes)
 
+    # Bilinen reply ID'lerini topla — kendi reply'larimiza tekrar reply atmamak icin
+    known_reply_ids = set()
+    for tid, info in seen.items():
+        for rid in info.get("reply_ids", []):
+            if rid:
+                known_reply_ids.add(str(rid))
+
     candidates = []
     for tweet in tweets:
         tweet_id = tweet.get("id", "")
@@ -124,17 +131,25 @@ def check_self_replies():
         if tweet_text.strip().startswith("RT @"):
             continue
 
-        # Baskasina reply olanlari atla (sadece orijinal tweetler)
-        # Kendi self-reply'larini da atla (in_reply_to baskasinin tweet'i ise atla)
+        # Baskasina veya kendine reply olanlari atla (sadece orijinal tweetler)
         in_reply_to = tweet.get("in_reply_to_tweet_id")
         if in_reply_to:
             continue
 
+        # Bu tweet zaten bizim attigimiz bir self-reply mi?
+        if str(tweet_id) in known_reply_ids:
+            continue
+
         # Tweet yasi kontrol
-        created_at_str = tweet.get("created_at", "")
-        if created_at_str:
+        created_at_raw = tweet.get("created_at", "")
+        if created_at_raw:
             try:
-                tweet_time = datetime.datetime.fromisoformat(created_at_str)
+                # datetime objesi veya ISO string olabilir
+                if isinstance(created_at_raw, datetime.datetime):
+                    tweet_time = created_at_raw
+                else:
+                    tweet_time = datetime.datetime.fromisoformat(str(created_at_raw))
+
                 if tweet_time.tzinfo is None:
                     tweet_time = tweet_time.replace(tzinfo=TZ_TR)
 

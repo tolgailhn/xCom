@@ -315,8 +315,16 @@ def analyze_tweets(tweets: list[dict]) -> dict:
     hour_engagement = {}
     for tweet in tweets:
         created = tweet.get("created_at")
-        if created and hasattr(created, 'hour'):
-            hour = created.hour
+        if created:
+            if isinstance(created, str):
+                try:
+                    created = datetime.datetime.fromisoformat(created)
+                except (ValueError, TypeError):
+                    continue
+            if hasattr(created, 'hour'):
+                hour = created.hour
+            else:
+                continue
             if hour not in hour_engagement:
                 hour_engagement[hour] = {"total_score": 0, "count": 0}
             hour_engagement[hour]["total_score"] += tweet["engagement_score"]

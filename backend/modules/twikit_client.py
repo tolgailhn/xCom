@@ -818,16 +818,22 @@ class TwikitSearchClient:
                         'type': 'image',
                     })
 
+        # in_reply_to — needed by self-reply worker to filter out replies
+        in_reply_to = (getattr(tweet, 'in_reply_to_tweet_id', None)
+                       or getattr(tweet, 'in_reply_to_status_id', None)
+                       or getattr(tweet, 'reply_to', None))
+
         return {
             'id': str(getattr(tweet, 'id', '')),
             'text': (getattr(tweet, 'full_text', '')
                      or getattr(tweet, 'text', '')
                      or ''),
+            'in_reply_to_tweet_id': str(in_reply_to) if in_reply_to else None,
             'author_name': getattr(user, 'name', 'Unknown') if user else 'Unknown',
             'author_username': getattr(user, 'screen_name', 'unknown') if user else 'unknown',
             'author_profile_image': (getattr(user, 'profile_image_url', '') or '') if user else '',
             'author_followers_count': _safe_int(getattr(user, 'followers_count', 0)) if user else 0,
-            'created_at': created_at,
+            'created_at': created_at.isoformat() if created_at else '',
             'like_count': _safe_int(getattr(tweet, 'favorite_count', 0)),
             'retweet_count': _safe_int(getattr(tweet, 'retweet_count', 0)),
             'reply_count': _safe_int(getattr(tweet, 'reply_count', 0)),
