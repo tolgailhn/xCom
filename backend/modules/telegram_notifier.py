@@ -13,9 +13,23 @@ Kurulum:
     chat.id degerini kopyala)
 """
 import json
+import ssl
 import urllib.request
 import urllib.parse
 import urllib.error
+
+
+def _make_ssl_context() -> ssl.SSLContext:
+    """SSL context olustur — Windows'ta sertifika dogrulama sorununu asariz."""
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        pass
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
 
 
 class TelegramNotifier:
@@ -25,6 +39,7 @@ class TelegramNotifier:
         self.bot_token = bot_token
         self.chat_id = chat_id
         self.base_url = f"https://api.telegram.org/bot{bot_token}"
+        self._ssl_ctx = _make_ssl_context()
 
     def send_message(self, text: str, parse_mode: str = "HTML",
                      disable_preview: bool = False) -> bool:
@@ -40,7 +55,7 @@ class TelegramNotifier:
         try:
             req_data = urllib.parse.urlencode(data).encode("utf-8")
             req = urllib.request.Request(url, data=req_data)
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=10, context=self._ssl_ctx) as resp:
                 result = json.loads(resp.read().decode("utf-8"))
                 return result.get("ok", False)
         except Exception as e:
@@ -193,7 +208,7 @@ class TelegramNotifier:
         try:
             query = urllib.parse.urlencode(params)
             req = urllib.request.Request(f"{url}?{query}")
-            with urllib.request.urlopen(req, timeout=timeout + 5) as resp:
+            with urllib.request.urlopen(req, timeout=timeout + 5, context=self._ssl_ctx) as resp:
                 result = json.loads(resp.read().decode("utf-8"))
                 if result.get("ok"):
                     return result.get("result", [])
@@ -206,7 +221,7 @@ class TelegramNotifier:
         url = f"{self.base_url}/getMe"
         try:
             req = urllib.request.Request(url)
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=10, context=self._ssl_ctx) as resp:
                 result = json.loads(resp.read().decode("utf-8"))
                 if result.get("ok"):
                     bot = result["result"]

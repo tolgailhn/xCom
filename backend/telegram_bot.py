@@ -20,6 +20,7 @@ Sistem context'i: mevcut durum bilgisi + genel AI bilgisi.
 import datetime
 import json
 import logging
+import ssl
 import urllib.request
 import urllib.parse
 from zoneinfo import ZoneInfo
@@ -29,6 +30,19 @@ TZ_TR = ZoneInfo("Europe/Istanbul")
 
 # Son islenen update_id (duplikat mesaj onleme)
 _last_update_id: int = 0
+
+# SSL context — Windows'ta sertifika dogrulama sorununu asan context
+def _get_ssl_ctx() -> ssl.SSLContext:
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        return ctx
+
+_ssl_ctx = _get_ssl_ctx()
 
 
 def _get_notifier():
@@ -290,7 +304,7 @@ def _call_minimax(api_key: str, system_prompt: str, user_message: str) -> str:
 
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(url, data=data, headers=headers)
-    with urllib.request.urlopen(req, timeout=30) as resp:
+    with urllib.request.urlopen(req, timeout=30, context=_ssl_ctx) as resp:
         result = json.loads(resp.read().decode("utf-8"))
         choices = result.get("choices", [])
         if choices:
@@ -317,7 +331,7 @@ def _call_anthropic(api_key: str, system_prompt: str, user_message: str) -> str:
 
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(url, data=data, headers=headers)
-    with urllib.request.urlopen(req, timeout=30) as resp:
+    with urllib.request.urlopen(req, timeout=30, context=_ssl_ctx) as resp:
         result = json.loads(resp.read().decode("utf-8"))
         content = result.get("content", [])
         if content:
@@ -344,7 +358,7 @@ def _call_openai(api_key: str, system_prompt: str, user_message: str) -> str:
 
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(url, data=data, headers=headers)
-    with urllib.request.urlopen(req, timeout=30) as resp:
+    with urllib.request.urlopen(req, timeout=30, context=_ssl_ctx) as resp:
         result = json.loads(resp.read().decode("utf-8"))
         choices = result.get("choices", [])
         if choices:
