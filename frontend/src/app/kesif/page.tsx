@@ -987,7 +987,7 @@ function SettingsTab({
           <div>
             <h3 className="font-semibold">Otomatik Tarama</h3>
             <p className="text-xs text-[var(--text-secondary)]">
-              Zamanlayici aktif olduğunda her {config.check_interval_hours} saatte bir otomatik tarar
+              Her 30 dakikada 3 hesap rotasyonla taranir &middot; Gunluk ~7 tarama/hesap
             </p>
           </div>
           <button
@@ -1002,18 +1002,7 @@ function SettingsTab({
           </button>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <label className="text-xs text-[var(--text-secondary)]">Tarama Araligi (saat)</label>
-            <input
-              type="number"
-              min={1}
-              max={12}
-              value={config.check_interval_hours}
-              onChange={e => setConfig({ ...config, check_interval_hours: parseInt(e.target.value) || 2 })}
-              className="input-field text-sm w-full mt-1"
-            />
-          </div>
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs text-[var(--text-secondary)]">Baslangic Saati</label>
             <input
