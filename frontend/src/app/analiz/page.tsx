@@ -179,7 +179,7 @@ function AnalysisDisplay({ result }: { result: AnalysisResult }) {
 
       {/* Length Analysis */}
       {Object.keys(result.length_analysis).length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
           {[
             { key: "short", label: "Kisa (<=280)" },
             { key: "medium", label: "Orta (281-500)" },
@@ -761,7 +761,7 @@ function FollowerList({ followers }: { followers: Follower[] }) {
 
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+      <div className="grid grid-cols-3 gap-1 sm:gap-2 text-center text-xs">
         <div>
           <div className="font-bold text-[var(--accent-blue)]">{followers.length}</div>
           <div className="text-[var(--text-secondary)]">Toplam</div>
@@ -1064,7 +1064,7 @@ function TabTweetPool() {
             <p className="text-xs text-[var(--text-secondary)]">Son guncelleme: {dnaUpdated.slice(0, 19)}</p>
           )}
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <div className="text-center bg-[var(--bg-primary)] rounded-lg p-2">
               <div className="text-lg font-bold text-[var(--accent-blue)]">{poolDna.tweet_sayisi ?? 0}</div>
               <div className="text-xs text-[var(--text-secondary)]">Tweet</div>

@@ -772,7 +772,7 @@ export default function TakvimPage() {
                     {entry.has_media && <span>🖼️</span>}
                     {entry.self_reply && <span>💬</span>}
                     {entry.content && (
-                      <span className="truncate max-w-[300px]">
+                      <span className="truncate max-w-[150px] sm:max-w-[300px]">
                         &mdash; {entry.content.slice(0, 80)}
                         {entry.content.length > 80 ? "..." : ""}
                       </span>

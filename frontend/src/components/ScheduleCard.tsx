@@ -62,9 +62,9 @@ export default function ScheduleCard({
         ) : null}
       </div>
 
-      <div className="flex gap-4 mt-3">
+      <div className="flex flex-wrap gap-3 sm:gap-4 mt-3">
         {slots.map((slot) => (
-          <div key={slot.time} className="flex items-center gap-1.5">
+          <div key={slot.time} className="flex items-center gap-1 sm:gap-1.5">
             <span>{slotEmoji[slot.icon] || "⏰"}</span>
             <span
               className={`slot-dot ${slot.posted ? "posted" : "pending"}`}

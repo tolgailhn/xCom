@@ -33,10 +33,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // Authenticated — show sidebar + content
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen overflow-x-hidden">
       <Sidebar />
       {/* pt-14: mobile header height, pb-20: mobile bottom nav height */}
-      <main className="flex-1 pt-14 pb-20 px-4 md:pt-0 md:pb-0 md:p-8 md:ml-64">
+      <main className="flex-1 pt-14 pb-20 px-3 md:pt-0 md:pb-0 md:p-8 md:ml-64 overflow-x-hidden min-w-0">
         {children}
       </main>
     </div>

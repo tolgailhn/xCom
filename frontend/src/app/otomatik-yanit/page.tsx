@@ -181,7 +181,7 @@ export default function OtomatikYanitPage() {
 
       {/* Status Cards */}
       {status && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <div className="card p-4 text-center">
             <div className="text-2xl font-bold text-[var(--accent-blue)]">
               {status.accounts_count}

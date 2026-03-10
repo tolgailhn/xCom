@@ -107,18 +107,18 @@ export default function Dashboard() {
       : "var(--accent-amber)";
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 mt-4 md:mt-0">
+    <div className="max-w-6xl mx-auto space-y-6 md:space-y-8 mt-2 md:mt-0 overflow-hidden">
       {/* Hero */}
-      <div className="text-center py-8">
-        <div className="text-5xl mb-3">🤖</div>
-        <h1 className="text-3xl font-bold gradient-text">X AI Otomasyon</h1>
+      <div className="text-center py-4 md:py-8">
+        <div className="text-4xl md:text-5xl mb-2 md:mb-3">🤖</div>
+        <h1 className="text-2xl md:text-3xl font-bold gradient-text">X AI Otomasyon</h1>
         <p className="text-[var(--text-secondary)] mt-2">
           Yaz &middot; Uret &middot; Paylas
         </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <StatBox value={`${data.today_posts}/4`} label="Bugun" />
         <StatBox value={String(data.total_drafts)} label="Taslak" />
         <StatBox value={`${data.week_posts}/28`} label="Bu Hafta" />
@@ -135,7 +135,7 @@ export default function Dashboard() {
       {/* Quick Actions */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Hizli Islemler</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           <ActionCard
             href="/yaz"
             icon="🔍"

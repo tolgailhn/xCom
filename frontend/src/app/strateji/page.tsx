@@ -316,7 +316,7 @@ export default function StratejiPage() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
         <div className="glass-card text-center py-3">
           <div className="text-lg font-bold text-[var(--accent-green)]">3x</div>
           <div className="text-xs text-[var(--text-secondary)]">Self-Reply Boost</div>

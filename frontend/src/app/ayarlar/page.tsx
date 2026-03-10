@@ -473,7 +473,7 @@ function TabAccountInfo() {
 
         {info?.success && (
           <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div className="bg-zinc-900/50 rounded-lg p-4 text-center">
                 <div className="text-lg font-bold text-white">{info.name}</div>
                 <div className="text-sm text-blue-400">@{info.username}</div>
