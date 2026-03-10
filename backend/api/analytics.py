@@ -59,9 +59,13 @@ def _get_ai_client():
         if provider == "anthropic":
             import anthropic
             return anthropic.Anthropic(api_key=api_key), model, provider
-        elif provider in ("openai", "minimax"):
+        elif provider in ("openai", "minimax", "groq"):
             from openai import OpenAI
-            base_url = "https://api.minimaxi.chat/v1" if provider == "minimax" else None
+            base_url = (
+                "https://api.minimaxi.chat/v1" if provider == "minimax"
+                else "https://api.groq.com/openai/v1" if provider == "groq"
+                else None
+            )
             return OpenAI(api_key=api_key, base_url=base_url), model, provider
     except Exception:
         pass

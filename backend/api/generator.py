@@ -366,7 +366,7 @@ async def generate_long_content(request: GenerateRequest):
     from backend.api.helpers import create_generator
 
     try:
-        generator = create_generator(topic=request.topic)
+        generator = create_generator(topic=request.topic, preferred_provider=request.provider)
         text = await asyncio.to_thread(
             generator.generate_long_content,
             topic=request.topic,
@@ -1020,9 +1020,13 @@ async def fact_check(request: FactCheckRequest):
         if provider == "anthropic":
             import anthropic
             ai_client = anthropic.Anthropic(api_key=api_key)
-        elif provider in ("openai", "minimax"):
+        elif provider in ("openai", "minimax", "groq"):
             from openai import OpenAI
-            base_url = "https://api.minimaxi.chat/v1" if provider == "minimax" else None
+            base_url = (
+                "https://api.minimaxi.chat/v1" if provider == "minimax"
+                else "https://api.groq.com/openai/v1" if provider == "groq"
+                else None
+            )
             ai_client = OpenAI(api_key=api_key, base_url=base_url)
 
         claims = await asyncio.to_thread(
@@ -1081,9 +1085,13 @@ async def discover_topics_endpoint(request: DiscoverRequest):
         if provider == "anthropic":
             import anthropic
             ai_client = anthropic.Anthropic(api_key=api_key)
-        elif provider in ("openai", "minimax"):
+        elif provider in ("openai", "minimax", "groq"):
             from openai import OpenAI
-            base_url = "https://api.minimaxi.chat/v1" if provider == "minimax" else None
+            base_url = (
+                "https://api.minimaxi.chat/v1" if provider == "minimax"
+                else "https://api.groq.com/openai/v1" if provider == "groq"
+                else None
+            )
             ai_client = OpenAI(api_key=api_key, base_url=base_url)
 
         if not ai_client:

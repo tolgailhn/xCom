@@ -234,6 +234,7 @@ export function generateLongContent(params: {
   length?: string;
   research_context?: string;
   content_format?: string;
+  provider?: string;
 }) {
   return apiFetch("/api/generator/long-content", {
     method: "POST",
