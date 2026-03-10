@@ -10,6 +10,7 @@ import {
   triggerAutoReplyCheck,
   getAutoReplyStatus,
   getStyles,
+  publishTweet,
   type AutoReplyConfig,
   type AutoReplyLog,
   type AutoReplyStatus,
@@ -38,6 +39,8 @@ export default function OtomatikYanitPage() {
   const [accountInput, setAccountInput] = useState("");
   const [message, setMessage] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [publishResult, setPublishResult] = useState<Record<string, { success: boolean; message: string }>>({});
 
   useEffect(() => {
     loadAll();
@@ -115,6 +118,36 @@ export default function OtomatikYanitPage() {
       setLogs((prev) => prev.filter((l) => l.id !== logId));
     } catch (err) {
       console.error(err);
+    }
+  }
+
+  async function handlePublishReply(log: AutoReplyLog) {
+    if (!log.reply_text || !log.tweet_id) return;
+    setPublishingId(log.id);
+    setPublishResult((prev) => ({ ...prev, [log.id]: { success: false, message: "" } }));
+    try {
+      const result = await publishTweet({
+        text: log.reply_text,
+        reply_to_id: log.tweet_id,
+      });
+      if (result.success) {
+        setPublishResult((prev) => ({
+          ...prev,
+          [log.id]: { success: true, message: `Yayinlandi! ${result.url || ""}` },
+        }));
+      } else {
+        setPublishResult((prev) => ({
+          ...prev,
+          [log.id]: { success: false, message: result.error || "Bilinmeyen hata" },
+        }));
+      }
+    } catch (err: unknown) {
+      setPublishResult((prev) => ({
+        ...prev,
+        [log.id]: { success: false, message: err instanceof Error ? err.message : String(err) },
+      }));
+    } finally {
+      setPublishingId(null);
     }
   }
 
@@ -633,6 +666,30 @@ export default function OtomatikYanitPage() {
                           <>&#128203; Yaniti Kopyala</>
                         )}
                       </button>
+                    )}
+
+                    {/* API ile Reply At */}
+                    {log.reply_text && log.tweet_id && log.status !== "published" && !publishResult[log.id]?.success && (
+                      <button
+                        onClick={() => handlePublishReply(log)}
+                        disabled={publishingId === log.id}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/30 transition-all disabled:opacity-50"
+                      >
+                        {publishingId === log.id ? "Gonderiliyor..." : "API ile Reply At"}
+                      </button>
+                    )}
+
+                    {/* Publish result message */}
+                    {publishResult[log.id] && (
+                      <span
+                        className={`text-xs px-2 py-1 rounded ${
+                          publishResult[log.id].success
+                            ? "bg-green-500/20 text-green-400"
+                            : "bg-red-500/20 text-red-400"
+                        }`}
+                      >
+                        {publishResult[log.id].message}
+                      </span>
                     )}
 
                     {/* Open tweet on X */}
