@@ -9,6 +9,15 @@ ROTASYON SİSTEMİ:
 - scheduler_worker.py tarafindan her 5 dakikada bir cagirilir
   ama sadece saatin ilk çağrısında çalışır (aynı saat tekrar çalışmaz)
 
+ÇALIŞMA SAATLERİ:
+- Varsayılan 09:00-21:00 arası çalışır (config ile ayarlanabilir)
+- Gece saatlerinde otomatik duraklar
+
+EN İYİ TWEET SEÇİMİ:
+- Her hesaptan 5 tweet çekilir
+- Engagement score'a göre sıralanır (RT=20x, Reply=13.5x, Like=1x, Bookmark=10x)
+- Sadece en yüksek engagement'lı tweet'e reply atılır
+
 PAYLAŞIM STRATEJİSİ:
 - Önce reply dener
 - 403 Forbidden alırsa (reply kısıtlı tweet) → Quote Tweet'e fallback
@@ -52,6 +61,15 @@ def _is_retweet(tweet_text: str) -> bool:
     return tweet_text.strip().startswith("RT @")
 
 
+def _engagement_score(tweet: dict) -> float:
+    """Tweet engagement score hesapla (X algorithm ağırlıkları)."""
+    likes = tweet.get("like_count", 0) or 0
+    rts = tweet.get("retweet_count", 0) or 0
+    replies = tweet.get("reply_count", 0) or 0
+    bookmarks = tweet.get("bookmark_count", 0) or 0
+    return likes * 1 + rts * 20 + replies * 13.5 + bookmarks * 10
+
+
 def check_and_reply():
     """
     Ana worker fonksiyonu — scheduler tarafindan her 5 dakikada bir cagirilir.
@@ -81,15 +99,24 @@ def check_and_reply():
         return
 
     now = datetime.datetime.now(TZ_TR)
+    hour = now.hour
+
+    # Çalışma saatleri: sadece 09:00-21:00 arası çalış
+    work_start = config.get("work_hour_start", 9)
+    work_end = config.get("work_hour_end", 21)
+    if hour < work_start or hour >= work_end:
+        logger.info(
+            "Auto-reply: Saat %02d — çalışma saatleri dışında (%02d:00-%02d:00), atlanıyor",
+            hour, work_start, work_end,
+        )
+        return
+
     current_hour_key = now.strftime("%Y-%m-%d-%H")
 
     # Aynı saat içinde tekrar çalışma
     if _last_processed_hour == current_hour_key:
         return
     _last_processed_hour = current_hour_key
-
-    # Bu saate ait hesapları al
-    hour = now.hour
     hourly_accounts = _get_accounts_for_hour(accounts, hour)
 
     if not hourly_accounts:
@@ -158,17 +185,16 @@ def check_and_reply():
             logger.warning("Auto-reply: Failed to fetch tweets for @%s: %s", account, e)
             continue
 
+        # Tweetleri filtrele ve engagement'a göre sırala → en iyisine reply at
+        candidates = []
         for tweet in tweets:
-            if replies_made >= remaining:
-                break
-
             tweet_id = tweet.get("id", "")
             if not tweet_id or tweet_id in seen:
                 continue
 
             tweet_text = tweet.get("text", "")
 
-            # RT'leri atla — RT'lere reply/quote yapılamaz
+            # RT'leri atla
             if _is_retweet(tweet_text):
                 seen.add(tweet_id)
                 continue
@@ -178,78 +204,99 @@ def check_and_reply():
                 seen.add(tweet_id)
                 continue
 
-            # Skip if not enough likes
+            # Min likes filtresi
             if min_likes > 0 and tweet.get("like_count", 0) < min_likes:
                 seen.add(tweet_id)
                 continue
 
-            # Mark as seen immediately to avoid duplicate processing
-            seen.add(tweet_id)
+            candidates.append(tweet)
 
-            # Optional delay between replies
-            if reply_delay > 0 and replies_made > 0:
-                time.sleep(min(reply_delay, 120))  # Cap at 2 minutes
+        if not candidates:
+            continue
 
-            # Generate reply
-            try:
-                reply_text = _generate_reply(
-                    original_tweet=tweet_text,
-                    original_author=account,
-                    style=style,
-                    additional_context=additional_context,
-                    language=language,
-                )
-            except Exception as e:
-                logger.warning("Auto-reply: Failed to generate reply for @%s tweet %s: %s", account, tweet_id, e)
-                add_auto_reply_log({
-                    "account": account,
-                    "tweet_id": tweet_id,
-                    "tweet_text": tweet_text[:200],
-                    "reply_text": "",
-                    "status": "generation_failed",
-                    "error": str(e),
-                })
-                continue
+        # Engagement score'a göre sırala, en iyisini seç
+        candidates.sort(key=_engagement_score, reverse=True)
+        best_tweet = candidates[0]
+        tweet_id = best_tweet["id"]
+        tweet_text = best_tweet.get("text", "")
 
-            if not reply_text:
-                continue
+        logger.info(
+            "Auto-reply: @%s — en iyi tweet seçildi (score=%.0f, likes=%s, RTs=%s): %s",
+            account,
+            _engagement_score(best_tweet),
+            best_tweet.get("like_count", 0),
+            best_tweet.get("retweet_count", 0),
+            tweet_text[:80],
+        )
 
-            # Publish: önce reply dene, 403 alırsa quote tweet yap
-            result = _publish_with_fallback(
-                text=reply_text,
-                tweet_id=tweet_id,
-                account=account,
+        # Tüm adayları seen'e ekle (bir sonraki saatte tekrar bakılmasın)
+        for c in candidates:
+            seen.add(c["id"])
+
+        # Optional delay between replies
+        if reply_delay > 0 and replies_made > 0:
+            time.sleep(min(reply_delay, 120))
+
+        # Generate reply
+        try:
+            reply_text = _generate_reply(
+                original_tweet=tweet_text,
+                original_author=account,
+                style=style,
+                additional_context=additional_context,
+                language=language,
             )
+        except Exception as e:
+            logger.warning("Auto-reply: Failed to generate reply for @%s tweet %s: %s", account, tweet_id, e)
+            add_auto_reply_log({
+                "account": account,
+                "tweet_id": tweet_id,
+                "tweet_text": tweet_text[:200],
+                "reply_text": "",
+                "status": "generation_failed",
+                "error": str(e),
+            })
+            continue
 
-            if result.get("success"):
-                publish_type = result.get("type", "reply")
-                add_auto_reply_log({
-                    "account": account,
-                    "tweet_id": tweet_id,
-                    "tweet_text": tweet_text[:200],
-                    "reply_text": reply_text,
-                    "reply_tweet_id": result.get("tweet_id", ""),
-                    "reply_url": result.get("url", ""),
-                    "status": "published",
-                    "publish_type": publish_type,
-                })
-                replies_made += 1
-                logger.info(
-                    "Auto-reply: %s to @%s tweet %s — %s",
-                    publish_type.upper(),
-                    account,
-                    tweet_id,
-                    result.get("url", ""),
-                )
-            else:
-                add_auto_reply_log({
-                    "account": account,
-                    "tweet_id": tweet_id,
-                    "tweet_text": tweet_text[:200],
-                    "reply_text": reply_text,
-                    "status": "publish_failed",
-                    "error": result.get("error", "Unknown error"),
-                })
+        if not reply_text:
+            continue
+
+        # Publish: önce reply dene, 403 alırsa quote tweet yap
+        result = _publish_with_fallback(
+            text=reply_text,
+            tweet_id=tweet_id,
+            account=account,
+        )
+
+        if result.get("success"):
+            publish_type = result.get("type", "reply")
+            add_auto_reply_log({
+                "account": account,
+                "tweet_id": tweet_id,
+                "tweet_text": tweet_text[:200],
+                "reply_text": reply_text,
+                "reply_tweet_id": result.get("tweet_id", ""),
+                "reply_url": result.get("url", ""),
+                "status": "published",
+                "publish_type": publish_type,
+            })
+            replies_made += 1
+            logger.info(
+                "Auto-reply: %s to @%s tweet %s — %s",
+                publish_type.upper(),
+                account,
+                tweet_id,
+                result.get("url", ""),
+            )
+        else:
+            add_auto_reply_log({
+                "account": account,
+                "tweet_id": tweet_id,
+                "tweet_text": tweet_text[:200],
+                "reply_text": reply_text,
+                "status": "publish_failed",
+                "error": result.get("error", "Unknown error"),
+            })
 
     # Save seen IDs
     save_auto_reply_seen(seen)
