@@ -12,8 +12,11 @@ import {
   getPerformanceStats,
   refreshAllMetrics,
   autoRegisterMetrics,
+  getSelfReplyStatus,
+  getSelfReplyLogs,
+  triggerSelfReplyCheck,
 } from "@/lib/api";
-import type { ScheduledPost, PerformanceStats } from "@/lib/api";
+import type { ScheduledPost, PerformanceStats, SelfReplyStatus, SelfReplyLog } from "@/lib/api";
 
 /* ── Types ─────────────────────────────────────── */
 
@@ -259,6 +262,36 @@ export default function TakvimPage() {
     finally { setCancellingId(null); }
   };
 
+  /* Self-Reply Plan */
+  const [selfReplyStatus, setSelfReplyStatus] = useState<SelfReplyStatus | null>(null);
+  const [selfReplyLogs, setSelfReplyLogs] = useState<SelfReplyLog[]>([]);
+  const [selfReplyTriggering, setSelfReplyTriggering] = useState(false);
+
+  const loadSelfReply = useCallback(async () => {
+    try {
+      const [status, logsRes] = await Promise.all([
+        getSelfReplyStatus(),
+        getSelfReplyLogs(20),
+      ]);
+      setSelfReplyStatus(status);
+      // Sadece bugunun loglarini goster
+      const today = new Date().toISOString().split("T")[0];
+      const todayLogs = (logsRes.logs || []).filter((l: SelfReplyLog) =>
+        l.created_at?.startsWith(today)
+      );
+      setSelfReplyLogs(todayLogs);
+    } catch { /* ignore */ }
+  }, []);
+
+  const handleTriggerSelfReply = async () => {
+    setSelfReplyTriggering(true);
+    try {
+      await triggerSelfReplyCheck();
+      await loadSelfReply();
+    } catch { /* ignore */ }
+    finally { setSelfReplyTriggering(false); }
+  };
+
   /* Performance */
   const [perfStats, setPerfStats] = useState<PerformanceStats | null>(null);
   const [perfRefreshing, setPerfRefreshing] = useState(false);
@@ -313,7 +346,8 @@ export default function TakvimPage() {
     loadAll();
     loadScheduledPosts();
     loadPerformance();
-  }, [loadAll, loadScheduledPosts, loadPerformance]);
+    loadSelfReply();
+  }, [loadAll, loadScheduledPosts, loadPerformance, loadSelfReply]);
 
   const goToDate = (offset: number) => {
     const d = new Date(selectedDate);
@@ -517,6 +551,107 @@ export default function TakvimPage() {
           </div>
         </>
       )}
+
+      {/* Self-Reply Plan */}
+      <div>
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-lg font-semibold">Bugunun Reply Plani</h3>
+          <button
+            onClick={handleTriggerSelfReply}
+            disabled={selfReplyTriggering}
+            className="text-xs text-[var(--accent-blue)] hover:underline"
+          >
+            {selfReplyTriggering ? "Kontrol ediliyor..." : "Simdi Kontrol Et"}
+          </button>
+        </div>
+
+        {/* Status summary */}
+        {selfReplyStatus && (
+          <div className="glass-card mb-3">
+            <div className="flex flex-wrap gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${selfReplyStatus.enabled ? "bg-[var(--accent-green)]" : "bg-[var(--accent-red)]"}`} />
+                <span className="text-[var(--text-secondary)]">
+                  {selfReplyStatus.enabled ? "Aktif" : "Pasif"}
+                </span>
+              </div>
+              <div>
+                <span className="font-semibold">{selfReplyStatus.today_replied}</span>
+                <span className="text-[var(--text-secondary)]">/{selfReplyStatus.max_daily} reply bugun</span>
+              </div>
+              {selfReplyStatus.last_reply_time && (
+                <div className="text-[var(--text-secondary)] text-xs">
+                  Son: {new Date(selfReplyStatus.last_reply_time).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+                </div>
+              )}
+            </div>
+            <div className="mt-2 text-xs text-[var(--text-secondary)] space-y-1">
+              <div>Strateji: Post sonrasi 0-2 dk icinde <strong>tek bir dogal reply</strong> at, 2./3. reply ATMA</div>
+              <div>Gercek kullanici yorum yaparsa (ilk 30-60 dk) ona cevap ver — 75-150x algo boost</div>
+            </div>
+          </div>
+        )}
+
+        {/* Today's replies */}
+        {selfReplyLogs.length > 0 ? (
+          <div className="space-y-2">
+            {selfReplyLogs.map((log, i) => {
+              const statusColor =
+                log.status === "published"
+                  ? "var(--accent-green)"
+                  : log.status === "ready"
+                    ? "#f59e0b"
+                    : "var(--accent-red)";
+              const statusLabel =
+                log.status === "published"
+                  ? "Atildi"
+                  : log.status === "ready"
+                    ? "Hazir"
+                    : "Basarisiz";
+              return (
+                <div
+                  key={log.id || i}
+                  className="glass-card text-sm"
+                  style={{ borderLeft: `3px solid ${statusColor}` }}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-semibold" style={{ color: statusColor }}>
+                      {statusLabel}
+                    </span>
+                    {log.created_at && (
+                      <span className="text-xs text-[var(--text-secondary)]">
+                        {new Date(log.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    )}
+                  </div>
+                  {log.tweet_text && (
+                    <p className="text-xs text-[var(--text-secondary)] mb-1 line-clamp-1">
+                      Orijinal: {log.tweet_text}
+                    </p>
+                  )}
+                  <p className="text-sm">{log.reply_text}</p>
+                  {log.reply_url && (
+                    <a
+                      href={log.reply_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[var(--accent-blue)] hover:underline mt-1 inline-block"
+                    >
+                      Reply&apos;i gor
+                    </a>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="glass-card text-center text-[var(--text-secondary)] text-sm py-4">
+            {selfReplyStatus?.enabled
+              ? "Bugun henuz self-reply atilmadi. Yeni tweet atinca otomatik kontrol edilir."
+              : "Self-reply sistemi pasif. Ayarlar sayfasindan aktif et."}
+          </div>
+        )}
+      </div>
 
       {/* Scheduled Posts */}
       <div>
@@ -876,11 +1011,10 @@ export default function TakvimPage() {
                   Native medya koy (foto/GIF/video/poll) → reach +%50-90
                 </li>
                 <li>
-                  Self-reply: Kendi postuna soruyla reply at → Phoenix ranking
-                  boost
+                  Self-reply: Post sonrasi 0-2 dk icinde TEK dogal reply at → Phoenix ranking boost
                 </li>
                 <li>
-                  Ilk 5-10 yorumu 30dk icinde cevapla → Erken engagement sinyali
+                  Gercek kullanici yorum yaparsa 30-60 dk icinde cevap ver → 75-150x algo boost
                 </li>
                 <li>
                   Post turlerini cesitlendir → Diversity bonus

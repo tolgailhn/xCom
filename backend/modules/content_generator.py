@@ -1474,76 +1474,55 @@ SADECE yanıt metnini yaz, başka bir şey yazma."""
 
     def generate_self_reply(self, my_tweet: str,
                             reply_number: int = 1,
-                            total_replies: int = 3,
+                            total_replies: int = 1,
                             style: str = "samimi",
                             additional_context: str = "",
                             research_context: str = "",
                             user_samples: list = None,
                             previous_replies: list = None) -> str:
         """
-        Generate a self-reply to the user's OWN tweet.
-        This is NOT a reply to someone else — this is a continuation of YOUR tweet.
-
-        Args:
-            my_tweet: The user's own tweet text (the one they posted)
-            reply_number: Which self-reply this is (1, 2, or 3)
-            total_replies: How many total self-replies planned
-            style: Writing style
-            additional_context: Extra instructions
-            research_context: Research data to use for added value
-            user_samples: Sample tweets for tone matching
+        Generate a SINGLE natural self-reply to the user's OWN tweet.
+        Post attiktan 0-2 dk icinde 1 adet dogal reply. 2./3. reply ATILMAZ.
         """
         if not self.client:
             raise ValueError("API client not initialized. Check your API key.")
 
         system_prompt = self._build_self_reply_system_prompt(user_samples)
 
-        reply_role_map = {
-            1: "EK BİLGİ / BAĞLAM — Ana tweet'te söylediğin şeyi destekleyen bir veri, örnek veya arka plan bilgisi ver.",
-            2: "KİŞİSEL DENEYİM / SONUÇ — Kendi deneyimini, gözlemini veya somut bir sonucu paylaş. Rakam varsa kullan.",
-            3: "CTA / KAPANIŞ — Takipçilere bir soru sor, bir aksiyon öner veya güçlü bir kapanış cümlesi yaz.",
-        }
-        role = reply_role_map.get(reply_number, reply_role_map[1])
-
         research_block = ""
         if research_context:
             research_block = f"""
-ARAŞTIRMA VERİSİ (self-reply'da kullanabilirsin):
-{research_context[:3000]}
+ARAŞTIRMA VERİSİ (reply'da kullanabilirsin ama ZORUNLU DEĞİL):
+{research_context[:2000]}
 """
-
-        previous_block = ""
-        if previous_replies:
-            prev_lines = "\n".join([f"  Reply {i+1}: \"{r}\"" for i, r in enumerate(previous_replies) if r.strip()])
-            if prev_lines:
-                previous_block = f"""
-ÖNCEKİ REPLY'LAR (bunları TEKRARLAMA ve aynı şekilde BAŞLAMA):
-{prev_lines}
-
-ÖNEMLİ: Yukarıdaki reply'larda kullanılan açılış kalıplarını, cümle yapılarını ve kelime seçimlerini KULLANMA.
-Tamamen FARKLI bir açılışla başla. Aynı bilgileri TEKRARLAMA."""
 
         user_prompt = f"""SENİN TWEET'İN (bu senin kendi attığın tweet):
 "{my_tweet}"
 
-Bu tweet'e KENDİ SELF-REPLY'ını yaz. Bu {reply_number}. reply ({total_replies} reply planlanıyor).
+Bu tweet'e HEMEN (0-2 dk içinde) atacağın TEK BİR doğal self-reply yaz.
 
-SELF-REPLY ROLÜ: {role}
-{previous_block}
+ÖRNEKLER (bunlardan esinlen ama KOPYALAMA):
+- "sizce bu ne değiştirir?"
+- "prompt isteyen DM atsın"
+- "detay thread aşağıda 👇"
+- "bunu test eden var mı?"
+- "asıl ilginç olan kısım şu aslında..."
+- "kaynak bırakıyorum merak edenler için"
+- "bence asıl mesele burada"
+- "deneyimleyen varsa yazın merak ediyorum"
 
 KURALLAR:
-- Bu SENİN tweet'in — başka birine yanıt değil. Devam ediyorsun, ek bilgi veriyorsun.
-- FARKLI BİR ŞEKİLDE BAŞLA — "buna ek olarak" gibi aynı kalıpla başlama. Direkt konuya gir, kişisel deneyimle aç, soru sor, rakam ver — her reply benzersiz başlamalı.
-- Diğer reply'larda kullandığın açılış kalıbını TEKRARLAMA.
-- 1-4 cümle, max 400 karakter (kısa ve vurucu)
+- SADECE 1 reply — 2. reply ATILMAYACAK, bu yüzden değerli yap
+- MAX 1-2 cümle, çok KISA tut (ideal: 5-15 kelime)
+- Doğal ol — arkadaşına yazıyormuşsun gibi
+- Tweet'in içeriğine uygun reply at (teknik konuysa teknik detay, haber konuysa yorum)
 - Hashtag KULLANMA
-- Ana tweet'i tekrarlama — YENİ değer ekle
-- Samimi Türkçe, sohbet tonu
-- Uydurma bilgi, halüsinasyon YASAK — bilmediğin şeyi uydurup yazma, sadece araştırma verisindeki gerçek bilgileri kullan
+- "Buna ek olarak" gibi yapay kalıplar YASAK
+- Uydurma bilgi YASAK
 {f"- Ek not: {additional_context}" if additional_context else ""}
 {research_block}
 
-SADECE self-reply metnini yaz, başka bir şey yazma."""
+SADECE reply metnini yaz, başka bir şey yazma."""
 
         return self._dispatch(system_prompt, user_prompt)
 
@@ -2080,30 +2059,31 @@ Bu tweet'leri ASLA kopyalama. Aynı doğal sesle orijinal cümleler yaz.
         return prompt
 
     def _build_self_reply_system_prompt(self, user_samples: list = None) -> str:
-        """Build system prompt for self-reply generation — replying to YOUR OWN tweet."""
+        """Build system prompt for self-reply generation — TEK doğal reply."""
 
-        prompt = """Sen X (Twitter) üzerinde kendi tweet'lerine SELF-REPLY atan bir kullanıcısın.
-TÜRKÇE yazıyorsun. Bu BİR BAŞKASINA YANIT DEĞİL — kendi tweet'ine devam ediyorsun.
+        prompt = """Sen X (Twitter) üzerinde kendi tweet'lerine HEMEN sonra TEK BİR doğal reply atan bir kullanıcısın.
+TÜRKÇE yazıyorsun. Bu BİR BAŞKASINA YANIT DEĞİL — kendi tweet'ine 0-2 dk içinde atılan spontan bir yorum.
 
-## SELF-REPLY NEDİR?
-Self-reply = kendi tweet'ine yanıt atarak ek bilgi, bağlam veya CTA eklemek.
-X algoritması bunu "devam eden konuşma" olarak görür → Phoenix ranking boost → 3x engagement.
+## SELF-REPLY STRATEJİSİ (2026):
+- Post attıktan hemen sonra (0-2 dk) SADECE 1 tane doğal reply at
+- 2. reply ATMA, 3. reply KESİNLİKLE ATMA
+- Gerçek kullanıcı yorumu gelirse ONLARA cevap ver (75-150x algo boost)
+- Hiç yorum gelmezse postu kendi haline bırak, zorlama
 
-## SELF-REPLY KURALLARI:
-1. DEVAM NİTELİĞİNDE — ana tweet'in üzerine YENİ bilgi ekle
-2. TEKRAR ETME — ana tweet'te söylediklerini tekrarlama, FARKLI açı ver
-3. HER REPLY FARKLI BAŞLASIN — "buna ek olarak" gibi kalıpları tekrar tekrar KULLANMA. Her reply farklı bir şekilde başlamalı:
-   - Direkt konuya gir: "Aslında burada kritik olan şey..."
-   - Kişisel deneyim: "Ben bunu denerken..."
-   - Soru ile aç: "Peki ama neden...?"
-   - Veri/rakam ile aç: "Rakamlarla bakınca..."
-   - Karşıt açı: "Ama madalyonun diğer yüzü..."
-   AYNI AÇILIŞ KALIBINI İKİ KEZ KULLANMA — her reply benzersiz başlamalı
-4. KISA TUT — 1-4 cümle, max 400 karakter
-5. HASHTAG KULLANMA
-6. "Ne düşünüyorsun?" ile BİTİRME (son reply hariç — son reply'da CTA olabilir)
-7. Her reply'da FARKLI değer: bilgi, deneyim, veri, CTA
-8. Samimi Türkçe, sohbet tonu — kendi sesinle yaz
+## TEK REPLY KURALLARI:
+1. ÇOK KISA — ideal 5-15 kelime, max 1-2 cümle
+2. DOĞAL OL — arkadaşına yazıyormuşsun gibi, yapay değil
+3. İÇERİĞE UYGUN — teknik konuysa teknik detay, haber konuysa kısa yorum
+4. HASHTAG KULLANMA
+5. "Buna ek olarak" gibi yapay geçiş kalıpları YASAK
+6. Samimi Türkçe, sohbet tonu
+
+## İYİ REPLY TİPLERİ:
+- Soru: "sizce bu ne değiştirir?", "bunu test eden var mı?"
+- CTA: "prompt isteyen DM atsın", "kaynak bırakıyorum"
+- Detay: "asıl ilginç olan kısım şu aslında..."
+- Kişisel: "ben denedim, ciddi fark var"
+- Gözlem: "bu sessiz sessiz her şeyi değiştiriyor"
 """
 
         if self.training_context:
@@ -2114,10 +2094,10 @@ X algoritması bunu "devam eden konuşma" olarak görür → Phoenix ranking boo
             prompt += f"""
 {tc}
 
-## ⚠️ EĞİTİM VERİSİ — SELF-REPLY İÇİN:
+## ⚠️ EĞİTİM VERİSİ — TEK REPLY İÇİN:
 - Eğitim verisindeki SESİ, TONU kullan
-- Self-reply kısa olmalı ama kişiliğin AYNI kalmalı
-- Her reply FARKLI bir şekilde başlasın — aynı kalıpları (buna ek olarak, bi de şu var) tekrarlama
+- Reply ÇOK KISA olmalı (5-15 kelime ideal) ama kişiliğin AYNI kalmalı
+- Doğal, spontan, arkadaşına yazıyormuşsun gibi
 """
 
         if user_samples:
@@ -2132,7 +2112,7 @@ X algoritması bunu "devam eden konuşma" olarak görür → Phoenix ranking boo
 ## DOĞALLIK KURALLARI:
 1. AI KALIPLARI YOK — "Şunu belirtmek gerekir" YASAK
 2. SAMİMİ TÜRKÇE — "ya", "aslında", "bence", "harbiden" kullan
-3. KISA — max 400 karakter
+3. ÇOK KISA — max 1-2 cümle, ideal 5-15 kelime
 4. KİŞİSEL — "denedim", "gördüm", "bence" gibi ifadeler
 5. Yanıt metninin etrafında tırnak işareti KOYMA
 """

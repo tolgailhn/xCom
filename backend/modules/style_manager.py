@@ -554,10 +554,10 @@ def load_self_reply_config() -> dict:
         "enabled": False,
         "username": "",
         "max_daily_tweets": 4,
-        "replies_per_tweet": 3,
-        "reply_interval_minutes": 15,
-        "min_tweet_age_minutes": 30,
-        "max_tweet_age_days": 5,
+        "replies_per_tweet": 1,
+        "reply_interval_minutes": 0,
+        "min_tweet_age_minutes": 2,
+        "max_tweet_age_days": 1,
         "style": "samimi",
         "draft_only": False,
         "work_hour_start": 9,
@@ -586,8 +586,8 @@ def save_self_reply_seen(seen: dict):
     """Save self-reply seen data (keep last 200 entries, prune old ones)"""
     path = DATA_DIR / "self_reply_seen.json"
     os.makedirs(DATA_DIR, exist_ok=True)
-    # Prune entries older than 7 days (no longer relevant for self-reply)
-    cutoff = (datetime.datetime.now(TZ_TR) - datetime.timedelta(days=7)).isoformat()
+    # Prune entries older than 2 days (sadece bugunun tweetlerine reply atiyoruz)
+    cutoff = (datetime.datetime.now(TZ_TR) - datetime.timedelta(days=2)).isoformat()
     pruned = {
         tid: info for tid, info in seen.items()
         if info.get("last_reply_at", "9999") >= cutoff

@@ -307,7 +307,7 @@ def start_scheduler():
         scheduler.add_job(
             _check_self_replies,
             "interval",
-            minutes=15,
+            minutes=3,
             id="self_reply_checker",
             replace_existing=True,
         )
@@ -326,7 +326,7 @@ def start_scheduler():
             replace_existing=True,
         )
         scheduler.start()
-        logger.info("Scheduler started — publish 1m, metrics 30m, auto-reply 5m, self-reply 15m, discovery 30m, telegram 5s")
+        logger.info("Scheduler started — publish 1m, metrics 30m, auto-reply 5m, self-reply 3m, discovery 30m, telegram 5s")
 
 
 def stop_scheduler():
