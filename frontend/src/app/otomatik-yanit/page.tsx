@@ -37,6 +37,7 @@ export default function OtomatikYanitPage() {
   const [triggering, setTriggering] = useState(false);
   const [accountInput, setAccountInput] = useState("");
   const [message, setMessage] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     loadAll();
@@ -598,17 +599,54 @@ export default function OtomatikYanitPage() {
                     <div className="mt-2 text-xs text-red-400">{log.error}</div>
                   )}
 
-                  {/* Reply URL */}
-                  {log.reply_url && (
-                    <a
-                      href={log.reply_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-2 inline-block text-xs text-[var(--accent-blue)] hover:underline"
-                    >
-                      Yaniti gor &rarr;
-                    </a>
-                  )}
+                  {/* Action Buttons: Kopyala + X'te Aç */}
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {/* Copy reply text */}
+                    {log.reply_text && (
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(log.reply_text);
+                          setCopiedId(log.id);
+                          setTimeout(() => setCopiedId(null), 2000);
+                        }}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                          copiedId === log.id
+                            ? "bg-green-500/20 text-green-400"
+                            : "bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)]/80"
+                        }`}
+                      >
+                        {copiedId === log.id ? (
+                          <>&#10003; Kopyalandi</>
+                        ) : (
+                          <>&#128203; Yaniti Kopyala</>
+                        )}
+                      </button>
+                    )}
+
+                    {/* Open tweet on X */}
+                    {log.tweet_id && (
+                      <a
+                        href={`https://x.com/${log.account}/status/${log.tweet_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-primary)] text-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/10 transition-all"
+                      >
+                        &#120143; X&apos;te Ac
+                      </a>
+                    )}
+
+                    {/* Reply URL (if published successfully) */}
+                    {log.reply_url && (
+                      <a
+                        href={log.reply_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-all"
+                      >
+                        &#10003; Yaniti Gor
+                      </a>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
