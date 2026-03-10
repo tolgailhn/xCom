@@ -42,19 +42,25 @@ class TelegramNotifier:
         self._ssl_ctx = _make_ssl_context()
 
     def send_message(self, text: str, parse_mode: str = "HTML",
-                     disable_preview: bool = False) -> bool:
+                     disable_preview: bool = False,
+                     reply_markup: dict | None = None) -> bool:
         """Telegram'a mesaj gonder. Basarili ise True doner."""
         url = f"{self.base_url}/sendMessage"
-        data = {
+        payload = {
             "chat_id": self.chat_id,
             "text": text,
             "parse_mode": parse_mode,
             "disable_web_page_preview": disable_preview,
         }
+        if reply_markup:
+            payload["reply_markup"] = reply_markup
 
         try:
-            req_data = urllib.parse.urlencode(data).encode("utf-8")
-            req = urllib.request.Request(url, data=req_data)
+            req_data = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(
+                url, data=req_data,
+                headers={"Content-Type": "application/json"},
+            )
             with urllib.request.urlopen(req, timeout=10, context=self._ssl_ctx) as resp:
                 result = json.loads(resp.read().decode("utf-8"))
                 return result.get("ok", False)

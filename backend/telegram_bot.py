@@ -45,6 +45,25 @@ def _get_ssl_ctx() -> ssl.SSLContext:
 _ssl_ctx = _get_ssl_ctx()
 
 
+# Kalici klavye butonlari — her mesajda gonderilir
+PERSISTENT_KEYBOARD = {
+    "keyboard": [
+        [{"text": "📊 Durum"}, {"text": "🔔 Bekleyen"}],
+        [{"text": "🔍 Keşif"}, {"text": "❓ Yardım"}],
+    ],
+    "resize_keyboard": True,
+    "is_persistent": True,
+}
+
+# Buton metni → komut eslestirmesi
+_BUTTON_TO_COMMAND = {
+    "📊 Durum": "/durum",
+    "🔔 Bekleyen": "/bekleyen",
+    "🔍 Keşif": "/kesif",
+    "❓ Yardım": "/yardim",
+}
+
+
 def _get_notifier():
     """TelegramNotifier instance dondur (config'den)."""
     try:
@@ -406,6 +425,11 @@ def check_telegram_messages():
 
         logger.info("Telegram: Mesaj alindi: %s", text[:50])
 
+        # Buton metni mi? (emoji + text formatinda)
+        mapped_cmd = _BUTTON_TO_COMMAND.get(text)
+        if mapped_cmd:
+            text = mapped_cmd
+
         # Komut mu?
         if text.startswith("/"):
             parts = text.split(maxsplit=1)
@@ -416,9 +440,14 @@ def check_telegram_messages():
             # Sohbet
             response = _chat_with_ai(text)
 
-        # Cevabi gonder
+        # Cevabi gonder (kalici klavye ile birlikte)
         if response:
-            # HTML parse hatasi olursa plain text olarak gonder
-            success = notifier.send_message(response, parse_mode="HTML")
+            success = notifier.send_message(
+                response, parse_mode="HTML",
+                reply_markup=PERSISTENT_KEYBOARD,
+            )
             if not success:
-                notifier.send_message(response, parse_mode="")
+                notifier.send_message(
+                    response, parse_mode="",
+                    reply_markup=PERSISTENT_KEYBOARD,
+                )
