@@ -39,6 +39,14 @@ class ScheduleResponse(BaseModel):
     error: str = ""
 
 
+class SelfReplyChainResponse(BaseModel):
+    success: bool
+    chain_id: str = ""
+    total_replies: int = 0
+    interval_minutes: int = 15
+    posts: list[dict] = []
+
+
 @router.post("/add", response_model=ScheduleResponse)
 async def schedule_post(request: ScheduleRequest):
     """Yeni zamanlanmis post ekle"""
@@ -61,6 +69,7 @@ async def schedule_post(request: ScheduleRequest):
             "scheduled_time": scheduled_dt.isoformat(),
             "thread_parts": request.thread_parts,
             "quote_tweet_id": request.quote_tweet_id,
+            "reply_to_id": request.reply_to_id,
         })
 
         return ScheduleResponse(
@@ -89,7 +98,8 @@ async def get_pending_posts():
 async def get_all_scheduled():
     """Tum zamanlanmis postlari getir (pending + completed + failed)"""
     posts = load_scheduled_posts()
-    return {"posts": posts[:50], "total": len(posts)}
+    posts_limited = posts[:50]
+    return {"posts": posts_limited, "total": len(posts_limited)}
 
 
 @router.delete("/cancel/{post_id}")
@@ -101,7 +111,7 @@ async def cancel_scheduled_post(post_id: str):
     return {"success": True}
 
 
-@router.post("/self-reply-chain")
+@router.post("/self-reply-chain", response_model=SelfReplyChainResponse)
 async def schedule_self_reply_chain(request: SelfReplyChainRequest):
     """Self-reply chain zamanla — her reply belirtilen aralikla siraliyle atilir.
 
@@ -144,10 +154,10 @@ async def schedule_self_reply_chain(request: SelfReplyChainRequest):
             "text_preview": reply_text[:80],
         })
 
-    return {
-        "success": True,
-        "chain_id": chain_id,
-        "total_replies": len(created_posts),
-        "interval_minutes": interval,
-        "posts": created_posts,
-    }
+    return SelfReplyChainResponse(
+        success=True,
+        chain_id=chain_id,
+        total_replies=len(created_posts),
+        interval_minutes=interval,
+        posts=created_posts,
+    )

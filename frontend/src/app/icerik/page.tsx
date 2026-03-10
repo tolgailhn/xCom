@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import {
   getStyles,
   discoverContentTopics,
-  researchTopic,
+  researchTopicStream,
   generateLongContent,
   scoreTweet,
   findMedia,
@@ -204,6 +204,7 @@ function TabDiscover({
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
   const [generating, setGenerating] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
+  const [researchProgress, setResearchProgress] = useState<string[]>([]);
 
   /* Media */
   const [mediaResults, setMediaResults] = useState<MediaItem[]>([]);
@@ -247,13 +248,14 @@ function TabDiscover({
     setMediaResults([]);
 
     try {
-      // Step 1: Research
+      // Step 1: Research (streaming for progress feedback)
       let researchContext = "";
+      setResearchProgress([]);
       try {
-        const research = (await researchTopic({
-          topic: topic.title,
-          engine: genEngine,
-        })) as { summary: string; key_points: string[] };
+        const research = await researchTopicStream(
+          { topic: topic.title, engine: genEngine },
+          (msg) => setResearchProgress((prev) => [...prev, msg])
+        );
         researchContext = `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}`;
       } catch {
         // Research optional, continue
@@ -504,6 +506,15 @@ function TabDiscover({
               Iptal
             </button>
           </div>
+
+          {/* Research progress messages */}
+          {generating && researchProgress.length > 0 && (
+            <div className="mt-3 p-3 bg-[var(--bg-secondary)] rounded-lg max-h-32 overflow-y-auto">
+              {researchProgress.map((msg, i) => (
+                <p key={i} className="text-xs text-[var(--text-secondary)]">{msg}</p>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -569,6 +580,7 @@ function TabGenerate({
   const [generatedContent, setGeneratedContent] = useState("");
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
   const [researchData, setResearchData] = useState("");
+  const [researchProgress, setResearchProgress] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draftSaved, setDraftSaved] = useState(false);
@@ -594,14 +606,15 @@ function TabGenerate({
     setResearchData("");
 
     try {
-      // Step 1: Research if requested
+      // Step 1: Research if requested (streaming for progress feedback)
       let researchContext = "";
+      setResearchProgress([]);
       if (doResearch) {
         try {
-          const research = (await researchTopic({
-            topic,
-            engine,
-          })) as { summary: string; key_points: string[] };
+          const research = await researchTopicStream(
+            { topic, engine },
+            (msg) => setResearchProgress((prev) => [...prev, msg])
+          );
           researchContext = `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}`;
           setResearchData(researchContext);
         } catch {
@@ -769,6 +782,15 @@ function TabGenerate({
         >
           {loading ? "Arastiriliyor & uretiliyor..." : "Icerik Uret"}
         </button>
+
+        {/* Research progress messages */}
+        {loading && researchProgress.length > 0 && (
+          <div className="mt-3 p-3 bg-[var(--bg-secondary)] rounded-lg max-h-32 overflow-y-auto">
+            {researchProgress.map((msg, i) => (
+              <p key={i} className="text-xs text-[var(--text-secondary)]">{msg}</p>
+            ))}
+          </div>
+        )}
       </div>
 
       {error && (

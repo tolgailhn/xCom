@@ -1150,6 +1150,7 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
   const [replyExtra, setReplyExtra] = useState("");
   const [generatedReply, setGeneratedReply] = useState("");
   const [replyStyle, setReplyStyle] = useState("reply");
+  const [replyProvider, setReplyProvider] = useState("");
   const [generating, setGenerating] = useState(false);
   const [publishingReply, setPublishingReply] = useState(false);
   const [publishReplyResult, setPublishReplyResult] = useState<PublishResult | null>(null);
@@ -1226,6 +1227,7 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
         original_author: selectedTweet.author,
         style: replyStyle,
         additional_context: replyExtra || "",
+        provider: replyProvider || undefined,
       })) as { text: string };
       if (!result.text || result.text.trim() === "") {
         setError("Reply uretilemedi — AI bos yanit dondu. Tekrar deneyin.");
