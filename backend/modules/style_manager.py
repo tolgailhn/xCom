@@ -496,10 +496,11 @@ def load_auto_reply_seen() -> set:
 
 
 def save_auto_reply_seen(seen: set):
-    """Save set of already-replied tweet IDs (keep last 2000)"""
+    """Save set of already-replied tweet IDs (keep last 1000 — oldest pruned)"""
     path = DATA_DIR / "auto_reply_seen.json"
     os.makedirs(DATA_DIR, exist_ok=True)
-    seen_list = list(seen)[-2000:]
+    # Keep last 1000 (newest IDs are largest numerically)
+    seen_list = sorted(seen, key=lambda x: int(x) if str(x).isdigit() else 0)[-1000:]
     with open(path, "w", encoding="utf-8") as f:
         json.dump(seen_list, f)
 
@@ -582,19 +583,25 @@ def load_self_reply_seen() -> dict:
 
 
 def save_self_reply_seen(seen: dict):
-    """Save self-reply seen data (keep last 200 entries)"""
+    """Save self-reply seen data (keep last 200 entries, prune old ones)"""
     path = DATA_DIR / "self_reply_seen.json"
     os.makedirs(DATA_DIR, exist_ok=True)
-    # Trim old entries if too many
-    if len(seen) > 200:
+    # Prune entries older than 7 days (no longer relevant for self-reply)
+    cutoff = (datetime.datetime.now(TZ_TR) - datetime.timedelta(days=7)).isoformat()
+    pruned = {
+        tid: info for tid, info in seen.items()
+        if info.get("last_reply_at", "9999") >= cutoff
+    }
+    # Also trim by count if still too many
+    if len(pruned) > 200:
         sorted_items = sorted(
-            seen.items(),
+            pruned.items(),
             key=lambda x: x[1].get("last_reply_at", ""),
             reverse=True,
         )
-        seen = dict(sorted_items[:200])
+        pruned = dict(sorted_items[:200])
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(seen, f, ensure_ascii=False, indent=2)
+        json.dump(pruned, f, ensure_ascii=False, indent=2)
 
 
 def load_self_reply_logs() -> list[dict]:

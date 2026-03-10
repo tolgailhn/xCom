@@ -15,14 +15,42 @@ TRACKING:
 """
 import datetime
 import logging
-import time
 from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 TZ_TR = ZoneInfo("Europe/Istanbul")
 
-# Son kontrol zamani (ayni 15dk periyodunda tekrar calismasin)
-_last_check_key: str | None = None
+_LAST_CHECK_FILE = None  # Lazy init
+
+
+def _get_last_check_file():
+    """Lazy init for last check file path."""
+    global _LAST_CHECK_FILE
+    if _LAST_CHECK_FILE is None:
+        import pathlib
+        _LAST_CHECK_FILE = pathlib.Path(__file__).parent / "data" / "self_reply_last_check.txt"
+    return _LAST_CHECK_FILE
+
+
+def _load_last_check_key() -> str:
+    """Load last check key from file (survives restart)."""
+    try:
+        path = _get_last_check_file()
+        if path.exists():
+            return path.read_text().strip()
+    except Exception:
+        pass
+    return ""
+
+
+def _save_last_check_key(key: str):
+    """Save last check key to file."""
+    try:
+        path = _get_last_check_file()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(key)
+    except Exception:
+        pass
 
 
 def check_self_replies():
@@ -30,8 +58,6 @@ def check_self_replies():
     Ana worker fonksiyonu — scheduler tarafindan her 15 dakikada bir cagirilir.
     Son 5 gundeki kendi tweetlerini kontrol eder, uygun olanlara self-reply uretir.
     """
-    global _last_check_key
-
     from backend.modules.style_manager import (
         load_self_reply_config,
         load_self_reply_seen,
@@ -58,11 +84,11 @@ def check_self_replies():
     if hour < work_start or hour >= work_end:
         return
 
-    # 15 dk periyodunda tekrar calismasin
+    # 15 dk periyodunda tekrar calismasin (dosyadan oku — restart'a dayanikli)
     check_key = now.strftime("%Y-%m-%d-%H") + f"-{now.minute // 15}"
-    if _last_check_key == check_key:
+    if _load_last_check_key() == check_key:
         return
-    _last_check_key = check_key
+    _save_last_check_key(check_key)
 
     logger.info("Self-reply: kontrol basliyor (@%s)", username)
 
@@ -164,7 +190,7 @@ def check_self_replies():
                 pass
 
         # Zaten max reply atilmis mi?
-        seen_info = seen.get(tweet_id, {})
+        seen_info = seen.get(str(tweet_id), {})
         if seen_info.get("replies_sent", 0) >= replies_per_tweet:
             continue
 
@@ -185,7 +211,7 @@ def check_self_replies():
 
     replies_made = 0
     for tweet in candidates_to_process:
-        tweet_id = tweet["id"]
+        tweet_id = str(tweet["id"])
         tweet_text = tweet.get("text", "")
         seen_info = seen.get(tweet_id, {})
         already_sent = seen_info.get("replies_sent", 0)
@@ -245,20 +271,22 @@ def check_self_replies():
 
         # Simdi paylas veya draft olarak kaydet
         # reply_to_id: ilk reply -> orijinal tweet, sonrakiler -> onceki reply
-        current_reply_to_id = tweet_id
+        current_reply_to_id = str(tweet_id)
         reply_ids = list(seen_info.get("reply_ids", []))
 
         # Eger daha once reply atildiysa, son reply'in id'sine reply at
         if reply_ids:
-            current_reply_to_id = reply_ids[-1]
+            current_reply_to_id = str(reply_ids[-1])
 
-        for idx, reply_data in enumerate(generated_replies):
-            reply_text = reply_data["text"]
-            reply_number = reply_data["reply_number"]
+        actually_sent = 0  # Basariyla gonderilen reply sayisi
 
-            if draft_only:
+        if draft_only:
+            # Draft modunda tum reply'lari kaydet
+            for reply_data in generated_replies:
+                reply_text = reply_data["text"]
+                reply_number = reply_data["reply_number"]
                 add_self_reply_log({
-                    "tweet_id": tweet_id,
+                    "tweet_id": str(tweet_id),
                     "tweet_text": tweet_text[:200],
                     "reply_number": reply_number,
                     "reply_text": reply_text,
@@ -268,56 +296,55 @@ def check_self_replies():
                 _send_telegram_self_reply(
                     tweet_text, reply_text, reply_number, "", "ready",
                 )
-                continue
-
-            # Araya bekleme koy (ilk reply haric)
-            if idx > 0 and reply_interval > 0:
-                wait_seconds = reply_interval * 60
-                logger.info(
-                    "Self-reply: %d dk bekleniyor (reply #%d)...",
-                    reply_interval, reply_number,
-                )
-                time.sleep(wait_seconds)
-
-            # Paylas
-            result = _publish_self_reply(reply_text, current_reply_to_id)
+                actually_sent += 1
+        else:
+            # Publish modunda: ilk reply'i hemen gonder, gerisini scheduler'a birak
+            first_reply = generated_replies[0]
+            result = _publish_self_reply(first_reply["text"], current_reply_to_id)
 
             if result.get("success"):
                 new_reply_id = result.get("tweet_id", "")
                 reply_ids.append(new_reply_id)
-                previous_reply_texts.append(reply_text)
+                previous_reply_texts.append(first_reply["text"])
+                actually_sent += 1
 
                 add_self_reply_log({
-                    "tweet_id": tweet_id,
+                    "tweet_id": str(tweet_id),
                     "tweet_text": tweet_text[:200],
-                    "reply_number": reply_number,
-                    "reply_text": reply_text,
+                    "reply_number": first_reply["reply_number"],
+                    "reply_text": first_reply["text"],
                     "reply_tweet_id": new_reply_id,
                     "reply_url": result.get("url", ""),
                     "status": "published",
                 })
 
                 _send_telegram_self_reply(
-                    tweet_text, reply_text, reply_number,
+                    tweet_text, first_reply["text"], first_reply["reply_number"],
                     result.get("url", ""), "published",
                 )
 
-                # Sonraki reply bu reply'a gelecek
-                if new_reply_id:
-                    current_reply_to_id = new_reply_id
+                # Kalan reply'lari scheduler ile zamanla (time.sleep yerine)
+                if len(generated_replies) > 1 and new_reply_id:
+                    _schedule_remaining_replies(
+                        tweet_id=str(tweet_id),
+                        tweet_text=tweet_text,
+                        remaining_replies=generated_replies[1:],
+                        last_reply_id=new_reply_id,
+                        reply_interval=reply_interval,
+                    )
             else:
                 add_self_reply_log({
-                    "tweet_id": tweet_id,
+                    "tweet_id": str(tweet_id),
                     "tweet_text": tweet_text[:200],
-                    "reply_number": reply_number,
-                    "reply_text": reply_text,
+                    "reply_number": first_reply["reply_number"],
+                    "reply_text": first_reply["text"],
                     "status": "publish_failed",
                     "error": result.get("error", ""),
                 })
 
-        # Seen guncelle
-        new_sent = already_sent + len(generated_replies)
-        seen[tweet_id] = {
+        # Seen guncelle — sadece basariyla gonderilenleri say
+        new_sent = already_sent + actually_sent
+        seen[str(tweet_id)] = {
             "replies_sent": new_sent,
             "reply_ids": reply_ids,
             "reply_texts": previous_reply_texts,
@@ -333,6 +360,45 @@ def check_self_replies():
         logger.info("Self-reply: %d tweet'e self-reply atildi", replies_made)
     else:
         logger.info("Self-reply: bu kontrolde reply atilacak tweet bulunamadi")
+
+
+def _schedule_remaining_replies(
+    tweet_id: str,
+    tweet_text: str,
+    remaining_replies: list[dict],
+    last_reply_id: str,
+    reply_interval: int,
+):
+    """Kalan self-reply'lari scheduler uzerinden zamanla (time.sleep yerine).
+
+    Her reply'i interval dakika arayla scheduler'a job olarak ekler.
+    Bu sayede APScheduler thread'i bloklanmaz.
+    """
+    import uuid
+    from backend.modules.style_manager import add_scheduled_post
+
+    now = datetime.datetime.now(TZ_TR)
+    chain_id = f"selfreply_{tweet_id}_{uuid.uuid4().hex[:8]}"
+
+    for i, reply_data in enumerate(remaining_replies):
+        offset_minutes = (i + 1) * reply_interval
+        scheduled_dt = now + datetime.timedelta(minutes=offset_minutes)
+
+        add_scheduled_post({
+            "text": reply_data["text"],
+            "scheduled_time": scheduled_dt.isoformat(),
+            "reply_to_id": last_reply_id if i == 0 else "",
+            "self_reply_chain_id": chain_id,
+            "self_reply_chain_index": i,
+            "source": "auto_self_reply",
+            "original_tweet_id": tweet_id,
+            "original_tweet_text": tweet_text[:200],
+        })
+
+    logger.info(
+        "Self-reply: %d kalan reply scheduler'a eklendi (chain=%s, interval=%ddk)",
+        len(remaining_replies), chain_id, reply_interval,
+    )
 
 
 def _get_twikit_client():

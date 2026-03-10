@@ -2,6 +2,7 @@
 Scheduler API - Zamanlanmis tweet paylasimi
 """
 import datetime
+import uuid
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from zoneinfo import ZoneInfo
@@ -107,20 +108,22 @@ async def schedule_self_reply_chain(request: SelfReplyChainRequest):
     Ilk reply hemen (1dk icinde), sonrakiler interval_minutes aralikla.
     Her reply oncekine reply olarak chain'lenir (reply_to_id otomatik guncellenir).
     """
-    if not request.replies:
-        raise HTTPException(status_code=400, detail="En az 1 reply gerekli")
-    if not request.original_tweet_id:
-        raise HTTPException(status_code=400, detail="original_tweet_id gerekli")
+    # Bos/whitespace reply'lari filtrele
+    clean_replies = [r.strip() for r in request.replies if r.strip()]
+    if not clean_replies:
+        raise HTTPException(status_code=400, detail="En az 1 gecerli reply gerekli (bos metinler filtrelendi)")
+    if not request.original_tweet_id or not request.original_tweet_id.strip().isdigit():
+        raise HTTPException(status_code=400, detail="Gecerli bir original_tweet_id gerekli (numerik)")
 
     now = datetime.datetime.now(TZ_TR)
-    chain_id = now.strftime("%Y%m%d%H%M%S") + "_chain"
+    chain_id = f"{now.strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:8]}_chain"
     interval = max(1, request.interval_minutes)
 
     # Tek reply → 2dk, birden fazla → 5dk sonra başla
-    FIRST_REPLY_DELAY = 2 if len(request.replies) == 1 else 5
+    FIRST_REPLY_DELAY = 2 if len(clean_replies) == 1 else 5
 
     created_posts = []
-    for i, reply_text in enumerate(request.replies):
+    for i, reply_text in enumerate(clean_replies):
         # First reply: 5 min from now, rest: interval apart after that
         # e.g. 15dk interval, 3 replies → 5dk, 20dk, 35dk
         offset_minutes = FIRST_REPLY_DELAY + (i * interval)

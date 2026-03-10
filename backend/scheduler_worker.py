@@ -149,6 +149,11 @@ def check_and_publish():
                     })
                     logger.error("Scheduled post %s failed: %s", post_id, error_msg)
 
+                    # Chain failure: kalan reply'lari da iptal et
+                    chain_id = post.get("self_reply_chain_id")
+                    if chain_id:
+                        _cancel_remaining_chain(chain_id, post.get("self_reply_chain_index", -1))
+
             except Exception as e:
                 update_scheduled_post(post_id, {
                     "status": "failed",
@@ -156,6 +161,11 @@ def check_and_publish():
                     "error": str(e),
                 })
                 logger.exception("Scheduled post %s error", post_id)
+
+                # Chain failure: kalan reply'lari da iptal et
+                chain_id = post.get("self_reply_chain_id")
+                if chain_id:
+                    _cancel_remaining_chain(chain_id, post.get("self_reply_chain_index", -1))
 
 
 def _update_chain_next_reply(chain_id: str, current_index: int, new_tweet_id: str):
@@ -168,12 +178,44 @@ def _update_chain_next_reply(chain_id: str, current_index: int, new_tweet_id: st
             and p.get("self_reply_chain_index") == next_index
             and p.get("status") == "pending"
         ):
+            # Idempotency: zaten dogru set edildiyse tekrar yazma
+            existing_reply_to = p.get("reply_to_id", "")
+            if existing_reply_to == new_tweet_id:
+                logger.info(
+                    "Chain %s: reply #%d already has correct reply_to_id=%s, skipping",
+                    chain_id, next_index, new_tweet_id,
+                )
+                break
             update_scheduled_post(p["id"], {"reply_to_id": new_tweet_id})
             logger.info(
                 "Chain %s: updated reply #%d reply_to_id → %s",
                 chain_id, next_index, new_tweet_id,
             )
             break
+
+
+def _cancel_remaining_chain(chain_id: str, failed_index: int):
+    """Chain'de bir reply basarisiz olunca kalan reply'lari iptal et."""
+    posts = load_scheduled_posts()
+    now = datetime.datetime.now(TZ_TR)
+    cancelled = 0
+    for p in posts:
+        if (
+            p.get("self_reply_chain_id") == chain_id
+            and p.get("self_reply_chain_index", -1) > failed_index
+            and p.get("status") == "pending"
+        ):
+            update_scheduled_post(p["id"], {
+                "status": "cancelled",
+                "cancelled_at": now.isoformat(),
+                "cancel_reason": f"Chain reply #{failed_index} failed",
+            })
+            cancelled += 1
+    if cancelled:
+        logger.warning(
+            "Chain %s: %d remaining reply(s) cancelled after index %d failed",
+            chain_id, cancelled, failed_index,
+        )
 
 
 def _send_telegram_notification(post: dict, result: dict):

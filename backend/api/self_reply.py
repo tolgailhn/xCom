@@ -81,10 +81,9 @@ async def delete_log(log_id: str):
 async def trigger_check():
     """Manually trigger a self-reply check"""
     try:
-        from backend.self_reply_worker import check_self_replies, _last_check_key
-        import backend.self_reply_worker as worker
+        from backend.self_reply_worker import check_self_replies, _save_last_check_key
         # Reset check key so it runs immediately
-        worker._last_check_key = None
+        _save_last_check_key("")
         await asyncio.to_thread(check_self_replies)
         return {"success": True, "message": "Self-reply kontrol tamamlandi"}
     except Exception as e:
