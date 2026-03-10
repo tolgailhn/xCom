@@ -17,6 +17,7 @@ import {
   addDraft,
   extractTweet,
   getStyles,
+  summarizeDiscoveryTweets,
   type DiscoveryConfig,
   type DiscoveryTweet,
   type DiscoveryStatus,
@@ -128,6 +129,13 @@ export default function KesifPage() {
   const [filterImportance, setFilterImportance] = useState("");
   const [selectedDate, setSelectedDate] = useState<string>("all");
 
+  // Accordion: hesap bazlı gruplandırma
+  const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
+  const [groupByAccount, setGroupByAccount] = useState(true);
+
+  // TR Özet: arka plan güncelleme
+  const [summarizing, setSummarizing] = useState(false);
+
   const loadData = useCallback(async () => {
     try {
       const [configRes, tweetsRes, statusRes] = await Promise.all([
@@ -149,6 +157,28 @@ export default function KesifPage() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Arka planda Türkçe özet üret (tweet'ler yüklendikten sonra)
+  useEffect(() => {
+    if (tweets.length === 0 || summarizing) return;
+    const needsSummary = tweets.filter(t => {
+      const s = t.summary_tr || "";
+      return !s || s === t.text.slice(0, 200) || s === t.text.replace(/https?:\/\/\S+/g, "[link]").slice(0, 200);
+    });
+    if (needsSummary.length === 0) return;
+    setSummarizing(true);
+    const ids = needsSummary.map(t => t.tweet_id);
+    summarizeDiscoveryTweets(ids)
+      .then(res => {
+        if (res.updated > 0) {
+          // Tweet'leri yeniden yükle (güncel özetlerle)
+          getDiscoveryTweets().then(r => setTweets(r.tweets)).catch(() => {});
+        }
+      })
+      .catch(() => {})
+      .finally(() => setSummarizing(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tweets.length]);
 
   // Fetch styles & formats from backend
   useEffect(() => {
@@ -530,6 +560,15 @@ export default function KesifPage() {
               <option value="orta">Orta</option>
               <option value="dusuk">Dusuk</option>
             </select>
+            <button
+              onClick={() => setGroupByAccount(!groupByAccount)}
+              className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-colors ${groupByAccount ? "bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] border border-[var(--accent-blue)]/30" : "bg-[var(--bg-secondary)] text-[var(--text-secondary)]"}`}
+            >
+              {groupByAccount ? "Hesap Grubu: Acik" : "Hesap Grubu: Kapali"}
+            </button>
+            {summarizing && (
+              <span className="text-[10px] text-[var(--accent-amber)] animate-pulse">TR ozet uretiliyor...</span>
+            )}
             <span className="text-xs text-[var(--text-secondary)]">
               {filteredTweets.length} tweet gosteriliyor
             </span>
@@ -542,7 +581,128 @@ export default function KesifPage() {
                 {tweets.length === 0 ? "Henuz tweet taranmadi. \"Simdi Tara\" butonuna basin." : "Filtreye uygun tweet bulunamadi."}
               </p>
             </div>
+          ) : groupByAccount && !filterAccount ? (
+            /* Hesap bazlı accordion gruplandırma */
+            <div className="space-y-2">
+              {(() => {
+                // Tweet'leri hesaba göre grupla
+                const groups: Record<string, DiscoveryTweet[]> = {};
+                for (const t of filteredTweets) {
+                  if (!groups[t.account]) groups[t.account] = [];
+                  groups[t.account].push(t);
+                }
+                // Grupları en yüksek skora göre sırala, öncelikli hesaplar üstte
+                const sortedGroups = Object.entries(groups).sort(([, a], [, b]) => {
+                  const aPriority = a[0]?.is_priority ? 1 : 0;
+                  const bPriority = b[0]?.is_priority ? 1 : 0;
+                  if (aPriority !== bPriority) return bPriority - aPriority;
+                  const aMax = Math.max(...a.map(t => t.display_score));
+                  const bMax = Math.max(...b.map(t => t.display_score));
+                  return bMax - aMax;
+                });
+                let globalIdx = 0;
+                return sortedGroups.map(([account, accountTweets]) => {
+                  const isExpanded = expandedAccounts.has(account);
+                  const maxScore = Math.max(...accountTweets.map(t => t.display_score));
+                  const isPriority = accountTweets[0]?.is_priority;
+                  const latestTime = accountTweets.reduce((latest, t) => {
+                    const tc = t.created_at || t.scanned_at;
+                    return tc > latest ? tc : latest;
+                  }, "");
+                  const startIdx = globalIdx;
+                  globalIdx += accountTweets.length;
+                  return (
+                    <div key={account} className="card overflow-hidden">
+                      {/* Accordion header */}
+                      <button
+                        onClick={() => {
+                          setExpandedAccounts(prev => {
+                            const next = new Set(prev);
+                            if (next.has(account)) next.delete(account); else next.add(account);
+                            return next;
+                          });
+                        }}
+                        className="w-full flex items-center justify-between gap-3 p-3 hover:bg-[var(--bg-secondary)] transition-colors"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="text-lg font-bold" style={{ transform: isExpanded ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.2s" }}>&#9654;</span>
+                          <a
+                            href={`https://x.com/${account}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-semibold text-[var(--accent-blue)] hover:underline text-sm"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            @{account}
+                          </a>
+                          <span className="text-xs text-[var(--text-secondary)] bg-[var(--bg-secondary)] px-2 py-0.5 rounded-full">
+                            {accountTweets.length} tweet
+                          </span>
+                          {isPriority && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30">
+                              Oncelikli
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-xs text-[var(--text-secondary)]">{timeAgo(latestTime)}</span>
+                          <div className="text-right">
+                            <span className="text-sm font-bold">{Math.round(maxScore)}</span>
+                            <span className="text-[10px] text-[var(--text-secondary)] ml-1">max</span>
+                          </div>
+                        </div>
+                      </button>
+                      {/* Accordion body */}
+                      {isExpanded && (
+                        <div className="space-y-3 p-3 pt-0 border-t border-[var(--border)]">
+                          {accountTweets.map((tweet, idx) => (
+                            <TweetCard
+                              key={tweet.tweet_id}
+                              tweet={tweet}
+                              index={startIdx + idx + 1}
+                              isThreadExpanded={expandedThreads.has(tweet.tweet_id)}
+                              onToggleThread={() => toggleThread(tweet.tweet_id)}
+                              isResearchActive={activeResearch === tweet.tweet_id}
+                              isGenerateActive={activeGenerate === tweet.tweet_id}
+                              researchResult={researchData[tweet.tweet_id]}
+                              generatedResult={generatedTexts[tweet.tweet_id]}
+                              isResearching={researchingId === tweet.tweet_id}
+                              isGenerating={generatingId === tweet.tweet_id}
+                              onResearch={() => handleResearch(tweet)}
+                              onGenerate={() => handleGenerate(tweet)}
+                              onOpenInX={openInX}
+                              onOpenQuoteInX={() => openQuoteInX(tweet.tweet_url)}
+                              onCopy={copyText}
+                              onFindMedia={() => handleFindMedia(tweet)}
+                              onInfographic={() => handleInfographic(tweet)}
+                              mediaResults={mediaResults[tweet.tweet_id]}
+                              mediaLoading={mediaLoading === tweet.tweet_id}
+                              infographicData={infographicData[tweet.tweet_id]}
+                              infographicLoading={infographicLoading === tweet.tweet_id}
+                              styles={styles}
+                              formats={formats}
+                              tweetStyle={tweetStyle}
+                              setTweetStyle={setTweetStyle}
+                              tweetLength={tweetLength}
+                              setTweetLength={setTweetLength}
+                              provider={provider}
+                              setProvider={setProvider}
+                              onSaveDraft={async (text: string) => {
+                                await addDraft({ text, topic: tweet.tweet_url, style: tweetStyle });
+                              }}
+                              onSetActiveResearch={() => setActiveResearch(activeResearch === tweet.tweet_id ? null : tweet.tweet_id)}
+                              onSetActiveGenerate={() => setActiveGenerate(activeGenerate === tweet.tweet_id ? null : tweet.tweet_id)}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
           ) : (
+            /* Normal düz liste (gruplandırma kapalı veya tek hesap filtreli) */
             <div className="space-y-3">
               {filteredTweets.map((tweet, idx) => (
                 <TweetCard
@@ -881,9 +1041,8 @@ function TweetCard({
                 </button>
                 <button
                   onClick={() => {
-                    // Quote olarak açmak için tweet URL'sini metin sonuna ekle
-                    const quoteText = editedText + "\n" + tweet.tweet_url;
-                    onOpenInX(quoteText);
+                    // Orijinal tweet'i aç — kullanıcı kopyaladığı yazıyı/görseli manuel ekleyecek
+                    window.open(tweet.tweet_url, "_blank");
                   }}
                   className="btn-secondary text-xs"
                 >

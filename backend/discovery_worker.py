@@ -33,6 +33,9 @@ TZ_TR = ZoneInfo("Europe/Istanbul")
 # Batch başına kaç hesap taranacak
 BATCH_SIZE = 3
 
+# Maksimum tweet yaşı (saat) — bundan eski tweet'ler cache'e alınmaz
+MAX_TWEET_AGE_HOURS = 36
+
 
 def _engagement_score(tweet: dict) -> float:
     """Tweet engagement score hesapla (X algorithm ağırlıkları)."""
@@ -345,6 +348,18 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
             raw_created = tweet.get("created_at", "")
             created_at = str(raw_created) if not isinstance(raw_created, str) else raw_created
 
+            # Zaman filtresi: MAX_TWEET_AGE_HOURS'dan eski tweet'leri atla
+            try:
+                tweet_dt = datetime.datetime.fromisoformat(created_at)
+                if tweet_dt.tzinfo is None:
+                    tweet_dt = tweet_dt.replace(tzinfo=TZ_TR)
+                age_hours = (now - tweet_dt).total_seconds() / 3600
+                if age_hours > MAX_TWEET_AGE_HOURS:
+                    seen.add(tweet_id)
+                    continue
+            except (ValueError, TypeError):
+                pass  # Parse edilemezse devam et
+
             # Engagement hesapla
             score = _engagement_score(tweet)
             is_priority = account.lower() in priority_set
@@ -410,6 +425,20 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
 
     # Mevcut cache'e ekle ve sırala
     existing_cache = load_discovery_cache()
+
+    # Eski tweet'leri cache'den temizle (MAX_TWEET_AGE_HOURS)
+    cutoff = now - datetime.timedelta(hours=MAX_TWEET_AGE_HOURS)
+    cleaned_cache = []
+    for t in existing_cache:
+        try:
+            t_dt = datetime.datetime.fromisoformat(t.get("created_at", ""))
+            if t_dt.tzinfo is None:
+                t_dt = t_dt.replace(tzinfo=TZ_TR)
+            if t_dt >= cutoff:
+                cleaned_cache.append(t)
+        except (ValueError, TypeError):
+            cleaned_cache.append(t)  # Parse edilemezse tut
+    existing_cache = cleaned_cache
 
     # Yeni tweet'leri ekle (duplicate kontrolü)
     existing_ids = {e["tweet_id"] for e in existing_cache}

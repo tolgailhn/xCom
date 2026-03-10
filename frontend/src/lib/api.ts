@@ -826,6 +826,13 @@ export function clearDiscoveryCache() {
   return apiFetch("/api/discovery/clear", { method: "DELETE" });
 }
 
+export function summarizeDiscoveryTweets(tweet_ids: string[] = []): Promise<{ success: boolean; updated: number }> {
+  return apiFetch("/api/discovery/summarize", {
+    method: "POST",
+    body: JSON.stringify({ tweet_ids }),
+  });
+}
+
 // ── Settings ───────────────────────────────────────────
 
 export function getAPIStatus() {
