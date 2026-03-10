@@ -43,6 +43,23 @@ function formatNumber(n: number): string {
   return String(n);
 }
 
+function formatDateStr(d: Date): string {
+  return d.toISOString().split("T")[0];
+}
+
+function formatDateLabel(dateStr: string): string {
+  try {
+    const d = new Date(dateStr + "T12:00:00");
+    const today = formatDateStr(new Date());
+    const yesterday = formatDateStr(new Date(Date.now() - 86400000));
+    if (dateStr === today) return "Bugun";
+    if (dateStr === yesterday) return "Dun";
+    return d.toLocaleDateString("tr-TR", { day: "numeric", month: "short", weekday: "short" });
+  } catch {
+    return dateStr;
+  }
+}
+
 const importanceBadge: Record<string, { label: string; cls: string }> = {
   yuksek: { label: "Yuksek", cls: "bg-[var(--accent-red)]/20 text-[var(--accent-red)] border-[var(--accent-red)]/30" },
   orta: { label: "Orta", cls: "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border-[var(--accent-amber)]/30" },
@@ -106,7 +123,7 @@ export default function KesifPage() {
   // Filter
   const [filterAccount, setFilterAccount] = useState("");
   const [filterImportance, setFilterImportance] = useState("");
-  const [filterDate, setFilterDate] = useState("all");
+  const [selectedDate, setSelectedDate] = useState<string>("all");
 
   const loadData = useCallback(async () => {
     try {
@@ -277,18 +294,30 @@ export default function KesifPage() {
     });
   };
 
+  // Available dates from tweets (for navigation)
+  const availableDates = (() => {
+    const dateMap: Record<string, number> = {};
+    for (const t of tweets) {
+      try {
+        const d = new Date(t.scanned_at || t.created_at);
+        const ds = formatDateStr(d);
+        dateMap[ds] = (dateMap[ds] || 0) + 1;
+      } catch { /* skip */ }
+    }
+    return Object.entries(dateMap)
+      .sort(([a], [b]) => b.localeCompare(a)) // newest first
+      .map(([date, count]) => ({ date, count }));
+  })();
+
   // Filtered tweets
   const filteredTweets = tweets.filter(t => {
     if (filterAccount && t.account.toLowerCase() !== filterAccount.toLowerCase()) return false;
     if (filterImportance && t.importance !== filterImportance) return false;
-    if (filterDate !== "all") {
+    if (selectedDate !== "all") {
       try {
         const tweetDate = new Date(t.scanned_at || t.created_at);
-        const now = new Date();
-        const diffHours = (now.getTime() - tweetDate.getTime()) / (1000 * 60 * 60);
-        if (filterDate === "today" && diffHours > 24) return false;
-        if (filterDate === "2days" && diffHours > 48) return false;
-        if (filterDate === "7days" && diffHours > 168) return false;
+        const tweetDateStr = formatDateStr(tweetDate);
+        if (tweetDateStr !== selectedDate) return false;
       } catch { /* keep */ }
     }
     return true;
@@ -311,7 +340,7 @@ export default function KesifPage() {
         <div>
           <h1 className="text-2xl font-bold">Hesap Kesfi</h1>
           <p className="text-sm text-[var(--text-secondary)]">
-            Takip edilen hesaplarin son 24 saatteki en iyi tweetleri
+            Takip edilen hesaplarin en iyi tweetleri &middot; Arsiv
           </p>
         </div>
         <div className="flex gap-2">
@@ -373,7 +402,55 @@ export default function KesifPage() {
 
       {tab === "tweets" && (
         <div className="space-y-4">
-          {/* Filters */}
+          {/* Date Navigation */}
+          <div className="card p-3">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              <button
+                onClick={() => setSelectedDate("all")}
+                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedDate === "all" ? "bg-[var(--accent-blue)] text-white" : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
+              >
+                Tumunu Goster ({tweets.length})
+              </button>
+              {availableDates.map(({ date, count }) => (
+                <button
+                  key={date}
+                  onClick={() => setSelectedDate(date)}
+                  className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedDate === date ? "bg-[var(--accent-blue)] text-white" : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
+                >
+                  {formatDateLabel(date)} ({count})
+                </button>
+              ))}
+            </div>
+            {selectedDate !== "all" && (
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--border)]">
+                <button
+                  onClick={() => {
+                    const idx = availableDates.findIndex(d => d.date === selectedDate);
+                    if (idx < availableDates.length - 1) setSelectedDate(availableDates[idx + 1].date);
+                  }}
+                  disabled={availableDates.findIndex(d => d.date === selectedDate) >= availableDates.length - 1}
+                  className="text-xs text-[var(--accent-blue)] hover:underline disabled:opacity-30 disabled:no-underline"
+                >
+                  &larr; Onceki Gun
+                </button>
+                <span className="text-xs font-semibold">
+                  {formatDateLabel(selectedDate)} &middot; {selectedDate}
+                </span>
+                <button
+                  onClick={() => {
+                    const idx = availableDates.findIndex(d => d.date === selectedDate);
+                    if (idx > 0) setSelectedDate(availableDates[idx - 1].date);
+                  }}
+                  disabled={availableDates.findIndex(d => d.date === selectedDate) <= 0}
+                  className="text-xs text-[var(--accent-blue)] hover:underline disabled:opacity-30 disabled:no-underline"
+                >
+                  Sonraki Gun &rarr;
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Other Filters */}
           <div className="flex flex-wrap gap-3 items-center">
             <select
               value={filterAccount}
@@ -394,16 +471,6 @@ export default function KesifPage() {
               <option value="yuksek">Yuksek</option>
               <option value="orta">Orta</option>
               <option value="dusuk">Dusuk</option>
-            </select>
-            <select
-              value={filterDate}
-              onChange={e => setFilterDate(e.target.value)}
-              className="input-field text-xs py-1.5"
-            >
-              <option value="all">Tum Tarihler</option>
-              <option value="today">Bugun (24 saat)</option>
-              <option value="2days">Son 2 Gun</option>
-              <option value="7days">Son 7 Gun</option>
             </select>
             <span className="text-xs text-[var(--text-secondary)]">
               {filteredTweets.length} tweet gosteriliyor
