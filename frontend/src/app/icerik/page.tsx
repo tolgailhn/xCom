@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   getStyles,
   discoverContentTopics,
@@ -105,9 +106,15 @@ function ScoreBar({ score }: { score: ScoreResult | null }) {
 /* ── Main ──────────────────────────────────────────────── */
 
 export default function IcerikPage() {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<"discover" | "generate">("discover");
   const [contentStyles, setContentStyles] = useState<ContentStyle[]>([]);
   const [formats, setFormats] = useState<FormatOption[]>([]);
+
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t === "discover" || t === "generate") setActiveTab(t);
+  }, [searchParams]);
 
   useEffect(() => {
     getStyles()

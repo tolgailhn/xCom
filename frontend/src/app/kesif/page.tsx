@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   getDiscoveryConfig,
   updateDiscoveryConfig,
@@ -83,7 +84,13 @@ interface FormatOption {
 // ── Main Component ─────────────────────────────────────
 
 export default function KesifPage() {
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<"tweets" | "ayarlar">("tweets");
+
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t === "tweets" || t === "ayarlar") setTab(t);
+  }, [searchParams]);
   const [config, setConfig] = useState<DiscoveryConfig | null>(null);
   const [tweets, setTweets] = useState<DiscoveryTweet[]>([]);
   const [status, setStatus] = useState<DiscoveryStatus | null>(null);

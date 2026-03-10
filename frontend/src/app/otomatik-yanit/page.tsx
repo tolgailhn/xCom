@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   getAutoReplyConfig,
   updateAutoReplyConfig,
@@ -30,7 +31,13 @@ type LogFilter = "all" | "ready" | "manually_posted" | "failed";
 type SelfLogFilter = "all" | "published" | "ready" | "failed";
 
 export default function OtomatikYanitPage() {
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<"config" | "logs" | "self_reply">("config");
+
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t === "config" || t === "logs" || t === "self_reply") setTab(t);
+  }, [searchParams]);
 
   // Auto-Reply state
   const [config, setConfig] = useState<AutoReplyConfig>({

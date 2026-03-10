@@ -143,34 +143,40 @@ export default function Dashboard() {
             description="Quote tweet ile arastirmali icerik"
           />
           <ActionCard
-            href="/yaz?tab=reply"
-            icon="💬"
-            title="Hizli Reply"
-            description="Tara ve hizli yanit ver"
-          />
-          <ActionCard
             href="/yaz?tab=linkreply"
             icon="🔗"
             title="Linkle Reply"
             description="Tweet linkine yanit uret"
           />
           <ActionCard
-            href="/icerik"
+            href="/yaz?tab=selfreply"
+            icon="🔄"
+            title="Self Reply"
+            description="Tweet'ine yanit zinciri olustur"
+          />
+          <ActionCard
+            href="/otomatik-yanit?tab=logs"
+            icon="🤖"
+            title="Otomatik Yanit"
+            description="Yanit loglari ve durumu"
+          />
+          <ActionCard
+            href="/kesif?tab=tweets"
+            icon="👥"
+            title="Hesap Kesfi"
+            description="Kesfedilen tweetleri gor"
+          />
+          <ActionCard
+            href="/icerik?tab=generate"
             icon="💡"
             title="Icerik Uret"
-            description="Konu kesfet, uzun icerik yaz"
+            description="Uzun icerik ve thread yaz"
           />
           <ActionCard
             href="/takvim"
             icon="📅"
             title="Takvim"
             description="Gunluk posting takvimi"
-          />
-          <ActionCard
-            href="/ayarlar"
-            icon="⚙️"
-            title="Ayarlar"
-            description="API ve yazim tarzi"
           />
         </div>
       </div>
