@@ -605,7 +605,19 @@ export default function OtomatikYanitPage() {
                     {log.reply_text && (
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(log.reply_text);
+                          try {
+                            // Fallback for non-HTTPS contexts
+                            const textarea = document.createElement("textarea");
+                            textarea.value = log.reply_text;
+                            textarea.style.position = "fixed";
+                            textarea.style.opacity = "0";
+                            document.body.appendChild(textarea);
+                            textarea.select();
+                            document.execCommand("copy");
+                            document.body.removeChild(textarea);
+                          } catch {
+                            navigator.clipboard?.writeText(log.reply_text);
+                          }
                           setCopiedId(log.id);
                           setTimeout(() => setCopiedId(null), 2000);
                         }}
