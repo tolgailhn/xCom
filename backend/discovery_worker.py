@@ -69,15 +69,120 @@ def _get_twikit_client():
 
 def _make_preview(tweet_text: str) -> str:
     """Tweet'in ilk ~200 karakterlik önizlemesini döndür (API çağrısı yok)."""
-    text = tweet_text.strip()
-    # URL'leri kısalt
     import re
+    text = tweet_text.strip()
     text = re.sub(r'https?://\S+', '[link]', text)
     if len(text) <= 200:
         return text
-    # En yakın kelime sınırında kes
     cut = text[:200].rsplit(" ", 1)[0]
     return cut + "..."
+
+
+def _generate_turkish_summary(tweets: list[dict]) -> dict[str, str]:
+    """Toplu Türkçe özet üret — tek API çağrısı ile tüm tweet'ler için."""
+    if not tweets:
+        return {}
+
+    try:
+        from backend.api.helpers import get_ai_provider
+        import json as _json
+        import ssl
+        import urllib.request
+
+        provider, api_key, _ = get_ai_provider()
+        if not api_key and provider != "claude_code":
+            return {}
+
+        # Tweet'leri numaralı liste yap
+        tweet_list = []
+        for i, t in enumerate(tweets):
+            text = t.get("text", "")[:300]
+            tweet_list.append(f"{i+1}. @{t.get('account','?')}: {text}")
+
+        prompt = (
+            "Asagidaki tweet'lerin her biri icin 1 cumlelik Turkce ozet yaz. "
+            "Ozetin tweet'in ne hakkinda oldugunu aciklayici ve bilgilendirici olmali. "
+            "Teknik terimleri Turkce'ye cevirme, olduklari gibi birak (orn: AI, LLM, API). "
+            "Her ozeti numarasiyla yaz. Sadece ozetleri yaz, baska bir sey ekleme.\n\n"
+            + "\n".join(tweet_list)
+        )
+
+        # OpenAI-compatible API kullan (MiniMax, Groq, OpenAI)
+        if provider in ("minimax", "groq", "openai"):
+            base_urls = {
+                "minimax": "https://api.minimax.io/v1",
+                "groq": "https://api.groq.com/openai/v1",
+                "openai": "https://api.openai.com/v1",
+            }
+            models = {
+                "minimax": "MiniMax-M2.5",
+                "groq": "llama-3.3-70b-versatile",
+                "openai": "gpt-4o-mini",
+            }
+            url = f"{base_urls[provider]}/chat/completions"
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            }
+            payload = {
+                "model": models[provider],
+                "messages": [
+                    {"role": "system", "content": "Tweet ozetleyici. Kisa, oz Turkce ozetler yaz."},
+                    {"role": "user", "content": prompt},
+                ],
+                "max_tokens": 1500,
+                "temperature": 0.3,
+            }
+            data = _json.dumps(payload).encode("utf-8")
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            req = urllib.request.Request(url, data=data, headers=headers)
+            with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
+                result = _json.loads(resp.read().decode("utf-8"))
+                ai_text = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+
+        elif provider == "anthropic":
+            url = "https://api.anthropic.com/v1/messages"
+            headers = {
+                "Content-Type": "application/json",
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+            }
+            payload = {
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 1500,
+                "system": "Tweet ozetleyici. Kisa, oz Turkce ozetler yaz.",
+                "messages": [{"role": "user", "content": prompt}],
+            }
+            data = _json.dumps(payload).encode("utf-8")
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            req = urllib.request.Request(url, data=data, headers=headers)
+            with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
+                result = _json.loads(resp.read().decode("utf-8"))
+                ai_text = result.get("content", [{}])[0].get("text", "")
+        else:
+            return {}
+
+        # Parse: "1. özet\n2. özet\n..." formatını tweet_id'lere eşle
+        import re
+        summaries = {}
+        lines = ai_text.strip().split("\n")
+        for line in lines:
+            m = re.match(r"(\d+)\.\s*(.+)", line.strip())
+            if m:
+                idx = int(m.group(1)) - 1
+                summary = m.group(2).strip()
+                if 0 <= idx < len(tweets):
+                    summaries[tweets[idx]["tweet_id"]] = summary
+
+        return summaries
+
+    except Exception as e:
+        logger.warning("Discovery: Turkce ozet uretilemedi: %s", e)
+        return {}
 
 
 def _fetch_thread(twikit, tweet_id: str, author: str) -> list[dict]:
@@ -291,6 +396,17 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
 
         # Rate limit koruması
         time.sleep(3)
+
+    # Toplu Türkçe özet üret (tek API çağrısı)
+    if new_tweets:
+        summaries = _generate_turkish_summary(new_tweets)
+        if summaries:
+            for tweet in new_tweets:
+                tid = tweet["tweet_id"]
+                if tid in summaries:
+                    tweet["summary_tr"] = summaries[tid]
+            logger.info("Discovery: %d/%d tweet icin Turkce ozet uretildi",
+                        len(summaries), len(new_tweets))
 
     # Mevcut cache'e ekle ve sırala
     existing_cache = load_discovery_cache()

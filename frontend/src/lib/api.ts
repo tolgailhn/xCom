@@ -774,6 +774,7 @@ export interface DiscoveryStatus {
   priority_count: number;
   normal_count: number;
   last_scan: string | null;
+  next_scan_seconds: number | null;
   current_time: string;
   account_counts: Record<string, number>;
   last_scanned_per_account: Record<string, string>;

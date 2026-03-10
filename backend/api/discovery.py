@@ -137,6 +137,19 @@ def get_status():
     last_scan = cache[0]["scanned_at"] if cache else None
     now = datetime.datetime.now(TZ_TR)
 
+    # Sonraki taramaya kalan süre (saniye)
+    next_scan_seconds = None
+    if last_scan and config.get("enabled"):
+        try:
+            last_dt = datetime.datetime.fromisoformat(last_scan)
+            if last_dt.tzinfo is None:
+                last_dt = last_dt.replace(tzinfo=TZ_TR)
+            elapsed = (now - last_dt).total_seconds()
+            remaining = max(0, 1800 - elapsed)  # 30 dk = 1800 sn
+            next_scan_seconds = int(remaining)
+        except (ValueError, TypeError):
+            pass
+
     # Hesap başına tweet sayısı
     account_counts: dict[str, int] = {}
     for t in cache:
@@ -152,6 +165,7 @@ def get_status():
         "priority_count": len(config.get("priority_accounts", [])),
         "normal_count": len(config.get("normal_accounts", [])),
         "last_scan": last_scan,
+        "next_scan_seconds": next_scan_seconds,
         "current_time": now.isoformat(),
         "account_counts": account_counts,
         "last_scanned_per_account": last_scanned_per_account,

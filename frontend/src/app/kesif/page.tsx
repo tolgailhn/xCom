@@ -117,6 +117,9 @@ export default function KesifPage() {
   const [infographicLoading, setInfographicLoading] = useState<string | null>(null);
 
   // Settings
+  // Next scan countdown
+  const [nextScanSec, setNextScanSec] = useState<number | null>(null);
+
   const [newAccount, setNewAccount] = useState("");
   const [newAccountPriority, setNewAccountPriority] = useState(false);
 
@@ -135,6 +138,9 @@ export default function KesifPage() {
       setConfig(configRes.config);
       setTweets(tweetsRes.tweets);
       setStatus(statusRes);
+      if (statusRes.next_scan_seconds != null) {
+        setNextScanSec(statusRes.next_scan_seconds);
+      }
     } catch {
       // ignore
     } finally {
@@ -143,6 +149,23 @@ export default function KesifPage() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Countdown timer — her saniye geri say
+  useEffect(() => {
+    if (nextScanSec == null || nextScanSec <= 0) return;
+    const interval = setInterval(() => {
+      setNextScanSec((prev) => {
+        if (prev == null || prev <= 1) {
+          clearInterval(interval);
+          // Süre dolduğunda verileri yenile
+          loadData();
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [nextScanSec, loadData]);
 
   const handleScan = async () => {
     setScanning(true);
@@ -378,6 +401,11 @@ export default function KesifPage() {
           <div className="card p-3 text-center">
             <div className="text-xs font-medium">{status.last_scan ? timeAgo(status.last_scan) + " once" : "Henuz yok"}</div>
             <div className="text-xs text-[var(--text-secondary)]">Son Tarama</div>
+            {nextScanSec != null && nextScanSec > 0 && status.enabled && (
+              <div className="mt-1 text-[10px] text-[var(--accent-green)]">
+                ⏱ {Math.floor(nextScanSec / 60)}:{String(nextScanSec % 60).padStart(2, "0")} sonra
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -674,8 +702,15 @@ function TweetCard({
         <span title="Yer Isareti">{formatNumber(tweet.bookmark_count)} kayit</span>
       </div>
 
+      {/* Turkish summary */}
+      {tweet.summary_tr && tweet.summary_tr !== tweet.text.slice(0, 200) && (
+        <div className="text-sm font-medium text-[var(--accent-amber)] bg-[var(--accent-amber)]/10 px-3 py-1.5 rounded">
+          🇹🇷 {tweet.summary_tr}
+        </div>
+      )}
+
       {/* Tweet text */}
-      <div className="text-sm leading-relaxed whitespace-pre-wrap">{tweet.text}</div>
+      <div className="text-sm leading-relaxed whitespace-pre-wrap text-[var(--text-secondary)]">{tweet.text}</div>
 
       {/* Thread accordion */}
       {tweet.is_thread && tweet.thread_parts.length > 1 && (
