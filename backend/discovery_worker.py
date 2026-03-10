@@ -67,25 +67,17 @@ def _get_twikit_client():
     return None
 
 
-def _generate_summary(tweet_text: str, author: str) -> str:
-    """Kısa Türkçe özet üret (1 cümle)."""
-    try:
-        from backend.api.helpers import create_generator
-        generator = create_generator(topic=tweet_text[:200])
-        summary = generator.generate_reply(
-            original_tweet=tweet_text,
-            original_author=author,
-            style="reply",
-            additional_context=(
-                "SADECE 1 cümlelik kısa Türkçe özet yaz. "
-                "Tweet'in ne hakkında olduğunu açıkla. "
-                "Yorum yapma, sadece özetle. Maksimum 100 karakter."
-            ),
-        )
-        return summary.strip() if summary else ""
-    except Exception as e:
-        logger.warning("Discovery: Summary generation failed: %s", e)
-        return ""
+def _make_preview(tweet_text: str) -> str:
+    """Tweet'in ilk ~200 karakterlik önizlemesini döndür (API çağrısı yok)."""
+    text = tweet_text.strip()
+    # URL'leri kısalt
+    import re
+    text = re.sub(r'https?://\S+', '[link]', text)
+    if len(text) <= 200:
+        return text
+    # En yakın kelime sınırında kes
+    cut = text[:200].rsplit(" ", 1)[0]
+    return cut + "..."
 
 
 def _fetch_thread(twikit, tweet_id: str, author: str) -> list[dict]:
@@ -285,7 +277,7 @@ def scan_accounts(force: bool = False):
                 "importance": _importance_level(display_score),
                 "thread_parts": thread_parts,
                 "is_thread": len(thread_parts) > 1,
-                "summary_tr": "",  # Sonra AI ile doldurulacak
+                "summary_tr": _make_preview(tweet_text),
                 "tweet_url": f"https://x.com/{account}/status/{tweet_id}",
                 "scanned_at": now.isoformat(),
             })
@@ -295,12 +287,6 @@ def scan_accounts(force: bool = False):
 
         # Rate limit koruması
         time.sleep(3)
-
-    # AI özet üret (yeni tweet'ler için — maliyet kontrolü, max 15)
-    for item in new_tweets[:15]:
-        summary = _generate_summary(item["text"], item["account"])
-        item["summary_tr"] = summary
-        time.sleep(0.5)
 
     # Mevcut cache'e ekle ve sırala
     existing_cache = load_discovery_cache()

@@ -677,13 +677,6 @@ function TweetCard({
       {/* Tweet text */}
       <div className="text-sm leading-relaxed whitespace-pre-wrap">{tweet.text}</div>
 
-      {/* Turkish summary */}
-      {tweet.summary_tr && (
-        <div className="text-xs text-[var(--accent-cyan)] italic bg-[var(--accent-cyan)]/5 px-3 py-1.5 rounded">
-          {tweet.summary_tr}
-        </div>
-      )}
-
       {/* Thread accordion */}
       {tweet.is_thread && tweet.thread_parts.length > 1 && (
         <div>
