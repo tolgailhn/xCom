@@ -237,7 +237,8 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
                 seen.add(tweet_id)
                 continue
 
-            created_at = tweet.get("created_at", "")
+            raw_created = tweet.get("created_at", "")
+            created_at = str(raw_created) if not isinstance(raw_created, str) else raw_created
 
             # Engagement hesapla
             score = _engagement_score(tweet)

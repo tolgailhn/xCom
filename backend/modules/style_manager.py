@@ -675,7 +675,7 @@ def save_discovery_cache(cache: list[dict]):
     path = DATA_DIR / "discovery_cache.json"
     os.makedirs(DATA_DIR, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(cache, f, ensure_ascii=False, indent=2)
+        json.dump(cache, f, ensure_ascii=False, indent=2, default=str)
 
 
 def load_discovery_seen() -> set:
