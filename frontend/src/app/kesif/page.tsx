@@ -453,11 +453,13 @@ export default function KesifPage() {
           <div className="card p-3 text-center">
             <div className="text-xs font-medium">{status.last_scan ? timeAgo(status.last_scan) + " once" : "Henuz yok"}</div>
             <div className="text-xs text-[var(--text-secondary)]">Son Tarama</div>
-            {nextScanSec != null && nextScanSec > 0 && status.enabled && (
-              <div className="mt-1 text-[10px] text-[var(--accent-green)]">
+            {nextScanSec != null && nextScanSec > 0 ? (
+              <div className="mt-1 text-xs font-medium text-[var(--accent-green)]">
                 ⏱ {Math.floor(nextScanSec / 60)}:{String(nextScanSec % 60).padStart(2, "0")} sonra
               </div>
-            )}
+            ) : status.enabled ? (
+              <div className="mt-1 text-xs text-[var(--accent-green)]">Tarama aktif</div>
+            ) : null}
           </div>
         </div>
       )}
@@ -884,15 +886,22 @@ function TweetCard({
         <span title="Yer Isareti">{formatNumber(tweet.bookmark_count)} kayit</span>
       </div>
 
-      {/* Turkish summary */}
-      {tweet.summary_tr && tweet.summary_tr !== tweet.text.slice(0, 200) && (
-        <div className="text-sm font-medium text-[var(--accent-amber)] bg-[var(--accent-amber)]/10 px-3 py-1.5 rounded">
-          🇹🇷 {tweet.summary_tr}
-        </div>
+      {/* Turkish summary as main text, or original if no summary */}
+      {tweet.summary_tr && tweet.summary_tr !== tweet.text.slice(0, 200) ? (
+        <>
+          <div className="text-sm leading-relaxed font-medium text-[var(--text-primary)]">
+            🇹🇷 {tweet.summary_tr}
+          </div>
+          <details className="group">
+            <summary className="text-[11px] text-[var(--text-secondary)] cursor-pointer hover:text-[var(--accent-purple)]">
+              Orijinal tweet&apos;i gor
+            </summary>
+            <div className="mt-1 text-xs leading-relaxed whitespace-pre-wrap text-[var(--text-secondary)] opacity-70">{tweet.text}</div>
+          </details>
+        </>
+      ) : (
+        <div className="text-sm leading-relaxed whitespace-pre-wrap text-[var(--text-secondary)]">{tweet.text}</div>
       )}
-
-      {/* Tweet text */}
-      <div className="text-sm leading-relaxed whitespace-pre-wrap text-[var(--text-secondary)]">{tweet.text}</div>
 
       {/* Thread accordion */}
       {tweet.is_thread && tweet.thread_parts.length > 1 && (
