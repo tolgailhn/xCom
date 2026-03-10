@@ -250,6 +250,9 @@ def check_self_replies():
                     "status": "ready",
                 })
                 previous_reply_texts.append(reply_text)
+                _send_telegram_self_reply(
+                    tweet_text, reply_text, reply_number, "", "ready",
+                )
                 continue
 
             # Araya bekleme koy (ilk reply haric)
@@ -278,6 +281,11 @@ def check_self_replies():
                     "reply_url": result.get("url", ""),
                     "status": "published",
                 })
+
+                _send_telegram_self_reply(
+                    tweet_text, reply_text, reply_number,
+                    result.get("url", ""), "published",
+                )
 
                 # Sonraki reply bu reply'a gelecek
                 if new_reply_id:
@@ -396,3 +404,26 @@ def _publish_self_reply(text: str, reply_to_id: str) -> dict:
             })
 
     return result
+
+
+def _send_telegram_self_reply(tweet_text: str, reply_text: str,
+                               reply_number: int, reply_url: str,
+                               status: str):
+    """Telegram'a self-reply bildirimi gonder."""
+    try:
+        from backend.config import get_settings
+        from backend.modules.telegram_notifier import TelegramNotifier
+
+        settings = get_settings()
+        if not settings.telegram_bot_token or not settings.telegram_chat_id:
+            return
+        notifier = TelegramNotifier(settings.telegram_bot_token, settings.telegram_chat_id)
+        notifier.send_self_reply_notification(
+            tweet_text=tweet_text,
+            reply_text=reply_text,
+            reply_number=reply_number,
+            reply_url=reply_url,
+            status=status,
+        )
+    except Exception as e:
+        logger.warning("Self-reply telegram notification failed: %s", e)

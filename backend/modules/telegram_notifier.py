@@ -92,6 +92,115 @@ class TelegramNotifier:
 
         return self.send_message(message)
 
+    def send_auto_reply_notification(self, account: str, tweet_text: str,
+                                       reply_text: str, tweet_id: str = "",
+                                       engagement_score: float = 0) -> bool:
+        """Auto-reply hazir bildirim gonder."""
+        tweet_url = f"https://x.com/{account}/status/{tweet_id}" if tweet_id else ""
+        lines = [
+            "<b>🔔 Otomatik Yanit Hazir</b>",
+            "",
+            f"<b>@{account}</b> tweet'ine yanit uretildi",
+            f"❤️ Engagement: {engagement_score:.0f}",
+            "",
+            "<b>Orijinal tweet:</b>",
+            f"<i>{tweet_text[:300]}</i>",
+            "",
+            "<b>Uretilen yanit:</b>",
+            reply_text[:500],
+        ]
+        if tweet_url:
+            lines.append("")
+            lines.append(f'<a href="{tweet_url}">Tweet\'i ac</a>')
+        lines.append("")
+        lines.append("<i>Dashboard'dan onayla veya duzenle</i>")
+
+        message = "\n".join(lines)
+        if len(message) > 4000:
+            message = message[:4000] + "\n\n<i>...mesaj kesildi</i>"
+        return self.send_message(message)
+
+    def send_self_reply_notification(self, tweet_text: str, reply_text: str,
+                                      reply_number: int = 1,
+                                      reply_url: str = "",
+                                      status: str = "published") -> bool:
+        """Self-reply bildirim gonder."""
+        if status == "published":
+            title = "💬 Self-Reply Paylasildi"
+        else:
+            title = "💬 Self-Reply Hazir"
+
+        lines = [
+            f"<b>{title}</b>",
+            "",
+            f"<b>Orijinal tweet:</b>",
+            f"<i>{tweet_text[:200]}</i>",
+            "",
+            f"<b>Reply #{reply_number}:</b>",
+            reply_text[:500],
+        ]
+        if reply_url:
+            lines.append("")
+            lines.append(f'<a href="{reply_url}">Reply\'i gor</a>')
+
+        message = "\n".join(lines)
+        if len(message) > 4000:
+            message = message[:4000] + "\n\n<i>...mesaj kesildi</i>"
+        return self.send_message(message)
+
+    def send_discovery_summary(self, new_count: int, total_count: int,
+                                accounts_scanned: list[str],
+                                top_tweets: list[dict] | None = None) -> bool:
+        """Discovery tarama ozeti gonder."""
+        if new_count == 0:
+            return True  # Yeni tweet yoksa bildirim gonderme
+
+        lines = [
+            "<b>🔍 Hesap Kesfi Taramasi</b>",
+            "",
+            f"📊 <b>{new_count}</b> yeni tweet bulundu (toplam: {total_count})",
+            f"👥 Taranan: {', '.join(f'@{a}' for a in accounts_scanned)}",
+        ]
+
+        if top_tweets:
+            lines.append("")
+            lines.append("<b>En iyi tweetler:</b>")
+            for i, t in enumerate(top_tweets[:5], 1):
+                acc = t.get("account", "?")
+                text = t.get("summary_tr", t.get("text", ""))[:150]
+                score = t.get("display_score", 0)
+                url = t.get("tweet_url", "")
+                lines.append(f"\n<b>#{i}</b> @{acc} (⭐ {score:.0f})")
+                lines.append(f"{text}")
+                if url:
+                    lines.append(f'<a href="{url}">Gor</a>')
+
+        message = "\n".join(lines)
+        if len(message) > 4000:
+            message = message[:4000] + "\n\n<i>...mesaj kesildi</i>"
+        return self.send_message(message)
+
+    def get_updates(self, offset: int = 0, timeout: int = 1) -> list[dict]:
+        """Telegram'dan yeni mesajlari cek (long polling)."""
+        url = f"{self.base_url}/getUpdates"
+        params = {
+            "timeout": timeout,
+            "allowed_updates": '["message"]',
+        }
+        if offset:
+            params["offset"] = offset
+
+        try:
+            query = urllib.parse.urlencode(params)
+            req = urllib.request.Request(f"{url}?{query}")
+            with urllib.request.urlopen(req, timeout=timeout + 5) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+                if result.get("ok"):
+                    return result.get("result", [])
+        except Exception:
+            pass
+        return []
+
     def test_connection(self) -> dict:
         """Bot baglatisini test et. Bot bilgilerini doner."""
         url = f"{self.base_url}/getMe"

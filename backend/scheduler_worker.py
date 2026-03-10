@@ -229,6 +229,15 @@ def _check_discovery():
         logger.exception("Discovery check error")
 
 
+def _check_telegram():
+    """Telegram bot — mesajlari kontrol et ve cevapla."""
+    try:
+        from backend.telegram_bot import check_telegram_messages
+        check_telegram_messages()
+    except Exception:
+        logger.exception("Telegram bot check error")
+
+
 def start_scheduler():
     """Scheduler'i baslat — FastAPI startup'ta cagirilir."""
     if not scheduler.running:
@@ -267,8 +276,15 @@ def start_scheduler():
             id="discovery_checker",
             replace_existing=True,
         )
+        scheduler.add_job(
+            _check_telegram,
+            "interval",
+            seconds=5,
+            id="telegram_bot",
+            replace_existing=True,
+        )
         scheduler.start()
-        logger.info("Scheduler started — publish 1m, metrics 30m, auto-reply 5m, self-reply 15m, discovery 30m (batch)")
+        logger.info("Scheduler started — publish 1m, metrics 30m, auto-reply 5m, self-reply 15m, discovery 30m, telegram 5s")
 
 
 def stop_scheduler():

@@ -317,3 +317,34 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
         len(new_tweets), len(existing_cache),
         ", ".join(f"@{a}" for a in accounts_to_scan),
     )
+
+    # Telegram bildirimi gonder
+    if new_tweets:
+        _send_telegram_discovery(
+            new_count=len(new_tweets),
+            total_count=len(existing_cache),
+            accounts_scanned=accounts_to_scan,
+            top_tweets=sorted(new_tweets, key=lambda x: x.get("display_score", 0), reverse=True)[:5],
+        )
+
+
+def _send_telegram_discovery(new_count: int, total_count: int,
+                              accounts_scanned: list[str],
+                              top_tweets: list[dict]):
+    """Telegram'a discovery ozeti gonder."""
+    try:
+        from backend.config import get_settings
+        from backend.modules.telegram_notifier import TelegramNotifier
+
+        settings = get_settings()
+        if not settings.telegram_bot_token or not settings.telegram_chat_id:
+            return
+        notifier = TelegramNotifier(settings.telegram_bot_token, settings.telegram_chat_id)
+        notifier.send_discovery_summary(
+            new_count=new_count,
+            total_count=total_count,
+            accounts_scanned=accounts_scanned,
+            top_tweets=top_tweets,
+        )
+    except Exception as e:
+        logger.warning("Discovery telegram notification failed: %s", e)

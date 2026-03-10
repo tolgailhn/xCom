@@ -282,6 +282,11 @@ def check_and_reply():
                 "Auto-reply: DRAFT for @%s tweet %s — ready for manual posting",
                 account, tweet_id,
             )
+            # Telegram bildirimi gonder
+            _send_telegram_auto_reply(
+                account, tweet_text, reply_text, tweet_id,
+                _engagement_score(best_tweet),
+            )
             continue
 
         # Publish: önce reply dene, 403 alırsa quote tweet yap
@@ -443,3 +448,25 @@ def _publish_with_fallback(text: str, tweet_id: str, account: str) -> dict:
             })
 
     return result
+
+
+def _send_telegram_auto_reply(account: str, tweet_text: str, reply_text: str,
+                               tweet_id: str, engagement_score: float):
+    """Telegram'a auto-reply bildirimi gonder."""
+    try:
+        from backend.config import get_settings
+        from backend.modules.telegram_notifier import TelegramNotifier
+
+        settings = get_settings()
+        if not settings.telegram_bot_token or not settings.telegram_chat_id:
+            return
+        notifier = TelegramNotifier(settings.telegram_bot_token, settings.telegram_chat_id)
+        notifier.send_auto_reply_notification(
+            account=account,
+            tweet_text=tweet_text,
+            reply_text=reply_text,
+            tweet_id=tweet_id,
+            engagement_score=engagement_score,
+        )
+    except Exception as e:
+        logger.warning("Auto-reply telegram notification failed: %s", e)
