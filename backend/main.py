@@ -26,6 +26,7 @@ from backend.api.drafts import router as drafts_router
 from backend.api.scheduler import router as scheduler_router
 from backend.api.performance import router as performance_router
 from backend.api.auto_reply import router as auto_reply_router
+from backend.api.self_reply import router as self_reply_router
 
 app = FastAPI(
     title="X AI Otomasyon API",
@@ -57,6 +58,7 @@ app.include_router(drafts_router, prefix="/api/drafts", tags=["drafts"])
 app.include_router(scheduler_router, prefix="/api/scheduler", tags=["scheduler"])
 app.include_router(performance_router, prefix="/api/performance", tags=["performance"])
 app.include_router(auto_reply_router, prefix="/api/auto-reply", tags=["auto-reply"])
+app.include_router(self_reply_router, prefix="/api/self-reply", tags=["self-reply"])
 
 
 @app.on_event("startup")

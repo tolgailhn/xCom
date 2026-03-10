@@ -11,15 +11,28 @@ import {
   getAutoReplyStatus,
   getStyles,
   markAutoReplyLogPosted,
+  getSelfReplyConfig,
+  updateSelfReplyConfig,
+  getSelfReplyLogs,
+  clearSelfReplyLogs,
+  deleteSelfReplyLog,
+  triggerSelfReplyCheck,
+  getSelfReplyStatus,
   type AutoReplyConfig,
   type AutoReplyLog,
   type AutoReplyStatus,
+  type SelfReplyConfig,
+  type SelfReplyLog,
+  type SelfReplyStatus,
 } from "@/lib/api";
 
 type LogFilter = "all" | "ready" | "manually_posted" | "failed";
+type SelfLogFilter = "all" | "published" | "ready" | "failed";
 
 export default function OtomatikYanitPage() {
-  const [tab, setTab] = useState<"config" | "logs">("config");
+  const [tab, setTab] = useState<"config" | "logs" | "self_reply">("config");
+
+  // Auto-Reply state
   const [config, setConfig] = useState<AutoReplyConfig>({
     enabled: false,
     accounts: [],
@@ -45,6 +58,27 @@ export default function OtomatikYanitPage() {
   const [logFilter, setLogFilter] = useState<LogFilter>("all");
   const [markingId, setMarkingId] = useState<string | null>(null);
 
+  // Self-Reply state
+  const [selfConfig, setSelfConfig] = useState<SelfReplyConfig>({
+    enabled: false,
+    username: "",
+    max_daily_tweets: 4,
+    replies_per_tweet: 3,
+    reply_interval_minutes: 15,
+    min_tweet_age_minutes: 30,
+    max_tweet_age_days: 5,
+    style: "samimi",
+    draft_only: false,
+    work_hour_start: 9,
+    work_hour_end: 23,
+  });
+  const [selfLogs, setSelfLogs] = useState<SelfReplyLog[]>([]);
+  const [selfStatus, setSelfStatus] = useState<SelfReplyStatus | null>(null);
+  const [selfSaving, setSelfSaving] = useState(false);
+  const [selfTriggering, setSelfTriggering] = useState(false);
+  const [selfMessage, setSelfMessage] = useState("");
+  const [selfLogFilter, setSelfLogFilter] = useState<SelfLogFilter>("all");
+
   useEffect(() => {
     loadAll();
   }, []);
@@ -52,22 +86,30 @@ export default function OtomatikYanitPage() {
   async function loadAll() {
     setLoading(true);
     try {
-      const [configRes, logsRes, statusRes, stylesRes] = await Promise.all([
+      const [configRes, logsRes, statusRes, stylesRes, selfConfigRes, selfLogsRes, selfStatusRes] = await Promise.all([
         getAutoReplyConfig(),
         getAutoReplyLogs(200),
         getAutoReplyStatus(),
         getStyles().catch(() => ({ styles: [] })),
+        getSelfReplyConfig().catch(() => ({ config: selfConfig })),
+        getSelfReplyLogs(200).catch(() => ({ logs: [] })),
+        getSelfReplyStatus().catch(() => null),
       ]);
       setConfig(configRes.config);
       setLogs(logsRes.logs);
       setStatus(statusRes);
       if (stylesRes.styles) setStyles(stylesRes.styles);
+      setSelfConfig(selfConfigRes.config);
+      setSelfLogs(selfLogsRes.logs);
+      if (selfStatusRes) setSelfStatus(selfStatusRes);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
   }
+
+  // ── Auto-Reply handlers ──────────────────────────────
 
   async function handleSave() {
     setSaving(true);
@@ -139,6 +181,64 @@ export default function OtomatikYanitPage() {
     }
   }
 
+  // ── Self-Reply handlers ──────────────────────────────
+
+  async function handleSelfSave() {
+    setSelfSaving(true);
+    setSelfMessage("");
+    try {
+      await updateSelfReplyConfig(selfConfig);
+      setSelfMessage("Self-reply ayarlari kaydedildi!");
+      const statusRes = await getSelfReplyStatus();
+      setSelfStatus(statusRes);
+    } catch (err: unknown) {
+      setSelfMessage(`Hata: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setSelfSaving(false);
+    }
+  }
+
+  async function handleSelfTrigger() {
+    setSelfTriggering(true);
+    setSelfMessage("");
+    try {
+      await triggerSelfReplyCheck();
+      setSelfMessage("Self-reply kontrol tamamlandi!");
+      const [logsRes, statusRes] = await Promise.all([
+        getSelfReplyLogs(200),
+        getSelfReplyStatus(),
+      ]);
+      setSelfLogs(logsRes.logs);
+      setSelfStatus(statusRes);
+    } catch (err: unknown) {
+      setSelfMessage(`Hata: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setSelfTriggering(false);
+    }
+  }
+
+  async function handleSelfClearLogs() {
+    if (!confirm("Tum self-reply loglarini silmek istediginize emin misiniz?")) return;
+    try {
+      await clearSelfReplyLogs();
+      setSelfLogs([]);
+      setSelfMessage("Loglar temizlendi");
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleSelfDeleteLog(logId: string) {
+    try {
+      await deleteSelfReplyLog(logId);
+      setSelfLogs((prev) => prev.filter((l) => l.id !== logId));
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  // ── Shared helpers ──────────────────────────────────
+
   function copyToClipboard(text: string, logId: string) {
     try {
       const textarea = document.createElement("textarea");
@@ -191,7 +291,7 @@ export default function OtomatikYanitPage() {
     }
   }
 
-  // Filter logs
+  // Auto-reply log filtering
   const filteredLogs = logs.filter((log) => {
     if (logFilter === "all") return true;
     if (logFilter === "ready") return log.status === "ready";
@@ -200,10 +300,22 @@ export default function OtomatikYanitPage() {
     return true;
   });
 
-  // Counts
   const readyCount = logs.filter((l) => l.status === "ready").length;
   const postedCount = logs.filter((l) => l.status === "manually_posted" || l.status === "published").length;
   const failedCount = logs.filter((l) => l.status === "generation_failed" || l.status === "publish_failed").length;
+
+  // Self-reply log filtering
+  const filteredSelfLogs = selfLogs.filter((log) => {
+    if (selfLogFilter === "all") return true;
+    if (selfLogFilter === "published") return log.status === "published";
+    if (selfLogFilter === "ready") return log.status === "ready";
+    if (selfLogFilter === "failed") return log.status === "generation_failed" || log.status === "publish_failed";
+    return true;
+  });
+
+  const selfPublishedCount = selfLogs.filter((l) => l.status === "published").length;
+  const selfReadyCount = selfLogs.filter((l) => l.status === "ready").length;
+  const selfFailedCount = selfLogs.filter((l) => l.status === "generation_failed" || l.status === "publish_failed").length;
 
   function getStatusBadge(log: AutoReplyLog) {
     switch (log.status) {
@@ -231,12 +343,27 @@ export default function OtomatikYanitPage() {
     }
   }
 
+  function getSelfStatusBadge(status: string) {
+    switch (status) {
+      case "published":
+        return { label: "Yayinlandi", cls: "bg-green-500/20 text-green-400" };
+      case "ready":
+        return { label: "Taslak", cls: "bg-yellow-500/20 text-yellow-400" };
+      case "generation_failed":
+        return { label: "Uretim Hatasi", cls: "bg-red-500/20 text-red-400" };
+      case "publish_failed":
+        return { label: "Paylasim Hatasi", cls: "bg-red-500/20 text-red-400" };
+      default:
+        return { label: status, cls: "bg-gray-500/20 text-gray-400" };
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl md:text-3xl font-bold gradient-text">Otomatik Yanit</h1>
-        {status && (
-          <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {status && (
             <span
               className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
                 status.enabled
@@ -249,10 +376,26 @@ export default function OtomatikYanitPage() {
                   status.enabled ? "bg-green-400 animate-pulse" : "bg-red-400"
                 }`}
               />
-              {status.enabled ? (status.draft_only ? "Taslak Modu" : "Aktif") : "Pasif"}
+              {status.enabled ? (status.draft_only ? "Taslak" : "Aktif") : "Pasif"}
             </span>
-          </div>
-        )}
+          )}
+          {selfStatus && (
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+                selfStatus.enabled
+                  ? "bg-purple-500/20 text-purple-400"
+                  : "bg-gray-500/20 text-gray-400"
+              }`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  selfStatus.enabled ? "bg-purple-400 animate-pulse" : "bg-gray-400"
+                }`}
+              />
+              Self {selfStatus.enabled ? (selfStatus.draft_only ? "Taslak" : "Aktif") : "Pasif"}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Status Cards */}
@@ -278,9 +421,9 @@ export default function OtomatikYanitPage() {
           </div>
           <div className="card p-4 text-center">
             <div className="text-2xl font-bold text-purple-400">
-              {status.total_replies}
+              {selfStatus?.total_published || 0}
             </div>
-            <div className="text-xs text-[var(--text-secondary)]">API Yanit</div>
+            <div className="text-xs text-[var(--text-secondary)]">Self Reply</div>
           </div>
           <div className="card p-4 text-center">
             <div className="text-2xl font-bold text-red-400">
@@ -321,10 +464,29 @@ export default function OtomatikYanitPage() {
             </span>
           )}
         </button>
+        <button
+          onClick={() => {
+            setTab("self_reply");
+            getSelfReplyLogs(200).then((res) => setSelfLogs(res.logs)).catch(() => {});
+            getSelfReplyStatus().then((res) => setSelfStatus(res)).catch(() => {});
+          }}
+          className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-all flex items-center gap-2 ${
+            tab === "self_reply"
+              ? "bg-purple-500/20 text-purple-400 border-b-2 border-purple-400"
+              : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          }`}
+        >
+          Self Reply
+          {selfStatus && selfStatus.enabled && (
+            <span className="bg-purple-500/20 text-purple-400 text-xs px-1.5 py-0.5 rounded-full font-bold">
+              {selfStatus.today_replied}/{selfStatus.max_daily}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Message */}
-      {message && (
+      {tab !== "self_reply" && message && (
         <div
           className={`p-3 rounded-lg text-sm ${
             message.startsWith("Hata")
@@ -336,7 +498,9 @@ export default function OtomatikYanitPage() {
         </div>
       )}
 
-      {/* Config Tab */}
+      {/* ══════════════════════════════════════════════════ */}
+      {/* Config Tab (Auto-Reply) */}
+      {/* ══════════════════════════════════════════════════ */}
       {tab === "config" && (
         <div className="space-y-6">
           {/* Enable Toggle + Draft Mode */}
@@ -620,7 +784,9 @@ export default function OtomatikYanitPage() {
         </div>
       )}
 
-      {/* Logs Tab */}
+      {/* ══════════════════════════════════════════════════ */}
+      {/* Logs Tab (Auto-Reply) */}
+      {/* ══════════════════════════════════════════════════ */}
       {tab === "logs" && (
         <div className="space-y-4">
           {/* Filter Bar */}
@@ -717,13 +883,13 @@ export default function OtomatikYanitPage() {
                       </div>
                     </div>
 
-                    {/* Original tweet — full text */}
+                    {/* Original tweet */}
                     <div className="mb-3 p-3 rounded-lg bg-[var(--bg-primary)] text-sm leading-relaxed">
                       <div className="text-xs text-[var(--text-secondary)] mb-1 font-medium">Orijinal Tweet</div>
                       <div className="whitespace-pre-wrap">{log.tweet_text}</div>
                     </div>
 
-                    {/* Generated reply — full text, prominent */}
+                    {/* Generated reply */}
                     {log.reply_text && (
                       <div className="mb-3 p-3 rounded-lg bg-[var(--accent-blue)]/5 border border-[var(--accent-blue)]/20 text-sm leading-relaxed">
                         <div className="text-xs text-[var(--accent-blue)] mb-1 font-medium">Uretilen Yanit</div>
@@ -738,9 +904,8 @@ export default function OtomatikYanitPage() {
                       </div>
                     )}
 
-                    {/* Action Buttons — prominent layout */}
+                    {/* Action Buttons */}
                     <div className="flex flex-wrap items-center gap-2">
-                      {/* COPY — big and prominent for ready status */}
                       {log.reply_text && (
                         <button
                           onClick={() => copyToClipboard(log.reply_text, log.id)}
@@ -760,7 +925,6 @@ export default function OtomatikYanitPage() {
                         </button>
                       )}
 
-                      {/* Open tweet on X */}
                       {log.tweet_id && (
                         <a
                           href={`https://x.com/${log.account}/status/${log.tweet_id}`}
@@ -776,7 +940,6 @@ export default function OtomatikYanitPage() {
                         </a>
                       )}
 
-                      {/* Mark as manually posted */}
                       {log.status === "ready" && (
                         <button
                           onClick={() => handleMarkPosted(log.id)}
@@ -787,7 +950,6 @@ export default function OtomatikYanitPage() {
                         </button>
                       )}
 
-                      {/* Reply URL (if published via API) */}
                       {log.reply_url && (
                         <a
                           href={log.reply_url}
@@ -804,6 +966,457 @@ export default function OtomatikYanitPage() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════ */}
+      {/* Self Reply Tab */}
+      {/* ══════════════════════════════════════════════════ */}
+      {tab === "self_reply" && (
+        <div className="space-y-6">
+          {/* Self Message */}
+          {selfMessage && (
+            <div
+              className={`p-3 rounded-lg text-sm ${
+                selfMessage.startsWith("Hata")
+                  ? "bg-red-500/20 text-red-400"
+                  : "bg-green-500/20 text-green-400"
+              }`}
+            >
+              {selfMessage}
+            </div>
+          )}
+
+          {/* Self-Reply Status Cards */}
+          {selfStatus && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="card p-4 text-center">
+                <div className="text-2xl font-bold text-purple-400">
+                  {selfStatus.today_replied}/{selfStatus.max_daily}
+                </div>
+                <div className="text-xs text-[var(--text-secondary)]">Bugun</div>
+              </div>
+              <div className="card p-4 text-center">
+                <div className="text-2xl font-bold text-green-400">
+                  {selfStatus.total_published}
+                </div>
+                <div className="text-xs text-[var(--text-secondary)]">Toplam Yayinlanan</div>
+              </div>
+              <div className="card p-4 text-center">
+                <div className="text-2xl font-bold text-[var(--accent-blue)]">
+                  {selfStatus.total_tweets_with_replies}
+                </div>
+                <div className="text-xs text-[var(--text-secondary)]">Tweet Kapsandi</div>
+              </div>
+              <div className="card p-4 text-center">
+                <div className="text-2xl font-bold text-yellow-400">
+                  {selfStatus.total_ready}
+                </div>
+                <div className="text-xs text-[var(--text-secondary)]">Taslak</div>
+              </div>
+            </div>
+          )}
+
+          {/* Enable + Config */}
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold">Self-Reply Otomasyonu</h3>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Kendi tweetlerine otomatik self-reply at. X algoritması self-reply&apos;i &quot;devam eden konusma&quot; olarak gorur ve engagement&apos;i arttirir.
+                </p>
+              </div>
+              <button
+                onClick={() =>
+                  setSelfConfig((prev) => ({ ...prev, enabled: !prev.enabled }))
+                }
+                className={`relative w-14 h-7 rounded-full transition-colors ${
+                  selfConfig.enabled ? "bg-purple-500" : "bg-gray-600"
+                }`}
+              >
+                <span
+                  className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${
+                    selfConfig.enabled ? "left-8" : "left-1"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Draft Only */}
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-purple-500/5 border border-purple-500/20 mb-4">
+              <button
+                onClick={() =>
+                  setSelfConfig((prev) => ({ ...prev, draft_only: !prev.draft_only }))
+                }
+                className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${
+                  selfConfig.draft_only ? "bg-yellow-500" : "bg-gray-600"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                    selfConfig.draft_only ? "left-5" : "left-0.5"
+                  }`}
+                />
+              </button>
+              <div>
+                <span className="text-sm font-medium">Taslak Modu</span>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  {selfConfig.draft_only
+                    ? "Reply&apos;lar sadece uretilir, paylasim yapilmaz."
+                    : "Reply&apos;lar uretilir ve otomatik paylasilir."}
+                </p>
+              </div>
+            </div>
+
+            {/* Username */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">X Hesap Adi</label>
+              <input
+                type="text"
+                value={selfConfig.username}
+                onChange={(e) =>
+                  setSelfConfig((prev) => ({ ...prev, username: e.target.value.replace(/^@/, "") }))
+                }
+                placeholder="kullaniciadi"
+                className="input w-full md:w-1/2"
+              />
+              <p className="text-xs text-[var(--text-secondary)] mt-1">
+                Self-reply atilacak kendi X hesabin
+              </p>
+            </div>
+
+            {/* Settings Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Gunluk Max Tweet</label>
+                <input
+                  type="number"
+                  value={selfConfig.max_daily_tweets}
+                  onChange={(e) =>
+                    setSelfConfig((prev) => ({
+                      ...prev,
+                      max_daily_tweets: parseInt(e.target.value) || 4,
+                    }))
+                  }
+                  min={1}
+                  max={10}
+                  className="input w-full"
+                />
+                <p className="text-xs text-[var(--text-secondary)] mt-1">
+                  Gunde max kac tweet&apos;e self-reply atilsin
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Tweet Basi Reply</label>
+                <input
+                  type="number"
+                  value={selfConfig.replies_per_tweet}
+                  onChange={(e) =>
+                    setSelfConfig((prev) => ({
+                      ...prev,
+                      replies_per_tweet: parseInt(e.target.value) || 3,
+                    }))
+                  }
+                  min={1}
+                  max={5}
+                  className="input w-full"
+                />
+                <p className="text-xs text-[var(--text-secondary)] mt-1">
+                  Her tweet&apos;e kac self-reply atilsin
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Reply Araligi (dk)</label>
+                <input
+                  type="number"
+                  value={selfConfig.reply_interval_minutes}
+                  onChange={(e) =>
+                    setSelfConfig((prev) => ({
+                      ...prev,
+                      reply_interval_minutes: parseInt(e.target.value) || 15,
+                    }))
+                  }
+                  min={5}
+                  max={60}
+                  className="input w-full"
+                />
+                <p className="text-xs text-[var(--text-secondary)] mt-1">
+                  Self-reply&apos;lar arasi bekleme suresi
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Min Tweet Yasi (dk)</label>
+                <input
+                  type="number"
+                  value={selfConfig.min_tweet_age_minutes}
+                  onChange={(e) =>
+                    setSelfConfig((prev) => ({
+                      ...prev,
+                      min_tweet_age_minutes: parseInt(e.target.value) || 30,
+                    }))
+                  }
+                  min={5}
+                  max={180}
+                  className="input w-full"
+                />
+                <p className="text-xs text-[var(--text-secondary)] mt-1">
+                  Tweet&apos;in en az kac dk sonra reply alacagi
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Max Tweet Yasi (gun)</label>
+                <input
+                  type="number"
+                  value={selfConfig.max_tweet_age_days}
+                  onChange={(e) =>
+                    setSelfConfig((prev) => ({
+                      ...prev,
+                      max_tweet_age_days: parseInt(e.target.value) || 5,
+                    }))
+                  }
+                  min={1}
+                  max={14}
+                  className="input w-full"
+                />
+                <p className="text-xs text-[var(--text-secondary)] mt-1">
+                  Son kac gunun tweetlerine reply atilsin
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Yazim Tarzi</label>
+                <select
+                  value={selfConfig.style}
+                  onChange={(e) =>
+                    setSelfConfig((prev) => ({ ...prev, style: e.target.value }))
+                  }
+                  className="input w-full"
+                >
+                  <option value="samimi">Samimi</option>
+                  {styles.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Work hours */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Baslangic Saati</label>
+                <input
+                  type="number"
+                  value={selfConfig.work_hour_start}
+                  onChange={(e) =>
+                    setSelfConfig((prev) => ({
+                      ...prev,
+                      work_hour_start: parseInt(e.target.value) || 9,
+                    }))
+                  }
+                  min={0}
+                  max={23}
+                  className="input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Bitis Saati</label>
+                <input
+                  type="number"
+                  value={selfConfig.work_hour_end}
+                  onChange={(e) =>
+                    setSelfConfig((prev) => ({
+                      ...prev,
+                      work_hour_end: parseInt(e.target.value) || 23,
+                    }))
+                  }
+                  min={1}
+                  max={24}
+                  className="input w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* How it works */}
+          <div className="card p-5 bg-purple-500/5 border border-purple-500/20">
+            <h4 className="text-sm font-semibold text-purple-400 mb-2">Nasil Calisir?</h4>
+            <ul className="text-xs text-[var(--text-secondary)] space-y-1">
+              <li>- Her 15 dakikada kendi tweetlerin kontrol edilir</li>
+              <li>- Son {selfConfig.max_tweet_age_days} gundeki orijinal tweetlerine {selfConfig.replies_per_tweet} self-reply uretilir</li>
+              <li>- Gunde max {selfConfig.max_daily_tweets} tweet&apos;e self-reply atilir</li>
+              <li>- Reply&apos;lar {selfConfig.reply_interval_minutes} dk arayla paylasilir</li>
+              <li>- Her reply farkli bir acidan devam eder: ek bilgi, deneyim, CTA</li>
+              <li>- Zaten reply atilmis tweetlere tekrar atilmaz</li>
+              <li>- Training DNA&apos;n (tolga style) kullanilarak dogal reply uretilir</li>
+            </ul>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <button
+              onClick={handleSelfSave}
+              disabled={selfSaving}
+              className="btn-primary px-6 py-2.5"
+            >
+              {selfSaving ? "Kaydediliyor..." : "Kaydet"}
+            </button>
+            <button
+              onClick={handleSelfTrigger}
+              disabled={selfTriggering || !selfConfig.enabled || !selfConfig.username}
+              className="px-6 py-2.5 rounded-lg font-medium text-sm transition-all bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border border-purple-500/30 disabled:opacity-50"
+            >
+              {selfTriggering ? "Kontrol ediliyor..." : "Simdi Kontrol Et"}
+            </button>
+          </div>
+
+          {/* Self-Reply Logs */}
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex gap-2 flex-wrap">
+                {([
+                  { key: "all" as SelfLogFilter, label: "Tumu", count: selfLogs.length },
+                  { key: "published" as SelfLogFilter, label: "Yayinlanan", count: selfPublishedCount },
+                  { key: "ready" as SelfLogFilter, label: "Taslak", count: selfReadyCount },
+                  { key: "failed" as SelfLogFilter, label: "Hatali", count: selfFailedCount },
+                ]).map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setSelfLogFilter(f.key)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      selfLogFilter === f.key
+                        ? "bg-purple-500/20 text-purple-400"
+                        : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                    }`}
+                  >
+                    {f.label} ({f.count})
+                  </button>
+                ))}
+              </div>
+              {selfLogs.length > 0 && (
+                <button
+                  onClick={handleSelfClearLogs}
+                  className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                >
+                  Logları Temizle
+                </button>
+              )}
+            </div>
+
+            {filteredSelfLogs.length === 0 ? (
+              <div className="card p-8 text-center text-[var(--text-secondary)]">
+                {selfLogFilter === "published"
+                  ? "Henuz yayinlanan self-reply yok"
+                  : selfLogFilter === "ready"
+                  ? "Bekleyen taslak yok"
+                  : "Henuz self-reply uretilmedi. Sistemi aktif edip beklein veya 'Simdi Kontrol Et' butonuna basin."}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredSelfLogs.map((log) => {
+                  const badge = getSelfStatusBadge(log.status);
+
+                  return (
+                    <div
+                      key={log.id}
+                      className={`card p-4 border-l-4 ${
+                        log.status === "published"
+                          ? "border-l-green-500"
+                          : log.status === "ready"
+                          ? "border-l-yellow-500"
+                          : "border-l-red-500"
+                      }`}
+                    >
+                      <div className="flex flex-wrap justify-between items-start gap-2 mb-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-mono text-[var(--text-secondary)]">
+                            Reply #{log.reply_number}
+                          </span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${badge.cls}`}>
+                            {badge.label}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-[var(--text-secondary)]">
+                            {formatTime(log.created_at)}
+                          </span>
+                          <button
+                            onClick={() => handleSelfDeleteLog(log.id)}
+                            className="text-xs text-[var(--text-secondary)] hover:text-red-400"
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Original tweet */}
+                      <div className="mb-2 p-2 rounded bg-[var(--bg-primary)] text-xs leading-relaxed">
+                        <span className="text-[var(--text-secondary)] font-medium">Tweet: </span>
+                        <span className="whitespace-pre-wrap">{log.tweet_text}</span>
+                      </div>
+
+                      {/* Self-reply text */}
+                      {log.reply_text && (
+                        <div className="mb-2 p-2 rounded bg-purple-500/5 border border-purple-500/20 text-sm leading-relaxed">
+                          <div className="whitespace-pre-wrap">{log.reply_text}</div>
+                        </div>
+                      )}
+
+                      {log.error && (
+                        <div className="mb-2 text-xs text-red-400 bg-red-500/5 p-2 rounded">
+                          {log.error}
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        {log.reply_text && (
+                          <button
+                            onClick={() => copyToClipboard(log.reply_text, log.id)}
+                            className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                              copiedId === log.id
+                                ? "bg-green-500/20 text-green-400"
+                                : "bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                            }`}
+                          >
+                            {copiedId === log.id ? "Kopyalandi" : "Kopyala"}
+                          </button>
+                        )}
+
+                        {log.reply_url && (
+                          <a
+                            href={log.reply_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-all"
+                          >
+                            Gor
+                          </a>
+                        )}
+
+                        {log.tweet_id && (
+                          <a
+                            href={`https://x.com/i/status/${log.tweet_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-primary)] text-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/10 transition-all"
+                          >
+                            Tweet
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

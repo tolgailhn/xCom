@@ -538,3 +538,88 @@ def delete_prompt_template(template_id: str) -> list[dict]:
     templates = [t for t in templates if t.get("id") != template_id]
     save_prompt_templates(templates)
     return templates
+
+
+# ── Self-Reply Automation ───────────────────────────────
+
+
+def load_self_reply_config() -> dict:
+    """Load self-reply automation configuration"""
+    path = DATA_DIR / "self_reply_config.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {
+        "enabled": False,
+        "username": "",
+        "max_daily_tweets": 4,
+        "replies_per_tweet": 3,
+        "reply_interval_minutes": 15,
+        "min_tweet_age_minutes": 30,
+        "max_tweet_age_days": 5,
+        "style": "samimi",
+        "draft_only": False,
+        "work_hour_start": 9,
+        "work_hour_end": 23,
+    }
+
+
+def save_self_reply_config(config: dict):
+    """Save self-reply automation configuration"""
+    path = DATA_DIR / "self_reply_config.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(config, f, ensure_ascii=False, indent=2)
+
+
+def load_self_reply_seen() -> dict:
+    """Load self-reply seen data: {tweet_id: {replies_sent, reply_ids, ...}}"""
+    path = DATA_DIR / "self_reply_seen.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
+def save_self_reply_seen(seen: dict):
+    """Save self-reply seen data (keep last 200 entries)"""
+    path = DATA_DIR / "self_reply_seen.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    # Trim old entries if too many
+    if len(seen) > 200:
+        sorted_items = sorted(
+            seen.items(),
+            key=lambda x: x[1].get("last_reply_at", ""),
+            reverse=True,
+        )
+        seen = dict(sorted_items[:200])
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(seen, f, ensure_ascii=False, indent=2)
+
+
+def load_self_reply_logs() -> list[dict]:
+    """Load self-reply logs (newest first)"""
+    path = DATA_DIR / "self_reply_logs.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+
+def save_self_reply_logs(logs: list[dict]):
+    """Save self-reply logs"""
+    path = DATA_DIR / "self_reply_logs.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(logs, f, ensure_ascii=False, indent=2)
+
+
+def add_self_reply_log(entry: dict):
+    """Add a new self-reply log entry"""
+    logs = load_self_reply_logs()
+    entry["id"] = datetime.datetime.now().strftime("%Y%m%d%H%M%S") + f"_{len(logs)}"
+    entry["created_at"] = datetime.datetime.now(TZ_TR).isoformat()
+    logs.insert(0, entry)
+    logs = logs[:500]
+    save_self_reply_logs(logs)
+    return entry

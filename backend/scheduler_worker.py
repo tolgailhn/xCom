@@ -211,6 +211,15 @@ def _check_auto_replies():
         logger.exception("Auto-reply check error")
 
 
+def _check_self_replies():
+    """Self-reply worker — her 15 dakikada kendi tweetlerine self-reply atar."""
+    try:
+        from backend.self_reply_worker import check_self_replies
+        check_self_replies()
+    except Exception:
+        logger.exception("Self-reply check error")
+
+
 def start_scheduler():
     """Scheduler'i baslat — FastAPI startup'ta cagirilir."""
     if not scheduler.running:
@@ -235,8 +244,15 @@ def start_scheduler():
             id="auto_reply_checker",
             replace_existing=True,
         )
+        scheduler.add_job(
+            _check_self_replies,
+            "interval",
+            minutes=15,
+            id="self_reply_checker",
+            replace_existing=True,
+        )
         scheduler.start()
-        logger.info("Scheduler started — publish check every 1 min, metrics every 30 min, auto-reply every 5 min")
+        logger.info("Scheduler started — publish 1m, metrics 30m, auto-reply 5m, self-reply 15m")
 
 
 def stop_scheduler():

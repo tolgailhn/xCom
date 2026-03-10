@@ -659,6 +659,79 @@ export function getAutoReplyStatus(): Promise<AutoReplyStatus> {
   return apiFetch("/api/auto-reply/status");
 }
 
+// ── Self Reply ──────────────────────────────────────────
+
+export interface SelfReplyConfig {
+  enabled: boolean;
+  username: string;
+  max_daily_tweets: number;
+  replies_per_tweet: number;
+  reply_interval_minutes: number;
+  min_tweet_age_minutes: number;
+  max_tweet_age_days: number;
+  style: string;
+  draft_only: boolean;
+  work_hour_start: number;
+  work_hour_end: number;
+}
+
+export interface SelfReplyLog {
+  id: string;
+  tweet_id: string;
+  tweet_text: string;
+  reply_number: number;
+  reply_text: string;
+  reply_tweet_id?: string;
+  reply_url?: string;
+  status: "published" | "ready" | "generation_failed" | "publish_failed";
+  error?: string;
+  created_at: string;
+}
+
+export interface SelfReplyStatus {
+  enabled: boolean;
+  draft_only: boolean;
+  username: string;
+  today_replied: number;
+  max_daily: number;
+  total_published: number;
+  total_ready: number;
+  total_failed: number;
+  total_tweets_with_replies: number;
+  last_reply_time: string | null;
+}
+
+export function getSelfReplyConfig(): Promise<{ config: SelfReplyConfig }> {
+  return apiFetch("/api/self-reply/config");
+}
+
+export function updateSelfReplyConfig(config: SelfReplyConfig) {
+  return apiFetch("/api/self-reply/config", {
+    method: "POST",
+    body: JSON.stringify(config),
+  });
+}
+
+export function getSelfReplyLogs(limit: number = 100): Promise<{ logs: SelfReplyLog[]; total: number }> {
+  return apiFetch(`/api/self-reply/logs?limit=${limit}`);
+}
+
+export function clearSelfReplyLogs() {
+  return apiFetch("/api/self-reply/logs", { method: "DELETE" });
+}
+
+export function deleteSelfReplyLog(logId: string) {
+  return apiFetch(`/api/self-reply/log/${encodeURIComponent(logId)}`, { method: "DELETE" });
+}
+
+export function triggerSelfReplyCheck() {
+  return apiFetch("/api/self-reply/trigger", { method: "POST" });
+}
+
+export function getSelfReplyStatus(): Promise<SelfReplyStatus> {
+  return apiFetch("/api/self-reply/status");
+}
+
 // ── Settings ───────────────────────────────────────────
 
 export function getAPIStatus() {
