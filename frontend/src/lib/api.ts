@@ -809,8 +809,12 @@ export function getDiscoveryTweets(): Promise<{ tweets: DiscoveryTweet[]; total:
   return apiFetch("/api/discovery/tweets");
 }
 
-export function triggerDiscoveryScan(): Promise<{ success: boolean; message: string; total: number }> {
-  return apiFetch("/api/discovery/trigger", { method: "POST" });
+export function triggerDiscoveryScan(accounts?: string[]): Promise<{ success: boolean; message: string; total: number }> {
+  return apiFetch("/api/discovery/trigger", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ accounts: accounts || [] }),
+  });
 }
 
 export function getDiscoveryStatus(): Promise<DiscoveryStatus> {

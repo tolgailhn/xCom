@@ -418,7 +418,7 @@ export default function KesifPage() {
         </button>
       </div>
 
-      {tab === "ayarlar" && config && <SettingsTab config={config} setConfig={setConfig} newAccount={newAccount} setNewAccount={setNewAccount} newAccountPriority={newAccountPriority} setNewAccountPriority={setNewAccountPriority} onClear={async () => { await clearDiscoveryCache(); await loadData(); }} />}
+      {tab === "ayarlar" && config && <SettingsTab config={config} setConfig={setConfig} newAccount={newAccount} setNewAccount={setNewAccount} newAccountPriority={newAccountPriority} setNewAccountPriority={setNewAccountPriority} onClear={async () => { await clearDiscoveryCache(); await loadData(); }} status={status} onScanDone={loadData} />}
 
       {tab === "tweets" && (
         <div className="space-y-4">
@@ -933,6 +933,8 @@ function SettingsTab({
   newAccountPriority,
   setNewAccountPriority,
   onClear,
+  status,
+  onScanDone,
 }: {
   config: DiscoveryConfig;
   setConfig: (c: DiscoveryConfig) => void;
@@ -941,9 +943,44 @@ function SettingsTab({
   newAccountPriority: boolean;
   setNewAccountPriority: (b: boolean) => void;
   onClear: () => Promise<void>;
+  status: DiscoveryStatus | null;
+  onScanDone: () => Promise<void>;
 }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [selectedForScan, setSelectedForScan] = useState<Set<string>>(new Set());
+  const [manualScanning, setManualScanning] = useState(false);
+  const [manualScanMsg, setManualScanMsg] = useState("");
+
+  const toggleScanAccount = (account: string) => {
+    setSelectedForScan(prev => {
+      const next = new Set(prev);
+      if (next.has(account)) next.delete(account);
+      else next.add(account);
+      return next;
+    });
+  };
+
+  const selectAllForScan = () => {
+    const all = [...config.priority_accounts, ...config.normal_accounts];
+    setSelectedForScan(new Set(all));
+  };
+
+  const handleManualScan = async () => {
+    if (selectedForScan.size === 0) return;
+    setManualScanning(true);
+    setManualScanMsg("");
+    try {
+      const result = await triggerDiscoveryScan([...selectedForScan]);
+      setManualScanMsg(result.message);
+      setSelectedForScan(new Set());
+      await onScanDone();
+    } catch (e) {
+      setManualScanMsg(e instanceof Error ? e.message : "Tarama hatasi");
+    } finally {
+      setManualScanning(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -1035,6 +1072,82 @@ function SettingsTab({
             Cache Temizle
           </button>
         </div>
+      </div>
+
+      {/* Rotation Status + Manual Scan */}
+      <div className="card p-4 space-y-4">
+        <div>
+          <h3 className="font-semibold">Tarama Durumu &amp; Manuel Tarama</h3>
+          <p className="text-xs text-[var(--text-secondary)] mt-1">
+            Hesaplara tiklayarak sec, &quot;Secilenleri Tara&quot; ile sadece onlari tara
+          </p>
+        </div>
+
+        {/* Account grid with rotation info */}
+        <div className="space-y-2">
+          {[...config.priority_accounts, ...config.normal_accounts].map(account => {
+            const acLower = account.toLowerCase();
+            const lastScan = status?.last_scanned_per_account?.[acLower];
+            const tweetCount = status?.account_counts?.[account] || status?.account_counts?.[acLower] || 0;
+            const isSelected = selectedForScan.has(account);
+            const isPriority = config.priority_accounts.includes(account);
+
+            return (
+              <button
+                key={account}
+                onClick={() => toggleScanAccount(account)}
+                className={`w-full flex items-center justify-between p-2.5 rounded-lg border transition-colors text-left ${
+                  isSelected
+                    ? "border-[var(--accent-blue)] bg-[var(--accent-blue)]/10"
+                    : "border-[var(--border)] bg-[var(--bg-secondary)] hover:border-[var(--text-secondary)]"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center text-[10px] ${
+                    isSelected ? "bg-[var(--accent-blue)] border-[var(--accent-blue)] text-white" : "border-[var(--border)]"
+                  }`}>
+                    {isSelected && "✓"}
+                  </div>
+                  <span className="text-sm font-medium">@{account}</span>
+                  {isPriority && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]">
+                      oncelikli
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 text-[10px] text-[var(--text-secondary)]">
+                  <span>{tweetCount} tweet</span>
+                  <span>{lastScan ? timeAgo(lastScan) + " once" : "henuz taranmadi"}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Scan actions */}
+        <div className="flex gap-2 items-center">
+          <button
+            onClick={handleManualScan}
+            disabled={selectedForScan.size === 0 || manualScanning}
+            className="btn-primary text-sm disabled:opacity-40"
+          >
+            {manualScanning ? "Taraniyor..." : `Secilenleri Tara (${selectedForScan.size})`}
+          </button>
+          <button onClick={selectAllForScan} className="btn-secondary text-xs">
+            Tumunu Sec
+          </button>
+          {selectedForScan.size > 0 && (
+            <button onClick={() => setSelectedForScan(new Set())} className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+              Temizle
+            </button>
+          )}
+        </div>
+
+        {manualScanMsg && (
+          <div className="p-2 rounded bg-[var(--accent-blue)]/10 border border-[var(--accent-blue)]/30 text-xs text-[var(--accent-blue)]">
+            {manualScanMsg}
+          </div>
+        )}
       </div>
 
       {/* Add account */}

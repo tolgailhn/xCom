@@ -144,10 +144,11 @@ def _pick_batch(priority_accounts: list[str], normal_accounts: list[str],
     return batch
 
 
-def scan_accounts(force: bool = False):
+def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
     """
     Rotasyonlu tarama: her çalışmada sadece BATCH_SIZE hesap tara.
     force=True ise tüm hesapları tara (manuel tetikleme).
+    only_accounts verilirse sadece o hesapları tarar.
     """
     from backend.modules.style_manager import (
         load_discovery_config,
@@ -182,8 +183,10 @@ def scan_accounts(force: bool = False):
 
     rotation = load_discovery_rotation()
 
-    # Batch seç veya force ile hepsini tara
-    if force:
+    # Hesap seçimi: only_accounts > force (tümü) > rotasyon batch
+    if only_accounts:
+        accounts_to_scan = [a.strip().lstrip("@") for a in only_accounts if a.strip()]
+    elif force:
         accounts_to_scan = [a.strip().lstrip("@") for a in priority_accounts + normal_accounts if a.strip()]
     else:
         accounts_to_scan = _pick_batch(priority_accounts, normal_accounts, rotation)

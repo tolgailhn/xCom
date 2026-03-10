@@ -31,6 +31,10 @@ class RemoveAccountRequest(BaseModel):
     username: str
 
 
+class TriggerScanRequest(BaseModel):
+    accounts: list[str] = []  # Boş = tümünü tara
+
+
 # ── Endpoints ───────────────────────────────────────────
 
 @router.get("/config")
@@ -95,16 +99,20 @@ def get_tweets():
 
 
 @router.post("/trigger")
-def trigger_scan():
-    """Manuel tarama tetikle."""
+def trigger_scan(req: TriggerScanRequest | None = None):
+    """Manuel tarama tetikle. accounts listesi verilirse sadece onları tarar."""
     try:
         from backend.discovery_worker import scan_accounts
-        scan_accounts(force=True)
+        accounts = None
+        if req and req.accounts:
+            accounts = [a.strip().lstrip("@") for a in req.accounts if a.strip()]
+        scan_accounts(force=True, only_accounts=accounts)
         from backend.modules.style_manager import load_discovery_cache
         cache = load_discovery_cache()
+        scanned = ", ".join(f"@{a}" for a in accounts) if accounts else "tümü"
         return {
             "success": True,
-            "message": f"Tarama tamamlandı — {len(cache)} tweet bulundu",
+            "message": f"Tarama tamamlandı ({scanned}) — {len(cache)} tweet",
             "total": len(cache),
         }
     except Exception as e:
