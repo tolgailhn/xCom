@@ -249,28 +249,55 @@ def _cmd_discovery() -> str:
 
 
 def _chat_with_ai(user_message: str) -> str:
-    """MiniMax ile sohbet — sistem context'i + kullanici mesaji."""
+    """AI ile sohbet — sistem context'i + kullanici mesaji."""
     try:
         from backend.config import get_settings
         settings = get_settings()
 
-        # Sistem durumunu context'e ekle
+        # Zengin sistem context'i olustur
         system_context = _build_system_context()
 
         system_prompt = (
-            "Sen X (Twitter) AI Otomasyon sistemi asistanisin. "
-            "Kullaniciyla Turkce sohbet ediyorsun. Samimi ve yardimci ol. "
-            "Kisa ve oz cevaplar ver. Emoji kullanabilirsin.\n\n"
-            "SISTEM DURUMU:\n" + system_context
+            "Sen X (Twitter) AI Otomasyon sistemi asistanisin. Adin xCom Bot.\n"
+            "Kullaniciyla Turkce sohbet ediyorsun. Samimi, yardimci ve bilgili ol.\n"
+            "Kisa ve oz cevaplar ver ama gerektiginde detayli aciklama yap.\n"
+            "Emoji kullanabilirsin.\n\n"
+            "SENIN YETENEKLERIN:\n"
+            "- Sistem durumu hakkinda bilgi verebilirsin (auto-reply, self-reply, discovery)\n"
+            "- Bekleyen yanitlar, tarama sonuclari hakkinda bilgi verebilirsin\n"
+            "- AI, teknoloji, Twitter/X stratejisi konularinda sohbet edebilirsin\n"
+            "- Kullaniciya tweet fikirleri, icerik onerileri verebilirsin\n"
+            "- Genel sorulara cevap verebilirsin\n\n"
+            "SISTEM DURUMU (canli veriler):\n" + system_context
         )
 
-        # MiniMax > Anthropic > OpenAI sirasiyla dene
+        # MiniMax > Groq > Anthropic > OpenAI sirasiyla dene
         if settings.minimax_api_key:
-            return _call_minimax(settings.minimax_api_key, system_prompt, user_message)
+            return _call_openai_compatible(
+                api_key=settings.minimax_api_key,
+                base_url="https://api.minimax.io/v1",
+                model="MiniMax-M2.5",
+                system_prompt=system_prompt,
+                user_message=user_message,
+            )
+        elif settings.groq_api_key:
+            return _call_openai_compatible(
+                api_key=settings.groq_api_key,
+                base_url="https://api.groq.com/openai/v1",
+                model="llama-3.3-70b-versatile",
+                system_prompt=system_prompt,
+                user_message=user_message,
+            )
         elif settings.anthropic_api_key:
             return _call_anthropic(settings.anthropic_api_key, system_prompt, user_message)
         elif settings.openai_api_key:
-            return _call_openai(settings.openai_api_key, system_prompt, user_message)
+            return _call_openai_compatible(
+                api_key=settings.openai_api_key,
+                base_url="https://api.openai.com/v1",
+                model="gpt-4o-mini",
+                system_prompt=system_prompt,
+                user_message=user_message,
+            )
         else:
             return "AI API anahtari ayarlanmamis. Ayarlar sayfasindan ekle."
     except Exception as e:
@@ -279,40 +306,86 @@ def _chat_with_ai(user_message: str) -> str:
 
 
 def _build_system_context() -> str:
-    """Mevcut sistem durumunu ozetleyen context metni."""
-    parts = []
+    """Mevcut sistem durumunu detayli ozetleyen context metni."""
+    now = datetime.datetime.now(TZ_TR)
+    parts = [f"Tarih/Saat: {now.strftime('%d.%m.%Y %H:%M')}"]
+
     try:
         from backend.modules.style_manager import (
-            load_auto_reply_logs, load_discovery_cache,
-            load_auto_reply_config, load_discovery_config,
+            load_auto_reply_logs, load_auto_reply_config,
+            load_self_reply_config, load_self_reply_seen,
+            load_discovery_cache, load_discovery_config,
+            load_scheduled_posts, load_posting_log,
         )
 
+        # Auto-reply durumu
         ar_config = load_auto_reply_config()
         ar_logs = load_auto_reply_logs()
-        pending = sum(1 for l in ar_logs if l.get("status") == "ready")
-        published = sum(1 for l in ar_logs if l.get("status") == "published")
-        parts.append(f"Auto-reply: {'aktif' if ar_config.get('enabled') else 'kapali'}, "
-                     f"{pending} bekleyen, {published} paylasilan")
+        ar_pending = [l for l in ar_logs if l.get("status") == "ready"]
+        ar_published = sum(1 for l in ar_logs if l.get("status") == "published")
+        parts.append(f"Auto-reply: {'AKTIF' if ar_config.get('enabled') else 'KAPALI'}, "
+                     f"{len(ar_pending)} bekleyen, {ar_published} paylasilan, "
+                     f"{len(ar_config.get('accounts', []))} takip edilen hesap")
+        if ar_pending:
+            last3 = ar_pending[-3:]
+            for p in last3:
+                parts.append(f"  - @{p.get('account','?')}: {p.get('reply_text','')[:80]}")
 
+        # Self-reply durumu
+        sr_config = load_self_reply_config()
+        sr_seen = load_self_reply_seen()
+        today_str = now.strftime("%Y-%m-%d")
+        sr_today = sum(1 for v in sr_seen.values()
+                       if v.get("first_reply_date") == today_str)
+        parts.append(f"Self-reply: {'AKTIF' if sr_config.get('enabled') else 'KAPALI'}, "
+                     f"bugun {sr_today}/{sr_config.get('max_daily_tweets', 4)} tweet'e reply")
+
+        # Discovery durumu
         dc_config = load_discovery_config()
         dc_cache = load_discovery_cache()
-        parts.append(f"Hesap kesfi: {'aktif' if dc_config.get('enabled') else 'kapali'}, "
-                     f"{len(dc_cache)} tweet cache'te")
-    except Exception:
-        parts.append("Sistem durumu alinamadi")
+        parts.append(f"Hesap kesfi: {'AKTIF' if dc_config.get('enabled') else 'KAPALI'}, "
+                     f"{len(dc_cache)} tweet cache'te, "
+                     f"{len(dc_config.get('priority_accounts', []))} oncelikli + "
+                     f"{len(dc_config.get('normal_accounts', []))} normal hesap")
+        if dc_cache:
+            top3 = sorted(dc_cache, key=lambda x: x.get("display_score", 0), reverse=True)[:3]
+            for t in top3:
+                parts.append(f"  - @{t.get('account','?')}: {t.get('summary_tr', t.get('text',''))[:80]}")
+
+        # Zamanlanmis postlar
+        try:
+            scheduled = load_scheduled_posts()
+            pending_posts = [p for p in scheduled if p.get("status") == "pending"]
+            if pending_posts:
+                parts.append(f"Zamanlanmis post: {len(pending_posts)} bekliyor")
+        except Exception:
+            pass
+
+        # Bugunun paylasim sayisi
+        try:
+            log = load_posting_log()
+            today_posts = [p for p in log if p.get("date", "").startswith(today_str)]
+            if today_posts:
+                parts.append(f"Bugun {len(today_posts)} paylasim yapildi")
+        except Exception:
+            pass
+
+    except Exception as e:
+        parts.append(f"Sistem durumu kismen alinamadi: {e}")
 
     return "\n".join(parts)
 
 
-def _call_minimax(api_key: str, system_prompt: str, user_message: str) -> str:
-    """MiniMax API ile chat completion."""
-    url = "https://api.minimaxi.chat/v1/text/chatcompletion_v2"
+def _call_openai_compatible(api_key: str, base_url: str, model: str,
+                             system_prompt: str, user_message: str) -> str:
+    """OpenAI-compatible API ile chat (MiniMax, Groq, OpenAI icin)."""
+    url = f"{base_url}/chat/completions"
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
     payload = {
-        "model": "MiniMax-Text-01",
+        "model": model,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message},
@@ -327,7 +400,9 @@ def _call_minimax(api_key: str, system_prompt: str, user_message: str) -> str:
         result = json.loads(resp.read().decode("utf-8"))
         choices = result.get("choices", [])
         if choices:
-            return choices[0].get("message", {}).get("content", "Cevap uretilemedi.")
+            content = choices[0].get("message", {}).get("content", "")
+            if content:
+                return content
     return "Cevap uretilemedi."
 
 
@@ -355,33 +430,6 @@ def _call_anthropic(api_key: str, system_prompt: str, user_message: str) -> str:
         content = result.get("content", [])
         if content:
             return content[0].get("text", "Cevap uretilemedi.")
-    return "Cevap uretilemedi."
-
-
-def _call_openai(api_key: str, system_prompt: str, user_message: str) -> str:
-    """OpenAI API ile chat."""
-    url = "https://api.openai.com/v1/chat/completions"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
-    payload = {
-        "model": "gpt-4o-mini",
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message},
-        ],
-        "max_tokens": 1000,
-        "temperature": 0.7,
-    }
-
-    data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(url, data=data, headers=headers)
-    with urllib.request.urlopen(req, timeout=30, context=_ssl_ctx) as resp:
-        result = json.loads(resp.read().decode("utf-8"))
-        choices = result.get("choices", [])
-        if choices:
-            return choices[0].get("message", {}).get("content", "Cevap uretilemedi.")
     return "Cevap uretilemedi."
 
 
