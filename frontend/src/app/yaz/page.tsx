@@ -541,11 +541,17 @@ function TabQuoteTweet({
   const handleOpenInX = () => {
     if (!generatedText) return;
     let intentUrl: string;
-    if (tweetId) {
-      // Quote tweet — attach original tweet
-      const quoteUrlForX = `https://x.com/i/status/${tweetId}`;
-      const cleanText = generatedText.replace(new RegExp(`status/${tweetId}\\S*`, "g"), "").trim();
-      intentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(cleanText)}&attachment_url=${encodeURIComponent(quoteUrlForX)}`;
+    // Build the canonical quote URL from the user-provided quoteUrl or tweetId
+    const canonicalQuoteUrl = quoteUrl.trim() || (tweetId ? `https://x.com/i/status/${tweetId}` : "");
+    if (canonicalQuoteUrl) {
+      // Quote tweet — remove any embedded tweet URL from generated text to avoid duplication
+      let cleanText = generatedText;
+      if (tweetId) {
+        cleanText = cleanText.replace(new RegExp(`https?://(?:twitter\\.com|x\\.com)/\\S*status/${tweetId}\\S*`, "gi"), "").trim();
+      }
+      // Append the quote URL at the end of the text — X will render it as a quote tweet card
+      const tweetText = cleanText + "\n" + canonicalQuoteUrl;
+      intentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
     } else {
       // Normal tweet
       intentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(generatedText)}`;
