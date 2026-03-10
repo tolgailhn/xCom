@@ -127,7 +127,7 @@ export default function KesifPage() {
   // Filter
   const [filterAccount, setFilterAccount] = useState("");
   const [filterImportance, setFilterImportance] = useState("");
-  const [selectedDate, setSelectedDate] = useState<string>("all");
+  const [selectedDate, setSelectedDate] = useState<string>(formatDateStr(new Date()));
 
   // Accordion: hesap bazlı gruplandırma
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
@@ -357,20 +357,32 @@ export default function KesifPage() {
     });
   };
 
-  // Available dates from tweets (for navigation)
-  const availableDates = (() => {
-    const dateMap: Record<string, number> = {};
-    for (const t of tweets) {
-      try {
-        const d = new Date(t.scanned_at || t.created_at);
-        const ds = formatDateStr(d);
-        dateMap[ds] = (dateMap[ds] || 0) + 1;
-      } catch { /* skip */ }
+  // Date navigation helpers (7 güne kadar geriye gidebilir)
+  const todayStr = formatDateStr(new Date());
+  const minDateStr = formatDateStr(new Date(Date.now() - 7 * 86400000));
+
+  const goToDate = (offset: number) => {
+    if (selectedDate === "all") {
+      setSelectedDate(todayStr);
+      return;
     }
-    return Object.entries(dateMap)
-      .sort(([a], [b]) => b.localeCompare(a)) // newest first
-      .map(([date, count]) => ({ date, count }));
-  })();
+    const d = new Date(selectedDate + "T12:00:00");
+    d.setDate(d.getDate() + offset);
+    const newDate = formatDateStr(d);
+    if (newDate > todayStr || newDate < minDateStr) return;
+    setSelectedDate(newDate);
+  };
+
+  const goToToday = () => setSelectedDate(todayStr);
+
+  // Her gün için tweet sayısı (badge göstermek için)
+  const tweetCountByDate: Record<string, number> = {};
+  for (const t of tweets) {
+    try {
+      const ds = formatDateStr(new Date(t.created_at));
+      tweetCountByDate[ds] = (tweetCountByDate[ds] || 0) + 1;
+    } catch { /* skip */ }
+  }
 
   // Filtered tweets
   const filteredTweets = tweets.filter(t => {
@@ -378,7 +390,7 @@ export default function KesifPage() {
     if (filterImportance && t.importance !== filterImportance) return false;
     if (selectedDate !== "all") {
       try {
-        const tweetDate = new Date(t.scanned_at || t.created_at);
+        const tweetDate = new Date(t.created_at);
         const tweetDateStr = formatDateStr(tweetDate);
         if (tweetDateStr !== selectedDate) return false;
       } catch { /* keep */ }
@@ -490,52 +502,46 @@ export default function KesifPage() {
 
       {tab === "tweets" && (
         <div className="space-y-4">
-          {/* Date Navigation */}
+          {/* Date Navigation Bar */}
           <div className="card p-3">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <div className="flex items-center justify-between">
               <button
-                onClick={() => setSelectedDate("all")}
-                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedDate === "all" ? "bg-[var(--accent-blue)] text-white" : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
+                onClick={() => goToDate(-1)}
+                disabled={selectedDate === "all" || selectedDate <= minDateStr}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors disabled:opacity-30"
               >
-                Tumunu Goster ({tweets.length})
+                &larr; Onceki Gun
               </button>
-              {availableDates.map(({ date, count }) => (
+              <div className="flex items-center gap-2">
                 <button
-                  key={date}
-                  onClick={() => setSelectedDate(date)}
-                  className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedDate === date ? "bg-[var(--accent-blue)] text-white" : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
+                  onClick={() => setSelectedDate("all")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedDate === "all" ? "bg-[var(--accent-blue)] text-white" : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
                 >
-                  {formatDateLabel(date)} ({count})
+                  Tumunu ({tweets.length})
                 </button>
-              ))}
-            </div>
-            {selectedDate !== "all" && (
-              <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--border)]">
                 <button
-                  onClick={() => {
-                    const idx = availableDates.findIndex(d => d.date === selectedDate);
-                    if (idx < availableDates.length - 1) setSelectedDate(availableDates[idx + 1].date);
-                  }}
-                  disabled={availableDates.findIndex(d => d.date === selectedDate) >= availableDates.length - 1}
-                  className="text-xs text-[var(--accent-blue)] hover:underline disabled:opacity-30 disabled:no-underline"
+                  onClick={goToToday}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedDate === todayStr ? "bg-[var(--accent-blue)] text-white" : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
                 >
-                  &larr; Onceki Gun
+                  Bugun
                 </button>
-                <span className="text-xs font-semibold">
-                  {formatDateLabel(selectedDate)} &middot; {selectedDate}
-                </span>
-                <button
-                  onClick={() => {
-                    const idx = availableDates.findIndex(d => d.date === selectedDate);
-                    if (idx > 0) setSelectedDate(availableDates[idx - 1].date);
-                  }}
-                  disabled={availableDates.findIndex(d => d.date === selectedDate) <= 0}
-                  className="text-xs text-[var(--accent-blue)] hover:underline disabled:opacity-30 disabled:no-underline"
-                >
-                  Sonraki Gun &rarr;
-                </button>
+                {selectedDate !== "all" && (
+                  <span className="text-xs font-semibold">
+                    {formatDateLabel(selectedDate)} &middot; {selectedDate}
+                    {tweetCountByDate[selectedDate] != null && (
+                      <span className="ml-1 text-[var(--text-secondary)]">({tweetCountByDate[selectedDate]})</span>
+                    )}
+                  </span>
+                )}
               </div>
-            )}
+              <button
+                onClick={() => goToDate(1)}
+                disabled={selectedDate === "all" || selectedDate >= todayStr}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors disabled:opacity-30"
+              >
+                Sonraki Gun &rarr;
+              </button>
+            </div>
           </div>
 
           {/* Other Filters */}

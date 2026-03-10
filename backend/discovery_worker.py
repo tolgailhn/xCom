@@ -33,8 +33,8 @@ TZ_TR = ZoneInfo("Europe/Istanbul")
 # Batch başına kaç hesap taranacak
 BATCH_SIZE = 3
 
-# Maksimum tweet yaşı (saat) — bundan eski tweet'ler cache'e alınmaz
-MAX_TWEET_AGE_HOURS = 36
+# Maksimum tweet yaşı (saat) — bundan eski tweet'ler cache'e alınmaz (7 gün)
+MAX_TWEET_AGE_HOURS = 168
 
 
 def _engagement_score(tweet: dict) -> float:
