@@ -469,6 +469,145 @@ def _call_ai_for_scores(provider: str, api_key: str, prompt: str) -> list[dict]:
     return []
 
 
+# ── Faz 7: Smart Suggestions ──────────────────────────
+
+@router.get("/smart-suggestions")
+def get_smart_suggestions():
+    """Mevcut trend/haber verilerinden akıllı tweet önerileri döndür."""
+    from backend.modules.style_manager import load_trend_cache, load_news_cache
+
+    trend_cache = load_trend_cache()
+    news_cache = load_news_cache()
+
+    suggestions = []
+
+    # Trend-based suggestions (strong trends first)
+    for trend in (trend_cache.get("trends") or [])[:10]:
+        if trend.get("is_strong_trend"):
+            suggestions.append({
+                "type": "trend",
+                "topic": trend["keyword"],
+                "reason": f"{trend['account_count']} hesapta trend, {trend['tweet_count']} tweet",
+                "engagement_potential": min(10, max(1, int(trend.get("trend_score", 0) / 500) + 3)),
+                "suggested_style": "informative",
+                "suggested_format": "single",
+                "suggested_hour": "14:07",
+                "top_tweets": trend.get("top_tweets", [])[:3],
+                "source_data": trend,
+            })
+
+    # News-based suggestions (latest first)
+    for article in (news_cache or [])[:5]:
+        suggestions.append({
+            "type": "news",
+            "topic": article.get("title", ""),
+            "reason": f"Kaynak: {article.get('source', '')}",
+            "engagement_potential": 6,
+            "suggested_style": "informative",
+            "suggested_format": "spark",
+            "suggested_hour": "10:22",
+            "url": article.get("url", ""),
+            "source_data": article,
+        })
+
+    return {"suggestions": suggestions, "total": len(suggestions)}
+
+
+class GenerateSmartSuggestionRequest(BaseModel):
+    topic: str
+    style: str = "informative"
+    content_format: str = "spark"
+    provider: str = ""
+    context: str = ""  # Optional additional context
+
+
+@router.post("/smart-suggestions/generate")
+def generate_smart_suggestion(req: GenerateSmartSuggestionRequest):
+    """Akıllı öneri için tweet üret + engagement tahmini."""
+    try:
+        from backend.api.helpers import get_ai_provider
+
+        provider_name, api_key, _ = get_ai_provider(req.provider or "")
+        if not api_key:
+            raise HTTPException(400, "AI API anahtarı bulunamadı")
+
+        prompt = (
+            f"Konu: {req.topic}\n"
+            f"Stil: {req.style}\n"
+            f"Format: {req.content_format}\n"
+        )
+        if req.context:
+            prompt += f"\nBaglam:\n{req.context}\n"
+
+        prompt += (
+            "\nBu konu hakkinda tweet yaz. Ayrica 1-10 arasi engagement potansiyeli "
+            "tahmini ver ve en iyi paylasim saatini oner.\n\n"
+            "JSON olarak yanit ver:\n"
+            '{"tweet": "tweet metni", "engagement_potential": 8, "best_time": "14:07", "reasoning": "neden bu saat"}'
+        )
+
+        response_text = _call_ai_simple(provider_name, api_key, prompt)
+
+        # Parse JSON
+        match = re.search(r'\{.*\}', response_text, re.DOTALL)
+        if match:
+            import json
+            data = json.loads(match.group())
+            return {
+                "success": True,
+                "tweet": data.get("tweet", ""),
+                "engagement_potential": data.get("engagement_potential", 5),
+                "best_time": data.get("best_time", ""),
+                "reasoning": data.get("reasoning", ""),
+            }
+
+        # Fallback: return raw text as tweet
+        return {
+            "success": True,
+            "tweet": response_text.strip(),
+            "engagement_potential": 5,
+            "best_time": "",
+            "reasoning": "",
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Smart suggestion generate error")
+        raise HTTPException(500, str(e))
+
+
+def _call_ai_simple(provider: str, api_key: str, prompt: str) -> str:
+    """Simple AI call returning text response."""
+    if provider == "anthropic":
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return resp.content[0].text
+    elif provider == "minimax":
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key, base_url="https://api.minimaxi.chat/v1")
+        resp = client.chat.completions.create(
+            model="MiniMax-Text-01",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return resp.choices[0].message.content or ""
+    else:
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return resp.choices[0].message.content or ""
+
+
 # ── Faz 9: Active Account Search ──────────────────────
 
 class SearchAccountsRequest(BaseModel):

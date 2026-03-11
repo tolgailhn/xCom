@@ -1032,6 +1032,24 @@ export function triggerAccountDiscovery() {
   return apiFetch("/api/discovery/suggested-accounts/discover", { method: "POST" });
 }
 
+// Faz 7: Smart Suggestions
+export function getSmartSuggestions() {
+  return apiFetch("/api/discovery/smart-suggestions");
+}
+
+export function generateSmartSuggestion(params: {
+  topic: string;
+  style?: string;
+  content_format?: string;
+  provider?: string;
+  context?: string;
+}) {
+  return apiFetch("/api/discovery/smart-suggestions/generate", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
 // Faz 6: News Value Scoring
 export function scoreNewsValue(texts: string[]) {
   return apiFetch("/api/discovery/score-newsvalue", {

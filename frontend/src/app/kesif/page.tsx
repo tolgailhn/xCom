@@ -19,6 +19,7 @@ import TabAyarlar from "./TabAyarlar";
 import TabTrends from "./TabTrends";
 import TabNews from "./TabNews";
 import TabSuggestedAccounts from "./TabSuggestedAccounts";
+import TabSmartSuggestions from "./TabSmartSuggestions";
 
 /* ── Helpers ─────────────────────────────────────────── */
 
@@ -40,11 +41,11 @@ function timeAgo(isoStr: string): string {
 
 export default function KesifPage() {
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<"tweets" | "trendler" | "haberler" | "oneriler" | "ayarlar">("tweets");
+  const [tab, setTab] = useState<"tweets" | "trendler" | "haberler" | "oneriler" | "akilli" | "ayarlar">("tweets");
 
   useEffect(() => {
     const t = searchParams.get("tab");
-    if (t === "tweets" || t === "trendler" || t === "haberler" || t === "oneriler" || t === "ayarlar") setTab(t);
+    if (t === "tweets" || t === "trendler" || t === "haberler" || t === "oneriler" || t === "akilli" || t === "ayarlar") setTab(t);
   }, [searchParams]);
 
   const [config, setConfig] = useState<DiscoveryConfig | null>(null);
@@ -243,6 +244,7 @@ export default function KesifPage() {
           { key: "trendler", label: "Trendler" },
           { key: "haberler", label: "Haberler" },
           { key: "oneriler", label: "Onerilen Hesaplar" },
+          { key: "akilli", label: "Akilli Oneriler" },
           { key: "ayarlar", label: "Ayarlar" },
         ] as const).map((t) => (
           <button
@@ -280,6 +282,7 @@ export default function KesifPage() {
       {tab === "trendler" && <TabTrends />}
       {tab === "haberler" && <TabNews />}
       {tab === "oneriler" && <TabSuggestedAccounts />}
+      {tab === "akilli" && <TabSmartSuggestions />}
     </div>
   );
 }
