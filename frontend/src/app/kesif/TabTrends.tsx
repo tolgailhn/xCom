@@ -6,6 +6,7 @@ import {
   triggerTrendAnalysis,
   researchTopicStream,
   generateTweet,
+  generateQuoteTweet,
   getStyles,
   addDraft,
   schedulePost,
@@ -55,13 +56,19 @@ export default function TabTrends() {
   const [activeResearch, setActiveResearch] = useState<string | null>(null);
   const [activeGenerate, setActiveGenerate] = useState<string | null>(null);
 
-  // Research state per trend
+  // Trend-level research & generation state
   const [researchData, setResearchData] = useState<Record<string, ResearchState>>({});
   const [researchingKey, setResearchingKey] = useState<string | null>(null);
-
-  // Generation state per trend
   const [generatedTexts, setGeneratedTexts] = useState<Record<string, { text: string; score: number }>>({});
   const [generatingKey, setGeneratingKey] = useState<string | null>(null);
+
+  // Per-tweet research & generation state (key: "keyword::tweetIndex")
+  const [tweetResearchData, setTweetResearchData] = useState<Record<string, ResearchState>>({});
+  const [tweetResearchingKey, setTweetResearchingKey] = useState<string | null>(null);
+  const [tweetGeneratedTexts, setTweetGeneratedTexts] = useState<Record<string, { text: string; score: number }>>({});
+  const [tweetGeneratingKey, setTweetGeneratingKey] = useState<string | null>(null);
+  const [tweetEditedTexts, setTweetEditedTexts] = useState<Record<string, string>>({});
+  const [activeTweetKey, setActiveTweetKey] = useState<string | null>(null);
 
   // Style/format/provider
   const [styles, setStyles] = useState<StyleOption[]>([]);
@@ -98,7 +105,7 @@ export default function TabTrends() {
       .catch(() => {});
   }, []);
 
-  /* ── Handlers ───────────────────────────────────────── */
+  /* ── Trend-level handlers ─────────────────────────── */
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
@@ -119,7 +126,6 @@ export default function TabTrends() {
     }));
 
     try {
-      // Build research context from top tweets
       const context = trend.top_tweets
         .map(t => `@${t.account}: ${t.text}`)
         .join("\n\n");
@@ -166,7 +172,6 @@ export default function TabTrends() {
         researchContext = `Arastirma Ozeti:\n${research.summary}\n\nAnahtar Noktalar:\n${research.key_points.join("\n")}`;
       }
 
-      // Add top tweets as context
       const tweetContext = trend.top_tweets
         .slice(0, 3)
         .map(t => `@${t.account} (${t.engagement} eng): ${t.text}`)
@@ -200,27 +205,116 @@ export default function TabTrends() {
     }
   };
 
-  const handleSaveDraft = async (key: string) => {
-    const gen = generatedTexts[key];
-    if (!gen?.text) return;
+  const handleSaveDraft = async (key: string, textSource: "trend" | "tweet" = "trend") => {
+    const text = textSource === "tweet"
+      ? (tweetEditedTexts[key] || tweetGeneratedTexts[key]?.text)
+      : generatedTexts[key]?.text;
+    if (!text) return;
+    const topic = key.includes("::") ? key.split("::")[0] : key;
     try {
-      await addDraft({ text: gen.text, topic: key, style: selectedStyle });
+      await addDraft({ text, topic, style: selectedStyle });
       setActionMsg(prev => ({ ...prev, [key]: "Taslak kaydedildi!" }));
       setTimeout(() => setActionMsg(prev => ({ ...prev, [key]: "" })), 3000);
     } catch { /* ignore */ }
   };
 
-  const handleSchedule = async (key: string) => {
-    const gen = generatedTexts[key];
-    if (!gen?.text || !scheduleTime) return;
+  const handleSchedule = async (key: string, textSource: "trend" | "tweet" = "trend") => {
+    const text = textSource === "tweet"
+      ? (tweetEditedTexts[key] || tweetGeneratedTexts[key]?.text)
+      : generatedTexts[key]?.text;
+    if (!text || !scheduleTime) return;
     try {
-      await schedulePost({ text: gen.text, scheduled_time: scheduleTime });
+      await schedulePost({ text, scheduled_time: scheduleTime });
       setActionMsg(prev => ({ ...prev, [key]: `Zamanlandi: ${new Date(scheduleTime).toLocaleString("tr-TR")}` }));
       setShowSchedule(null);
       setScheduleTime("");
       setTimeout(() => setActionMsg(prev => ({ ...prev, [key]: "" })), 3000);
     } catch { /* ignore */ }
   };
+
+  /* ── Per-tweet handlers ───────────────────────────── */
+
+  const handleTweetResearch = async (trend: Trend, tweetIdx: number) => {
+    const tw = trend.top_tweets[tweetIdx];
+    const compositeKey = `${trend.keyword}::${tweetIdx}`;
+    setTweetResearchingKey(compositeKey);
+    setActiveTweetKey(compositeKey);
+    setTweetResearchData(prev => ({
+      ...prev,
+      [compositeKey]: { summary: "", key_points: [], sources: [], progress: "Arastirma baslatiliyor..." },
+    }));
+
+    try {
+      const topic = `@${tw.account}: ${tw.text}`;
+
+      const result = await researchTopicStream(
+        { topic, engine: "default" },
+        (progress) => {
+          setTweetResearchData(prev => ({
+            ...prev,
+            [compositeKey]: { ...prev[compositeKey], progress },
+          }));
+        },
+      );
+
+      setTweetResearchData(prev => ({
+        ...prev,
+        [compositeKey]: {
+          summary: result.summary,
+          key_points: result.key_points,
+          sources: result.sources,
+          progress: "",
+        },
+      }));
+    } catch (e) {
+      setTweetResearchData(prev => ({
+        ...prev,
+        [compositeKey]: { ...prev[compositeKey], progress: `Hata: ${e instanceof Error ? e.message : "Bilinmeyen hata"}` },
+      }));
+    } finally {
+      setTweetResearchingKey(null);
+    }
+  };
+
+  const handleTweetGenerate = async (trend: Trend, tweetIdx: number) => {
+    const tw = trend.top_tweets[tweetIdx];
+    const compositeKey = `${trend.keyword}::${tweetIdx}`;
+    setTweetGeneratingKey(compositeKey);
+
+    try {
+      const research = tweetResearchData[compositeKey];
+      const researchSummary = research?.summary
+        ? `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}`
+        : "";
+
+      const result = await generateQuoteTweet({
+        original_tweet: tw.text,
+        original_author: tw.account,
+        style: selectedStyle,
+        research_summary: researchSummary,
+        length_preference: selectedFormat,
+        provider: selectedProvider || undefined,
+      });
+
+      const text = result.text || "";
+      setTweetGeneratedTexts(prev => ({
+        ...prev,
+        [compositeKey]: { text, score: result.score?.overall || 0 },
+      }));
+      setTweetEditedTexts(prev => ({ ...prev, [compositeKey]: text }));
+    } catch (e) {
+      const errText = `Hata: ${e instanceof Error ? e.message : "Bilinmeyen"}`;
+      setTweetGeneratedTexts(prev => ({
+        ...prev,
+        [compositeKey]: { text: errText, score: 0 },
+      }));
+      setTweetEditedTexts(prev => ({ ...prev, [compositeKey]: errText }));
+    } finally {
+      setTweetGeneratingKey(null);
+    }
+  };
+
+  /* ── Helpers ──────────────────────────────────────── */
 
   const openInX = (text: string) => {
     window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
@@ -293,6 +387,8 @@ export default function TabTrends() {
             <option value="minimax">MiniMax</option>
             <option value="anthropic">Claude</option>
             <option value="openai">GPT</option>
+            <option value="groq">Groq</option>
+            <option value="gemini">Gemini</option>
           </select>
         </div>
       </div>
@@ -354,41 +450,229 @@ export default function TabTrends() {
                 {/* Expanded content */}
                 {isExpanded && (
                   <div className="border-t border-[var(--border)] p-4 space-y-4">
-                    {/* Top tweets */}
+                    {/* Top tweets — each with individual research/generate */}
                     {trend.top_tweets.length > 0 && (
                       <div>
-                        <div className="text-xs font-medium text-[var(--text-secondary)] mb-2">En iyi tweet&apos;ler:</div>
-                        <div className="space-y-2">
-                          {trend.top_tweets.map((tw, i) => (
-                            <div key={i} className="p-2 rounded bg-[var(--bg-secondary)] text-sm">
-                              <span className="text-[var(--accent-blue)] text-xs font-medium">@{tw.account}</span>
-                              <span className="text-[var(--text-secondary)] text-xs ml-2">{tw.engagement.toFixed(0)} eng.</span>
-                              <p className="mt-1 line-clamp-3">{tw.text}</p>
-                            </div>
-                          ))}
+                        <div className="text-xs font-medium text-[var(--text-secondary)] mb-2">
+                          Tweet&apos;ler — bireysel arastirma ve tweet uretimi icin tiklayin:
+                        </div>
+                        <div className="space-y-3">
+                          {trend.top_tweets.map((tw, i) => {
+                            const compositeKey = `${key}::${i}`;
+                            const twResearch = tweetResearchData[compositeKey];
+                            const twGenerated = tweetGeneratedTexts[compositeKey];
+                            const twEdited = tweetEditedTexts[compositeKey] || "";
+                            const isTwResearching = tweetResearchingKey === compositeKey;
+                            const isTwGenerating = tweetGeneratingKey === compositeKey;
+                            const isActive = activeTweetKey === compositeKey;
+
+                            return (
+                              <div key={i} className="rounded bg-[var(--bg-secondary)] overflow-hidden">
+                                {/* Tweet content */}
+                                <div className="p-3">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-2">
+                                      <a
+                                        href={`https://x.com/${tw.account}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[var(--accent-blue)] text-xs font-semibold hover:underline"
+                                        onClick={e => e.stopPropagation()}
+                                      >
+                                        @{tw.account}
+                                      </a>
+                                      <span className="text-[var(--text-secondary)] text-[10px]">
+                                        {tw.engagement.toFixed(0)} eng.
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <p className="text-sm leading-relaxed">{tw.text}</p>
+
+                                  {/* Per-tweet action buttons */}
+                                  <div className="flex gap-2 mt-2">
+                                    <button
+                                      onClick={() => handleTweetResearch(trend, i)}
+                                      disabled={isTwResearching}
+                                      className="btn-primary text-xs"
+                                    >
+                                      {isTwResearching ? "Arastiriliyor..." : twResearch?.summary ? "Tekrar Arastir" : "Arastir"}
+                                    </button>
+                                    <a
+                                      href={`https://x.com/${tw.account}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="btn-secondary text-xs inline-flex items-center"
+                                    >
+                                      Profil
+                                    </a>
+                                  </div>
+                                </div>
+
+                                {/* Per-tweet research progress */}
+                                {isTwResearching && twResearch?.progress && (
+                                  <div className="px-3 pb-2 text-xs text-[var(--accent-blue)] animate-pulse">
+                                    {twResearch.progress}
+                                  </div>
+                                )}
+
+                                {/* Per-tweet research results + generation */}
+                                {isActive && twResearch?.summary && (
+                                  <div className="border-t border-[var(--border)] p-3 space-y-3">
+                                    {/* Research summary */}
+                                    <div className="space-y-2">
+                                      <h4 className="text-xs font-semibold text-[var(--accent-green)]">Arastirma Sonuclari</h4>
+                                      <p className="text-xs leading-relaxed">
+                                        {twResearch.summary.replace(/<think>[\s\S]*?<\/think>/g, "").trim()}
+                                      </p>
+                                      {twResearch.key_points.length > 0 && (
+                                        <ul className="text-xs space-y-1 list-disc pl-4 text-[var(--text-secondary)]">
+                                          {twResearch.key_points.map((kp, ki) => (
+                                            <li key={ki}>{kp}</li>
+                                          ))}
+                                        </ul>
+                                      )}
+                                      {twResearch.sources.length > 0 && (
+                                        <details className="text-[10px]">
+                                          <summary className="cursor-pointer text-[var(--text-secondary)]">
+                                            Kaynaklar ({twResearch.sources.length})
+                                          </summary>
+                                          <div className="mt-1 space-y-0.5">
+                                            {twResearch.sources.slice(0, 5).map((s, si) => (
+                                              <div key={si}>
+                                                {s.url ? (
+                                                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-[var(--accent-blue)] hover:underline">{s.title}</a>
+                                                ) : (
+                                                  <span>{s.title}</span>
+                                                )}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </details>
+                                      )}
+                                    </div>
+
+                                    {/* Tweet generation button */}
+                                    <div className="pt-2 border-t border-[var(--border)]">
+                                      <button
+                                        onClick={() => handleTweetGenerate(trend, i)}
+                                        disabled={isTwGenerating}
+                                        className="btn-primary text-xs"
+                                      >
+                                        {isTwGenerating ? "Uretiliyor..." : twGenerated?.text ? "Tekrar Uret" : "Tweet Uret"}
+                                      </button>
+                                    </div>
+
+                                    {/* Generated tweet */}
+                                    {twGenerated && (
+                                      <div className="space-y-2 bg-[var(--bg-primary)] rounded-lg p-3">
+                                        <div className="flex items-center justify-between">
+                                          <h4 className="text-xs font-semibold text-[var(--accent-amber)]">Uretilen Tweet</h4>
+                                          {twGenerated.score > 0 && (
+                                            <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                                              twGenerated.score >= 80 ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)]" :
+                                              twGenerated.score >= 60 ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]" :
+                                              "bg-[var(--accent-red)]/20 text-[var(--accent-red)]"
+                                            }`}>
+                                              {twGenerated.score}/100
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        <textarea
+                                          value={twEdited}
+                                          onChange={e => setTweetEditedTexts(prev => ({ ...prev, [compositeKey]: e.target.value }))}
+                                          className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm w-full min-h-[80px] resize-y"
+                                          rows={Math.min(6, Math.max(3, twEdited.split("\n").length + 1))}
+                                        />
+                                        <div className="flex items-center justify-between text-[10px] text-[var(--text-secondary)]">
+                                          <span>{twEdited.length} karakter</span>
+                                          {twEdited.length > 280 && (
+                                            <span className="text-[var(--accent-amber)]">Thread olarak paylasmayi dusunun</span>
+                                          )}
+                                        </div>
+
+                                        {/* Action buttons */}
+                                        <div className="flex flex-wrap gap-2">
+                                          <button onClick={() => openInX(twEdited)} className="btn-primary text-xs">
+                                            X&apos;te Ac
+                                          </button>
+                                          <button onClick={() => copyText(twEdited)} className="btn-secondary text-xs">
+                                            Kopyala
+                                          </button>
+                                          <button onClick={() => handleSaveDraft(compositeKey, "tweet")} className="btn-secondary text-xs">
+                                            Taslak Kaydet
+                                          </button>
+                                          <button
+                                            onClick={() => setShowSchedule(showSchedule === compositeKey ? null : compositeKey)}
+                                            className="btn-secondary text-xs"
+                                          >
+                                            Zamanla
+                                          </button>
+                                          <button
+                                            onClick={() => handleTweetGenerate(trend, i)}
+                                            disabled={isTwGenerating}
+                                            className="btn-secondary text-xs"
+                                          >
+                                            {isTwGenerating ? "..." : "Tekrar Uret"}
+                                          </button>
+                                        </div>
+
+                                        {/* Schedule picker */}
+                                        {showSchedule === compositeKey && (
+                                          <div className="flex items-center gap-2 p-2 rounded bg-[var(--bg-secondary)]">
+                                            <input
+                                              type="datetime-local"
+                                              value={scheduleTime}
+                                              onChange={e => setScheduleTime(e.target.value)}
+                                              className="input-field text-xs"
+                                            />
+                                            <button
+                                              onClick={() => handleSchedule(compositeKey, "tweet")}
+                                              disabled={!scheduleTime}
+                                              className="btn-primary text-xs"
+                                            >
+                                              Onayla
+                                            </button>
+                                          </div>
+                                        )}
+
+                                        {/* Action message */}
+                                        {actionMsg[compositeKey] && (
+                                          <div className="text-xs text-[var(--accent-green)]">{actionMsg[compositeKey]}</div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
 
-                    {/* Action buttons */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleResearch(trend)}
-                        disabled={isResearching}
-                        className="btn-secondary text-sm"
-                      >
-                        {isResearching ? "Arastiriliyor..." : activeResearch === key && research?.summary ? "Tekrar Arastir" : "Arastir"}
-                      </button>
-                      <button
-                        onClick={() => handleGenerate(trend)}
-                        disabled={isGenerating}
-                        className="btn-primary text-sm"
-                      >
-                        {isGenerating ? "Uretiliyor..." : activeGenerate === key && generated?.text ? "Tekrar Uret" : "Tweet Uret"}
-                      </button>
+                    {/* Trend-level action buttons */}
+                    <div className="border-t border-[var(--border)] pt-3">
+                      <div className="text-xs font-medium text-[var(--text-secondary)] mb-2">Tum trend hakkinda:</div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleResearch(trend)}
+                          disabled={isResearching}
+                          className="btn-secondary text-sm"
+                        >
+                          {isResearching ? "Arastiriliyor..." : activeResearch === key && research?.summary ? "Tekrar Arastir" : "Tum Trendi Arastir"}
+                        </button>
+                        <button
+                          onClick={() => handleGenerate(trend)}
+                          disabled={isGenerating}
+                          className="btn-primary text-sm"
+                        >
+                          {isGenerating ? "Uretiliyor..." : activeGenerate === key && generated?.text ? "Tekrar Uret" : "Trendden Tweet Uret"}
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Research results */}
+                    {/* Trend-level research results */}
                     {activeResearch === key && research && (
                       <div className="space-y-2">
                         {research.progress && (
@@ -396,7 +680,7 @@ export default function TabTrends() {
                         )}
                         {research.summary && (
                           <div className="p-3 rounded bg-[var(--bg-secondary)] space-y-2">
-                            <div className="text-xs font-medium text-[var(--text-secondary)]">Arastirma Ozeti</div>
+                            <div className="text-xs font-medium text-[var(--text-secondary)]">Trend Arastirma Ozeti</div>
                             <p className="text-sm">{research.summary}</p>
                             {research.key_points.length > 0 && (
                               <div>
@@ -429,7 +713,7 @@ export default function TabTrends() {
                       </div>
                     )}
 
-                    {/* Generated tweet */}
+                    {/* Trend-level generated tweet */}
                     {activeGenerate === key && generated && (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">

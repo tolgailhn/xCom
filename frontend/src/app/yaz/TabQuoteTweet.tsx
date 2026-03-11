@@ -325,7 +325,7 @@ export default function TabQuoteTweet({
         {
           topic: researchTopic,
           engine,
-          research_sources: ["x", "web", "news"],
+          research_sources: ["web", "news"],
           tweet_author: originalTweet?.author || undefined,
         },
         (msg) => setProgressMessages((prev) => [...prev, msg]),
