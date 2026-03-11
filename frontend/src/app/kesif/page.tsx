@@ -15,6 +15,9 @@ import {
 
 import TabTweets from "./TabTweets";
 import TabAyarlar from "./TabAyarlar";
+import TabTrends from "./TabTrends";
+import TabNews from "./TabNews";
+import TabSuggestedAccounts from "./TabSuggestedAccounts";
 
 /* ── Helpers ─────────────────────────────────────────── */
 
@@ -36,11 +39,11 @@ function timeAgo(isoStr: string): string {
 
 export default function KesifPage() {
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<"tweets" | "ayarlar">("tweets");
+  const [tab, setTab] = useState<"tweets" | "trendler" | "haberler" | "oneriler" | "ayarlar">("tweets");
 
   useEffect(() => {
     const t = searchParams.get("tab");
-    if (t === "tweets" || t === "ayarlar") setTab(t);
+    if (t === "tweets" || t === "trendler" || t === "haberler" || t === "oneriler" || t === "ayarlar") setTab(t);
   }, [searchParams]);
 
   const [config, setConfig] = useState<DiscoveryConfig | null>(null);
@@ -189,19 +192,22 @@ export default function KesifPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-[var(--border)] pb-2">
-        <button
-          onClick={() => setTab("tweets")}
-          className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${tab === "tweets" ? "bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] border-b-2 border-[var(--accent-blue)]" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
-        >
-          Tweetler ({tweets.length})
-        </button>
-        <button
-          onClick={() => setTab("ayarlar")}
-          className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${tab === "ayarlar" ? "bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] border-b-2 border-[var(--accent-blue)]" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
-        >
-          Ayarlar
-        </button>
+      <div className="flex gap-2 border-b border-[var(--border)] pb-2 overflow-x-auto">
+        {([
+          { key: "tweets", label: `Tweetler (${tweets.length})` },
+          { key: "trendler", label: "Trendler" },
+          { key: "haberler", label: "Haberler" },
+          { key: "oneriler", label: "Onerilen Hesaplar" },
+          { key: "ayarlar", label: "Ayarlar" },
+        ] as const).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${tab === t.key ? "bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] border-b-2 border-[var(--accent-blue)]" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {tab === "ayarlar" && config && (
@@ -225,6 +231,10 @@ export default function KesifPage() {
           status={status}
         />
       )}
+
+      {tab === "trendler" && <TabTrends />}
+      {tab === "haberler" && <TabNews />}
+      {tab === "oneriler" && <TabSuggestedAccounts />}
     </div>
   );
 }

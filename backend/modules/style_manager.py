@@ -802,3 +802,94 @@ def save_discovery_rotation(rotation: dict):
     os.makedirs(DATA_DIR, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(rotation, f, ensure_ascii=False, indent=2)
+
+
+# --- Auto-Scan Cache (Faz 3: Otomatik konu taraması) ---
+
+def load_auto_scan_cache() -> list[dict]:
+    """Load auto-scan topic cache (otomatik konu taraması sonuçları)"""
+    path = DATA_DIR / "auto_scan_cache.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+
+def save_auto_scan_cache(cache: list[dict]):
+    """Save auto-scan topic cache (max 200 items, 48h retention)"""
+    now = datetime.datetime.now(TZ_TR)
+    cutoff = now - datetime.timedelta(hours=48)
+    # Purge old entries
+    fresh = [
+        t for t in cache
+        if t.get("scanned_at", "") > cutoff.isoformat()
+    ]
+    # Keep max 200
+    fresh = sorted(fresh, key=lambda x: x.get("engagement_score", 0), reverse=True)[:200]
+    path = DATA_DIR / "auto_scan_cache.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(fresh, f, ensure_ascii=False, indent=2, default=str)
+
+
+# --- Trend Cache (Faz 4: Trend tespiti) ---
+
+def load_trend_cache() -> dict:
+    """Load trend analysis cache (keyword frequency, trending topics)"""
+    path = DATA_DIR / "trend_cache.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"trends": [], "last_updated": "", "keyword_counts": {}}
+
+
+def save_trend_cache(cache: dict):
+    """Save trend analysis cache"""
+    path = DATA_DIR / "trend_cache.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(cache, f, ensure_ascii=False, indent=2, default=str)
+
+
+# --- News Cache (Faz 7: Haber kaynağı taraması) ---
+
+def load_news_cache() -> list[dict]:
+    """Load web news scan cache"""
+    path = DATA_DIR / "news_cache.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+
+def save_news_cache(cache: list[dict]):
+    """Save web news scan cache (max 100 items, 72h retention)"""
+    now = datetime.datetime.now(TZ_TR)
+    cutoff = now - datetime.timedelta(hours=72)
+    fresh = [n for n in cache if n.get("found_at", "") > cutoff.isoformat()]
+    fresh = sorted(fresh, key=lambda x: x.get("found_at", ""), reverse=True)[:100]
+    path = DATA_DIR / "news_cache.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(fresh, f, ensure_ascii=False, indent=2, default=str)
+
+
+# --- Suggested Accounts (Faz 9: Dinamik hesap keşfi) ---
+
+def load_suggested_accounts() -> list[dict]:
+    """Load auto-suggested accounts (high-engagement but not in discovery list)"""
+    path = DATA_DIR / "suggested_accounts.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+
+def save_suggested_accounts(accounts: list[dict]):
+    """Save suggested accounts (max 50)"""
+    # Keep top 50 by score
+    accounts = sorted(accounts, key=lambda x: x.get("score", 0), reverse=True)[:50]
+    path = DATA_DIR / "suggested_accounts.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(accounts, f, ensure_ascii=False, indent=2, default=str)

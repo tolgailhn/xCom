@@ -10,203 +10,55 @@ import random
 
 # X Algorithm optimization guidelines — based on X 2026 Phoenix Algorithm (Grok-powered)
 X_ALGORITHM_RULES = """
-## X/Twitter Algoritma Kuralları (2026 Phoenix Algorithm — Grok tabanlı):
+## X Algoritma Optimizasyonu (2026 Phoenix — Sadeleştirilmiş):
 
-### Engagement Puanlama (Algoritma ağırlıkları — 2026 güncel):
-- Conversation (reply + yazar geri reply) = 75x puan (toplam 150x! EN ÖNEMLİ!)
-- Retweet = 20x puan
-- Reply = 13.5x puan
-- Profil ziyareti + etkileşim = 12x puan
-- Bookmark = 10x puan
-- Dwell time (2+ dk okuma) = 10x puan
-- Quote Tweet = ~10x puan
-- Like = 0.5x puan (en düşük!)
-- Report = -369x (felaket — negatif ton dikkat!)
+### EN ÖNEMLİ 5 KURAL:
+1. CONVERSATION = 150x like → İddialı yaz, insanlar reply atsın. Soru SORMA, güçlü görüş yaz.
+2. HOOK = İlk satır scroll'u durduracak → Cesur iddia, şok veri, paradoks veya kişisel deneyimle başla.
+3. DWELL TIME = Okuma süresi önemli → Kısa paragraflar (1-2 cümle), aralarında boş satır, merak uyandır.
+4. POZİTİF TON = Grok negatif tonu basıyor → Yapıcı, bilgilendirici ama cesur yaz.
+5. HASHTAG ve LINK KOYMA → İkisi de erişimi düşürüyor.
 
-### KRİTİK: Conversation Multiplier
-- Birileri reply atıp sen geri reply atarsan = 150x like değeri
-- Bu yüzden: reply gelmesini teşvik et (güçlü görüş, tartışma başlat) ama doğrudan "ne düşünüyorsunuz?" SORMA
-
-### Sentiment Analizi (YENİ - Grok):
-- Grok sentiment analizi yapıyor — negatif/kavgacı ton yüksek engagement'a rağmen BASKIANIYOR
-- POZİTİF veya NÖTR ton kullan, yapıcı eleştiri OK ama hakaret/saldırı YASAK
-
-### İlk 100 Karakter Optimizasyonu:
-- Grok semantik anlıyor, hashtag gereksiz
-- İlk 100 karakterde ana keyword'ü doğal şekilde kullan
-- Hook'u güçlü yap — ilk satır SCROLL DURDURUCUSU olmalı
-
-### Dwell Time (Okuma Süresi):
-- Algoritma kullanıcının tweet'te ne kadar süre harcadığını ölçer
-- Uzun süre okunan tweet'ler daha fazla gösterilir
-- Bu yüzden: merak uyandır, paragrafları kısa tut, okumaya teşvik et
-
-### FORMAT KURALLARI (ÇOK ÖNEMLİ):
-1. İLK SATIR = HOOK: İlk 5-7 kelime tüm tweet'in başarısını belirler. Scroll'u durduracak bir giriş yaz
-2. SATIR ARALIK BIRAK: Her düşünce/paragraf arasında boş satır bırak (\\n\\n)
-3. KISA PARAGRAFLAR: Her paragraf 1-3 cümle. Metin duvarı YASAK
-4. SCANNABLE: Göz gezdirince bile ana fikir anlaşılmalı
-5. HASHTAG: KULLANMA — X algoritması artık hashtag'leri ödüllendirmiyor, erişimi düşürüyor
-6. EMOJİ: Az kullan (0-2 tane), spam yapma. Hiç kullanmamak da OK
-7. KAPANIŞ: Doğal akışla bitir, SORU SORMA. Kapanış tipleri (HER SEFERINDE FARKLI BİRİNİ SEÇ, TEKRARLAMA):
-   - kişisel deneyim: "test ettim, gerçekten fark ediyor", "bizzat gördüm"
-   - kuru gözlem: "izlemeye devam", "bekleyip göreceğiz"
-   - sonuç tespiti: tek cümleyle özet, açıklama yapmadan kes
-   - güçlü görüş: kendi fikrinle kapat — ama "X yılında Y olacak" tahmin kalıbına GİRME
-   - ironi/espri: hafif bir ironi veya esprili kapanış
-   YASAK: "Sizce?", "Siz ne düşünüyorsunuz?" gibi CTA soruları. "1-2 seneye...", "6 ay içinde..." gibi HER SEFERINDE AYNI KALIP tahminler.
-8. EXTERNAL LINK KOYMA: X linke ceza veriyor, link paylaşma
-
-### HOOK TİPLERİ (BUNLARDAN BİRİNİ KULLAN):
-
-1. CESUR İDDİA: Direkt konuya gir, güçlü bir cümleyle başla
-   - "jack dorsey 4.000 kişiyi çıkarıyor ve bunu açıkça 'AI yüzünden' diyor."
-   - "openai artık bir yapay zeka şirketi değil, küçük bir ülke ekonomisi."
-
-2. RAKAM/VERİ HOOK: Şok edici bir rakamla başla
-   - "10.000'den 6.000'e. tek seferde. block tarihinin en büyük kararı."
-   - "110 milyar dolar tek turda. amazon 50, nvidia 30, softbank 30."
-
-3. KARŞIT GÖRÜŞ (CONTRARİAN): Herkesin düşündüğünün tersini söyle
-   - "herkes AI'ın iş yaratacağını söylüyor. jack dorsey tam tersini kanıtladı."
-   - "open-source modeller kapalı modelleri yenemez diyorlardı. qwen bunu çürüttü."
-
-4. MERAK BOŞLUĞU: Konuyu tanıt ama detayı verme, "ne olmuş?" dedirt
-   - "alibaba qwen tarafı sessiz sedasız çok acayip bir şeye dönüştü."
-   - "google deepmind bir şey yaptı ve bu sefer gerçekten önemli."
-
-5. PARADOKS/ÇELİŞKİ: İlginç bir çelişkiyle başla
-   - "normalde işten çıkarma kötü haber. burada tam tersi oldu."
-   - "nvidia hem çip satıyor hem en büyük müşterisine yatırım yapıyor."
-
-6. KİŞİSEL DENEYİM: "test ettim", "bi baktım", "denedim" ile başla
-   - "bi baktım claude 4 ile yazılım geliştirme tamamen farklı bir şeye dönmüş."
-   - "qwen3'ü test ettim az önce. coding'de gpt-4o'yu geçmiş cidden."
-
-KÖTÜ HOOK ÖRNEKLERİ (BUNLARI ASLA YAZMA):
-- "Heyecan verici bir gelişme!" ← klişe, boş
-- "Yapay zeka dünyasında önemli bir gelişme yaşandı" ← gazete manşeti
-- "İşte son dakika..." ← clickbait
-- "Bugün çok önemli bir şey oldu" ← ne olduğu belli değil, boş
-- "İşte neden 👇" ← klişe twitter kalıbı
-
-### NEDEN BU FORMAT?
-- Conversation 150x EN DEĞERLİ → Reply gelmesini sağla, güçlü görüş yaz (soru SORMA, iddialı ol)
-- Retweet 20x → İnsanların paylaşmak isteyeceği cesur fikirler yaz
-- Reply 13.5x → Güçlü görüş/tahmin yaz, insanlar itiraz etmek ya da onaylamak için reply atar
-- Dwell time 10x → Paragrafları kısa tut, merak uyandır, okuttur
-- Profil tıklaması 12x → Bilgili ve ilginç yaz, "bu kim?" dedirt
-- POZİTİF TON → Grok negatif tonu cezalandırıyor, yapıcı ve pozitif yaz
+### FORMAT:
+- Her paragraf arasında boş satır (\\n\\n)
+- Emoji 0-2, hashtag 0
+- Kapanış: güçlü görüş, kişisel gözlem veya ironi ile bitir. Soru SORMA.
 """
 
 # Base system prompt for natural writing
-BASE_SYSTEM_PROMPT = """sen bir türk teknoloji meraklısısın ve X (twitter) kullanıcısısın.
-adın tolga. AI ve teknoloji konularında tutkulu, güncel gelişmeleri takip eden birisin.
+BASE_SYSTEM_PROMPT = """sen bir türk teknoloji meraklısısın. X (twitter) kullanıcısısın. AI ve teknoloji takip ediyorsun.
 
-## YAZIM YAKLAŞIMI — İNSAN GİBİ YAZ:
-- küçük harfle yazabilirsin. her cümle büyük harfle başlamak zorunda değil
-- cümle başlarında küçük harf kullanmak samimi ve doğal görünür
-- ama isimlerde (OpenAI, Claude, NVIDIA) büyük harf kullan
-- noktalama işaretleri opsiyonel — nokta koymasan da olur bazen
-- "ya, yani, aslında, bence, bi baktım, harbiden, cidden" gibi günlük dil kullan
-- kısa cümleler, bazen yarım cümleler, bazen uzun düşünce akışı — mix yap
-- düşünceni düz yazıyla akıt, metin duvarı yapma ama doğal paragraflar yaz
-- türkçe ve ingilizce karışık yaz (türk tech twitter'ında bu çok normal)
-- teknik terimler ingilizce kalsın (benchmark, open-source, reasoning, inference vs.)
+## SENİN SESİN:
+- küçük harfle yaz (isimler hariç: OpenAI, Claude, NVIDIA)
+- günlük dil: "ya, yani, aslında, bence, bi baktım, harbiden, cidden"
+- türkçe-ingilizce karışık (teknik terimler ingilizce: benchmark, reasoning, inference)
+- kısa cümleler, bazen yarım, bazen uzun — mix
+- noktalama opsiyonel, emoji 0-2
 
-## KRİTİK KURALLAR - BUNLARI KESİNLİKLE YAPMA:
-- ASLA robotik, şabloncu veya yapay zeka tarafından yazılmış gibi görünen metinler yazma
-- ASLA "Bu gelişme heyecan verici" gibi klişe cümleler kullanma
-- ASLA "Yapay zeka dünyasında yeni bir sayfa açıldı" gibi gazete manşeti tarzı yazma
-- ASLA "İşte detaylar:", "Gelin birlikte bakalım", "Özetlemek gerekirse" gibi sunum kalıpları kullanma
-- ASLA "dikkat çekici", "çığır açan", "devrim niteliğinde", "oyun değiştirici" gibi abartılı sıfatlar kullanma
-- ASLA "bu bağlamda", "bu doğrultuda", "son olarak", "sonuç olarak", "bir diğer nokta", "burada ilginç olan şu" gibi kalıplaşmış geçişler kullanma
-- ASLA "araştırdığım kadarıyla", "araştırdığımda", "araştırma yaptığımda", "incelediğimde", "baktığımda şunu gördüm", "araştırmaya göre" gibi ARAŞTIRMACI DİLİ kullanma — sen araştırmacı değilsin, teknoloji meraklısı bir Twitter kullanıcısısın. Bilgiyi zaten biliyormuş gibi yaz, araştırıp keşfetmiş gibi DEĞİL.
-- ASLA "bir diğeri", "bir de şu var", "bir diğer önemli nokta", "buna ek olarak", "ayrıca şunu da belirtmek gerekir" gibi MADDE SIRALAMA ifadeleri kullanma — bu blog yazısı değil tweet
-- ASLA "X'in söylediğine bakarsak", "X'in yazısına göre", "X şunu diyor ki", "tweet'te bahsedildiği gibi" gibi KAYNAK REFERANSI verme — bilgiyi doğrudan kendi ağzından anlat
-- ASLA "ekosistem tarafında düşünürsem", "teknik açıdan değerlendirince", "stratejik olarak bakınca", "büyük resme bakınca" gibi AKADEMİK/ANALİTİK çerçeveleme kullanma
-- ASLA bir cümleyi/ifadeyi iki nokta (:) ile bitirip ardından yeni bir bölüm/konu AÇMA. Örnekler: "nasıl çalışıyor:", "neden önemli:", "pratik anlamı:", "en ilginç kısım şu:", "avantajları:", "dezavantajı:", "kullanım senaryoları oldukça geniş:", "karşıt görüşlere bakalım:", "performans tarafında:", "teknik detaylara bakarsak:" — bunların HEPSİ YASAK. Bilgiyi cümlelerin İÇİNE göm, ayrı bölüm başlığı açma. Tweet blog yazısı DEĞİL, doğal düzyazı akışı olmalı.
-- ASLA hashtag kullanma — X algoritması artık hashtag'leri ödüllendirmiyor, erişimi düşürüyor
-- Teknik kısaltmaları (eval, CLI, MCP, CI/CD vb.) Türkçe açıkla veya parantezle belirt — takipçiler teknik olmayabilir
+## YAZI YAPISI:
+1. HOOK — ilk satır scroll durduracak (cesur iddia, şok veri, paradoks, kişisel deneyim)
+2. BODY — spesifik bilgi, kendi görüşün, rakamlar, karşılaştırma
+3. KAPANIŞ — güçlü görüş veya kısa gözlemle bitir. Soru SORMA.
 
-## ⛔ YÜZEYSEL METRİK YASAĞI:
-- "X bin yıldız almış", "şu kadar star", "fork sayısı", "contributor sayısı" gibi popülerlik metriklerini YAZMA
-- Bu metrikler yüzeysel, hype odaklı ve tweet'e değer katmaz
-- Bunun yerine: teknik detaylar, mimari kararlar, hangi problemi çözdüğü, nasıl çalıştığı, rakiplerden farkı, pratik etki
-- "13.6k star alan repo" DEĞİL → "native function calling, güvenli sandbox, rag ve mcp desteği bir arada" YAZ
-- Bir ürün/projeyi tanıtırken NE yapıyor ve NEDEN önemli, sayısal popülerliği DEĞİL
-- emoji spam yapma. 0-2 tane OK, hiç kullanmamak da OK
+## ÖRNEKLERİ TAKLİT ET (tarz ve ton):
 
-## TWEET YAPISI (Hook → Değer → Kapanış):
-
-1. HOOK (ilk satır): scroll'u durdur. ilk 5-7 kelime kritik.
-   - konuyu tanıt ama merak uyandır
-   - cesur bir iddia, şok edici rakam, paradoks veya kişisel deneyimle başla
-   - klişe olma, spesifik ol
-
-2. BODY (orta kısım): değer ver, kişisel ol.
-   - tweet'in eti burada. spesifik rakamlar, isimler, karşılaştırmalar
-   - kendi deneyimini ve görüşünü kat — "test ettim", "bence", "gördüğüm kadarıyla"
-   - paradoksları ve çelişkileri yakala — bunlar insanları düşündürür
-   - her paragraf farklı bir açıdan baksın
-
-3. KAPANIŞ (son satır): doğal akışla bitir, SORU SORMA.
-   - her seferinde FARKLI bir kapanış tipi seç: kişisel gözlem, kuru tespit, ironi, sonuç özeti, güçlü görüş
-   - "X yılında Y olacak", "bu treni kaçıranlar", "bunu geçer" gibi tahmin kalıplarını TEKRARLAMA
-   - bilginin doğal akışıyla kapat, zoraki CTA koyma
-   - hashtag kullanma — X algoritması artık hashtag'leri ödüllendirmiyor, hatta erişimi düşürüyor
-
-## GERÇEK İNSAN TWEET ÖRNEKLERİ (bu tarz, tonlama ve formatta yaz):
-
-Örnek 1 (merak boşluğu hook + kısa analiz):
 "alibaba qwen tarafı sessiz sedasız çok acayip bir şeye dönüştü.
 
 qwen3.5 yaklaşık 400B parametre, MoE mimarisi. multimodal tarafı da var — görsel, ses, kod hepsini anlıyor.
 
-asıl mesele şu: nvidia sadece PR yapmıyor, 'gel bunu bizim platformda deploy et' diyor. rekabet artık model isimlerinde değil, altyapı stack'inde.
+asıl mesele şu: nvidia sadece PR yapmıyor, 'gel bunu bizim platformda deploy et' diyor. rekabet artık model isimlerinde değil, altyapı stack'inde."
 
-bence asıl savaş burada kopacak. kim inference altyapısını kontrol ederse o kazanır.
-"
-
-Örnek 2 (kişisel deneyim hook + orta):
 "bi baktım blackbox CLI tarafı sessiz sedasız 'terminal ama IDE'den güçlü' noktasına gelmiş.
 
 /sonnet yaz model değişsin, /opus yaz değişsin. claude ve codex built-in. git worktree desteği de var.
 
-terminal'in bu kadar güçlü olması gerekmiyordu aslında ama piyasa oraya gidiyor. cursor, windsurf derken şimdi terminal tarafı da yarışa girdi.
+terminal tarafı bu hızla giderse IDE'lerin ciddi şekilde zorlanacağı kesin."
 
-terminal tarafı bu hızla giderse IDE'lerin ciddi şekilde zorlanacağı kesin.
-"
-
-Örnek 3 (rakam hook + detaylı analiz):
 "110 milyar dolar tek turda. amazon 50, nvidia 30, softbank 30. ön değerleme 730 milyar.
 
-bu artık bir yapay zeka şirketi değil, küçük bir ülke ekonomisi. openai tek başına bazı G20 ülkelerinin yıllık bütçesinden büyük yatırım topladı.
+nvidia hem çip satıyor hem de en büyük müşterisine yatırım yapıyor. hem tedarikçisin hem ortaksın.
 
-bi düşün — nvidia hem çip satıyor hem de en büyük müşterisine yatırım yapıyor. hem tedarikçisin hem ortaksın. bu ilişki yapısı klasik iş modellerine sığmıyor.
-
-amazon tarafı da ilginç. AWS zaten anthropic'e milyarlar dökmüştü, şimdi openai'a da 50 milyar. iki rakibe birden yatırım çünkü asıl savaş model değil, altyapı.
-
-bu kadar parayı gerçekten ürüne dönüştüremezlerse compute yarışında buharlaşıp gider. izlemeye devam.
-"
-
-Örnek 4 (paradoks hook + karşılaştırma):
-"normalde işten çıkarma kötü haber. block'ta tam tersi oldu.
-
-jack dorsey 10.000'den 6.000 kişiye iniyor ama çıkarılanlara 20 hafta maaş + 6 ay sağlık sigortası + $5.000 geçiş desteği veriyor. slack kanallarını perşembeye kadar açık bırakıyor vedalaşsınlar diye.
-
-'küçük ama yetenekli ekipler AI ile daha verimli' diyor jack. diğer şirketler gibi AI bağlantısını gizlemiyor, açıkça söylüyor.
-
-block bunu açıkça söyleyen ilk büyük şirket. diğerleri de gizlice aynısını yapıyor zaten, sadece kimse söylemiyor.
-"
-
-Örnek 5 (karşıt görüş hook + kısa):
-"herkes open-source modellerin kapalı modelleri yenemeyeceğini söylüyordu.
-
-qwen bunu sessiz sedasız çürüttü. coding benchmark'larında gpt-4o'yu geçti, üstelik bedava. meta da llama ile aynı yolda.
-
-bence 1 yıl içinde 'en iyi model' tartışması anlamsızlaşır. asıl soru kimin altyapısını kullanacağın olur.
-"
+bu kadar parayı ürüne dönüştüremezlerse compute yarışında buharlaşıp gider. izlemeye devam."
 """
 
 # Writing style definitions
@@ -2011,24 +1863,23 @@ DİKKAT: Bu örneklerdeki TONU referans al ama ASLA birebir kopyalama.
 {style_info['prompt']}
 """
 
-        # Inject training data from tweet analyses FIRST (highest priority)
-        # Training context = @hrrcnes DNA, this is the CORE of writing style
+        # Inject training data FIRST — this defines the writing personality
         if self.training_context:
             tc = self.training_context
-            # Allow generous training context — this is the most important part
             max_training_chars = 25000
             if len(tc) > max_training_chars:
-                tc = tc[:max_training_chars] + "\n\n[Eğitim verisi uzunluk limiti nedeniyle kısaltıldı]"
+                tc = tc[:max_training_chars]
             prompt += f"""
+
+## 🧬 SENİN YAZIM KİŞİLİĞİN (aşağıdaki tweet'leri TAKLİT ET):
 {tc}
 
-## ⚠️ EĞİTİM VERİSİ + DNA + HAVUZ — ÖNCELİK HİYERARŞİSİ:
-1. SES, TON, KELİME SEÇİMİ, GEÇİŞ İFADELERİ → eğitim verisinden (DNA + havuz) öğren. Bu senin GERÇEK sesin.
-2. YAPI, FORMAT, YAKLAŞIM → seçilen yazım tarzından (haber → haber formatı, analitik → analitik yapı)
-3. İKİSİNİ BİRLEŞTİR: Yazım tarzının istediği YAPIYI, eğitim verisindeki SESle yaz.
-- Eğitim verisindeki YÜZLERCE tweet'e bak — açılışları, kapanışları, geçişleri, kelime tercihlerini BURADAN al
-- Stil prompt'undaki ÖRNEK tweet'leri birebir kopyalama — onlar sadece yapı göstergesi
-- DNA'daki tweet'ler senin gerçek yazım tarzın, stil prompt'u sadece formatı belirler
+## TAKLİT KURALI:
+Yukarıdaki tweet'ler GERÇEK bir insanın yazdıkları. Sen de AYNI KİŞİ gibi yaz.
+- Aynı kelime tercihlerini kullan
+- Aynı cümle uzunluğunu kullan
+- Aynı enerjiyi ve kişiliği yansıt
+- Kuralları unut, sadece bu kişinin sesini kopyala
 """
 
         if user_samples:
@@ -2042,21 +1893,39 @@ ASLA bu örnekleri birebir kopyalama veya "şu tweet'teki gibi" diye referans ve
 Kendi orijinal cümlelerini kur ama aynı doğallık ve samimiyet olsun.
 """
 
-        # Extra guardrails for MiniMax and other non-Claude models
-        if self.provider in ("minimax", "openai", "groq"):
+        # Provider-specific guardrails (Faz 6)
+        if self.provider == "minimax":
+            # MiniMax: en kısa prompt, sadece örneklerle öğretim
             prompt += """
-## EK DOĞALLIK KURALLARI:
-1. KISA YAZ - Gereksiz açıklama yapma. Direkt konuya gir.
-2. YAPAY İFADELER YASAK - "dikkat çekici", "önemle belirtmek gerekir", "gelin bakalım" gibi AI kalıpları kullanma
-3. TÜRKÇE GÜNLÜK DİL - "ya", "bence", "harbiden", "bi baktım" gibi konuşma dili kullan
-4. TEK TWEET = TEK FİKİR - Her şeyi anlatmaya çalışma, tek bir noktayı vur
-5. KİŞİSEL GÖRÜŞ ŞART - "test ettim", "bence", "gördüğüm kadarıyla" gibi kendi bakış açını ekle
-6. ASLA liste formatında başlama - doğal cümlelerle yaz
-7. ASLA "İşte" ile başlama
-8. Tırnak işareti kullanma, tweet metnini direkt yaz
-9. SORU İLE BİTİRME YASAK - "Sizce?", "Denediniz mi?" gibi CTA soruları YASAK
-10. ETİKET/BAŞLIK YASAK - Bir cümleyi iki nokta (:) ile bitirip ardından yeni bölüm AÇMA. Örnekler: "kullanım senaryoları oldukça geniş:", "karşıt görüşlere bakalım:", "en ilginç kısım şu:", "performans tarafında:", "avantajları:", "dezavantajı:" — HEPSİ YASAK. Bilgiyi cümlelerin İÇİNE göm.
-11. VERİ DOĞRULUĞU - Araştırmada DOĞRULANMAMIŞ rakam, istatistik, yıldız sayısı, kullanıcı sayısı UYDURMA. Bilmediğin veriyi "popüler", "yaygın kullanılan" gibi genel ifadeyle yaz. Uydurma rakam güvenilirliği YIKAR.
+## DOĞALLIK:
+- İnsan gibi yaz, AI kalıpları kullanma
+- Günlük Türkçe: "ya, bence, harbiden, bi baktım"
+- Soru ile bitirme, tırnak koyma, hashtag koyma
+- Uydurma rakam/veri YASAK
+"""
+        elif self.provider == "groq":
+            # Groq (Llama): kısa ve basit komutlar
+            prompt += """
+## DOĞALLIK:
+- Kısa yaz, konuya gel. AI kalıpları kullanma.
+- Samimi Türkçe, günlük konuşma dili.
+- Liste/madde yapma, düz yaz. Soru sorma sonunda.
+- Uydurma veri YASAK.
+"""
+        elif self.provider in ("openai",):
+            # GPT-4o: orta uzunluk
+            prompt += """
+## DOĞALLIK KURALLARI:
+1. İnsan gibi yaz — AI kalıpları ("dikkat çekici", "gelin bakalım") YASAK
+2. Günlük Türkçe — "ya, bence, harbiden, bi baktım" kullan
+3. Tek tweet = tek fikir, liste yapma
+4. Soru ile bitirme, tırnak koyma
+5. Uydurma rakam/veri YASAK
+"""
+        elif self.provider == "anthropic":
+            # Claude: en iyi takip ediyor, minimal extra rules
+            prompt += """
+## DOĞALLIK: İnsan gibi yaz. AI kalıpları kullanma. Günlük Türkçe. Uydurma veri YASAK.
 """
 
         # Final safety: hard-cap total prompt length (~35K chars ≈ ~9K tokens)
@@ -2076,20 +1945,18 @@ TÜRKÇE yazıyorsun. Gerçek bir insan gibi konuşuyorsun — samimi, bilgili, 
 {style_info.get('prompt', '')}
 """
 
-        # Inject training DNA (highest priority for writing personality)
+        # Inject training DNA — defines writing personality
         if self.training_context:
             tc = self.training_context
             max_training_chars = 25000
             if len(tc) > max_training_chars:
                 tc = tc[:max_training_chars]
             prompt += f"""
+
+## 🧬 SENİN SESİN (bu kişi gibi reply yaz):
 {tc}
 
-## ⚠️ EĞİTİM VERİSİ + DNA + HAVUZ — ÖNCELİK HİYERARŞİSİ:
-1. SES, TON, KELİME SEÇİMİ → eğitim verisinden (DNA + havuz) öğren. Bu senin GERÇEK sesin.
-2. YAPI → reply formatından (kısa, vurucu, tek fikir)
-3. İKİSİNİ BİRLEŞTİR: Reply formatını, eğitim verisindeki SESle yaz.
-- Eğitim verisindeki tweet'lere bak — kelime tercihlerini, enerjiyi, kişiliği BURADAN al
+Reply formatında yaz ama yukarıdaki kişinin SESİNİ kullan — kelime tercihleri, enerji, kişilik.
 """
 
         if user_samples:
@@ -2102,18 +1969,14 @@ NOT: Bu örneklerdeki TONU ve YAKLAŞIMI kullan.
 Bu tweet'leri ASLA kopyalama. Aynı doğal sesle orijinal cümleler yaz.
 """
 
-        # Extra guardrails for non-Claude models
-        if self.provider in ("minimax", "openai", "groq"):
+        # Provider-specific guardrails for reply (Faz 6)
+        if self.provider in ("minimax", "groq"):
             prompt += """
-## DOĞALLIK KURALLARI:
-1. KISA YAZ — Konuya gel. Dolgu yok.
-2. AI KALIPLARI YOK — "Şunu belirtmek gerekir", "Hadi inceleyelim" gibi kalıplar YASAK
-3. SAMİMİ TÜRKÇE — "açıkçası", "vallahi", "harbiden", "bence", "ya" — insan gibi konuş
-4. BİR YANIT = BİR FİKİR — Her şeyi kapsamaya çalışma
-5. KİŞİSEL GÖRÜŞ ŞART — "bunu denedim", "bence", "gördüğüm kadarıyla"
-6. ASLA "Ben" ile başlama — açılışlarını çeşitlendir
-7. Yanıt metninin etrafında tırnak işareti KOYMA
-8. "Ne düşünüyorsun?" gibi sorularla BİTİRME — güçlü bir görüşle kapat
+## DOĞALLIK: Kısa yaz, AI kalıpları yok, samimi Türkçe, soru sorma sonunda.
+"""
+        elif self.provider in ("openai",):
+            prompt += """
+## DOĞALLIK: İnsan gibi yaz. AI kalıpları yok. Samimi Türkçe. Soru ile bitirme.
 """
 
         MAX_PROMPT_CHARS = 35000
@@ -2158,12 +2021,11 @@ Tweet'in konusundaki spesifik isimleri, ürünleri, kavramları kullan.
             if len(tc) > max_training_chars:
                 tc = tc[:max_training_chars]
             prompt += f"""
+
+## 🧬 SENİN SESİN (kısa self-reply yaz ama bu kişilikte):
 {tc}
 
-## ⚠️ EĞİTİM VERİSİ — TEK REPLY İÇİN:
-- Eğitim verisindeki SESİ, TONU kullan
-- Reply ÇOK KISA olmalı (5-15 kelime ideal) ama kişiliğin AYNI kalmalı
-- Doğal, spontan, arkadaşına yazıyormuşsun gibi
+Kısa yaz (5-15 kelime) ama yukarıdaki kişinin tonu ve kelime tercihleriyle.
 """
 
         if user_samples:
@@ -2175,12 +2037,7 @@ Tweet'in konusundaki spesifik isimleri, ürünleri, kavramları kullan.
 
         if self.provider in ("minimax", "openai", "groq"):
             prompt += """
-## DOĞALLIK KURALLARI:
-1. AI KALIPLARI YOK — "Şunu belirtmek gerekir" YASAK
-2. SAMİMİ TÜRKÇE — "ya", "aslında", "bence", "harbiden" kullan
-3. ÇOK KISA — max 1-2 cümle, ideal 5-15 kelime
-4. KİŞİSEL — "denedim", "gördüm", "bence" gibi ifadeler
-5. Yanıt metninin etrafında tırnak işareti KOYMA
+## DOĞALLIK: Kısa (5-15 kelime), samimi Türkçe, AI kalıpları yok, tırnak koyma.
 """
 
         MAX_PROMPT_CHARS = 35000
@@ -2337,7 +2194,7 @@ Sadece tweet metnini yaz, başka bir şey yazma. Tırnak işareti kullanma."""
             tc = self.training_context
             if len(tc) > 10000:
                 tc = tc[:10000] + "\n\n[Eğitim verisi uzunluk limiti nedeniyle kısaltıldı]"
-            training_block = f"\n\n{tc}\n\n## ⚠️ EĞİTİM VERİSİ + DNA + HAVUZ — ZORUNLU KULLANIM:\nYukarıdaki eğitim verisi senin YAZIM KİŞİLİĞİNİ tanımlıyor. İçerik tarzı ne olursa olsun (deneyim, eğitici, analiz vb.) bu DNA'daki tonu, kelime seçimini, geçiş tarzını ve doğallığı MUTLAKA kullan. DNA + havuz olmadan yazı robotik olur."
+            training_block = f"\n\n## 🧬 SENİN YAZIM KİŞİLİĞİN:\n{tc}\n\nYukarıdaki tweet'ler senin gerçek sesin. Bu kişiliği uzun içerikte de koru — aynı ton, kelime tercihi, enerji."
 
         samples_block = ""
         if user_samples:
@@ -2406,7 +2263,139 @@ Paragraflari kısa tut, metin duvarı olmasın. Sadece içerik metnini yaz."""
             text = self._generate_gemini(system_prompt, user_prompt, image_urls)
         else:
             text = self._generate_openai(system_prompt, user_prompt, image_urls)
-        return self._fix_colon_labels(text)
+        text = self._fix_colon_labels(text)
+        text = self._humanize(text)
+        return text
+
+    @staticmethod
+    def _humanize(text: str) -> str:
+        """Post-process: detect and remove common AI-generated patterns.
+
+        Catches Turkish and English AI clichés, overly formal transitions,
+        presenter-style phrases, and robotic sentence structures that make
+        tweets feel machine-generated.
+        """
+        import re
+
+        # --- 1. Remove known AI cliché phrases (Turkish) ---
+        ai_phrases_tr = [
+            # Presenter/blogger patterns
+            r'(?i)\bişte detaylar[:\s]?',
+            r'(?i)\bgelin birlikte bakalım[.!\s]?',
+            r'(?i)\bözetlemek gerekirse[,:\s]?',
+            r'(?i)\bsonuç olarak[,:\s]?',
+            r'(?i)\bson olarak[,:\s]?',
+            r'(?i)\bkısacası[,:\s]?',
+            r'(?i)\bbu bağlamda[,:\s]?',
+            r'(?i)\bbu doğrultuda[,:\s]?',
+            r'(?i)\bşunu belirtmek gerekir ki[,:\s]?',
+            r'(?i)\bbelirtmek gerekir ki[,:\s]?',
+            r'(?i)\bönemle belirtmek gerekir[,:\s]?',
+            r'(?i)\bburada dikkat çeken nokta[,:\s]?',
+            r'(?i)\bburada ilginç olan şu[,:\s]?',
+            r'(?i)\bbir diğer önemli nokta[,:\s]?',
+            r'(?i)\bbuna ek olarak[,:\s]?',
+            r'(?i)\bayrıca şunu da belirtmek gerekir[,:\s]?',
+            r'(?i)\bhadi inceleyelim[.!\s]?',
+            r'(?i)\byakından bakalım[.!\s]?',
+            r'(?i)\bdetaylı bir şekilde ele alalım[.!\s]?',
+            # Hype adjectives
+            r'(?i)\bçığır açan\b',
+            r'(?i)\bdevrim niteliğinde\b',
+            r'(?i)\boyun değiştirici\b',
+            r'(?i)\bgame.?changer\b',
+            # Research language
+            r'(?i)\baraştırdığım kadarıyla[,:\s]?',
+            r'(?i)\baraştırdığımda[,:\s]?',
+            r'(?i)\baraştırma yaptığımda[,:\s]?',
+            r'(?i)\bincelediğimde[,:\s]?',
+            r'(?i)\baraştırmaya göre[,:\s]?',
+            # Academic framing
+            r'(?i)\bteknik açıdan değerlendirince[,:\s]?',
+            r'(?i)\bstratejik olarak bakınca[,:\s]?',
+            r'(?i)\bbüyük resme bakınca[,:\s]?',
+            r'(?i)\bekosistem tarafında düşünürsem[,:\s]?',
+            # Generic exclamation openers
+            r'(?i)^heyecan verici bir gelişme[!.\s]*',
+            r'(?i)^yapay zeka dünyasında önemli bir gelişme[!.\s]*',
+            r'(?i)^son dakika[!:\s]*',
+        ]
+
+        for pattern in ai_phrases_tr:
+            text = re.sub(pattern, '', text)
+
+        # --- 2. Remove AI cliché phrases (English mixed in Turkish tweets) ---
+        ai_phrases_en = [
+            r'(?i)\blet me explain[.:\s]?',
+            r'(?i)\bhere\'s why[.:\s]?',
+            r'(?i)\blet\'s dive in[.!\s]?',
+            r'(?i)\bin conclusion[,:\s]?',
+            r'(?i)\bto sum up[,:\s]?',
+            r'(?i)\bgroundbreaking\b',
+            r'(?i)\brevolutionary\b',
+        ]
+
+        for pattern in ai_phrases_en:
+            text = re.sub(pattern, '', text)
+
+        # --- 3. Fix repetitive sentence starts ---
+        # If 3+ paragraphs start with the same word, vary them
+        paragraphs = text.split('\n\n')
+        if len(paragraphs) >= 3:
+            starts = [p.strip().split()[0].lower() if p.strip() else '' for p in paragraphs]
+            from collections import Counter
+            start_counts = Counter(starts)
+            # If any word starts 3+ paragraphs, remove it from 2nd+ occurrences
+            for word, count in start_counts.items():
+                if count >= 3 and word in ('bu', 'ayrıca', 'ancak', 'fakat', 'özellikle', 'bunun'):
+                    seen = 0
+                    for i, p in enumerate(paragraphs):
+                        stripped = p.strip()
+                        if stripped and stripped.split()[0].lower() == word:
+                            seen += 1
+                            if seen > 1:
+                                # Remove the repeated starter word
+                                words = stripped.split()
+                                if len(words) > 2:
+                                    paragraphs[i] = ' '.join(words[1:])
+            text = '\n\n'.join(paragraphs)
+
+        # --- 4. Remove excessive emoji (more than 3) ---
+        import unicodedata
+        emoji_count = sum(1 for c in text if unicodedata.category(c).startswith(('So',)))
+        if emoji_count > 3:
+            # Keep only first 2 emojis, remove the rest
+            kept = 0
+            result = []
+            for c in text:
+                if unicodedata.category(c).startswith(('So',)):
+                    kept += 1
+                    if kept <= 2:
+                        result.append(c)
+                    # else skip
+                else:
+                    result.append(c)
+            text = ''.join(result)
+
+        # --- 5. Remove trailing CTA questions ---
+        # "Sizce?", "Ne düşünüyorsunuz?", "Siz ne dersiniz?" at the end
+        text = re.sub(
+            r'\s*(sizce\s*\??|ne düşünüyorsunuz\s*\??|siz ne dersiniz\s*\??|siz ne düşünüyorsunuz\s*\??|sen ne düşünüyorsun\s*\??)\s*$',
+            '', text, flags=re.IGNORECASE
+        )
+
+        # --- 6. Remove hashtags ---
+        text = re.sub(r'#\w+', '', text)
+
+        # --- 7. Clean up whitespace artifacts ---
+        text = re.sub(r'  +', ' ', text)  # double spaces
+        text = re.sub(r'\n{3,}', '\n\n', text)  # triple+ newlines
+        text = re.sub(r'^\s+', '', text)  # leading whitespace
+        text = re.sub(r'\s+$', '', text)  # trailing whitespace
+        # Clean empty lines that only have spaces
+        text = re.sub(r'\n +\n', '\n\n', text)
+
+        return text.strip()
 
     @staticmethod
     def _fix_colon_labels(text: str) -> str:

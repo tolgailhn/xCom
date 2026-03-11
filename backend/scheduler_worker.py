@@ -289,6 +289,42 @@ def _check_telegram():
         logger.exception("Telegram bot check error")
 
 
+def _auto_scan_topics():
+    """Faz 3: Her 2 saatte otomatik konu taramasi — trending AI topics."""
+    try:
+        from backend.auto_topic_scanner import run_auto_scan
+        run_auto_scan()
+    except Exception:
+        logger.exception("Auto topic scan error")
+
+
+def _analyze_trends():
+    """Faz 4: Her 1 saatte trend tespiti — cross-account keyword analysis."""
+    try:
+        from backend.trend_analyzer import analyze_trends
+        analyze_trends()
+    except Exception:
+        logger.exception("Trend analysis error")
+
+
+def _scan_news_sources():
+    """Faz 7: Her 4 saatte haber kaynağı taraması — web news."""
+    try:
+        from backend.news_scanner import scan_news
+        scan_news()
+    except Exception:
+        logger.exception("News scan error")
+
+
+def _discover_new_accounts():
+    """Faz 9: Her 6 saatte yeni hesap keşfi — dynamic account discovery."""
+    try:
+        from backend.account_discoverer import discover_accounts
+        discover_accounts()
+    except Exception:
+        logger.exception("Account discovery error")
+
+
 def start_scheduler():
     """Scheduler'i baslat — FastAPI startup'ta cagirilir."""
     if not scheduler.running:
@@ -341,8 +377,44 @@ def start_scheduler():
             id="telegram_bot",
             replace_existing=True,
         )
+        # Faz 3: Otomatik konu taraması — her 2 saatte
+        scheduler.add_job(
+            _auto_scan_topics,
+            "interval",
+            hours=2,
+            id="auto_topic_scanner",
+            replace_existing=True,
+        )
+        # Faz 4: Trend tespiti — her 1 saatte
+        scheduler.add_job(
+            _analyze_trends,
+            "interval",
+            hours=1,
+            id="trend_analyzer",
+            replace_existing=True,
+        )
+        # Faz 7: Haber kaynağı taraması — her 4 saatte
+        scheduler.add_job(
+            _scan_news_sources,
+            "interval",
+            hours=4,
+            id="news_scanner",
+            replace_existing=True,
+        )
+        # Faz 9: Dinamik hesap keşfi — her 6 saatte
+        scheduler.add_job(
+            _discover_new_accounts,
+            "interval",
+            hours=6,
+            id="account_discoverer",
+            replace_existing=True,
+        )
         scheduler.start()
-        logger.info("Scheduler started — publish 1m, metrics 30m, auto-reply scanner 10m, auto-reply generator 5m, self-reply 3m, discovery 30m, telegram 5s")
+        logger.info(
+            "Scheduler started — publish 1m, metrics 30m, auto-reply scanner 10m, "
+            "auto-reply generator 5m, self-reply 3m, discovery 30m, telegram 5s, "
+            "auto-scan 2h, trends 1h, news 4h, account-discovery 6h"
+        )
 
 
 def stop_scheduler():

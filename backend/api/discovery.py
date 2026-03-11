@@ -231,3 +231,136 @@ def clear_cache():
     save_discovery_cache([])
     save_discovery_seen(set())
     return {"success": True, "message": "Cache temizlendi"}
+
+
+# ── Faz 3: Auto-Scan Endpoints ──────────────────────────
+
+@router.get("/auto-scan")
+def get_auto_scan():
+    """Otomatik konu taraması sonuçlarını getir."""
+    from backend.modules.style_manager import load_auto_scan_cache
+    cache = load_auto_scan_cache()
+    return {"topics": cache, "total": len(cache)}
+
+
+@router.post("/auto-scan/trigger")
+def trigger_auto_scan():
+    """Manuel otomatik tarama tetikle."""
+    try:
+        from backend.auto_topic_scanner import run_auto_scan
+        run_auto_scan()
+        from backend.modules.style_manager import load_auto_scan_cache
+        cache = load_auto_scan_cache()
+        return {"success": True, "total": len(cache)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Faz 4: Trend Endpoints ──────────────────────────────
+
+@router.get("/trends")
+def get_trends():
+    """Trend analizi sonuçlarını getir."""
+    from backend.modules.style_manager import load_trend_cache
+    cache = load_trend_cache()
+    return cache
+
+
+@router.post("/trends/analyze")
+def trigger_trend_analysis():
+    """Manuel trend analizi tetikle."""
+    try:
+        from backend.trend_analyzer import analyze_trends
+        analyze_trends()
+        from backend.modules.style_manager import load_trend_cache
+        cache = load_trend_cache()
+        return {"success": True, "trends": cache.get("trends", [])[:10]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Faz 7: News Endpoints ───────────────────────────────
+
+@router.get("/news")
+def get_news():
+    """Haber taraması sonuçlarını getir."""
+    from backend.modules.style_manager import load_news_cache
+    cache = load_news_cache()
+    return {"articles": cache, "total": len(cache)}
+
+
+@router.post("/news/scan")
+def trigger_news_scan():
+    """Manuel haber taraması tetikle."""
+    try:
+        from backend.news_scanner import scan_news
+        scan_news()
+        from backend.modules.style_manager import load_news_cache
+        cache = load_news_cache()
+        return {"success": True, "total": len(cache)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Faz 9: Suggested Accounts Endpoints ─────────────────
+
+@router.get("/suggested-accounts")
+def get_suggested_accounts():
+    """Otomatik keşfedilen hesap önerilerini getir."""
+    from backend.modules.style_manager import load_suggested_accounts
+    accounts = load_suggested_accounts()
+    active = [a for a in accounts if not a.get("dismissed")]
+    return {"accounts": active, "total": len(active)}
+
+
+@router.post("/suggested-accounts/dismiss")
+def dismiss_suggested_account(request: RemoveAccountRequest):
+    """Önerilen hesabı reddet (bir daha önerme)."""
+    from backend.modules.style_manager import load_suggested_accounts, save_suggested_accounts
+    accounts = load_suggested_accounts()
+    for a in accounts:
+        if a.get("username", "").lower() == request.username.lower():
+            a["dismissed"] = True
+            break
+    save_suggested_accounts(accounts)
+    return {"success": True}
+
+
+@router.post("/suggested-accounts/accept")
+def accept_suggested_account(request: AddAccountRequest):
+    """Önerilen hesabı izleme listesine ekle."""
+    from backend.modules.style_manager import (
+        load_discovery_config, save_discovery_config,
+        load_suggested_accounts, save_suggested_accounts,
+    )
+    # Add to discovery config
+    config = load_discovery_config()
+    username = request.username.strip().lstrip("@")
+    if request.is_priority:
+        if username not in config.get("priority_accounts", []):
+            config.setdefault("priority_accounts", []).append(username)
+    else:
+        if username not in config.get("normal_accounts", []):
+            config.setdefault("normal_accounts", []).append(username)
+    save_discovery_config(config)
+
+    # Remove from suggestions
+    accounts = load_suggested_accounts()
+    accounts = [a for a in accounts if a.get("username", "").lower() != username.lower()]
+    save_suggested_accounts(accounts)
+
+    return {"success": True, "message": f"@{username} izleme listesine eklendi"}
+
+
+@router.post("/suggested-accounts/discover")
+def trigger_account_discovery():
+    """Manuel hesap keşfi tetikle."""
+    try:
+        from backend.account_discoverer import discover_accounts
+        discover_accounts()
+        from backend.modules.style_manager import load_suggested_accounts
+        accounts = load_suggested_accounts()
+        active = [a for a in accounts if not a.get("dismissed")]
+        return {"success": True, "total": len(active)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

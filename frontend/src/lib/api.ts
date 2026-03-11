@@ -974,3 +974,55 @@ export function addPromptTemplate(name: string, prompt: string, category: string
 export function deletePromptTemplate(templateId: string) {
   return apiFetch(`/api/settings/prompt-templates/${templateId}`, { method: "DELETE" });
 }
+
+// ── Faz 3-9: Auto-Scan, Trends, News, Suggested Accounts ──
+
+// Auto-Scan (Faz 3)
+export function getAutoScanTopics() {
+  return apiFetch("/api/discovery/auto-scan");
+}
+
+export function triggerAutoScan() {
+  return apiFetch("/api/discovery/auto-scan/trigger", { method: "POST" });
+}
+
+// Trends (Faz 4)
+export function getTrends() {
+  return apiFetch("/api/discovery/trends");
+}
+
+export function triggerTrendAnalysis() {
+  return apiFetch("/api/discovery/trends/analyze", { method: "POST" });
+}
+
+// News (Faz 7)
+export function getNews() {
+  return apiFetch("/api/discovery/news");
+}
+
+export function triggerNewsScan() {
+  return apiFetch("/api/discovery/news/scan", { method: "POST" });
+}
+
+// Suggested Accounts (Faz 9)
+export function getSuggestedAccounts() {
+  return apiFetch("/api/discovery/suggested-accounts");
+}
+
+export function dismissSuggestedAccount(username: string) {
+  return apiFetch("/api/discovery/suggested-accounts/dismiss", {
+    method: "POST",
+    body: JSON.stringify({ username }),
+  });
+}
+
+export function acceptSuggestedAccount(username: string, isPriority: boolean = false) {
+  return apiFetch("/api/discovery/suggested-accounts/accept", {
+    method: "POST",
+    body: JSON.stringify({ username, is_priority: isPriority }),
+  });
+}
+
+export function triggerAccountDiscovery() {
+  return apiFetch("/api/discovery/suggested-accounts/discover", { method: "POST" });
+}
