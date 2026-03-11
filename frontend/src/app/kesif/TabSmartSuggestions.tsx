@@ -28,16 +28,26 @@ interface Suggestion {
 interface StyleOption { id: string; name: string }
 interface FormatOption { id: string; name: string }
 
+const PROVIDER_OPTIONS = [
+  { value: "minimax", label: "MiniMax" },
+  { value: "anthropic", label: "Claude" },
+  { value: "openai", label: "GPT" },
+  { value: "groq", label: "Groq" },
+  { value: "gemini", label: "Gemini" },
+];
+
 /* ── Component ──────────────────────────────────────── */
 
 export default function TabSmartSuggestions() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Style/format/provider options
+  // Style/format options
   const [styles, setStyles] = useState<StyleOption[]>([]);
   const [formats, setFormats] = useState<FormatOption[]>([]);
-  const [selectedProvider, setSelectedProvider] = useState("");
+
+  // Per-card provider override (default = minimax)
+  const [cardProvider, setCardProvider] = useState<Record<number, string>>({});
 
   // Generation state
   const [generatingIdx, setGeneratingIdx] = useState<number | null>(null);
@@ -53,7 +63,6 @@ export default function TabSmartSuggestions() {
   const [showSchedule, setShowSchedule] = useState<number | null>(null);
   const [scheduleTime, setScheduleTime] = useState("");
   const [dismissed, setDismissed] = useState<Set<number>>(new Set());
-  const [expandedIdx, setExpandedIdx] = useState<Set<number>>(new Set());
 
   /* ── Load ───────────────────────────────────────────── */
 
@@ -62,7 +71,6 @@ export default function TabSmartSuggestions() {
       .then(data => setSuggestions(data.suggestions || []))
       .catch(() => {})
       .finally(() => setLoading(false));
-    // Load styles/formats for dropdowns
     getStyles()
       .then((data: { styles?: StyleOption[]; formats?: FormatOption[] }) => {
         if (data.styles) setStyles(data.styles);
@@ -72,6 +80,8 @@ export default function TabSmartSuggestions() {
   }, []);
 
   /* ── Handlers ───────────────────────────────────────── */
+
+  const getProvider = (idx: number) => cardProvider[idx] || "minimax";
 
   const handleGenerate = async (suggestion: Suggestion, idx: number, styleOverride?: string, formatOverride?: string) => {
     setGeneratingIdx(idx);
@@ -84,7 +94,7 @@ export default function TabSmartSuggestions() {
         topic: suggestion.topic,
         style: styleOverride || suggestion.suggested_style,
         content_format: formatOverride || suggestion.suggested_format,
-        provider: selectedProvider || undefined,
+        provider: getProvider(idx),
         context,
       });
 
@@ -127,7 +137,6 @@ export default function TabSmartSuggestions() {
     const gen = generatedTweets[idx];
     if (!gen?.text || !gen.best_time) return;
 
-    // Schedule for today at best_time, or tomorrow if past
     const now = new Date();
     const [h, m] = gen.best_time.split(":").map(Number);
     const target = new Date(now);
@@ -171,14 +180,6 @@ export default function TabSmartSuggestions() {
     navigator.clipboard.writeText(text);
   };
 
-  const toggleExpand = (idx: number) => {
-    setExpandedIdx(prev => {
-      const next = new Set(prev);
-      if (next.has(idx)) next.delete(idx); else next.add(idx);
-      return next;
-    });
-  };
-
   /* ── Render ─────────────────────────────────────────── */
 
   if (loading) return <div className="text-center py-8 text-[var(--text-secondary)]">Yukleniyor...</div>;
@@ -187,22 +188,10 @@ export default function TabSmartSuggestions() {
 
   return (
     <div className="space-y-4">
-      {/* Provider selector */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="text-sm text-[var(--text-secondary)]">
-          {visibleSuggestions.length} oneri
-          {dismissed.size > 0 && ` (${dismissed.size} gizlendi)`}
-        </div>
-        <select
-          value={selectedProvider}
-          onChange={(e) => setSelectedProvider(e.target.value)}
-          className="input-field text-xs py-1"
-        >
-          <option value="">Varsayilan AI</option>
-          <option value="minimax">MiniMax</option>
-          <option value="anthropic">Claude</option>
-          <option value="openai">GPT</option>
-        </select>
+      {/* Summary */}
+      <div className="text-sm text-[var(--text-secondary)]">
+        {visibleSuggestions.length} oneri
+        {dismissed.size > 0 && ` (${dismissed.size} gizlendi)`}
       </div>
 
       {visibleSuggestions.length === 0 ? (
@@ -215,74 +204,62 @@ export default function TabSmartSuggestions() {
             if (dismissed.has(idx)) return null;
             const gen = generatedTweets[idx];
             const isGenerating = generatingIdx === idx;
-            const isExpanded = expandedIdx.has(idx);
 
             return (
               <div key={idx} className="card p-4 space-y-3">
-                {/* Header */}
+                {/* Header: badge + topic + dismiss */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-medium shrink-0 ${
                         suggestion.type === "trend"
                           ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]"
                           : "bg-[var(--accent-blue)]/20 text-[var(--accent-blue)]"
                       }`}>
                         {suggestion.type === "trend" ? "TREND" : "HABER"}
                       </span>
-                      <span className="text-sm font-medium">{suggestion.topic}</span>
+                      <span className="text-sm font-semibold">{suggestion.topic}</span>
                     </div>
-                    <div className="text-xs text-[var(--text-secondary)] mt-1">{suggestion.reason}</div>
+                    {/* Reason — always visible */}
+                    <div className="text-xs text-[var(--text-secondary)] mt-0.5">{suggestion.reason}</div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => toggleExpand(idx)}
-                      className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                      title={isExpanded ? "Daralt" : "Detay"}
-                    >
-                      {isExpanded ? "▲" : "▼"}
-                    </button>
-                    <button
-                      onClick={() => handleDismiss(idx)}
-                      className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent-red)]"
-                      title="Gec"
-                    >
-                      ✕
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => handleDismiss(idx)}
+                    className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent-red)] shrink-0"
+                    title="Gec"
+                  >
+                    ✕
+                  </button>
                 </div>
 
-                {/* Topic Details (expanded) */}
-                {isExpanded && (
+                {/* Topic context preview — always visible */}
+                {suggestion.type === "trend" && suggestion.top_tweets && suggestion.top_tweets.length > 0 && (
                   <div className="text-xs space-y-1 p-2 rounded bg-[var(--bg-secondary)]">
-                    {suggestion.type === "trend" && suggestion.top_tweets && suggestion.top_tweets.length > 0 && (
-                      <div>
-                        <div className="font-medium text-[var(--text-secondary)] mb-1">Ornek tweetler:</div>
-                        {suggestion.top_tweets.slice(0, 3).map((t, i) => (
-                          <div key={i} className="text-[var(--text-primary)] mb-1 pl-2 border-l-2 border-[var(--border)]">
-                            <span className="text-[var(--accent-blue)]">@{t.account}</span>: {t.text.length > 150 ? t.text.slice(0, 150) + "..." : t.text}
-                          </div>
-                        ))}
+                    {suggestion.top_tweets.slice(0, 2).map((t, i) => (
+                      <div key={i} className="text-[var(--text-primary)] pl-2 border-l-2 border-[var(--border)]">
+                        <span className="text-[var(--accent-blue)]">@{t.account}</span>{": "}
+                        {t.text.length > 200 ? t.text.slice(0, 200) + "..." : t.text}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {suggestion.type === "news" && (suggestion.url || suggestion.source_data?.description || suggestion.source_data?.summary) && (
+                  <div className="text-xs space-y-1 p-2 rounded bg-[var(--bg-secondary)]">
+                    {(suggestion.source_data?.description || suggestion.source_data?.summary) && (
+                      <div className="text-[var(--text-primary)]">
+                        {(suggestion.source_data?.description || suggestion.source_data?.summary || "").slice(0, 250)}
+                        {(suggestion.source_data?.description || suggestion.source_data?.summary || "").length > 250 ? "..." : ""}
                       </div>
                     )}
-                    {suggestion.type === "news" && suggestion.url && (
-                      <div>
-                        <span className="text-[var(--text-secondary)]">Kaynak: </span>
-                        <a href={suggestion.url} target="_blank" rel="noopener noreferrer" className="text-[var(--accent-blue)] hover:underline break-all">
-                          {suggestion.url.length > 80 ? suggestion.url.slice(0, 80) + "..." : suggestion.url}
-                        </a>
-                      </div>
-                    )}
-                    {suggestion.source_data?.description && (
-                      <div className="text-[var(--text-primary)]">{suggestion.source_data.description}</div>
-                    )}
-                    {suggestion.source_data?.summary && (
-                      <div className="text-[var(--text-primary)]">{suggestion.source_data.summary}</div>
+                    {suggestion.url && (
+                      <a href={suggestion.url} target="_blank" rel="noopener noreferrer" className="text-[var(--accent-blue)] hover:underline break-all">
+                        {suggestion.url.length > 80 ? suggestion.url.slice(0, 80) + "..." : suggestion.url}
+                      </a>
                     )}
                   </div>
                 )}
 
-                {/* Metrics */}
+                {/* Metrics row */}
                 <div className="flex items-center gap-4 text-xs">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[var(--text-secondary)]">Engagement:</span>
@@ -303,7 +280,7 @@ export default function TabSmartSuggestions() {
                   </span>
                 </div>
 
-                {/* Style/Format selectors + Generate button */}
+                {/* Style/Format/Provider selectors + Generate button */}
                 {!gen && (
                   <div className="flex flex-wrap items-center gap-2">
                     <select
@@ -332,12 +309,22 @@ export default function TabSmartSuggestions() {
                         <option key={f.id} value={f.id}>{f.name}</option>
                       )) : (
                         <>
-                          <option value="spark">Spark (400-600)</option>
-                          <option value="punch">Punch (140-280)</option>
-                          <option value="storm">Storm (700-1000)</option>
-                          <option value="classic">Classic (200-400)</option>
+                          <option value="punch">Punch — Standart (140-280)</option>
+                          <option value="classic">Classic — Orta (200-400)</option>
+                          <option value="spark">Spark — Detayli (400-600)</option>
+                          <option value="storm">Storm — Cok Detayli (700-1000)</option>
+                          <option value="thread">Thread — Seri (3-5 tweet)</option>
                         </>
                       )}
+                    </select>
+                    <select
+                      value={getProvider(idx)}
+                      onChange={(e) => setCardProvider(prev => ({ ...prev, [idx]: e.target.value }))}
+                      className="input-field text-xs py-1"
+                    >
+                      {PROVIDER_OPTIONS.map(p => (
+                        <option key={p.value} value={p.value}>{p.label}</option>
+                      ))}
                     </select>
                     <button
                       onClick={() => {
@@ -408,7 +395,11 @@ export default function TabSmartSuggestions() {
                         Ozel Saat
                       </button>
                       <button
-                        onClick={() => handleGenerate(suggestion, idx)}
+                        onClick={() => {
+                          const styleEl = document.getElementById(`style-${idx}`) as HTMLSelectElement | null;
+                          const formatEl = document.getElementById(`format-${idx}`) as HTMLSelectElement | null;
+                          handleGenerate(suggestion, idx, styleEl?.value, formatEl?.value);
+                        }}
                         disabled={isGenerating}
                         className="btn-secondary text-xs"
                         title="Ayni ayarlarla tekrar uret"
