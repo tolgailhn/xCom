@@ -49,9 +49,13 @@ frontend/src/app/
     TabSelfReply.tsx          → Self-reply ayarları
     TabAnalytics.tsx          → Analitik (ısı haritası, performans)
   kesif/                      → Keşif & tarama
-    page.tsx                  → Ana sayfa (2 tab)
+    page.tsx                  → Ana sayfa (6 tab) + scheduler durum paneli
+    TabTweets.tsx             → Tweet listesi + araştırma + quote tweet
+    TabTrends.tsx             → Trend analizi + araştırma + tweet üretimi
+    TabNews.tsx               → Haber tarama + araştırma + tweet üretimi + AI skor
+    TabSuggestedAccounts.tsx  → Hesap önerileri + aktif X araması
+    TabSmartSuggestions.tsx   → Akıllı öneriler (trend/haber tabanlı)
     TabAyarlar.tsx            → Keşif ayarları
-    TabTweets.tsx             → Tweet listesi
   analiz/                     → Hesap analizi
     page.tsx                  → Ana sayfa (5 tab)
     TabNew.tsx                → Yeni analiz
@@ -380,6 +384,16 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 
 ## Değişiklik Günlüğü
 
+### 2026-03-11 (Keşif Sayfası 10 Faz Güncelleme)
+- **feat**: `scheduler_worker.py` — Worker last_run tracking + `get_scheduler_status()` fonksiyonu
+- **feat**: `discovery.py` — 4 yeni endpoint: scheduler-status, score-newsvalue, smart-suggestions, search-accounts
+- **feat**: `TabTrends.tsx` — TAM YENİDEN YAZIM: araştırma akışı + tweet üretimi + stil/format/provider + taslak/zamanla
+- **feat**: `TabNews.tsx` — TAM YENİDEN YAZIM: araştırma + tweet üretimi + kaynak filtre + AI haber skoru
+- **feat**: `TabSmartSuggestions.tsx` — YENİ: Trend/haber tabanlı akıllı tweet önerileri + engagement tahmini + önerilen saat
+- **feat**: `TabSuggestedAccounts.tsx` — Aktif X hesap araması (Twikit search_user) + mevcut otomatik keşif
+- **feat**: `page.tsx` — "Akıllı Öneriler" tab eklendi (6 tab), scheduler durum paneli
+- **feat**: `api.ts` — 5 yeni API fonksiyonu: getSchedulerStatus, scoreNewsValue, getSmartSuggestions, generateSmartSuggestion, searchAccounts
+
 ### 2026-03-11 (min_faves Fix)
 - **fix**: `scanner.py` — Tüm DISCOVER_QUERIES ve GITHUB_QUERIES'den `min_faves:XX` kaldırıldı (Twikit desteklemiyor → 400 Bad Request)
 - **fix**: `deep_research.py` — Tüm X arama sorgularından `min_faves:XX` kaldırıldı (7 yer)
@@ -608,6 +622,7 @@ Bu bölüm her session sonunda güncellenir. Yeni session başladığında buray
 - [x] Aşama 4: Yanıtlar sayfası filtreleme & UX iyileştirmeleri tamamlandı
 - [x] Aşama 5: Yanıtlar sayfası analitik tab tamamlandı
 - [x] Aşama 8: CLAUDE.md dosya yapısı Next.js + FastAPI'ye güncellendi
+- [x] **KEŞİF 10 FAZ** — Tamamlandı (aşağıdaki plan bölümüne bak)
 
 ### Planlanan İyileştirmeler (Sonraki Session'lar)
 - En iyi paylaşım saati analizi
@@ -812,13 +827,13 @@ Faz 10 (zamanlama) → Faz 3, 5, 8'e bağımlı (üretim tabları hazır olmalı
 ### İlerleme Durumu
 | Faz | Açıklama | Dosya Sayısı | Durum |
 |-----|----------|-------------|-------|
-| 1 | Scheduler durum göstergesi | 3 | ⬜ Bekliyor |
-| 2 | Trendler — araştırma akışı | 2 | ⬜ Bekliyor |
-| 3 | Trendler — tweet üretimi | 2 | ⬜ Bekliyor |
-| 4 | Haberler — araştırma akışı | 2 | ⬜ Bekliyor |
-| 5 | Haberler — tweet üretimi | 1 | ⬜ Bekliyor |
-| 6 | AI haber değeri filtresi | 3 | ⬜ Bekliyor |
-| 7 | Akıllı öneriler backend | 3 | ⬜ Bekliyor |
-| 8 | Akıllı öneriler frontend | 2 | ⬜ Bekliyor |
-| 9 | Hesap keşfi aktif arama | 3 | ⬜ Bekliyor |
-| 10 | Zamanlama entegrasyonu | 3 | ⬜ Bekliyor |
+| 1 | Scheduler durum göstergesi | 4 | ✅ Tamamlandı (2026-03-11) |
+| 2 | Trendler — araştırma akışı | 1 | ✅ Tamamlandı (2026-03-11) |
+| 3 | Trendler — tweet üretimi | 1 | ✅ Tamamlandı (2026-03-11) |
+| 4 | Haberler — araştırma akışı | 1 | ✅ Tamamlandı (2026-03-11) |
+| 5 | Haberler — tweet üretimi | 1 | ✅ Tamamlandı (2026-03-11) |
+| 6 | AI haber değeri filtresi | 3 | ✅ Tamamlandı (2026-03-11) |
+| 7 | Akıllı öneriler backend | 2 | ✅ Tamamlandı (2026-03-11) |
+| 8 | Akıllı öneriler frontend | 2 | ✅ Tamamlandı (2026-03-11) |
+| 9 | Hesap keşfi aktif arama | 2 | ✅ Tamamlandı (2026-03-11) |
+| 10 | Zamanlama entegrasyonu | 0 | ✅ Tamamlandı (Faz 2-5,8'de dahil) |
