@@ -505,6 +505,84 @@ def save_auto_reply_seen(seen: set):
         json.dump(seen_list, f)
 
 
+# ── Auto-Reply Queue (pipeline: scan → queue → generate) ──
+def load_auto_reply_queue() -> list[dict]:
+    """Load auto-reply tweet queue"""
+    path = DATA_DIR / "auto_reply_queue.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+
+def save_auto_reply_queue(queue: list[dict]):
+    """Save auto-reply tweet queue"""
+    path = DATA_DIR / "auto_reply_queue.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(queue, f, ensure_ascii=False, indent=2)
+
+
+def add_to_auto_reply_queue(entry: dict) -> dict:
+    """Add a tweet candidate to the reply queue. Returns entry with queued_at."""
+    queue = load_auto_reply_queue()
+    # Duplicate check
+    existing_ids = {item.get("tweet_id") for item in queue}
+    if entry.get("tweet_id") in existing_ids:
+        return entry
+    entry["queued_at"] = datetime.datetime.now(TZ_TR).isoformat()
+    entry.setdefault("status", "pending")
+    entry.setdefault("reply_text", None)
+    entry.setdefault("processed_at", None)
+    queue.insert(0, entry)
+    # Cap at 100 pending items
+    pending = [q for q in queue if q.get("status") == "pending"]
+    if len(pending) > 100:
+        # Drop lowest engagement_score pending items
+        pending.sort(key=lambda x: x.get("engagement_score", 0))
+        drop_ids = {p["tweet_id"] for p in pending[:-100]}
+        queue = [q for q in queue if q.get("tweet_id") not in drop_ids]
+    save_auto_reply_queue(queue)
+    return entry
+
+
+def update_auto_reply_queue_entry(tweet_id: str, updates: dict):
+    """Update a queue entry by tweet_id."""
+    queue = load_auto_reply_queue()
+    for item in queue:
+        if item.get("tweet_id") == tweet_id:
+            item.update(updates)
+            break
+    save_auto_reply_queue(queue)
+
+
+def cleanup_auto_reply_queue():
+    """Remove expired (6h+) and processed (24h+) entries."""
+    queue = load_auto_reply_queue()
+    if not queue:
+        return
+    now = datetime.datetime.now(TZ_TR)
+    cleaned = []
+    for item in queue:
+        try:
+            queued = datetime.datetime.fromisoformat(item.get("queued_at", ""))
+            if queued.tzinfo is None:
+                queued = queued.replace(tzinfo=TZ_TR)
+            age_hours = (now - queued).total_seconds() / 3600
+        except (ValueError, TypeError):
+            age_hours = 999
+        status = item.get("status", "pending")
+        # Expire old pending items (6h)
+        if status == "pending" and age_hours > 6:
+            continue
+        # Remove old done/failed items (24h)
+        if status in ("done", "failed") and age_hours > 24:
+            continue
+        cleaned.append(item)
+    if len(cleaned) != len(queue):
+        save_auto_reply_queue(cleaned)
+
+
 # ── Prompt Templates ───────────────────────────────────
 def load_prompt_templates() -> list[dict]:
     """Load saved prompt templates"""

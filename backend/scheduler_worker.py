@@ -244,13 +244,22 @@ def _check_metrics():
         logger.exception("Metrics auto-check error")
 
 
-def _check_auto_replies():
-    """Auto-reply worker — config'deki interval'e gore calisir."""
+def _scan_auto_reply_candidates():
+    """Auto-reply scanner — tweet'leri tarayıp kuyruğa yazar (AI çağrısı yok)."""
     try:
-        from backend.auto_reply_worker import check_and_reply
-        check_and_reply()
+        from backend.auto_reply_worker import scan_for_candidates
+        scan_for_candidates()
     except Exception:
-        logger.exception("Auto-reply check error")
+        logger.exception("Auto-reply scanner error")
+
+
+def _generate_auto_replies():
+    """Auto-reply generator — kuyruktan okuyup AI yanıt üretir."""
+    try:
+        from backend.auto_reply_worker import generate_and_reply
+        generate_and_reply()
+    except Exception:
+        logger.exception("Auto-reply generator error")
 
 
 def _check_self_replies():
@@ -298,10 +307,17 @@ def start_scheduler():
             replace_existing=True,
         )
         scheduler.add_job(
-            _check_auto_replies,
+            _scan_auto_reply_candidates,
+            "interval",
+            minutes=10,
+            id="auto_reply_scanner",
+            replace_existing=True,
+        )
+        scheduler.add_job(
+            _generate_auto_replies,
             "interval",
             minutes=5,
-            id="auto_reply_checker",
+            id="auto_reply_generator",
             replace_existing=True,
         )
         scheduler.add_job(
@@ -326,7 +342,7 @@ def start_scheduler():
             replace_existing=True,
         )
         scheduler.start()
-        logger.info("Scheduler started — publish 1m, metrics 30m, auto-reply 5m, self-reply 3m, discovery 30m, telegram 5s")
+        logger.info("Scheduler started — publish 1m, metrics 30m, auto-reply scanner 10m, auto-reply generator 5m, self-reply 3m, discovery 30m, telegram 5s")
 
 
 def stop_scheduler():

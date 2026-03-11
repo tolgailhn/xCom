@@ -1,22 +1,19 @@
 """
-Auto Reply Worker — Takip edilen hesaplarin yeni tweetlerini kontrol edip
-AI ile yanit uretip otomatik paylas.
+Auto Reply Worker — Pipeline mimarisi: Tarama ve yanıt üretme ayrı çalışır.
+
+PIPELINE:
+1. scan_for_candidates() — Twikit ile tweet çeker, kuyruğa yazar (AI çağrısı YOK)
+2. generate_and_reply() — Kuyruktan okur, AI yanıt üretir, publish/draft yapar
 
 ROTASYON SİSTEMİ:
-- 38 hesap 24 saate dağıtılır (saat başı 1-2 hesap)
-- Her saat sadece o saate ait hesaplar kontrol edilir
-- Twikit rate limit'e takılmayı önler
-- scheduler_worker.py tarafindan her 5 dakikada bir cagirilir
-  ama sadece saatin ilk çağrısında çalışır (aynı saat tekrar çalışmaz)
+- Hesaplar ÇALIŞMA SAATLERİNE dağıtılır (ör. 9-21 = 12 slot)
+- 5 hesap → her biri farklı saatte (hepsi kontrol edilir)
+- 38 hesap → saat başı ~3 hesap (rate limit güvenli)
+- Deterministik: hesap listesi değişmedikçe aynı saat aynı hesapları alır
 
 ÇALIŞMA SAATLERİ:
 - Varsayılan 09:00-21:00 arası çalışır (config ile ayarlanabilir)
 - Gece saatlerinde otomatik duraklar
-
-EN İYİ TWEET SEÇİMİ:
-- Her hesaptan 5 tweet çekilir
-- Engagement score'a göre sıralanır (RT=20x, Reply=13.5x, Like=1x, Bookmark=10x)
-- Sadece en yüksek engagement'lı tweet'e reply atılır
 
 PAYLAŞIM STRATEJİSİ:
 - Önce reply dener
@@ -24,7 +21,6 @@ PAYLAŞIM STRATEJİSİ:
 - RT'ler ve reply'lar otomatik filtrelenir
 """
 import datetime
-import hashlib
 import logging
 import time
 from zoneinfo import ZoneInfo
@@ -32,28 +28,32 @@ from zoneinfo import ZoneInfo
 logger = logging.getLogger(__name__)
 TZ_TR = ZoneInfo("Europe/Istanbul")
 
-# Track which hour we last processed to avoid duplicate runs within same hour
-_last_processed_hour: str | None = None
+# Track which hour we last scanned to avoid duplicate scans within same hour
+_last_scanned_hour: str | None = None
 
 
-def _get_accounts_for_hour(accounts: list[str], hour: int) -> list[str]:
+def _get_accounts_for_hour(accounts: list[str], hour: int,
+                           work_start: int = 9, work_end: int = 21) -> list[str]:
     """
-    38 hesabı 24 saate dağıt.
-    38 / 24 = 1.58 → bazı saatlerde 1, bazılarında 2 hesap.
+    Hesapları ÇALIŞMA SAATLERİNE dağıt (24 saate değil!).
+
+    Ör: work_start=9, work_end=21 → 12 slot [9,10,...,20]
+    5 hesap + 12 slot → her hesap farklı saatte, hepsi kontrol edilir
+    38 hesap + 12 slot → saat başı ~3 hesap
 
     Dağılım deterministik: hesap listesi değişmedikçe aynı saat aynı hesapları alır.
     """
     if not accounts:
         return []
 
-    selected = []
-    for i, account in enumerate(accounts):
-        # Her hesabı bir saate ata: index'e göre round-robin
-        assigned_hour = i % 24
-        if assigned_hour == hour:
-            selected.append(account)
+    work_hours = list(range(work_start, work_end))
+    num_slots = len(work_hours)
 
-    return selected
+    if not num_slots or hour not in work_hours:
+        return []
+
+    slot_index = work_hours.index(hour)
+    return [acc for i, acc in enumerate(accounts) if i % num_slots == slot_index]
 
 
 def _is_retweet(tweet_text: str) -> bool:
@@ -67,23 +67,24 @@ def _engagement_score(tweet: dict) -> float:
     return calculate_engagement_score(tweet)
 
 
-def check_and_reply():
-    """
-    Ana worker fonksiyonu — scheduler tarafindan her 5 dakikada bir cagirilir.
+# ── PHASE 1: SCANNER ──────────────────────────────────────────
 
-    ROTASYON: Her saat sadece 1-2 hesap kontrol edilir (38 hesap / 24 saat).
+def scan_for_candidates():
+    """
+    Tarayıcı — scheduler tarafından her 10 dakikada bir çağrılır.
+
+    Twikit ile tweet çeker, filtreler, skorlar, kuyruğa yazar.
+    AI çağrısı YAPMAZ, publish YAPMAZ — sadece tarama.
     Aynı saat içinde tekrar çağrılırsa çalışmaz (duplicate koruması).
-
-    PAYLAŞIM: Reply dener → 403 alırsa Quote Tweet yapar.
     """
-    global _last_processed_hour
+    global _last_scanned_hour
 
     from backend.modules.style_manager import (
         load_auto_reply_config,
-        load_auto_reply_logs,
         load_auto_reply_seen,
         save_auto_reply_seen,
-        add_auto_reply_log,
+        add_to_auto_reply_queue,
+        cleanup_auto_reply_queue,
     )
 
     config = load_auto_reply_config()
@@ -98,81 +99,52 @@ def check_and_reply():
     now = datetime.datetime.now(TZ_TR)
     hour = now.hour
 
-    # Çalışma saatleri: sadece 09:00-21:00 arası çalış
+    # Çalışma saatleri kontrolü
     work_start = config.get("work_hour_start", 9)
     work_end = config.get("work_hour_end", 21)
     if hour < work_start or hour >= work_end:
         logger.info(
-            "Auto-reply: Saat %02d — çalışma saatleri dışında (%02d:00-%02d:00), atlanıyor",
+            "Auto-reply scanner: Saat %02d — çalışma saatleri dışında (%02d:00-%02d:00), atlanıyor",
             hour, work_start, work_end,
         )
         return
 
     current_hour_key = now.strftime("%Y-%m-%d-%H")
 
-    # Aynı saat içinde tekrar çalışma
-    if _last_processed_hour == current_hour_key:
+    # Aynı saat içinde tekrar tarama yapma
+    if _last_scanned_hour == current_hour_key:
         return
-    _last_processed_hour = current_hour_key
-    hourly_accounts = _get_accounts_for_hour(accounts, hour)
+    _last_scanned_hour = current_hour_key
+
+    hourly_accounts = _get_accounts_for_hour(accounts, hour, work_start, work_end)
 
     if not hourly_accounts:
         logger.info(
-            "Auto-reply: Saat %02d — bu saatte kontrol edilecek hesap yok", hour
+            "Auto-reply scanner: Saat %02d — bu saatte kontrol edilecek hesap yok", hour
         )
         return
 
     logger.info(
-        "Auto-reply: Saat %02d — %d hesap kontrol ediliyor: %s",
+        "Auto-reply scanner: Saat %02d — %d hesap taranıyor: %s",
         hour,
         len(hourly_accounts),
         ", ".join(f"@{a}" for a in hourly_accounts),
     )
 
-    # Rate limit: max replies per hour
-    max_per_hour = config.get("max_replies_per_hour", 5)
-    logs = load_auto_reply_logs()
-    one_hour_ago = now - datetime.timedelta(hours=1)
-
-    recent_replies = 0
-    for log in logs:
-        try:
-            log_time = datetime.datetime.fromisoformat(log.get("created_at", ""))
-            if log_time.tzinfo is None:
-                log_time = log_time.replace(tzinfo=TZ_TR)
-            if log_time >= one_hour_ago and log.get("status") in ("published", "ready"):
-                recent_replies += 1
-        except (ValueError, TypeError):
-            continue
-
-    if recent_replies >= max_per_hour:
-        logger.info("Auto-reply rate limit: %d/%d replies in last hour", recent_replies, max_per_hour)
-        return
-
     # Load seen tweet IDs
     seen = load_auto_reply_seen()
 
-    # Get twikit client for fetching tweets
+    # Get twikit client
     twikit = _get_twikit_client()
     if not twikit:
-        logger.warning("Auto-reply: Twikit client not available")
+        logger.warning("Auto-reply scanner: Twikit client not available")
         return
 
-    reply_delay = config.get("reply_delay_seconds", 60)
-    style = config.get("style", "reply")
-    additional_context = config.get("additional_context", "")
     min_likes = config.get("min_likes_to_reply", 0)
     only_original = config.get("only_original_tweets", True)
-    language = config.get("language", "tr")
-    draft_only = config.get("draft_only", True)  # Varsayılan: sadece üret, paylaşma
-
-    replies_made = 0
-    remaining = max_per_hour - recent_replies
+    queued_count = 0
 
     for account in hourly_accounts:
-        if replies_made >= remaining:
-            break
-
         account = account.strip().lstrip("@")
         if not account:
             continue
@@ -180,10 +152,10 @@ def check_and_reply():
         try:
             tweets = twikit.get_user_tweets(account, count=5)
         except Exception as e:
-            logger.warning("Auto-reply: Failed to fetch tweets for @%s: %s", account, e)
+            logger.warning("Auto-reply scanner: Failed to fetch tweets for @%s: %s", account, e)
             continue
 
-        # Tweetleri filtrele ve engagement'a göre sırala → en iyisine reply at
+        # Tweetleri filtrele
         candidates = []
         for tweet in tweets:
             tweet_id = tweet.get("id", "")
@@ -212,131 +184,250 @@ def check_and_reply():
         if not candidates:
             continue
 
-        # Engagement score'a göre sırala, en iyisini seç
+        # Engagement score'a göre sırala, en iyisini kuyruğa ekle
         candidates.sort(key=_engagement_score, reverse=True)
         best_tweet = candidates[0]
-        tweet_id = best_tweet["id"]
-        tweet_text = best_tweet.get("text", "")
 
         logger.info(
-            "Auto-reply: @%s — en iyi tweet seçildi (score=%.0f, likes=%s, RTs=%s): %s",
+            "Auto-reply scanner: @%s — en iyi tweet kuyruğa ekleniyor (score=%.0f, likes=%s, RTs=%s): %s",
             account,
             _engagement_score(best_tweet),
             best_tweet.get("like_count", 0),
             best_tweet.get("retweet_count", 0),
-            tweet_text[:80],
+            best_tweet.get("text", "")[:80],
         )
 
-        # Tüm adayları seen'e ekle (bir sonraki saatte tekrar bakılmasın)
+        # Kuyruğa ekle
+        add_to_auto_reply_queue({
+            "tweet_id": best_tweet["id"],
+            "account": account,
+            "text": best_tweet.get("text", ""),
+            "like_count": best_tweet.get("like_count", 0),
+            "retweet_count": best_tweet.get("retweet_count", 0),
+            "reply_count": best_tweet.get("reply_count", 0),
+            "bookmark_count": best_tweet.get("bookmark_count", 0),
+            "engagement_score": _engagement_score(best_tweet),
+        })
+        queued_count += 1
+
+        # Tüm adayları seen'e ekle
         for c in candidates:
             seen.add(c["id"])
-
-        # Optional delay between replies
-        if reply_delay > 0 and replies_made > 0:
-            time.sleep(min(reply_delay, 120))
-
-        # Generate reply
-        try:
-            reply_text = _generate_reply(
-                original_tweet=tweet_text,
-                original_author=account,
-                style=style,
-                additional_context=additional_context,
-                language=language,
-            )
-        except Exception as e:
-            logger.warning("Auto-reply: Failed to generate reply for @%s tweet %s: %s", account, tweet_id, e)
-            add_auto_reply_log({
-                "account": account,
-                "tweet_id": tweet_id,
-                "tweet_text": tweet_text,
-                "reply_text": "",
-                "status": "generation_failed",
-                "error": str(e),
-                "engagement_score": _engagement_score(best_tweet),
-                "like_count": best_tweet.get("like_count", 0),
-                "retweet_count": best_tweet.get("retweet_count", 0),
-            })
-            continue
-
-        if not reply_text:
-            continue
-
-        # Draft-only mode: sadece üret, paylaşma (kullanıcı manuel paylaşacak)
-        if draft_only:
-            add_auto_reply_log({
-                "account": account,
-                "tweet_id": tweet_id,
-                "tweet_text": tweet_text,
-                "reply_text": reply_text,
-                "status": "ready",
-                "engagement_score": _engagement_score(best_tweet),
-                "like_count": best_tweet.get("like_count", 0),
-                "retweet_count": best_tweet.get("retweet_count", 0),
-            })
-            replies_made += 1
-            logger.info(
-                "Auto-reply: DRAFT for @%s tweet %s — ready for manual posting",
-                account, tweet_id,
-            )
-            # Telegram bildirimi gonder
-            _send_telegram_auto_reply(
-                account, tweet_text, reply_text, tweet_id,
-                _engagement_score(best_tweet),
-            )
-            continue
-
-        # Publish: önce reply dene, 403 alırsa quote tweet yap
-        result = _publish_with_fallback(
-            text=reply_text,
-            tweet_id=tweet_id,
-            account=account,
-        )
-
-        if result.get("success"):
-            publish_type = result.get("type", "reply")
-            add_auto_reply_log({
-                "account": account,
-                "tweet_id": tweet_id,
-                "tweet_text": tweet_text,
-                "reply_text": reply_text,
-                "reply_tweet_id": result.get("tweet_id", ""),
-                "reply_url": result.get("url", ""),
-                "status": "published",
-                "publish_type": publish_type,
-                "engagement_score": _engagement_score(best_tweet),
-                "like_count": best_tweet.get("like_count", 0),
-                "retweet_count": best_tweet.get("retweet_count", 0),
-            })
-            replies_made += 1
-            logger.info(
-                "Auto-reply: %s to @%s tweet %s — %s",
-                publish_type.upper(),
-                account,
-                tweet_id,
-                result.get("url", ""),
-            )
-        else:
-            add_auto_reply_log({
-                "account": account,
-                "tweet_id": tweet_id,
-                "tweet_text": tweet_text,
-                "reply_text": reply_text,
-                "status": "publish_failed",
-                "error": result.get("error", "Unknown error"),
-                "engagement_score": _engagement_score(best_tweet),
-                "like_count": best_tweet.get("like_count", 0),
-                "retweet_count": best_tweet.get("retweet_count", 0),
-            })
 
     # Save seen IDs
     save_auto_reply_seen(seen)
 
-    if replies_made > 0:
-        logger.info("Auto-reply: Saat %02d — %d paylaşım yapıldı", hour, replies_made)
-    else:
-        logger.info("Auto-reply: Saat %02d — yeni tweet bulunamadı", hour)
+    # Queue bakımı: eski/işlenmiş kayıtları temizle
+    cleanup_auto_reply_queue()
 
+    logger.info(
+        "Auto-reply scanner: Saat %02d — %d hesap tarandı, %d aday kuyruğa eklendi",
+        hour, len(hourly_accounts), queued_count,
+    )
+
+
+# ── PHASE 2: GENERATOR ────────────────────────────────────────
+
+def generate_and_reply():
+    """
+    Üretici — scheduler tarafından her 5 dakikada bir çağrılır.
+
+    Kuyruktan en yüksek engagement'lı pending tweet'i alır,
+    AI ile yanıt üretir, publish/draft yapar.
+    """
+    from backend.modules.style_manager import (
+        load_auto_reply_config,
+        load_auto_reply_logs,
+        add_auto_reply_log,
+        load_auto_reply_queue,
+        update_auto_reply_queue_entry,
+    )
+
+    config = load_auto_reply_config()
+
+    if not config.get("enabled"):
+        return
+
+    now = datetime.datetime.now(TZ_TR)
+    hour = now.hour
+
+    # Çalışma saatleri kontrolü
+    work_start = config.get("work_hour_start", 9)
+    work_end = config.get("work_hour_end", 21)
+    if hour < work_start or hour >= work_end:
+        return
+
+    # Rate limit: max replies per hour
+    max_per_hour = config.get("max_replies_per_hour", 5)
+    logs = load_auto_reply_logs()
+    one_hour_ago = now - datetime.timedelta(hours=1)
+
+    recent_replies = 0
+    for log in logs:
+        try:
+            log_time = datetime.datetime.fromisoformat(log.get("created_at", ""))
+            if log_time.tzinfo is None:
+                log_time = log_time.replace(tzinfo=TZ_TR)
+            if log_time >= one_hour_ago and log.get("status") in ("published", "ready"):
+                recent_replies += 1
+        except (ValueError, TypeError):
+            continue
+
+    if recent_replies >= max_per_hour:
+        logger.info("Auto-reply generator: Rate limit — %d/%d replies in last hour", recent_replies, max_per_hour)
+        return
+
+    # Kuyruktan pending olanları al
+    queue = load_auto_reply_queue()
+    pending = [q for q in queue if q.get("status") == "pending"]
+
+    if not pending:
+        return
+
+    # En yüksek engagement'lı adayı seç
+    pending.sort(key=lambda x: x.get("engagement_score", 0), reverse=True)
+    candidate = pending[0]
+
+    tweet_id = candidate["tweet_id"]
+    account = candidate["account"]
+    tweet_text = candidate.get("text", "")
+
+    logger.info(
+        "Auto-reply generator: @%s tweet %s işleniyor (score=%.0f)",
+        account, tweet_id, candidate.get("engagement_score", 0),
+    )
+
+    # Mark as processing
+    update_auto_reply_queue_entry(tweet_id, {"status": "processing"})
+
+    style = config.get("style", "reply")
+    additional_context = config.get("additional_context", "")
+    language = config.get("language", "tr")
+    draft_only = config.get("draft_only", True)
+
+    # Generate reply
+    try:
+        reply_text = _generate_reply(
+            original_tweet=tweet_text,
+            original_author=account,
+            style=style,
+            additional_context=additional_context,
+            language=language,
+        )
+    except Exception as e:
+        logger.warning("Auto-reply generator: Failed to generate reply for @%s tweet %s: %s", account, tweet_id, e)
+        update_auto_reply_queue_entry(tweet_id, {
+            "status": "failed",
+            "processed_at": now.isoformat(),
+        })
+        add_auto_reply_log({
+            "account": account,
+            "tweet_id": tweet_id,
+            "tweet_text": tweet_text,
+            "reply_text": "",
+            "status": "generation_failed",
+            "error": str(e),
+            "engagement_score": candidate.get("engagement_score", 0),
+            "like_count": candidate.get("like_count", 0),
+            "retweet_count": candidate.get("retweet_count", 0),
+        })
+        return
+
+    if not reply_text:
+        update_auto_reply_queue_entry(tweet_id, {
+            "status": "failed",
+            "processed_at": now.isoformat(),
+        })
+        return
+
+    # Draft-only mode: sadece üret, paylaşma
+    if draft_only:
+        update_auto_reply_queue_entry(tweet_id, {
+            "status": "done",
+            "reply_text": reply_text,
+            "processed_at": now.isoformat(),
+        })
+        add_auto_reply_log({
+            "account": account,
+            "tweet_id": tweet_id,
+            "tweet_text": tweet_text,
+            "reply_text": reply_text,
+            "status": "ready",
+            "engagement_score": candidate.get("engagement_score", 0),
+            "like_count": candidate.get("like_count", 0),
+            "retweet_count": candidate.get("retweet_count", 0),
+        })
+        logger.info(
+            "Auto-reply generator: DRAFT for @%s tweet %s — ready for manual posting",
+            account, tweet_id,
+        )
+        _send_telegram_auto_reply(
+            account, tweet_text, reply_text, tweet_id,
+            candidate.get("engagement_score", 0),
+        )
+        return
+
+    # Publish: önce reply dene, 403 alırsa quote tweet yap
+    result = _publish_with_fallback(
+        text=reply_text,
+        tweet_id=tweet_id,
+        account=account,
+    )
+
+    if result.get("success"):
+        publish_type = result.get("type", "reply")
+        update_auto_reply_queue_entry(tweet_id, {
+            "status": "done",
+            "reply_text": reply_text,
+            "processed_at": now.isoformat(),
+        })
+        add_auto_reply_log({
+            "account": account,
+            "tweet_id": tweet_id,
+            "tweet_text": tweet_text,
+            "reply_text": reply_text,
+            "reply_tweet_id": result.get("tweet_id", ""),
+            "reply_url": result.get("url", ""),
+            "status": "published",
+            "publish_type": publish_type,
+            "engagement_score": candidate.get("engagement_score", 0),
+            "like_count": candidate.get("like_count", 0),
+            "retweet_count": candidate.get("retweet_count", 0),
+        })
+        logger.info(
+            "Auto-reply generator: %s to @%s tweet %s — %s",
+            publish_type.upper(), account, tweet_id, result.get("url", ""),
+        )
+    else:
+        update_auto_reply_queue_entry(tweet_id, {
+            "status": "failed",
+            "processed_at": now.isoformat(),
+        })
+        add_auto_reply_log({
+            "account": account,
+            "tweet_id": tweet_id,
+            "tweet_text": tweet_text,
+            "reply_text": reply_text,
+            "status": "publish_failed",
+            "error": result.get("error", "Unknown error"),
+            "engagement_score": candidate.get("engagement_score", 0),
+            "like_count": candidate.get("like_count", 0),
+            "retweet_count": candidate.get("retweet_count", 0),
+        })
+
+
+# ── BACKWARD COMPAT WRAPPER ───────────────────────────────────
+
+def check_and_reply():
+    """
+    Backward compat wrapper — hem tarar hem üretir.
+    Manuel trigger (/api/auto-reply/trigger) bu fonksiyonu çağırır.
+    """
+    scan_for_candidates()
+    generate_and_reply()
+
+
+# ── HELPER FUNCTIONS ──────────────────────────────────────────
 
 def _get_twikit_client():
     """Get authenticated twikit client."""
