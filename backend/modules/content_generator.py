@@ -146,6 +146,8 @@ TON VE DİL:
 - türkçe yaz, teknik terimler ingilizce kalabilir
 - küçük harfle yaz — ama içerik profesyonel olsun
 - emoji 0-1 tane veya hiç
+- doğrudan anlatım kullan — "geldi", "çıktı", "sunuyor", "duyurdu" (kesin ifadeler)
+- dolaylı anlatım YASAK — "gelmiş", "çıkmış", "sunuyormuş", "duyurulmuş" (belirsiz/duyum ekleri) KULLANMA
 
 YAPMA:
 - soğuk ve robotik yazma — "belirtilmelidir ki", "önemle vurgulanmalıdır" YASAK
@@ -153,6 +155,8 @@ YAPMA:
 - belirsiz/genel ifadeler — "çok iyi", "harika" yerine somut rakam ver
 - soru ile bitirme YASAK
 - madde işareti/numara listesi KULLANMA — doğal paragraflar yaz
+- "-mış/-muş/-mış/-müş" duyum ekleri YASAK — "duyurulmuş", "çıkmış", "yapılmış" gibi dolaylı anlatım yapma. Haberi KENDİN araştırmış ve doğrulamış gibi anlat
+- "...olduğu belirtildi", "...olduğu öğrenildi" gibi gazete kalıpları YASAK
 
 ## SES KAYNAGI:
 Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
@@ -284,12 +288,16 @@ TON VE DİL:
 - küçük harfle yaz
 - emoji 0-1 tane veya hiç
 - madde işareti KULLANMA — doğal paragraflar yaz
+- doğrudan anlatım kullan — "geldi", "çıktı", "sunuyor", "duyurdu" (kesin ifadeler)
+- dolaylı anlatım YASAK — "gelmiş", "çıkmış", "sunuyormuş", "duyurulmuş" (belirsiz/duyum ekleri) KULLANMA
 
 YAPMA:
 - "Son dakika!", "Flaş!", "Breaking" gibi klişeler YASAK
 - "[Tarih]'da duyurulan..." veya "X, Y'da duyurduğu Z ile..." gibi gazete dili YASAK
 - özellik listesi yapma — her özelliği kullanıcı faydası olarak anlat
 - soru ile bitirme YASAK
+- "-mış/-muş/-mış/-müş" duyum ekleri YASAK — "duyurulmuş", "çıkmış", "yapılmış" gibi dolaylı anlatım yapma. Haberi KENDİN araştırmış ve doğrulamış gibi anlat
+- "...olduğu belirtildi", "...olduğu öğrenildi" gibi gazete kalıpları YASAK
 
 ## SES KAYNAGI:
 Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
@@ -419,13 +427,15 @@ TON VE DİL:
 - küçük harfle yaz, her zaman. başlıklar dahil.
 - bilgili ama samimi — "anlatan arkadaş" tonu, akademik/resmi değil
 - türkçe ağırlıklı, teknik terimler ingilizce kalabilir
-- somut ve spesifik ol — "yeni özellik" değil, "SSH desteği gelmiş, uzak makinelere bağlanıp direkt çalıştırabiliyorsun"
+- somut ve spesifik ol — "yeni özellik" değil, "SSH desteği geldi, uzak makinelere bağlanıp direkt çalıştırabiliyorsun"
 - emoji neredeyse hiç kullanma — en fazla tweet başına 0-1 tane, o da sadece hook'ta. gövdede kesinlikle emoji yok.
 - madde işareti KULLANMA, numara listesi KULLANMA — doğal paragraflar yaz
 - uzun olabilir — bilgi yoğunluğu önemli, kısa tutma baskısı yok
 - pratik bilgi ver — nasıl kurulur, nasıl kullanılır, nerede bulunur
 - gerçek alıntılar varsa dahil et — topluluktan sesler tweet'e güvenilirlik katar
 - özellik anlatırken parantez içi açıklamalar kullan — "skills & subagents (net agent mimarisi / rol dağılımı örnekleriyle)" gibi
+- doğrudan anlatım kullan — "geldi", "çıktı", "sunuyor", "duyurdu" (kesin ifadeler)
+- dolaylı anlatım YASAK — "gelmiş", "çıkmış", "sunuyormuş", "duyurulmuş" (belirsiz/duyum ekleri) KULLANMA
 
 DOĞAL PARAGRAF AKIŞI ÖRNEĞİ:
 yanlış: "1️⃣ ollama'yı kur 2️⃣ modeli çek 3️⃣ başlat"
@@ -445,6 +455,8 @@ YAPMA:
 - çok genel/yüzeysel yazma — spesifik isimler, rakamlar, özellikler şart
 - gelişmeye kendi yorumunu katmadan sadece "haber" olarak aktarma — neden önemli olduğunu açıkla
 - büyük harf kullanma — her şey küçük harfle
+- "-mış/-muş/-mış/-müş" duyum ekleri YASAK — "duyurulmuş", "çıkmış", "yapılmış" gibi dolaylı anlatım yapma. Haberi KENDİN araştırmış ve doğrulamış gibi anlat
+- "...olduğu belirtildi", "...olduğu öğrenildi" gibi gazete kalıpları YASAK
 
 ## SES KAYNAGI:
 Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
@@ -507,6 +519,8 @@ Sonda güçlü, akılda kalan bir tespit veya gözlemle bitir.
 - doğal paragraflar halinde yaz — madde işareti, numara listesi, emoji listesi KULLANMA
 - emoji SIFIR veya en fazla 1
 - uzun olabilir — bilgiyi kesme, tamamını aktar
+- doğrudan anlatım kullan — "geldi", "çıktı", "sunuyor", "duyurdu" (kesin ifadeler)
+- dolaylı anlatım YASAK — "gelmiş", "çıkmış", "sunuyormuş", "duyurulmuş" (belirsiz/duyum ekleri) KULLANMA
 
 ## YAPMA:
 - "[Tarih]'da duyurulan..." veya "X, Y'da duyurduğu Z ile..." gibi gazete dili YASAK
@@ -518,6 +532,8 @@ Sonda güçlü, akılda kalan bir tespit veya gözlemle bitir.
 - ETİKET/BAŞLIK YASAK — "kullanım senaryoları:", "performans tarafında:", "avantajları:" gibi
 - araştırma sentezindeki ## başlıkları tweet'e yansıtma
 - aynı geçiş kalıplarını tekrarlama — her tweet farklı hissetmeli
+- "-mış/-muş/-mış/-müş" duyum ekleri YASAK — "duyurulmuş", "çıkmış", "yapılmış" gibi dolaylı anlatım yapma. Haberi KENDİN araştırmış ve doğrulamış gibi anlat
+- "...olduğu belirtildi", "...olduğu öğrenildi" gibi gazete kalıpları YASAK
 
 ## SES KAYNAGI:
 Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
@@ -774,8 +790,8 @@ for _cat, _styles in STYLE_CATEGORIES.items():
 
 CONTENT_FORMATS = {
     "micro": {
-        "name": "Micro — Tek Satır",
-        "label": "⚡ Micro (Tek Satır)",
+        "name": "Micro — Tek Satır (0-140)",
+        "label": "⚡ Micro — Tek Satır (0-140)",
         "description": "Tek cümle, vurucu fikir. Quote tweet için ideal.",
         "range": "0-140 karakter",
         "char_min": 0,
@@ -799,8 +815,8 @@ KÖTÜ ÖRNEK: "OpenAI yeni bir model çıkardı ve bu model çok iyi sonuçlar 
     },
 
     "punch": {
-        "name": "Punch — Standart Tweet",
-        "label": "🥊 Punch (Standart Tweet)",
+        "name": "Punch — Standart (140-280)",
+        "label": "🥊 Punch — Standart (140-280)",
         "description": "Standart tweet uzunluğu. En çok kullanılan format.",
         "range": "140-280 karakter",
         "char_min": 140,
@@ -828,8 +844,8 @@ KÖTÜ: Hook + 3 farklı konu + CTA sorusu ← dağınık
     },
 
     "classic": {
-        "name": "Classic — Orta Tweet",
-        "label": "📝 Classic (Orta Tweet)",
+        "name": "Classic — Orta (200-400)",
+        "label": "📝 Classic — Orta (200-400)",
         "description": "Punch ile Spark arası. Biraz daha detaylı standart tweet.",
         "range": "200-400 karakter",
         "char_min": 200,
@@ -853,16 +869,16 @@ KURALLAR:
     },
 
     "spark": {
-        "name": "Spark — Kısa Hikaye",
-        "label": "✨ Spark (Kısa Hikaye)",
-        "description": "Kısa hikayeler, açıklamalar. Detaylı ama öz.",
+        "name": "Spark — Detaylı (400-600)",
+        "label": "✨ Spark — Detaylı (400-600)",
+        "description": "Detaylı ama öz. 3-4 paragraf.",
         "range": "400-600 karakter",
         "char_min": 400,
         "char_max": 600,
         "icon": "✨",
         "prompt_instructions": """## FORMAT: SPARK (400-600 karakter)
 
-STRATEJİ: Mini hikaye formatı. Yeterince alan var ama hala öz. Okuyucu "aa ilginçmiş" desin.
+STRATEJİ: Detaylı ama öz format. Yeterince alan var ama gereksiz uzatma. 3-4 paragraf.
 
 YAPI:
 1. HOOK PARAGRAFI (1-2 cümle): Dikkat çekici giriş, konuyu tanıt.
@@ -880,16 +896,16 @@ KURALLAR:
     },
 
     "storm": {
-        "name": "Storm — Derin Analiz",
-        "label": "🌩️ Storm (Derin Analiz)",
-        "description": "Derin analizler, uzun hikayeler. Çok detaylı.",
+        "name": "Storm — Çok Detaylı (700-1000)",
+        "label": "🌩️ Storm — Çok Detaylı (700-1000)",
+        "description": "Çok detaylı format. 4-5 paragraf, çok açılı.",
         "range": "700-1000 karakter",
         "char_min": 700,
         "char_max": 1000,
         "icon": "🌩️",
         "prompt_instructions": """## FORMAT: STORM (700-1000 karakter)
 
-STRATEJİ: Derinlemesine analiz. Birden fazla açıdan konuyu ele al. Okuyucu "bu adamı takip etmeliyim" desin.
+STRATEJİ: Çok detaylı format. Birden fazla açıdan konuyu ele al. 4-5 paragraf.
 
 YAPI:
 1. HOOK (1-2 cümle): Güçlü giriş — paradoks, cesur iddia veya vurucu tespit.
@@ -909,8 +925,8 @@ KURALLAR:
     },
 
     "thread": {
-        "name": "Thread — Seri Anlatım",
-        "label": "🧵 Thread (Seri Anlatım)",
+        "name": "Thread — Seri (3-5 tweet)",
+        "label": "🧵 Thread — Seri (3-5 tweet)",
         "description": "3-5 tweet serisi halinde konu anlatımı.",
         "range": "3-5 tweet (her biri max 280 karakter)",
         "char_min": 0,
@@ -937,9 +953,9 @@ KURALLAR:
     },
 
     "thunder": {
-        "name": "Thunder — En Derin Format",
-        "label": "⛈️ Thunder (En Derin)",
-        "description": "En uzun ve en detaylı format. Kapsamlı analiz.",
+        "name": "Thunder — Kapsamlı (1200-1500)",
+        "label": "⛈️ Thunder — Kapsamlı (1200-1500)",
+        "description": "En kapsamlı single-post format. 5-7 paragraf.",
         "range": "1200-1500 karakter",
         "char_min": 1200,
         "char_max": 1500,
@@ -968,9 +984,9 @@ KURALLAR:
 - VERİ KURALI: Emin olmadığın rakam, istatistik, yıldız sayısı, kullanıcı sayısı gibi bilgileri KESİNLİKLE UYDURMA. Araştırmada yoksa "popüler", "yaygın kullanılan" gibi genel ifadeler tercih et.""",
     },
     "mega": {
-        "name": "Mega — Ultra Detaylı",
-        "label": "🌋 Mega (Ultra Detaylı)",
-        "description": "En uzun single-post format. Kapsamlı makale tarzı tweet.",
+        "name": "Mega — En Uzun (1500-2000)",
+        "label": "🌋 Mega — En Uzun (1500-2000)",
+        "description": "En uzun single-post format. 6-8 paragraf.",
         "range": "1500-2000 karakter",
         "char_min": 1500,
         "char_max": 2000,

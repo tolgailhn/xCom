@@ -527,8 +527,30 @@ def generate_smart_suggestion(req: GenerateSmartSuggestionRequest):
     try:
         from backend.api.helpers import get_ai_provider
 
-        provider_name, api_key, _ = get_ai_provider(req.provider or "")
-        if not api_key:
+        # Build provider fallback chain
+        providers_to_try: list[tuple[str, str]] = []
+        seen = set()
+
+        # Primary: user-selected or auto
+        try:
+            p, k, _ = get_ai_provider(req.provider or "")
+            if k and p not in seen:
+                providers_to_try.append((p, k))
+                seen.add(p)
+        except Exception:
+            pass
+
+        # Fallbacks: try all available providers
+        for fb in ["anthropic", "openai", "gemini", "groq"]:
+            try:
+                p, k, _ = get_ai_provider(fb)
+                if k and p not in seen:
+                    providers_to_try.append((p, k))
+                    seen.add(p)
+            except Exception:
+                pass
+
+        if not providers_to_try:
             raise HTTPException(400, "AI API anahtarı bulunamadı")
 
         prompt = (
@@ -546,7 +568,20 @@ def generate_smart_suggestion(req: GenerateSmartSuggestionRequest):
             '{"tweet": "tweet metni", "engagement_potential": 8, "best_time": "14:07", "reasoning": "neden bu saat"}'
         )
 
-        response_text = _call_ai_simple(provider_name, api_key, prompt)
+        # Try providers with fallback
+        response_text = ""
+        last_error: Exception | None = None
+        for provider_name, api_key in providers_to_try:
+            try:
+                response_text = _call_ai_simple(provider_name, api_key, prompt)
+                logger.info("Smart suggestion generated with %s", provider_name)
+                break
+            except Exception as e:
+                last_error = e
+                logger.warning("Provider %s failed: %s — trying next", provider_name, e)
+                continue
+        else:
+            raise HTTPException(500, f"Tüm AI providerlar başarısız: {last_error}")
 
         # Parse JSON
         match = re.search(r'\{.*\}', response_text, re.DOTALL)

@@ -27,11 +27,12 @@ function timeAgo(isoStr: string): string {
   try {
     const d = new Date(isoStr);
     const now = new Date();
-    const diff = Math.floor((now.getTime() - d.getTime()) / 1000);
-    if (diff < 60) return `${diff}sn`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}dk`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}sa`;
-    return `${Math.floor(diff / 86400)}g`;
+    const diffSec = Math.floor((now.getTime() - d.getTime()) / 1000);
+    const absDiff = Math.abs(diffSec);
+    if (absDiff < 60) return `${absDiff}sn`;
+    if (absDiff < 3600) return `${Math.floor(absDiff / 60)}dk`;
+    if (absDiff < 86400) return `${Math.floor(absDiff / 3600)}sa`;
+    return `${Math.floor(absDiff / 86400)}g`;
   } catch {
     return "";
   }
@@ -83,6 +84,16 @@ export default function KesifPage() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Periodic scheduler status refresh (every 60s)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      getSchedulerStatus()
+        .then(res => setSchedulerJobs(res.jobs || []))
+        .catch(() => {});
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Countdown timer
   useEffect(() => {
