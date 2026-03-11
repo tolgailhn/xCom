@@ -574,10 +574,13 @@ async def research_stream(request: ResearchRequest):
             if ai_provider == "anthropic":
                 import anthropic
                 ai_client = anthropic.Anthropic(api_key=api_key)
+            elif ai_provider == "gemini":
+                from google import genai
+                ai_client = genai.Client(api_key=api_key)
             elif ai_provider in ("openai", "minimax", "groq"):
                 from openai import OpenAI
                 base_url = (
-                    "https://api.minimaxi.chat/v1" if ai_provider == "minimax"
+                    "https://api.minimax.io/v1" if ai_provider == "minimax"
                     else "https://api.groq.com/openai/v1" if ai_provider == "groq"
                     else None
                 )

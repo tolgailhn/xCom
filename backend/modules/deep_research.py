@@ -233,6 +233,52 @@ def _parallel_fetch_articles(urls: list[str], max_articles: int = 5,
 # AI-POWERED TOPIC EXTRACTION — understands what the tweet is ACTUALLY about
 # ========================================================================
 
+def _call_ai(ai_client, provider: str, ai_model: str | None, prompt: str,
+             max_tokens: int = 1000, temperature: float = 0.3, system: str = "") -> str | None:
+    """Unified AI call helper — supports anthropic, gemini, openai/minimax/groq."""
+    if not ai_client:
+        return None
+    try:
+        if provider == "anthropic":
+            kwargs = dict(
+                model=ai_model or "claude-haiku-4-5-20251001",
+                max_tokens=max_tokens,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=temperature,
+            )
+            if system:
+                kwargs["system"] = system
+            response = ai_client.messages.create(**kwargs)
+            return response.content[0].text.strip()
+        elif provider == "gemini":
+            from google.genai import types
+            response = ai_client.models.generate_content(
+                model=ai_model or "gemini-3.1-flash-lite",
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=system or None,
+                    max_output_tokens=max_tokens,
+                    temperature=temperature,
+                ),
+            )
+            return response.text.strip() if response and response.text else None
+        else:
+            messages = []
+            if system:
+                messages.append({"role": "system", "content": system})
+            messages.append({"role": "user", "content": prompt})
+            response = ai_client.chat.completions.create(
+                model=ai_model or "MiniMax-M2.5",
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+            return response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"AI call error ({provider}): {e}")
+        return None
+
+
 def ai_extract_topic(tweet_text: str, ai_client=None, ai_model: str = None,
                      provider: str = "minimax") -> dict | None:
     """
@@ -302,23 +348,9 @@ KURALLAR:
 - impact_queries ÇOK ÖNEMLİ — haber analizi yazmak için "neden önemli" ve "kime etkisi var" bilgisi şart"""
 
     try:
-        if provider == "anthropic":
-            import anthropic
-            response = ai_client.messages.create(
-                model=ai_model or "claude-haiku-4-5-20251001",
-                max_tokens=500,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-            )
-            raw = response.content[0].text.strip()
-        else:
-            response = ai_client.chat.completions.create(
-                model=ai_model or "MiniMax-M2.5",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=500,
-                temperature=0.1,
-            )
-            raw = response.choices[0].message.content.strip()
+        raw = _call_ai(ai_client, provider, ai_model, prompt, max_tokens=500, temperature=0.1)
+        if not raw:
+            return None
 
         # Strip <think> tags from reasoning models
         raw = re.sub(r'<think>.*?</think>', '', raw, flags=re.DOTALL).strip()
@@ -2114,27 +2146,11 @@ KURALLAR:
 - Karşıt görüş veya çelişki ARAMA — sadece varsa ve önemliyse yaz"""
 
     try:
-        if provider == "anthropic":
-            import anthropic
-            response = ai_client.messages.create(
-                model=ai_model or "claude-haiku-4-5-20251001",
-                max_tokens=4000,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-            )
-            return response.content[0].text.strip()
-        else:
-            response = ai_client.chat.completions.create(
-                model=ai_model or "MiniMax-M2.5",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=4000,
-                temperature=0.1,
-            )
-            result = response.choices[0].message.content.strip()
+        result = _call_ai(ai_client, provider, ai_model, prompt, max_tokens=4000, temperature=0.1)
+        if result:
             # Strip <think> tags from reasoning models
             result = re.sub(r'<think>.*?</think>', '', result, flags=re.DOTALL).strip()
-            return result
-
+        return result
     except Exception as e:
         print(f"AI research synthesis error: {e}")
         return None
@@ -2302,23 +2318,9 @@ KURALLAR:
 - Eğer araştırma yeterliyse boş liste döndür: {{"gaps": [], "search_queries": []}}"""
 
     try:
-        if provider == "anthropic":
-            import anthropic
-            response = ai_client.messages.create(
-                model=ai_model or "claude-haiku-4-5-20251001",
-                max_tokens=500,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-            )
-            raw = response.content[0].text.strip()
-        else:
-            response = ai_client.chat.completions.create(
-                model=ai_model or "MiniMax-M2.5",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=500,
-                temperature=0.1,
-            )
-            raw = response.choices[0].message.content.strip()
+        raw = _call_ai(ai_client, provider, ai_model, prompt, max_tokens=500, temperature=0.1)
+        if not raw:
+            return []
 
         raw = re.sub(r'<think>.*?</think>', '', raw, flags=re.DOTALL).strip()
         json_match = re.search(r'\{.*\}', raw, re.DOTALL)
@@ -2449,23 +2451,9 @@ KURALLAR:
 - Maks 3 sorun listele"""
 
     try:
-        if provider == "anthropic":
-            import anthropic
-            response = ai_client.messages.create(
-                model=ai_model or "claude-haiku-4-5-20251001",
-                max_tokens=600,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-            )
-            raw = response.content[0].text.strip()
-        else:
-            response = ai_client.chat.completions.create(
-                model=ai_model or "MiniMax-M2.5",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=600,
-                temperature=0.1,
-            )
-            raw = response.choices[0].message.content.strip()
+        raw = _call_ai(ai_client, provider, ai_model, prompt, max_tokens=600, temperature=0.1)
+        if not raw:
+            return None
 
         raw = re.sub(r'<think>.*?</think>', '', raw, flags=re.DOTALL).strip()
         json_match = re.search(r'\{.*\}', raw, re.DOTALL)
@@ -3029,22 +3017,9 @@ SADECE şu JSON formatında yanıt ver:
 - Ürün/teknoloji konusuysa: sürüm bilgisi, release tarihi, beta/GA durumu da araştır"""
 
     try:
-        if provider == "anthropic":
-            response = ai_client.messages.create(
-                model=ai_model or "claude-haiku-4-5-20251001",
-                max_tokens=1200,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.2,
-            )
-            raw = response.content[0].text.strip()
-        else:
-            response = ai_client.chat.completions.create(
-                model=ai_model or "MiniMax-M2.5",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=1200,
-                temperature=0.2,
-            )
-            raw = response.choices[0].message.content.strip()
+        raw = _call_ai(ai_client, provider, ai_model, prompt, max_tokens=1200, temperature=0.2)
+        if not raw:
+            return None
 
         raw = re.sub(r'<think>.*?</think>', '', raw, flags=re.DOTALL).strip()
         json_match = re.search(r'\{.*\}', raw, re.DOTALL)
