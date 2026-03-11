@@ -2130,12 +2130,12 @@ Yanıtını şu formatta yaz:
 ## PRATİK ETKİ
 (Bu gelişmenin kullanıcılara, geliştiricilere, sektöre pratik etkisi ne? Somut, herkesin anlayacağı dilde.)
 
-## DOĞRULANMIŞ İDDİALAR
-(Araştırmadan çıkan her spesifik iddiayı listele — tweet'te kullanılacak veriler:
-- İddia: [somut bilgi/rakam/karşılaştırma]
-- Kaynak: [hangi makale/tweet/blog'dan geldi]
-- Güven: [yüksek/orta/düşük — birden fazla kaynak teyit ediyorsa yüksek]
-ÖNEMLİ: Sadece araştırmada AÇIKÇA bulunan bilgileri yaz. Çıkarım/tahmin YAPMA.)
+## KULLANILABİLİR VERİLER
+(Tweet'te doğrudan kullanılabilecek somut bilgiler — rakamlar, tarihler, fiyatlar, karşılaştırmalar:
+- [somut bilgi/rakam 1]
+- [somut bilgi/rakam 2]
+Sadece araştırmada AÇIKÇA bulunan bilgileri yaz. Çıkarım/tahmin YAPMA.
+Veri yoksa bu bölümü TAMAMEN ATLA — "bulunamadı" veya "doğrulanamadı" KESİNLİKLE YAZMA.)
 
 KURALLAR:
 - Orijinal tweet/thread'deki bilgilere SADIK KAL
@@ -2143,7 +2143,8 @@ KURALLAR:
 - BİLGİ YOĞUNLUĞU en önemli kriter — kısa tutma, uzun ve detaylı yaz
 - Teknik kısaltmaları Türkçe aç (eval → değerlendirme/test, CLI → komut satırı aracı vb.)
 - Yorum ekleme, sadece gerçekleri yaz
-- Bilgi yoksa o bölümü atla, "bulunamadı" yazma
+- Bilgi yoksa o bölümü TAMAMEN ATLA — "bulunamadı", "doğrulanamadı", "bu konuda yeterli bilgi yok", "teyit edilemedi" gibi ifadeler KESİNLİKLE YAZMA
+- Sadece MEVCUT ve DOĞRULANMIŞ bilgileri yaz, eksik bilgileri belirtme — sessizce geç
 - Eski veya güncelliğini yitirmiş bilgileri DAHIL ETME
 
 ⛔ DAHIL ETME:
