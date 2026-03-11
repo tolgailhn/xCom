@@ -615,3 +615,210 @@ Bu bölüm her session sonunda güncellenir. Yeni session başladığında buray
 - Tüm reply özelliklerini tek "Yanıt Merkezi" sayfasında birleştirme
 - Dry-run modu (kaydetmeden reply önizleme)
 - 90 günden eski logları otomatik temizleme
+
+---
+
+## KEŞİF SAYFASI BÜYÜK GÜNCELLEME PLANI (10 Faz)
+
+### Genel Bakış
+Keşif sayfasındaki Trendler ve Haberler tabları şu an çok basit (sadece liste gösterimi). Bu plan onları tam özellikli tweet üretim merkezlerine dönüştürüyor. Backend worker'lar (auto_topic_scanner, trend_analyzer, news_scanner, account_discoverer, auto_content_suggester) zaten implement edilmiş ve scheduler'da çalışıyor. Eksik olan: **frontend tablarının zenginleştirilmesi + birkaç yeni backend endpoint**.
+
+### Mevcut Durum (Implement Edilmiş)
+- **Backend Workers**: auto_topic_scanner (2sa), trend_analyzer (1sa), news_scanner (4sa), account_discoverer (6sa), auto_content_suggester (on-demand) — HEPSİ ÇALIŞIYOR
+- **Backend API**: /api/discovery/* altında tüm CRUD endpoint'ler mevcut (trends, news, suggested-accounts, auto-scan)
+- **Frontend TabTweets.tsx** (1028 satır): Zengin — araştırma, quote tweet üretimi, stil/format/provider, medya arama, infografik — TAM
+- **Frontend TabTrends.tsx** (127 satır): BASİT — sadece keyword listesi, tweet üretimi yok
+- **Frontend TabNews.tsx** (104 satır): BASİT — sadece haber listesi, tweet üretimi yok
+- **Frontend TabSuggestedAccounts.tsx** (153 satır): TEMEL — ekle/sil/geç, aktif arama yok
+- **Frontend TabAyarlar.tsx** (311 satır): TAM
+
+### Faz 1: Gece Taraması + Durum Göstergesi (Backend + Frontend)
+**Amaç**: Scheduler'ın 2 saatlik taramasının durumunu frontend'te göster, son tarama zamanı + sonraki tarama geri sayımı
+**Değişen Dosyalar** (max 3):
+1. `backend/api/discovery.py` — Yeni endpoint: `GET /api/discovery/scheduler-status` → tüm worker'ların son çalışma zamanı, sonraki çalışma zamanı, toplam tarama sayısı
+2. `frontend/src/lib/api.ts` — Yeni fonksiyon: `getSchedulerStatus()`
+3. `frontend/src/app/kesif/page.tsx` — Durum çubuğuna scheduler bilgisi ekleme (son tarama, sonraki tarama, aktif worker sayısı)
+
+**Detaylar**:
+- Scheduler status endpoint APScheduler'dan `get_jobs()` ile iş listesini çeker
+- Her iş için: `next_run_time`, `last_run_time` (custom tracking gerekir — scheduler_worker.py'de dict tutulacak)
+- Frontend'te status bar'a "🔄 Son tarama: 14:30 | Sonraki: 16:30" badge eklenir
+- Auto-scan, trend, news, account discovery durumları ayrı ayrı görünür
+
+### Faz 2: Trendler Tabı — Araştırma Akışı (Frontend)
+**Amaç**: Trend keyword'e tıklayınca o konuda deep research yapabilme
+**Değişen Dosyalar** (max 3):
+1. `frontend/src/app/kesif/TabTrends.tsx` — TAM YENİDEN YAZIM:
+   - Trend kartına "Araştır" butonu ekleme
+   - Tıklayınca `researchTopicStream()` API çağrısı (TabTweets'te zaten kullanılıyor)
+   - Araştırma sonuçları panel'de gösterilir (kaynaklar, özet, key findings)
+   - AI bağlam özeti: trend'in neden önemli olduğunu 2-3 cümleyle açıklar
+2. `frontend/src/lib/api.ts` — Gerekirse yeni tip tanımları (muhtemelen mevcut tipler yeterli)
+3. _(gerek kalmazsa 2 dosya)_
+
+**Detaylar**:
+- `researchTopicStream(topic, engine, mode)` zaten mevcut API — yeni endpoint gerekmiyor
+- Araştırma sonucu: `{ summary, sources[], key_findings[], research_context }`
+- Trend kartı genişleyerek araştırma panelini gösterir (accordion pattern)
+- Engine seçimi: DuckDuckGo (varsayılan) veya Grok
+
+### Faz 3: Trendler Tabı — Tweet Üretimi (Frontend)
+**Amaç**: Araştırma sonrasında trend hakkında tweet üretebilme (stil/format/provider seçimi)
+**Değişen Dosyalar** (max 3):
+1. `frontend/src/app/kesif/TabTrends.tsx` — Araştırma paneline tweet üretim bölümü ekleme:
+   - Stil dropdown (8 stil: bilgilendirici, provoke edici, vb.)
+   - Format dropdown (6 format: micro → mega thread)
+   - Provider dropdown (MiniMax/Claude/GPT)
+   - "Üret" butonu → `generateTweet()` veya `generateLongContent()` API
+   - Üretilen tweet düzenlenebilir textarea
+   - "Taslak Kaydet" + "Zamanla" + "Paylaş" butonları
+2. `frontend/src/lib/api.ts` — `getStyles()` zaten mevcut, gerekirse ek tip
+3. _(gerek kalmazsa 2 dosya)_
+
+**Detaylar**:
+- Tweet üretimi mevcut API'leri kullanır: `/api/generator/generate` (tek tweet) veya `/api/generator/generate-long` (thread)
+- Araştırma context'i tweet üretim isteğine `research_context` olarak eklenir
+- Trend'in top tweets'leri de context olarak gönderilir (AI daha iyi bağlam alır)
+- Stil/format listeleri `getStyles()` API'den gelir (cache'lenir)
+
+### Faz 4: Haberler Tabı — Araştırma Akışı (Frontend)
+**Amaç**: Haber'e tıklayınca o konu hakkında deep research + AI bağlam özeti
+**Değişen Dosyalar** (max 3):
+1. `frontend/src/app/kesif/TabNews.tsx` — TAM YENİDEN YAZIM:
+   - Haber kartına "Araştır" butonu
+   - `researchTopicStream()` ile derin araştırma
+   - Haber'in AI önem skoru gösterimi (yüksek/orta/düşük)
+   - Dinamik haber sorguları: kullanıcı kendi arama terimini girebilir
+   - Filtreleme: kaynak, tarih, önem skoru
+2. `frontend/src/lib/api.ts` — Gerekirse ek fonksiyon
+3. _(gerek kalmazsa 2 dosya)_
+
+**Detaylar**:
+- Haber URL'si araştırma context'ine eklenir
+- AI özet: "Bu haber neden önemli?" + "Tweet açısı önerisi"
+- Önem skoru: haber başlığı + içeriğinden AI ile hesaplanır (Faz 6'da detaylı)
+
+### Faz 5: Haberler Tabı — Tweet Üretimi (Frontend)
+**Amaç**: Haber konusundan tweet üretimi (Faz 3 ile aynı pattern)
+**Değişen Dosyalar** (max 3):
+1. `frontend/src/app/kesif/TabNews.tsx` — Tweet üretim bölümü:
+   - Stil/format/provider dropdown'ları (Faz 3 ile aynı)
+   - "Üret" → araştırma context'i + haber bilgisi ile tweet üretimi
+   - Üretilen tweet düzenleme + kaydet/zamanla/paylaş
+2. _(gerek kalmazsa 1 dosya)_
+
+**Detaylar**:
+- Haber URL'si + başlık + özet tweet üretim prompt'una eklenir
+- Harici link uyarısı: "Link tweet'e eklenmemeli, reply'a koy" (X algoritma kuralı)
+
+### Faz 6: AI Haber Değeri Filtresi (Backend + Frontend)
+**Amaç**: Kişisel/düşük değerli tweetleri otomatik filtreleme, haberlere önem skoru atama
+**Değişen Dosyalar** (max 3):
+1. `backend/api/discovery.py` — Yeni endpoint: `POST /api/discovery/score-newsvalue` → tweet/haber metni alır, AI ile 1-10 önem skoru + kategori döndürür
+2. `backend/modules/content_generator.py` — Yeni fonksiyon: `score_news_value(text)` → MiniMax/Claude ile önem skoru (basit prompt, düşük maliyet)
+3. `frontend/src/app/kesif/TabNews.tsx` — Haber kartlarında önem skoru badge'i, filtreleme slider'ı (min skor)
+
+**Detaylar**:
+- Prompt: "Bu metin AI/teknoloji dünyası için ne kadar haber değeri taşıyor? 1-10 skor ver. Kişisel tweet/reklam/spam = 1-3, orta önem = 4-6, büyük duyuru/keşif = 7-10"
+- Skor cache'lenir (aynı metin tekrar sorgulanmaz)
+- TabTweets'teki tweetlere de uygulanabilir (opsiyonel)
+
+### Faz 7: MiniMax Akıllı Öneriler — Backend (Backend)
+**Amaç**: Trend + haber verilerinden otomatik tweet önerisi + engagement tahmini
+**Değişen Dosyalar** (max 3):
+1. `backend/api/discovery.py` — Yeni endpoint'ler:
+   - `GET /api/discovery/smart-suggestions` → mevcut trend/haber verilerinden AI önerileri
+   - `POST /api/discovery/smart-suggestions/generate` → yeni öneri üret
+2. `backend/auto_content_suggester.py` — Genişletme: engagement tahmini + en iyi posting zamanı önerisi + stil önerisi
+3. `frontend/src/lib/api.ts` — Yeni fonksiyonlar: `getSmartSuggestions()`, `generateSmartSuggestion()`
+
+**Detaylar**:
+- AI'dan: "Bu trend/haber hakkında tweet yazılmalı mı? Engagement potansiyeli 1-10?"
+- Her öneri: konu, önerilen stil, önerilen format, önerilen saat, engagement tahmini, reasoning
+- MiniMax öncelikli (ucuz + hızlı), fallback Claude/GPT
+- Günde max 10 öneri (maliyet kontrolü)
+
+### Faz 8: MiniMax Akıllı Öneriler — Frontend (Frontend)
+**Amaç**: Akıllı önerileri gösterme + tek tıkla tweet üretimi
+**Değişen Dosyalar** (max 3):
+1. `frontend/src/app/kesif/page.tsx` — Yeni tab ekleme: "Öneriler" (veya mevcut bir tab'a entegre)
+2. `frontend/src/app/kesif/TabSmartSuggestions.tsx` — YENİ DOSYA: Akıllı öneri kartları
+   - Engagement tahmini göstergesi (progress bar)
+   - Önerilen stil/format/saat bilgisi
+   - "Tweet Üret" butonu → otomatik araştırma + üretim
+   - "Zamanla" butonu → önerilen saatte zamanlama
+   - "Geç" butonu → öneriyi reddet
+3. _(gerek kalmazsa 2 dosya)_
+
+**Detaylar**:
+- Öneri kartı: 📈 Engagement tahmini: 8/10 | 🎯 Stil: Bilgilendirici | ⏰ Saat: 14:07
+- "Tweet Üret" tıklanınca: araştırma → üretim → düzenleme → paylaş/zamanla akışı
+- Zamanlama: scheduler API'ye POST (mevcut `/api/scheduler/add` endpoint)
+
+### Faz 9: Hesap Keşfi — Aktif X Araması (Backend + Frontend)
+**Amaç**: Mevcut pasif keşfin yanı sıra, aktif X araması ile yeni hesap bulma
+**Değişen Dosyalar** (max 3):
+1. `backend/api/discovery.py` — Yeni endpoint: `POST /api/discovery/search-accounts` → keyword ile X'te hesap arama (twikit kullanarak)
+2. `backend/account_discoverer.py` — Yeni fonksiyon: `search_accounts_active(keyword)` → Twikit ile "@keyword" veya "keyword" araması → hesap listesi döndür
+3. `frontend/src/app/kesif/TabSuggestedAccounts.tsx` — Arama input'u + "Ara" butonu, sonuçları mevcut öneri kartları formatında göster
+
+**Detaylar**:
+- Twikit `search_user(query)` kullanılır
+- Sonuçlar: username, display_name, followers, bio, verified
+- "Ekle" butonu ile doğrudan izleme listesine eklenir
+- Günlük max 20 arama (rate limit koruması)
+
+### Faz 10: Zamanlama Entegrasyonu (Frontend)
+**Amaç**: Tüm üretilen tweetleri doğrudan zamanlayabilme (Trendler, Haberler, Akıllı Öneriler tablarından)
+**Değişen Dosyalar** (max 3):
+1. `frontend/src/app/kesif/TabTrends.tsx` — "Zamanla" butonu: tarih/saat picker + scheduler API çağrısı
+2. `frontend/src/app/kesif/TabNews.tsx` — Aynı zamanlama butonu
+3. `frontend/src/app/kesif/TabSmartSuggestions.tsx` — Önerilen saatte otomatik zamanlama seçeneği
+
+**Detaylar**:
+- `schedulePost()` API zaten mevcut (`/api/scheduler/add`)
+- Tarih/saat picker component'i TabTweets veya yaz/page.tsx'ten kopyalanır
+- Thread ise tüm parçalar sırayla zamanlanır (self-reply chain)
+
+### Uygulama Sırası ve Bağımlılıklar
+```
+Faz 1 (scheduler status) → bağımsız, hemen yapılabilir
+Faz 2 (trendler araştırma) → bağımsız
+Faz 3 (trendler tweet üretimi) → Faz 2'ye bağımlı
+Faz 4 (haberler araştırma) → bağımsız (Faz 2 ile paralel yapılabilir)
+Faz 5 (haberler tweet üretimi) → Faz 4'e bağımlı
+Faz 6 (AI filtre) → bağımsız
+Faz 7 (akıllı öneriler backend) → Faz 6'ya bağımlı (skor kullanır)
+Faz 8 (akıllı öneriler frontend) → Faz 7'ye bağımlı
+Faz 9 (hesap araması) → bağımsız
+Faz 10 (zamanlama) → Faz 3, 5, 8'e bağımlı (üretim tabları hazır olmalı)
+```
+
+### Kullanılan Mevcut API'ler (Yeni Endpoint Gerekmez)
+- `researchTopicStream()` — Araştırma (DuckDuckGo/Grok)
+- `generateTweet()` / `generateLongContent()` — Tweet/thread üretimi
+- `getStyles()` — Stil/format listeleri
+- `findMedia()` — Görsel/video arama
+- `addDraft()` — Taslak kaydetme
+- `schedulePost()` — Zamanlama
+- `publishTweet()` — Direkt paylaşım
+
+### Yeni Backend Endpoint'ler (Sadece 4 tane)
+1. `GET /api/discovery/scheduler-status` (Faz 1)
+2. `POST /api/discovery/score-newsvalue` (Faz 6)
+3. `GET/POST /api/discovery/smart-suggestions` (Faz 7)
+4. `POST /api/discovery/search-accounts` (Faz 9)
+
+### İlerleme Durumu
+| Faz | Açıklama | Dosya Sayısı | Durum |
+|-----|----------|-------------|-------|
+| 1 | Scheduler durum göstergesi | 3 | ⬜ Bekliyor |
+| 2 | Trendler — araştırma akışı | 2 | ⬜ Bekliyor |
+| 3 | Trendler — tweet üretimi | 2 | ⬜ Bekliyor |
+| 4 | Haberler — araştırma akışı | 2 | ⬜ Bekliyor |
+| 5 | Haberler — tweet üretimi | 1 | ⬜ Bekliyor |
+| 6 | AI haber değeri filtresi | 3 | ⬜ Bekliyor |
+| 7 | Akıllı öneriler backend | 3 | ⬜ Bekliyor |
+| 8 | Akıllı öneriler frontend | 2 | ⬜ Bekliyor |
+| 9 | Hesap keşfi aktif arama | 3 | ⬜ Bekliyor |
+| 10 | Zamanlama entegrasyonu | 3 | ⬜ Bekliyor |
