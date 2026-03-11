@@ -1387,6 +1387,13 @@ class ContentGenerator:
                 api_key=api_key,
                 base_url="https://api.groq.com/openai/v1",
             ) if api_key else None
+        elif provider == "gemini":
+            self.model = model or "gemini-3.1-flash-lite"
+            try:
+                from google import genai
+                self.client = genai.Client(api_key=api_key) if api_key else None
+            except ImportError:
+                raise ValueError("google-genai paketi yuklu degil. pip install google-genai")
         elif provider == "claude_code":
             self.model = "claude-code-cli"
             self.client = True  # Marker: CLI-based, no API client needed
@@ -2386,6 +2393,8 @@ Paragraflari kısa tut, metin duvarı olmasın. Sadece içerik metnini yaz."""
             text = self._generate_claude_code(system_prompt, user_prompt)
         elif self.provider == "anthropic":
             text = self._generate_anthropic(system_prompt, user_prompt, image_urls)
+        elif self.provider == "gemini":
+            text = self._generate_gemini(system_prompt, user_prompt, image_urls)
         else:
             text = self._generate_openai(system_prompt, user_prompt, image_urls)
         return self._fix_colon_labels(text)
@@ -2419,6 +2428,37 @@ Paragraflari kısa tut, metin duvarı olmasın. Sadece içerik metnini yaz."""
                     p = f"{label}, {rest}"
             fixed.append(p)
         return '\n\n'.join(fixed)
+
+    def _generate_gemini(self, system_prompt: str, user_prompt: str,
+                          image_urls: list[str] = None) -> str:
+        """Generate content using Google Gemini API.
+
+        Args:
+            system_prompt: System instructions
+            user_prompt: User message text
+            image_urls: Optional list of image URLs for vision analysis
+        """
+        from google.genai import types
+
+        contents = []
+        # Add image parts if provided
+        if image_urls:
+            for img_url in image_urls[:4]:
+                contents.append(types.Part.from_uri(file_uri=img_url, mime_type="image/jpeg"))
+        contents.append(user_prompt)
+
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                max_output_tokens=4000,
+                temperature=0.9,
+            ),
+        )
+        if response and response.text:
+            return response.text.strip()
+        raise ValueError("Gemini bos yanit dondu")
 
     def _generate_claude_code(self, system_prompt: str, user_prompt: str) -> str:
         """Generate content using Claude Code CLI (Max subscription)."""

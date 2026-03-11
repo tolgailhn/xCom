@@ -20,9 +20,10 @@ def get_ai_provider(preferred: str = "") -> tuple[str, str, str | None]:
 
     providers = {
         "minimax": s.minimax_api_key,
+        "gemini": s.gemini_api_key,
+        "openai": s.openai_api_key,
         "groq": s.groq_api_key,
         "anthropic": s.anthropic_api_key,
-        "openai": s.openai_api_key,
     }
 
     # Claude Code CLI — no API key needed, uses Max subscription
@@ -36,17 +37,19 @@ def get_ai_provider(preferred: str = "") -> tuple[str, str, str | None]:
     if preferred and preferred in providers and providers[preferred]:
         return preferred, providers[preferred], None
 
-    # Auto: priority order (MiniMax > Groq > Anthropic > OpenAI)
+    # Auto: priority order (MiniMax > Gemini > OpenAI > Groq > Anthropic)
     if s.minimax_api_key:
         return "minimax", s.minimax_api_key, None
+    if s.gemini_api_key:
+        return "gemini", s.gemini_api_key, None
+    if s.openai_api_key:
+        return "openai", s.openai_api_key, None
     if s.groq_api_key:
         return "groq", s.groq_api_key, None
     if s.anthropic_api_key:
         return "anthropic", s.anthropic_api_key, None
-    if s.openai_api_key:
-        return "openai", s.openai_api_key, None
 
-    raise ValueError("No AI API key configured. Set MINIMAX_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY.")
+    raise ValueError("No AI API key configured. Set MINIMAX_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY.")
 
 
 def get_available_providers() -> list[dict]:
@@ -55,12 +58,14 @@ def get_available_providers() -> list[dict]:
     providers = []
     if s.minimax_api_key:
         providers.append({"id": "minimax", "name": "MiniMax M2.5", "available": True})
+    if s.gemini_api_key:
+        providers.append({"id": "gemini", "name": "Gemini 3.1 Flash Lite", "available": True})
+    if s.openai_api_key:
+        providers.append({"id": "openai", "name": "OpenAI GPT-4o", "available": True})
     if s.groq_api_key:
         providers.append({"id": "groq", "name": "Groq (Llama 3.3 70B)", "available": True})
     if s.anthropic_api_key:
         providers.append({"id": "anthropic", "name": "Anthropic Claude", "available": True})
-    if s.openai_api_key:
-        providers.append({"id": "openai", "name": "OpenAI GPT", "available": True})
     # Claude Code CLI — check if available
     try:
         from backend.modules.claude_code_client import is_available

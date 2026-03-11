@@ -27,7 +27,7 @@ class GenerateRequest(BaseModel):
     media_urls: list[str] = []
     content_format: str = ""
     quote_url: str = ""
-    provider: str = ""  # "", "minimax", "groq", "anthropic", "openai" — empty = auto
+    provider: str = ""  # "", "minimax", "gemini", "openai", "groq", "anthropic" — empty = auto
     additional_instructions: str = ""  # Extra user instructions for generation
 
 
