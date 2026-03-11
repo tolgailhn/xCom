@@ -129,6 +129,7 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 | 2026-03-11 | 2026 Phoenix Algorithm ağırlıkları | Conversation 75x (150x toplam), Dwell 10x, Like 0.5x eklendi |
 | 2026-03-11 | Checklist 8 maddeye güncellendi | Community posting, reply-back, asimetrik saat eklendi |
 | 2026-03-11 | Generator API provider eksikleri düzeltildi | icerik + yaz sayfalarında 4 tab'da provider dropdown eksikti |
+| 2026-03-11 | `min_faves` operatörü kaldırıldı | Twikit (ücretsiz arama) bu operatörü desteklemiyor → 400 Bad Request. Client-side filtreleme zaten mevcut |
 
 ---
 
@@ -309,6 +310,11 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 ---
 
 ## Değişiklik Günlüğü
+
+### 2026-03-11 (min_faves Fix)
+- **fix**: `scanner.py` — Tüm DISCOVER_QUERIES ve GITHUB_QUERIES'den `min_faves:XX` kaldırıldı (Twikit desteklemiyor → 400 Bad Request)
+- **fix**: `deep_research.py` — Tüm X arama sorgularından `min_faves:XX` kaldırıldı (7 yer)
+- Client-side engagement filtreleme zaten mevcut, arama kalitesi etkilenmez
 
 ### 2026-03-07 (Faz 1: Thread Paylaşımı)
 - **fix**: `publish.py` — Twitter API credential'ları düzeltildi: cookie değerleri yerine doğru API key/secret kullanılıyor
@@ -528,6 +534,7 @@ Bu bölüm her session sonunda güncellenir. Yeni session başladığında buray
 ### Aktif Çalışma (2026-03-11)
 - [x] Aşama 0: Generator API provider eksikleri düzeltildi
 - [x] Aşama 1: CLAUDE.md güncellendi (2026 algoritma + unutma çözümü)
+- [x] Aşama 6: `min_faves` operatörü kaldırıldı (scanner.py + deep_research.py) — Twikit desteklemiyor
 - [ ] Aşama 2: `constants.py` oluştur + engagement ağırlıkları tek kaynağa taşı
 - [ ] Aşama 3: Checklist 2026'ya güncelle (8 madde)
 - [ ] Aşama 4: Yanıtlar sayfası filtreleme & UX iyileştirmeleri

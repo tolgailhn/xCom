@@ -1580,7 +1580,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                     if parts:
                         x_queries.append(f"({' OR '.join(parts)}) -is:retweet -is:reply lang:en")
                         if len(parts) > 1:
-                            x_queries.append(f"({parts[0]}) -is:retweet -is:reply lang:en min_faves:10")
+                            x_queries.append(f"({parts[0]}) -is:retweet -is:reply lang:en")
                     else:
                         general_q = (result.topic or tweet_text[:50])
                         x_queries.append(f"({general_q}) -is:retweet -is:reply")
@@ -1790,7 +1790,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
             if parts:
                 x_queries.append(f"({' OR '.join(parts)}) -is:retweet -is:reply lang:en")
                 if len(parts) > 1:
-                    x_queries.append(f"({parts[0]}) -is:retweet -is:reply lang:en min_faves:10")
+                    x_queries.append(f"({parts[0]}) -is:retweet -is:reply lang:en")
                     x_queries.append(f"({parts[1]}) -is:retweet -is:reply lang:en")
                 # Add action-based query
                 action = topic_info.get("action", "")
@@ -1809,7 +1809,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                 # Add topic-based variations
                 if topic_info["products"]:
                     for prod in topic_info["products"][:3]:
-                        x_queries.append(f"{prod} -is:retweet -is:reply lang:en min_faves:5")
+                        x_queries.append(f"{prod} -is:retweet -is:reply lang:en")
                 if topic_info["companies"]:
                     for comp in topic_info["companies"][:2]:
                         x_queries.append(f"{comp} {topic_info.get('action', 'AI')} -is:retweet -is:reply lang:en")
@@ -2647,11 +2647,9 @@ def research_topic_from_text(
 
         # In deep mode, add even more query variations
         if is_deep_mode:
-            # Add min engagement queries for quality tweets
+            # Add duplicate queries for broader coverage (min_faves removed - not supported by Twikit)
             for q in x_queries_en[:3]:
-                base = q.replace("min_faves:5", "").replace("min_faves:10", "").strip()
-                all_x_queries.append(f"{base} min_faves:20")
-                all_x_queries.append(f"{base} min_faves:50")
+                all_x_queries.append(q)
 
         # Deduplicate queries (case-insensitive)
         seen_queries = set()
@@ -2949,7 +2947,7 @@ def _build_x_query_variations(topic_input: str, topic_en: str, ai_topic: dict | 
             # Individual important keywords with min engagement
             for kw in kw_en[:3]:
                 if len(kw) > 3:
-                    extra.append(f"{kw} -is:retweet -is:reply lang:en min_faves:5")
+                    extra.append(f"{kw} -is:retweet -is:reply lang:en")
 
         if len(kw_tr) >= 2:
             extra.append(f"({' '.join(kw_tr[:3])}) -is:retweet -is:reply lang:tr")
@@ -3151,17 +3149,16 @@ def discover_topics(ai_client=None, ai_model: str = None,
         if focus_area and focus_area.strip():
             focus_words = focus_area.strip()
             trend_queries = [
-                f"({focus_words}) -is:retweet -is:reply lang:en min_faves:50",
-                f"({focus_words}) -is:retweet -is:reply lang:en min_faves:20",
+                f"({focus_words}) -is:retweet -is:reply lang:en",
                 f"({focus_words}) launched OR released OR announced -is:retweet -is:reply lang:en",
             ]
         else:
             trend_queries = [
-                "(AI OR LLM OR GPT OR Claude OR Gemini) launched OR released OR announced -is:retweet -is:reply lang:en min_faves:100",
-                "(AI coding OR agentic OR AI tool) -is:retweet -is:reply lang:en min_faves:50",
-                "(benchmark OR open-source OR new model) AI -is:retweet -is:reply lang:en min_faves:50",
-                "(OpenAI OR Anthropic OR Google OR Meta OR xAI) -is:retweet -is:reply lang:en min_faves:100",
-                "(Cursor OR Windsurf OR Copilot OR Devin) -is:retweet -is:reply lang:en min_faves:30",
+                "(AI OR LLM OR GPT OR Claude OR Gemini) launched OR released OR announced -is:retweet -is:reply lang:en",
+                "(AI coding OR agentic OR AI tool) -is:retweet -is:reply lang:en",
+                "(benchmark OR open-source OR new model) AI -is:retweet -is:reply lang:en",
+                "(OpenAI OR Anthropic OR Google OR Meta OR xAI) -is:retweet -is:reply lang:en",
+                "(Cursor OR Windsurf OR Copilot OR Devin) -is:retweet -is:reply lang:en",
             ]
 
         seen_ids = set()

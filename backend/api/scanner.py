@@ -68,24 +68,24 @@ CATEGORY_OPTIONS = [
 ]
 
 DISCOVER_QUERIES = [
-    '("new AI model" OR "new LLM" OR "just released" OR "just launched") (AI OR model OR LLM) -is:retweet lang:en min_faves:50',
-    '(ChatGPT OR "GPT-4" OR "GPT-5" OR "Claude 4" OR "Claude Opus" OR "Claude Sonnet" OR "Gemini Pro" OR "Gemini Ultra" OR "Gemini 2") -is:retweet lang:en min_faves:30',
-    '(DeepSeek OR Qwen OR "Llama 4" OR "Llama 3" OR Mixtral OR Mistral OR Grok) (model OR release OR update OR benchmark) -is:retweet lang:en min_faves:30',
-    '(Cursor OR Windsurf OR "GitHub Copilot" OR Devin OR "v0.dev" OR "bolt.new" OR Replit) (AI OR update OR release OR new) -is:retweet lang:en min_faves:20',
-    '("AI agent" OR "AI agents" OR agentic OR "function calling" OR MCP OR "tool use") -is:retweet lang:en min_faves:30',
-    '("open source" OR "open-source") (model OR AI OR LLM) (release OR new OR weights) -is:retweet lang:en min_faves:30',
-    '(benchmark OR MMLU OR HumanEval OR leaderboard OR SOTA) (AI OR model OR LLM) -is:retweet lang:en min_faves:30',
-    '(OpenAI OR Anthropic OR "Google DeepMind" OR "Meta AI" OR xAI) (announce OR release OR launch OR update) -is:retweet lang:en min_faves:50',
-    '("Stable Diffusion" OR Midjourney OR "DALL-E" OR Sora OR Runway OR Flux) (new OR update OR release) -is:retweet lang:en min_faves:30',
-    '(NVIDIA OR H100 OR H200 OR B200 OR "AI chip" OR TPU) (AI OR training OR inference) -is:retweet lang:en min_faves:40',
+    '("new AI model" OR "new LLM" OR "just released" OR "just launched") (AI OR model OR LLM) -is:retweet lang:en',
+    '(ChatGPT OR "GPT-4" OR "GPT-5" OR "Claude 4" OR "Claude Opus" OR "Claude Sonnet" OR "Gemini Pro" OR "Gemini Ultra" OR "Gemini 2") -is:retweet lang:en',
+    '(DeepSeek OR Qwen OR "Llama 4" OR "Llama 3" OR Mixtral OR Mistral OR Grok) (model OR release OR update OR benchmark) -is:retweet lang:en',
+    '(Cursor OR Windsurf OR "GitHub Copilot" OR Devin OR "v0.dev" OR "bolt.new" OR Replit) (AI OR update OR release OR new) -is:retweet lang:en',
+    '("AI agent" OR "AI agents" OR agentic OR "function calling" OR MCP OR "tool use") -is:retweet lang:en',
+    '("open source" OR "open-source") (model OR AI OR LLM) (release OR new OR weights) -is:retweet lang:en',
+    '(benchmark OR MMLU OR HumanEval OR leaderboard OR SOTA) (AI OR model OR LLM) -is:retweet lang:en',
+    '(OpenAI OR Anthropic OR "Google DeepMind" OR "Meta AI" OR xAI) (announce OR release OR launch OR update) -is:retweet lang:en',
+    '("Stable Diffusion" OR Midjourney OR "DALL-E" OR Sora OR Runway OR Flux) (new OR update OR release) -is:retweet lang:en',
+    '(NVIDIA OR H100 OR H200 OR B200 OR "AI chip" OR TPU) (AI OR training OR inference) -is:retweet lang:en',
 ]
 
 GITHUB_QUERIES = [
-    '(github.com) (AI OR LLM OR "machine learning" OR "deep learning" OR GPT OR agent) -is:retweet lang:en min_faves:20',
-    '("open source" OR "open-source") (github.com OR huggingface.co) (AI OR model OR tool) -is:retweet lang:en min_faves:15',
-    '(github.com) ("star" OR "stars" OR "just released" OR "check out" OR "built" OR repo) (AI OR LLM OR ML) -is:retweet lang:en min_faves:10',
-    '(huggingface.co OR "Hugging Face") (model OR dataset OR space) (new OR release OR open) -is:retweet lang:en min_faves:15',
-    '(arxiv.org) (AI OR LLM OR "machine learning" OR transformer OR diffusion) -is:retweet lang:en min_faves:20',
+    '(github.com) (AI OR LLM OR "machine learning" OR "deep learning" OR GPT OR agent) -is:retweet lang:en',
+    '("open source" OR "open-source") (github.com OR huggingface.co) (AI OR model OR tool) -is:retweet lang:en',
+    '(github.com) ("star" OR "stars" OR "just released" OR "check out" OR "built" OR repo) (AI OR LLM OR ML) -is:retweet lang:en',
+    '(huggingface.co OR "Hugging Face") (model OR dataset OR space) (new OR release OR open) -is:retweet lang:en',
+    '(arxiv.org) (AI OR LLM OR "machine learning" OR transformer OR diffusion) -is:retweet lang:en',
 ]
 
 
