@@ -21,56 +21,124 @@
    - **Her ikisi de değiştiyse**: Önce backend kontrol, sonra frontend yeniden başlat.
    - Bu talimatları HER SEFERINDE ver, kullanıcı sormasını BEKLEME.
 7. **Bu dosyayı her önemli değişiklikten sonra güncelle.** Yeni kararlar, mimari değişiklikler, bilinen sorunlar buraya yazılmalı.
+10. **Her sayfa page.tsx + ayrı Tab dosyaları yapısında.** Yeni özellik eklerken ilgili Tab dosyasını düzenle, page.tsx'e büyük kod bloğu ekleme.
 
 ---
 
 ## Sistem Mimarisi
 
 ### Proje Nedir?
-X (Twitter) AI Otomasyon Dashboard — AI gelişmelerini tarayıp, araştırıp, doğal tweet üreten Streamlit uygulaması.
+X (Twitter) AI Otomasyon Dashboard — AI gelişmelerini tarayıp, araştırıp, doğal tweet üreten Next.js + FastAPI uygulaması.
 
 ### Dosya Yapısı
 ```
-streamlit_app.py              → Ana sayfa (dashboard, istatistikler)
-scheduled_scanner.py          → Arka plan zamanlı tarayıcı
-pages/
-  1_🔍_Tara.py               → AI konu tarama (X'te arama)
-  2_✍️_Yaz.py                → Tweet üretme ve paylaşma
-  3_⚙️_Ayarlar.py            → API anahtarları ve ayarlar
-  4_📊_Analiz.py             → Hesap analizi (stil öğrenme)
-  5_👥_Takipçiler.py         → Takipçi keşfi
-  6_💡_İçerik.py             → Uzun içerik üretimi + konu keşfi
-  7_📅_Takvim.py             → Günlük posting takvimi, log, algoritma checklist
-modules/
-  twitter_scanner.py          → TwitterScanner sınıfı, AI konu keşfi
-  content_generator.py        → ContentGenerator, tweet/thread üretimi (Claude/OpenAI/MiniMax)
-  deep_research.py            → Derin araştırma: DDG arama + makale çekme + agentic research
-  tweet_analyzer.py           → Hesap tweet analizi, stil DNA çıkarma
-  tweet_publisher.py          → TweetPublisher: tweet/thread/quote tweet paylaşma
-  twikit_client.py            → TwikitSearchClient: ücretsiz Twitter arama (cookie)
-  grok_client.py              → Grok xAI API: X arama, web arama, otonom araştırma
-  telegram_notifier.py        → Telegram bildirim gönderici
-  style_manager.py            → JSON dosya yöneticisi (taslaklar, geçmiş, kişiler)
-  ui_components.py            → Streamlit UI bileşenleri, CSS, sidebar, auth
-  media_finder.py             → Görsel/video arama: X + DuckDuckGo image search
-  tweet_pool.py               → Tweet havuzu: çoklu hesaptan tweet biriktirme, akıllı seçim
+frontend/src/app/
+  page.tsx                    → Dashboard (ana sayfa)
+  layout.tsx                  → Ana layout
+  login/page.tsx              → Giriş sayfası
+  yaz/                        → Tweet yazma
+    page.tsx                  → Ana sayfa (tab yönetimi)
+    TabQuoteTweet.tsx         → Quote tweet tab
+    TabQuickReply.tsx         → Hızlı yanıt tab
+    TabLinkReply.tsx          → Link reply tab
+    TabSelfReply.tsx          → Self-reply tab
+  otomatik-yanit/             → Otomatik yanıt yönetimi
+    page.tsx                  → Ana sayfa (4 tab)
+    TabConfig.tsx             → Yapılandırma
+    TabLogs.tsx               → Loglar (filtre, arama, bulk actions)
+    TabSelfReply.tsx          → Self-reply ayarları
+    TabAnalytics.tsx          → Analitik (ısı haritası, performans)
+  kesif/                      → Keşif & tarama
+    page.tsx                  → Ana sayfa (2 tab)
+    TabAyarlar.tsx            → Keşif ayarları
+    TabTweets.tsx             → Tweet listesi
+  analiz/                     → Hesap analizi
+    page.tsx                  → Ana sayfa (5 tab)
+    TabNew.tsx                → Yeni analiz
+    TabSaved.tsx              → Kayıtlı analizler
+    TabFollowers.tsx          → Takipçi keşfi
+    TabPool.tsx               → Tweet havuzu
+    TabExport.tsx             → Export/Import
+    AnalysisDisplay.tsx       → Analiz görüntüleme component
+  ayarlar/                    → API anahtarları ve ayarlar
+    page.tsx                  → Ana sayfa (5 tab)
+    TabAPIKeys.tsx            → API anahtarları
+    TabAccountInfo.tsx        → Hesap bilgisi
+    TabMonitoredAccounts.tsx  → İzlenen hesaplar
+    TabWritingStyle.tsx       → Yazım tarzı eğitimi
+    TabHistory.tsx            → Paylaşım geçmişi
+  icerik/                     → Uzun içerik üretimi
+    page.tsx                  → Ana sayfa (2 tab)
+    TabDiscover.tsx           → Konu keşfet
+    TabGenerate.tsx           → İçerik üret
+    shared.tsx                → Ortak fonksiyonlar
+  takvim/page.tsx             → Günlük posting takvimi, performans
+  taslaklarim/page.tsx        → Taslak yönetimi
+  strateji/page.tsx           → Strateji rehberi
+
+backend/
+  main.py                     → FastAPI app, startup/shutdown, router kaydı
+  config.py                   → Konfigürasyon
+  scheduler_worker.py         → APScheduler: zamanlı post + metrik güncelleme
+  auto_reply_worker.py        → Otomatik yanıt worker
+  self_reply_worker.py        → Self-reply worker
+  discovery_worker.py         → Keşif worker
+  telegram_bot.py             → Telegram bot
+  api/
+    scanner.py                → Tarama endpoint'leri
+    generator.py              → Tweet/içerik üretim endpoint'leri
+    analytics.py              → Analiz endpoint'leri
+    settings.py               → Ayarlar endpoint'leri
+    calendar.py               → Takvim + checklist endpoint'leri
+    discovery.py              → Keşif endpoint'leri
+    auto_reply.py             → Otomatik yanıt endpoint'leri
+    self_reply.py             → Self-reply endpoint'leri
+    publish.py                → Tweet paylaşım endpoint'leri
+    scheduler.py              → Zamanlama endpoint'leri
+    performance.py            → Performans takip endpoint'leri
+    dashboard.py              → Dashboard endpoint'leri
+    drafts.py                 → Taslak endpoint'leri
+    auth.py                   → Kimlik doğrulama
+    helpers.py                → Yardımcı fonksiyonlar
+  modules/
+    constants.py              → Engagement ağırlıkları (tek kaynak), sabitler
+    content_generator.py      → ContentGenerator, tweet/thread üretimi
+    deep_research.py          → DDG arama + makale çekme + agentic research
+    tweet_analyzer.py         → Hesap tweet analizi, stil DNA çıkarma
+    tweet_publisher.py        → Tweet/thread/quote tweet paylaşma
+    twikit_client.py          → Ücretsiz Twitter arama (cookie)
+    grok_client.py            → Grok xAI API: X/web arama, otonom araştırma
+    telegram_notifier.py      → Telegram bildirim gönderici
+    style_manager.py          → JSON dosya yöneticisi (taslaklar, geçmiş, metrikler)
+    media_finder.py           → Görsel/video arama: X + DuckDuckGo
+    tweet_pool.py             → Tweet havuzu: çoklu hesap, akıllı seçim
+    image_generator.py        → Görsel üretimi
+    claude_code_client.py     → Claude Code entegrasyonu
+    _compat.py                → Uyumluluk katmanı
 ```
 
 ### Modüller Arası Bağımlılıklar
 ```
-Pages → ui_components (CSS, auth, sidebar)
-Pages → content_generator (tweet üretimi)
-Pages → twitter_scanner (konu tarama)
-Pages → deep_research (araştırma)
-Pages → tweet_analyzer (stil analizi)
-Pages → style_manager (dosya I/O)
-twitter_scanner → twikit_client (ücretsiz arama)
-deep_research → DDG + BeautifulSoup (web arama/makale çekme)
-grok_client → OpenAI SDK (xAI base_url ile)
-content_generator → anthropic / openai SDK (+ vision desteği)
-media_finder → twikit_client (X arama) + duckduckgo_search (web görsel)
-tweet_pool → tweet_analyzer (tweet çekme + engagement hesaplama)
-Pages → tweet_pool (havuz yönetimi, akıllı seçim)
+Frontend (Next.js) → Backend (FastAPI) HTTP API
+Her sayfa page.tsx → kendi Tab*.tsx dosyaları (tab-per-file pattern)
+icerik/ → shared.tsx (ortak fonksiyonlar)
+
+Backend API → modules (iş mantığı):
+  scanner.py → twitter_scanner, twikit_client, grok_client
+  generator.py → content_generator, deep_research, media_finder, style_manager
+  analytics.py → tweet_analyzer, tweet_pool, style_manager
+  publish.py → tweet_publisher
+  auto_reply.py → auto_reply_worker
+  discovery.py → discovery_worker
+
+Modules arası:
+  twitter_scanner → twikit_client (ücretsiz arama)
+  deep_research → DDG + BeautifulSoup (web arama/makale çekme)
+  grok_client → OpenAI SDK (xAI base_url ile)
+  content_generator → anthropic / openai SDK (+ vision desteği)
+  media_finder → twikit_client + duckduckgo_search
+  tweet_pool → tweet_analyzer (engagement hesaplama)
+  constants.py → tweet_analyzer, twitter_scanner, auto_reply_worker, discovery_worker
 ```
 
 ### AI Provider Sıralaması
@@ -354,13 +422,11 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 
 ---
 
-## MIGRATION PLANI: Streamlit -> Next.js + FastAPI (AKTIF)
+## MIGRATION PLANI: Streamlit -> Next.js + FastAPI (TAMAMLANDI)
 
 ### ONEMLI NOTLAR
-- **Kaynak Streamlit kodu**: Bu repodaki `pages/`, `modules/`, `streamlit_app.py` dosyalari
-- **Hedef Next.js kodu**: `xcom-aktif/frontend/` ve `xcom-aktif/backend/` klasorleri
-- **Workflow**: Degisiklikler `xcom-aktif/` icine yazilir, kullanici xCom reposuna tasir
-- **Streamlit dosyalari TASINMAZ**: Sadece Next.js + FastAPI kodu yazilir
+- Migration tamamlandı. Aktif kod `frontend/` ve `backend/` klasörlerinde.
+- Eski Streamlit dosyaları (`pages/`, `modules/`, `streamlit_app.py`) artık kullanılmıyor.
 
 ### FAZ 1: AYARLAR SAYFASI (TAMAMLANDI - 2026-03-06)
 Streamlit: `pages/3_Ayarlar.py` -> Next.js: `xcom-aktif/frontend/src/app/ayarlar/page.tsx`
@@ -537,10 +603,11 @@ Bu bölüm her session sonunda güncellenir. Yeni session başladığında buray
 - [x] Aşama 1: CLAUDE.md güncellendi (2026 algoritma + unutma çözümü)
 - [x] Aşama 6: `min_faves` operatörü kaldırıldı (scanner.py + deep_research.py) — Twikit desteklemiyor
 - [x] Aşama 7: MiniMax `<minimax:tool_call>` ve `<think>` tag temizliği eklendi (3 dosya)
-- [ ] Aşama 2: `constants.py` oluştur + engagement ağırlıkları tek kaynağa taşı
-- [ ] Aşama 3: Checklist 2026'ya güncelle (8 madde)
-- [ ] Aşama 4: Yanıtlar sayfası filtreleme & UX iyileştirmeleri
-- [ ] Aşama 5: Yanıtlar sayfası analitik tab
+- [x] Aşama 2: `constants.py` oluşturuldu + engagement ağırlıkları tek kaynağa taşındı
+- [x] Aşama 3: Checklist 2026'ya güncellendi (8 madde)
+- [x] Aşama 4: Yanıtlar sayfası filtreleme & UX iyileştirmeleri tamamlandı
+- [x] Aşama 5: Yanıtlar sayfası analitik tab tamamlandı
+- [x] Aşama 8: CLAUDE.md dosya yapısı Next.js + FastAPI'ye güncellendi
 
 ### Planlanan İyileştirmeler (Sonraki Session'lar)
 - En iyi paylaşım saati analizi
