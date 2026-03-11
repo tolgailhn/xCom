@@ -31,7 +31,7 @@ USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
-FETCH_TIMEOUT = 15
+FETCH_TIMEOUT = 10  # was 15s — reduced to prevent research hangs
 MAX_ARTICLE_CHARS = 16000  # 16K: daha fazla bilgi yoğunluğu, uzun makalelerden daha az kayıp
 SEARCH_DELAY = 0.3  # Delay between sequential DuckDuckGo calls to avoid IP blocking
 SKIP_DOMAINS = {
@@ -379,7 +379,7 @@ def fetch_article_content(url: str) -> dict | None:
         return _fetch_github_repo(gh_match[0], gh_match[1])
 
     try:
-        # Fetch with retry on timeout
+        # Fetch with retry on timeout only (fast-fail on HTTP errors)
         resp = None
         for attempt in range(2):
             try:
@@ -396,6 +396,11 @@ def fetch_article_content(url: str) -> dict | None:
                     time.sleep(1)
                     continue
                 raise
+            except requests.exceptions.HTTPError as he:
+                # Fast-fail on 403/404/429 — don't retry, don't wait
+                status = he.response.status_code if he.response is not None else 0
+                print(f"Article fetch error ({url[:60]}): {status}")
+                return None
         if resp is None:
             return None
 
@@ -627,21 +632,21 @@ def _follow_tweet_links(
     progress_callback=None,
 ) -> list[dict]:
     """
-    Extract URLs from tweet texts, fetch article content, return articles.
+    Extract URLs from tweet texts, fetch article content in parallel, return articles.
     This enables the system to 'follow links' shared in tweets.
     """
     urls = _extract_urls_from_tweets(tweets)
     if not urls:
         return []
 
-    articles = []
-    for i, url in enumerate(urls[:max_articles]):
-        if progress_callback:
-            progress_callback(f"Tweet'teki link okunuyor ({i + 1}/{min(len(urls), max_articles)})...")
-        article = fetch_article_content(url)
-        if article and article.get("content") and len(article["content"]) > 200:
-            article["source"] = "tweet_link"
-            articles.append(article)
+    if progress_callback:
+        progress_callback(f"Tweet'teki {min(len(urls), max_articles)} link paralel okunuyor...")
+
+    # Use parallel fetch instead of sequential loop
+    articles = _parallel_fetch_articles(urls, max_articles=max_articles,
+                                         progress_callback=None)
+    for article in articles:
+        article["source"] = "tweet_link"
     return articles
 
 
@@ -1821,7 +1826,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                 if progress_callback:
                     progress_callback("Tweet'lerdeki linkler takip ediliyor...")
                 tweet_articles = _follow_tweet_links(
-                    result.related_tweets, max_articles=8,
+                    result.related_tweets, max_articles=5,
                     progress_callback=progress_callback,
                 )
                 if tweet_articles:
