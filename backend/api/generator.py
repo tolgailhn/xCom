@@ -186,32 +186,35 @@ async def generate_tweet(request: GenerateRequest):
     from backend.api.helpers import create_generator
 
     try:
-        generator = create_generator(topic=request.topic, preferred_provider=request.provider)
+        generator = await asyncio.to_thread(create_generator, request.topic, request.provider)
         logger.info(f"Generating tweet: style={request.style}, provider={generator.provider}, topic={request.topic[:80]}")
 
         if request.thread:
-            parts = await asyncio.to_thread(
+            parts = await asyncio.wait_for(asyncio.to_thread(
                 generator.generate_thread,
                 topic_text=request.topic,
                 style=request.style,
                 additional_context=request.research_context,
-            )
+            ), timeout=90)
             full_text = "\n\n---\n\n".join(parts) if parts else ""
             if not full_text.strip():
                 logger.warning(f"Thread generation returned empty: style={request.style}, provider={generator.provider}")
             return GenerateResponse(text=full_text, thread_parts=parts or [], score=_score_text(full_text))
         else:
-            text = await asyncio.to_thread(
+            text = await asyncio.wait_for(asyncio.to_thread(
                 generator.generate_tweet,
                 topic_text=request.topic,
                 style=request.style,
                 additional_context=request.research_context,
                 content_format=request.content_format,
-            )
+            ), timeout=90)
             if not text or not text.strip():
                 logger.warning(f"Tweet generation returned empty: style={request.style}, provider={generator.provider}")
             return GenerateResponse(text=text or "", score=_score_text(text or ""))
 
+    except asyncio.TimeoutError:
+        logger.error(f"Tweet generation timeout: style={request.style}")
+        raise HTTPException(status_code=504, detail="Tweet uretimi zaman asimina ugradi (90s). Daha kisa format deneyin.")
     except Exception as e:
         logger.error(f"Tweet generation error: style={request.style}, error={e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -223,9 +226,9 @@ async def generate_quote_tweet_endpoint(request: QuoteTweetRequest):
     from backend.api.helpers import create_generator
 
     try:
-        generator = create_generator(topic=request.original_tweet, preferred_provider=request.provider)
+        generator = await asyncio.to_thread(create_generator, request.original_tweet, request.provider)
 
-        text = await asyncio.to_thread(
+        text = await asyncio.wait_for(asyncio.to_thread(
             generator.generate_quote_tweet,
             original_tweet=request.original_tweet,
             original_author=request.original_author,
@@ -233,7 +236,7 @@ async def generate_quote_tweet_endpoint(request: QuoteTweetRequest):
             additional_context=request.additional_context,
             research_summary=request.research_summary,
             length_preference=request.length_preference,
-        )
+        ), timeout=90)
 
         score = _score_text(text)
 
@@ -300,6 +303,8 @@ async def generate_quote_tweet_endpoint(request: QuoteTweetRequest):
 
         return GenerateResponse(text=text, score=score)
 
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="Quote tweet uretimi zaman asimina ugradi (90s).")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -310,9 +315,9 @@ async def generate_reply_endpoint(request: ReplyRequest):
     from backend.api.helpers import create_generator
 
     try:
-        generator = create_generator(topic=request.original_tweet, preferred_provider=request.provider)
+        generator = await asyncio.to_thread(create_generator, request.original_tweet, request.provider)
 
-        text = await asyncio.to_thread(
+        text = await asyncio.wait_for(asyncio.to_thread(
             generator.generate_reply,
             original_tweet=request.original_tweet,
             original_author=request.original_author,
@@ -320,9 +325,11 @@ async def generate_reply_endpoint(request: ReplyRequest):
             additional_context=request.additional_context,
             is_thread=request.is_thread,
             thread_count=request.thread_count,
-        )
+        ), timeout=90)
         return GenerateResponse(text=text, score=_score_text(text))
 
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="Reply uretimi zaman asimina ugradi (90s).")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -333,9 +340,9 @@ async def generate_self_reply_endpoint(request: SelfReplyRequest):
     from backend.api.helpers import create_generator
 
     try:
-        generator = create_generator(topic=request.my_tweet, preferred_provider=request.provider)
+        generator = await asyncio.to_thread(create_generator, request.my_tweet, request.provider)
 
-        text = await asyncio.to_thread(
+        text = await asyncio.wait_for(asyncio.to_thread(
             generator.generate_self_reply,
             my_tweet=request.my_tweet,
             reply_number=request.reply_number,
@@ -344,9 +351,11 @@ async def generate_self_reply_endpoint(request: SelfReplyRequest):
             additional_context=request.additional_context,
             research_context=request.research_context,
             previous_replies=request.previous_replies,
-        )
+        ), timeout=90)
         return GenerateResponse(text=text, score=_score_text(text))
 
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="Self-reply uretimi zaman asimina ugradi (90s).")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -357,15 +366,17 @@ async def analyze_image_endpoint(request: ImageAnalysisRequest):
     from backend.api.helpers import create_generator
 
     try:
-        generator = create_generator()
+        generator = await asyncio.to_thread(create_generator)
 
-        caption = await asyncio.to_thread(
+        caption = await asyncio.wait_for(asyncio.to_thread(
             generator.analyze_image,
             image_url=request.url,
             context=request.context,
-        )
+        ), timeout=30)
         return {"caption": caption, "success": True}
 
+    except asyncio.TimeoutError:
+        return {"caption": "", "success": False, "error": "Gorsel analizi zaman asimina ugradi (30s)"}
     except Exception as e:
         return {"caption": "", "success": False, "error": str(e)}
 
@@ -376,31 +387,33 @@ async def generate_long_content(request: GenerateRequest):
     from backend.api.helpers import create_generator
 
     try:
-        generator = create_generator(topic=request.topic, preferred_provider=request.provider)
+        generator = await asyncio.to_thread(create_generator, request.topic, request.provider)
 
         # Use content_format if provided, otherwise fall back to length
         effective_length = request.content_format or request.length
 
         # "thread" format → delegate to generate_thread
         if effective_length == "thread":
-            parts = await asyncio.to_thread(
+            parts = await asyncio.wait_for(asyncio.to_thread(
                 generator.generate_thread,
                 topic_text=request.topic,
                 style=request.style,
                 additional_context=request.research_context,
-            )
+            ), timeout=120)
             full_text = "\n\n---\n\n".join(parts) if parts else ""
             return GenerateResponse(text=full_text, thread_parts=parts or [], score=_score_text(full_text))
 
-        text = await asyncio.to_thread(
+        text = await asyncio.wait_for(asyncio.to_thread(
             generator.generate_long_content,
             topic=request.topic,
             research_context=request.research_context,
             style=request.style,
             length=effective_length,
             additional_instructions=request.additional_instructions,
-        )
+        ), timeout=120)
         return GenerateResponse(text=text, score=_score_text(text))
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="Icerik uretimi zaman asimina ugradi (120s). Daha kisa format deneyin.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -701,9 +714,9 @@ async def research_stream(request: ResearchRequest):
             msg = progress_queue.get_nowait()
             yield f"data: {json.dumps({'type': 'progress', 'message': msg}, ensure_ascii=False)}\n\n"
 
-        # Get result
+        # Get result (with timeout to prevent indefinite hangs)
         try:
-            result = future.result()
+            result = future.result(timeout=120)
 
             if isinstance(result, dict) and result.get("_type") == "error":
                 # Research failed but didn't crash — return error as result

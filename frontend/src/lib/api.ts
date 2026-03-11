@@ -122,7 +122,7 @@ export function researchTopic(params: {
 
 // Research Stream (SSE - live progress)
 export async function researchTopicStream(
-  params: { topic: string; engine?: string; research_sources?: string[]; tweet_id?: string; tweet_author?: string },
+  params: { topic: string; engine?: string; research_sources?: string[]; tweet_id?: string; tweet_author?: string; agentic?: boolean },
   onProgress: (message: string) => void,
 ): Promise<{ summary: string; key_points: string[]; sources: { title: string; url?: string; body?: string }[]; media_urls: string[] }> {
   const token = getToken();

@@ -75,9 +75,9 @@ export default function TabGenerate({
       setResearchProgress([]);
       if (doResearch) {
         try {
-          const researchSources = researchMode === "x_only" ? ["x"] : researchMode === "web_only" ? ["web", "news"] : ["x", "web", "news"];
+          const researchSources = researchMode === "x_only" || researchMode === "x_deep" ? ["x"] : researchMode === "web_only" ? ["web", "news", "reddit"] : ["x", "web", "news"];
           const research = await researchTopicStream(
-            { topic, engine, research_sources: researchSources },
+            { topic, engine, research_sources: researchSources, agentic: researchMode === "x_deep" },
             (msg) => setResearchProgress((prev) => [...prev, msg])
           );
           researchContext = `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}`;

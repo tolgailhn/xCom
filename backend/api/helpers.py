@@ -12,7 +12,7 @@ def get_ai_provider(preferred: str = "") -> tuple[str, str, str | None]:
     """
     Get the best available AI provider from config.
     If preferred is given and that key exists, use it.
-    Otherwise: MiniMax > Anthropic > OpenAI
+    Otherwise: MiniMax > Groq > OpenAI > Anthropic > Gemini
 
     Returns: (provider_name, api_key, model_override_or_None)
     """
@@ -37,17 +37,17 @@ def get_ai_provider(preferred: str = "") -> tuple[str, str, str | None]:
     if preferred and preferred in providers and providers[preferred]:
         return preferred, providers[preferred], None
 
-    # Auto: priority order (MiniMax > Gemini > OpenAI > Groq > Anthropic)
+    # Auto: priority order (MiniMax > Groq > OpenAI > Anthropic > Gemini)
     if s.minimax_api_key:
         return "minimax", s.minimax_api_key, None
-    if s.gemini_api_key:
-        return "gemini", s.gemini_api_key, None
-    if s.openai_api_key:
-        return "openai", s.openai_api_key, None
     if s.groq_api_key:
         return "groq", s.groq_api_key, None
+    if s.openai_api_key:
+        return "openai", s.openai_api_key, None
     if s.anthropic_api_key:
         return "anthropic", s.anthropic_api_key, None
+    if s.gemini_api_key:
+        return "gemini", s.gemini_api_key, None
 
     raise ValueError("No AI API key configured. Set MINIMAX_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY.")
 
