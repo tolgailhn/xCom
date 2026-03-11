@@ -716,7 +716,7 @@ async def research_stream(request: ResearchRequest):
 
         # Get result (with timeout to prevent indefinite hangs)
         try:
-            result = future.result(timeout=120)
+            result = future.result()
 
             if isinstance(result, dict) and result.get("_type") == "error":
                 # Research failed but didn't crash — return error as result
