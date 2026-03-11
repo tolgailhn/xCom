@@ -155,9 +155,9 @@ def select_examples(pool_data: dict, topic: str = "", count: int = 50) -> list[d
         topic_keywords = _extract_keywords(topic)
         for tweet in pool:
             tweet_keywords = _extract_keywords(tweet["text"])
-            overlap = topic_keywords & tweet_keywords
-            if overlap:
-                tweet["_relevance"] = len(overlap)
+            similarity = _semantic_similarity(topic_keywords, tweet_keywords)
+            if similarity > 0.15:  # Threshold: at least 15% semantic similarity
+                tweet["_relevance"] = similarity
                 topic_matched.append(tweet)
             else:
                 topic_unmatched.append(tweet)
@@ -469,29 +469,88 @@ def _extract_hook(text: str) -> str:
     return first_line
 
 
+_STOP_WORDS = frozenset({
+    'bir', 'bu', 'da', 'de', 've', 'ile', 'için', 'var', 'yok', 'ama',
+    'çok', 'ne', 'ki', 'gibi', 'daha', 'en', 'her', 'o', 'ben', 'sen',
+    'biz', 'şu', 'ya', 'mı', 'mi', 'mu', 'olan', 'olarak', 'sonra',
+    'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'to',
+    'of', 'and', 'in', 'that', 'it', 'for', 'on', 'with', 'as', 'at',
+    'by', 'from', 'or', 'not', 'but', 'this', 'has', 'have', 'had',
+    'kadar', 'artık', 'bile', 'hem', 'sadece', 'zaten', 'yani', 'bence',
+    'diyor', 'olan', 'oldu', 'olur', 'oluyor', 'değil', 'nasıl',
+})
+
+# Semantic aliases — common abbreviations/alternate names for the same concept
+_SEMANTIC_ALIASES = {
+    "llm": {"large", "language", "model", "dil", "modeli"},
+    "gpt": {"openai", "chatgpt", "language", "model"},
+    "claude": {"anthropic", "sonnet", "opus", "haiku"},
+    "gemini": {"google", "deepmind", "bard"},
+    "llama": {"meta", "open", "source"},
+    "ai": {"yapay", "zeka", "artificial", "intelligence"},
+    "ml": {"machine", "learning", "makine", "öğrenme"},
+    "rag": {"retrieval", "augmented", "generation"},
+    "fine": {"tuning", "finetune", "ince", "ayar"},
+    "transformer": {"attention", "dikkat", "mekanizma"},
+    "benchmark": {"eval", "evaluation", "test", "karşılaştırma"},
+    "open": {"source", "açık", "kaynak", "weight"},
+    "agent": {"ajan", "autonomous", "otonom", "tool", "use"},
+    "reasoning": {"düşünme", "mantık", "chain", "thought"},
+    "multimodal": {"vision", "görsel", "image", "video", "ses"},
+    "embedding": {"vektör", "vector", "semantic", "search"},
+    "api": {"endpoint", "sdk", "entegrasyon"},
+    "inference": {"çıkarım", "speed", "hız", "latency"},
+    "context": {"window", "pencere", "token", "limit"},
+}
+
+
 def _extract_keywords(text: str) -> set[str]:
-    """Basit keyword çıkarma (eşleşme için)."""
-    # URL, mention, hashtag temizle
+    """Keyword çıkarma (eşleşme için)."""
     clean = re.sub(r'https?://\S+', '', text)
     clean = re.sub(r'@\w+', '', clean)
     clean = re.sub(r'#', '', clean)
     clean = re.sub(r'[^\w\s]', ' ', clean)
 
-    # Türkçe + İngilizce stop words
-    stop_words = {
-        'bir', 'bu', 'da', 'de', 've', 'ile', 'için', 'var', 'yok', 'ama',
-        'çok', 'ne', 'ki', 'gibi', 'daha', 'en', 'her', 'o', 'ben', 'sen',
-        'biz', 'şu', 'ya', 'mı', 'mi', 'mu', 'olan', 'olarak', 'sonra',
-        'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'to',
-        'of', 'and', 'in', 'that', 'it', 'for', 'on', 'with', 'as', 'at',
-        'by', 'from', 'or', 'not', 'but', 'this', 'has', 'have', 'had',
-        'kadar', 'artık', 'bile', 'hem', 'sadece', 'zaten', 'yani', 'bence',
-        'diyor', 'olan', 'oldu', 'olur', 'oluyor', 'değil', 'nasıl',
-    }
-
     words = clean.lower().split()
-    keywords = {w for w in words if len(w) > 2 and w not in stop_words}
+    keywords = {w for w in words if len(w) > 2 and w not in _STOP_WORDS}
     return keywords
+
+
+def _semantic_similarity(topic_keywords: set[str], tweet_keywords: set[str]) -> float:
+    """
+    Enhanced similarity: direct overlap + semantic alias expansion.
+    Returns a score 0.0-1.0.
+    """
+    if not topic_keywords or not tweet_keywords:
+        return 0.0
+
+    # Direct overlap
+    direct_overlap = topic_keywords & tweet_keywords
+    score = len(direct_overlap)
+
+    # Semantic expansion: check if topic keywords have aliases in tweet
+    expanded_matches = 0
+    for tk in topic_keywords:
+        if tk in direct_overlap:
+            continue  # Already counted
+        # Check if tk is an alias key and any alias words appear in tweet
+        aliases = _SEMANTIC_ALIASES.get(tk, set())
+        if aliases & tweet_keywords:
+            expanded_matches += 0.7  # Partial match for semantic alias
+        # Check reverse: is any tweet keyword an alias key that maps to tk?
+        for tw in tweet_keywords:
+            if tw in direct_overlap:
+                continue
+            tw_aliases = _SEMANTIC_ALIASES.get(tw, set())
+            if tk in tw_aliases:
+                expanded_matches += 0.5
+                break
+
+    score += expanded_matches
+
+    # Normalize by topic keyword count (Jaccard-like)
+    max_possible = len(topic_keywords)
+    return min(score / max_possible, 1.0) if max_possible > 0 else 0.0
 
 
 def _safe_int(val) -> int:

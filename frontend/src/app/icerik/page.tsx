@@ -218,6 +218,7 @@ function TabDiscover({
   const [generating, setGenerating] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
   const [researchProgress, setResearchProgress] = useState<string[]>([]);
+  const [researchMediaUrls, setResearchMediaUrls] = useState<string[]>([]);
 
   /* Media */
   const [mediaResults, setMediaResults] = useState<MediaItem[]>([]);
@@ -265,11 +266,16 @@ function TabDiscover({
       let researchContext = "";
       setResearchProgress([]);
       try {
+        const researchSources = researchMode === "x_only" ? ["x"] : researchMode === "web_only" ? ["web", "news"] : ["x", "web", "news"];
         const research = await researchTopicStream(
-          { topic: topic.title, engine: genEngine },
+          { topic: topic.title, engine: genEngine, research_sources: researchSources },
           (msg) => setResearchProgress((prev) => [...prev, msg])
         );
         researchContext = `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}`;
+        if (research.media_urls?.length) {
+          setResearchMediaUrls(research.media_urls);
+          setMediaResults(research.media_urls.map((url: string) => ({ url, source: "research", media_type: "image" })));
+        }
       } catch {
         // Research optional, continue
       }
@@ -612,6 +618,7 @@ function TabGenerate({
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
   const [researchData, setResearchData] = useState("");
   const [researchProgress, setResearchProgress] = useState<string[]>([]);
+  const [researchMediaUrls, setResearchMediaUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draftSaved, setDraftSaved] = useState(false);
@@ -642,12 +649,17 @@ function TabGenerate({
       setResearchProgress([]);
       if (doResearch) {
         try {
+          const researchSources = researchMode === "x_only" ? ["x"] : researchMode === "web_only" ? ["web", "news"] : ["x", "web", "news"];
           const research = await researchTopicStream(
-            { topic, engine },
+            { topic, engine, research_sources: researchSources },
             (msg) => setResearchProgress((prev) => [...prev, msg])
           );
           researchContext = `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}`;
           setResearchData(researchContext);
+          if (research.media_urls?.length) {
+            setResearchMediaUrls(research.media_urls);
+            setMediaResults(research.media_urls.map((url: string) => ({ url, source: "research", media_type: "image" })));
+          }
         } catch {
           // Research optional
         }

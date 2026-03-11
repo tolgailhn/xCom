@@ -1421,6 +1421,38 @@ class ContentGenerator:
         style = _resolve_style(style, context="tweet")
 
         system_prompt = self._build_system_prompt(style, user_samples)
+
+        # Multi-angle generation: try 3 angles, pick the best scoring one
+        # Only for non-thread, non-micro formats (where quality matters most)
+        use_multi = (
+            not thread_mode
+            and content_format not in ("micro", "punch", "")
+            and self.client is not None
+        )
+
+        if use_multi:
+            candidates = []
+            angles_to_try = random.sample(TWEET_ANGLES, min(3, len(TWEET_ANGLES)))
+            for angle in angles_to_try:
+                try:
+                    user_prompt = self._build_user_prompt(
+                        topic_text, topic_source, style, additional_context,
+                        max_length, False, content_format=content_format,
+                        forced_angle=angle,
+                    )
+                    text = self._dispatch(system_prompt, user_prompt)
+                    if text and text.strip():
+                        sc = score_tweet(text, content_format=content_format)
+                        candidates.append((text, sc.get("score", 0), angle["name"]))
+                except Exception:
+                    continue
+
+            if candidates:
+                # Pick the highest scoring candidate
+                candidates.sort(key=lambda c: c[1], reverse=True)
+                return candidates[0][0]
+
+        # Fallback: single generation
         user_prompt = self._build_user_prompt(
             topic_text, topic_source, style, additional_context,
             max_length, thread_mode, content_format=content_format
@@ -2144,7 +2176,8 @@ TÜRKÇE yazıyorsun. Bu BİR BAŞKASINA YANIT DEĞİL — kendi tweet'ine 0-2 d
     def _build_user_prompt(self, topic_text: str, topic_source: str,
                            style: str, additional_context: str,
                            max_length: int, thread_mode: bool,
-                           content_format: str = "") -> str:
+                           content_format: str = "",
+                           forced_angle: dict | None = None) -> str:
         """Build the user prompt with optional format-specific instructions"""
         # Cap topic text to prevent token overflow (research summaries can be huge)
         safe_topic = topic_text[:5000] if len(topic_text) > 5000 else topic_text
@@ -2157,8 +2190,8 @@ TÜRKÇE yazıyorsun. Bu BİR BAŞKASINA YANIT DEĞİL — kendi tweet'ine 0-2 d
             if fmt:
                 format_block = f"\n{fmt['prompt_instructions']}\n"
 
-        # Pick a random angle for variety
-        angle = _pick_random_angle()
+        # Pick angle: forced (multi-angle mode) or random
+        angle = forced_angle if forced_angle else _pick_random_angle()
         angle_block = f"\n{angle['instruction']}\n"
 
         prompt = f"""Aşağıdaki AI gelişmesi/konusu hakkında bir tweet yaz.

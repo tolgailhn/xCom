@@ -32,7 +32,7 @@ USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
 FETCH_TIMEOUT = 15
-MAX_ARTICLE_CHARS = 8000  # Increased: bilgi yoğunluğu öncelikli, sayfa detaylarını kes
+MAX_ARTICLE_CHARS = 16000  # 16K: daha fazla bilgi yoğunluğu, uzun makalelerden daha az kayıp
 SEARCH_DELAY = 0.3  # Delay between sequential DuckDuckGo calls to avoid IP blocking
 SKIP_DOMAINS = {
     "twitter.com", "x.com", "t.co", "youtube.com", "youtu.be",
@@ -1491,7 +1491,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                             except Exception as e:
                                 print(f"X search in Grok agentic mode error: {e}")
                                 break  # Stop X search on error to prevent ban
-                        result.related_tweets.sort(key=lambda x: x.get("likes", 0) + x.get("retweets", 0) * 2, reverse=True)
+                        result.related_tweets.sort(key=lambda x: _tweet_quality_score(x), reverse=True)
                         result.related_tweets = result.related_tweets[:15]
                     except Exception as e:
                         print(f"X search in Grok agentic error: {e}")
@@ -1577,7 +1577,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                             print(f"X search error in agentic mode: {e}")
                             break  # Stop X search on error to prevent ban
 
-                    result.related_tweets.sort(key=lambda x: x.get("likes", 0) + x.get("retweets", 0) * 2, reverse=True)
+                    result.related_tweets.sort(key=lambda x: _tweet_quality_score(x), reverse=True)
                     result.related_tweets = result.related_tweets[:15]
                 except Exception as e:
                     print(f"X search in agentic mode error: {e}")
@@ -1729,9 +1729,9 @@ def research_topic(tweet_text: str, tweet_author: str = "",
         if progress_callback:
             progress_callback("Makaleler paralel okunuyor (derin araştırma)...")
 
-        urls_to_fetch = _pick_best_urls(result.web_results + result.reddit_results)
+        urls_to_fetch = _pick_best_urls(result.web_results + result.reddit_results, max_urls=12)
 
-        articles = _parallel_fetch_articles(urls_to_fetch, max_articles=5,
+        articles = _parallel_fetch_articles(urls_to_fetch, max_articles=10,
                                              progress_callback=progress_callback)
         result.deep_articles.extend(articles)
 
@@ -1810,7 +1810,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                     print(f"X search error ({q[:40]}): {e}")
                     break  # Stop further X queries on error to prevent Twitter ban
 
-            result.related_tweets.sort(key=lambda x: x.get("likes", 0) + x.get("retweets", 0) * 2, reverse=True)
+            result.related_tweets.sort(key=lambda x: _tweet_quality_score(x), reverse=True)
             result.related_tweets = result.related_tweets[:max_tweets]
 
             if progress_callback:
@@ -1821,7 +1821,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                 if progress_callback:
                     progress_callback("Tweet'lerdeki linkler takip ediliyor...")
                 tweet_articles = _follow_tweet_links(
-                    result.related_tweets, max_articles=5,
+                    result.related_tweets, max_articles=8,
                     progress_callback=progress_callback,
                 )
                 if tweet_articles:
@@ -1860,6 +1860,39 @@ def research_topic(tweet_text: str, tweet_author: str = "",
 
     result.summary = compile_research_summary(result)
 
+    # === STEP 8.5: Query Refinement — 2nd pass to fill knowledge gaps ===
+    if ai_client and any(s in research_sources for s in ["web", "news"]):
+        try:
+            original_text = result.full_thread_text or result.original_tweet_text or result.topic
+            gap_queries = ai_identify_knowledge_gaps(
+                original_tweet=original_text,
+                current_research=result.summary[:6000],
+                ai_client=ai_client,
+                ai_model=ai_model,
+                provider=ai_provider,
+            )
+            if gap_queries:
+                if progress_callback:
+                    progress_callback(f"Bilgi boslugu tespit edildi, {len(gap_queries)} ek arama yapiliyor...")
+
+                # Run refinement searches in parallel
+                search_tuples = [(q, 5, "w") for q in gap_queries[:3]]
+                gap_search_results = _parallel_web_search(search_tuples)
+                gap_results = [item for sublist in gap_search_results for item in sublist]
+                new_urls = _pick_best_urls(gap_results, max_urls=4)
+                if new_urls:
+                    gap_articles = _parallel_fetch_articles(
+                        new_urls, max_articles=3, progress_callback=progress_callback,
+                    )
+                    if gap_articles:
+                        result.deep_articles.extend(gap_articles)
+                        if progress_callback:
+                            progress_callback(f"Ek {len(gap_articles)} kaynak okundu (bilgi boslugu doldurma)")
+                        # Recompile with new articles
+                        result.summary = compile_research_summary(result)
+        except Exception as e:
+            print(f"Query refinement error: {e}")
+
     # === STEP 9: AI Synthesis — structured research brief ===
     # This transforms raw research into prioritized, tweet-friendly format
     if ai_client and (result.deep_articles or result.web_results or result.reddit_results):
@@ -1880,12 +1913,70 @@ def research_topic(tweet_text: str, tweet_author: str = "",
     return result
 
 
-def _pick_best_urls(results: list[dict], max_urls: int = 8) -> list[str]:
+def _tweet_quality_score(tweet: dict) -> float:
+    """
+    Score a tweet for research relevance.
+    Combines absolute engagement with engagement ratio (virality signal).
+    High engagement ratio = content resonated beyond the author's usual reach.
+    """
+    likes = tweet.get("likes", 0) or 0
+    rts = tweet.get("retweets", 0) or 0
+    followers = tweet.get("followers", 0) or 0
+
+    # Absolute engagement (weighted by algorithm values)
+    absolute = likes + rts * 20
+
+    # Engagement ratio bonus (viral content from smaller accounts gets boosted)
+    if followers > 100:
+        ratio = (likes + rts * 3) / followers
+        ratio_bonus = min(ratio * 50, 100)  # Cap at 100 bonus points
+    else:
+        ratio_bonus = 0
+
+    # Content quality: longer tweets with substance score higher
+    text_len = len(tweet.get("text", ""))
+    length_bonus = min(text_len / 50, 5)  # Up to 5 bonus for 250+ char tweets
+
+    return absolute + ratio_bonus + length_bonus
+
+
+def _pick_best_urls(results: list[dict], max_urls: int = 12) -> list[str]:
     """
     Pick the best URLs to deep-fetch based on relevance signals.
-    Prioritize: tech blogs, official announcements, Reddit discussions.
+    Prioritize: official sources, research papers, tier-1 tech blogs, Reddit.
+
+    Scoring tiers:
+    - Tier 1 (official/research): +5 — arxiv, official blogs, papers
+    - Tier 2 (premier tech): +4 — TechCrunch, Verge, Ars, SemiAnalysis
+    - Tier 3 (community): +3 — Reddit, HuggingFace, GitHub
+    - Tier 4 (general tech): +2 — Wired, VentureBeat, etc.
+    - Content signals: numbers/data (+2), long body (+1), key title words (+1 each)
     """
+    from urllib.parse import urlparse
+
     scored = []
+    seen_domains: set[str] = set()  # Domain diversity — max 2 per domain
+
+    # Tiered domain scoring
+    TIER1_DOMAINS = {
+        "arxiv.org": 5, "blog.google": 5, "openai.com": 5, "anthropic.com": 5,
+        "ai.meta.com": 5, "deepmind.google": 5, "research.nvidia.com": 5,
+        "blog.x.ai": 5, "mistral.ai": 5,
+    }
+    TIER2_DOMAINS = {
+        "techcrunch.com": 4, "theverge.com": 4, "arstechnica.com": 4,
+        "semianalysis.com": 4, "towardsdatascience.com": 4,
+    }
+    TIER3_DOMAINS = {
+        "reddit.com": 3, "huggingface.co": 3, "github.com": 3,
+        "news.ycombinator.com": 3,
+    }
+    TIER4_DOMAINS = {
+        "wired.com": 2, "venturebeat.com": 2, "nvidia.com": 2,
+        "microsoft.com": 2, "meta.com": 2, "zdnet.com": 2,
+        "bloomberg.com": 2, "reuters.com": 2,
+    }
+
     for r in results:
         url = r.get("url", "")
         title = r.get("title", "").lower()
@@ -1893,49 +1984,59 @@ def _pick_best_urls(results: list[dict], max_urls: int = 8) -> list[str]:
 
         score = 0
 
-        # Skip social media
         try:
-            from urllib.parse import urlparse
             domain = urlparse(url).netloc.replace("www.", "")
             if domain in SKIP_DOMAINS:
                 continue
         except Exception:
             continue
 
-        # Boost tech sites
-        tech_domains = ["techcrunch.com", "theverge.com", "arstechnica.com",
-                        "wired.com", "venturebeat.com", "huggingface.co",
-                        "reddit.com", "arxiv.org", "github.com",
-                        "nvidia.com", "blog.google", "openai.com",
-                        "anthropic.com", "microsoft.com", "meta.com",
-                        "towardsdatascience.com", "semianalysis.com"]
-        for td in tech_domains:
-            if td in url:
-                score += 3
-                break
+        # Domain tier scoring
+        for tier_map in [TIER1_DOMAINS, TIER2_DOMAINS, TIER3_DOMAINS, TIER4_DOMAINS]:
+            for td, pts in tier_map.items():
+                if td in url:
+                    score += pts
+                    break
+            else:
+                continue
+            break
 
-        # Boost Reddit
-        if "reddit.com" in url:
-            score += 2
-
-        # Boost articles with numbers/data
+        # Content quality signals
         if re.search(r'\d+[BMK%]|\$\d', body):
             score += 2
-
-        # Boost detailed content
         if len(body) > 150:
             score += 1
+        if len(body) > 300:
+            score += 1
 
-        # Boost if title has key signals
-        for signal in ["benchmark", "review", "analysis", "comparison",
-                        "specs", "details", "announced", "released"]:
+        # Title key signals
+        high_value_signals = ["benchmark", "evaluation", "comparison", "performance",
+                              "announced", "released", "launched", "paper", "research"]
+        for signal in high_value_signals:
             if signal in title:
                 score += 1
 
-        scored.append((score, url))
+        # Freshness signal — recent content keywords
+        if any(w in title for w in ["2026", "2025", "new", "latest", "just"]):
+            score += 1
 
-    scored.sort(reverse=True)
-    return [url for _, url in scored[:max_urls]]
+        scored.append((score, url, domain))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+
+    # Domain diversity: max 2 URLs per domain
+    picked: list[str] = []
+    for _, url, domain in scored:
+        base_domain = ".".join(domain.split(".")[-2:])
+        domain_count = sum(1 for d in seen_domains if d == base_domain)
+        if domain_count >= 2:
+            continue
+        seen_domains.add(base_domain)
+        picked.append(url)
+        if len(picked) >= max_urls:
+            break
+
+    return picked
 
 
 # ========================================================================
@@ -1961,7 +2062,7 @@ ORİJİNAL TWEET/THREAD:
 "{original_tweet[:1500]}"
 
 ARAŞTIRMA SONUÇLARI:
-{raw_summary[:8000]}
+{raw_summary[:12000]}
 
 ---
 
@@ -1985,6 +2086,13 @@ Yanıtını şu formatta yaz:
 ## PRATİK ETKİ
 (Bu gelişmenin kullanıcılara, geliştiricilere, sektöre pratik etkisi ne? Somut, herkesin anlayacağı dilde.)
 
+## DOĞRULANMIŞ İDDİALAR
+(Araştırmadan çıkan her spesifik iddiayı listele — tweet'te kullanılacak veriler:
+- İddia: [somut bilgi/rakam/karşılaştırma]
+- Kaynak: [hangi makale/tweet/blog'dan geldi]
+- Güven: [yüksek/orta/düşük — birden fazla kaynak teyit ediyorsa yüksek]
+ÖNEMLİ: Sadece araştırmada AÇIKÇA bulunan bilgileri yaz. Çıkarım/tahmin YAPMA.)
+
 KURALLAR:
 - Orijinal tweet/thread'deki bilgilere SADIK KAL
 - Araştırmadan MÜMKÜN OLDUĞUNCA ÇOK somut bilgi aktar — yüzeysel özet YAPMA
@@ -2005,7 +2113,7 @@ KURALLAR:
             import anthropic
             response = ai_client.messages.create(
                 model=ai_model or "claude-haiku-4-5-20251001",
-                max_tokens=2500,
+                max_tokens=4000,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.1,
             )
@@ -2014,7 +2122,7 @@ KURALLAR:
             response = ai_client.chat.completions.create(
                 model=ai_model or "MiniMax-M2.5",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=2500,
+                max_tokens=4000,
                 temperature=0.1,
             )
             result = response.choices[0].message.content.strip()
@@ -2046,7 +2154,7 @@ def compile_research_summary(r: ResearchResult) -> str:
     """
     parts = []
     total_chars = 0
-    MAX_TOTAL = 12000  # Increased: bilgi yoğunluğu öncelikli, daha fazla detay aktar
+    MAX_TOTAL = 20000  # 20K: 10 makale destekli, daha derin araştırma aktarımı
 
     # Section 1: Original tweet/thread — MOST IMPORTANT (always included)
     parts.append(f"# ANA KONU: {r.topic}")
@@ -2062,11 +2170,11 @@ def compile_research_summary(r: ResearchResult) -> str:
     total_chars = sum(len(p) for p in parts)
 
     # Section 2: DEEP ARTICLES — Key content from fetched pages
-    # Limit each article to 3500 chars, max 5 articles — bilgi yoğunluğu öncelikli
+    # Limit each article to 4000 chars, max 10 articles — derin bilgi aktarımı
     if r.deep_articles:
         parts.append(f"\n## ARAŞTIRMA KAYNAKLARI ({len(r.deep_articles)} makale okundu):")
-        for i, article in enumerate(r.deep_articles[:5], 1):
-            content = article['content'][:3500]
+        for i, article in enumerate(r.deep_articles[:10], 1):
+            content = article['content'][:4000]
             article_text = f"\n### Kaynak {i}: {article['title']}\n{content}"
             if total_chars + len(article_text) > MAX_TOTAL:
                 # Truncate this article to fit budget
@@ -2125,8 +2233,10 @@ def compile_research_summary(r: ResearchResult) -> str:
         quality_tweets = [rt for rt in r.related_tweets
                           if rt.get("likes", 0) >= 5 or rt.get("retweets", 0) >= 2]
         if quality_tweets:
+            # Sort by engagement (likes + RTs) for best-first
+            quality_tweets.sort(key=lambda t: t.get("likes", 0) + t.get("retweets", 0) * 3, reverse=True)
             parts.append(f"\n## X'te Öne Çıkan Yorumlar ({len(quality_tweets)} kaliteli):")
-            for i, rt in enumerate(quality_tweets[:3], 1):
+            for i, rt in enumerate(quality_tweets[:5], 1):
                 snippet = f"  {i}. @{rt['author']} ({rt['likes']}❤️): {rt['text'][:500]}"
                 if total_chars + len(snippet) > MAX_TOTAL:
                     break

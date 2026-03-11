@@ -356,6 +356,7 @@ function TabQuoteTweet({
   const [engine, setEngine] = useState("default");
   const [deepVerify, setDeepVerify] = useState(false);
   const [provider, setProvider] = useState("");
+  const [additionalContext, setAdditionalContext] = useState("");
 
   /* Original tweet info */
   const [tweetId, setTweetId] = useState("");
@@ -377,7 +378,8 @@ function TabQuoteTweet({
   const [researchResult, setResearchResult] = useState<{
     summary: string;
     key_points: string[];
-    sources: { title: string; body?: string }[];
+    sources: { title: string; url?: string; body?: string }[];
+    media_urls: string[];
   } | null>(null);
   const [generatedText, setGeneratedText] = useState("");
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
@@ -492,12 +494,15 @@ function TabQuoteTweet({
         {
           topic: researchTopic,
           engine,
-          research_sources: ["web", "news"],
+          research_sources: ["x", "web", "news"],
           tweet_author: originalTweet?.author || undefined,
         },
         (msg) => setProgressMessages((prev) => [...prev, msg]),
       );
       setResearchResult(research);
+      if (research.media_urls?.length) {
+        setMediaResults(research.media_urls.map((url: string) => ({ url, source: "research", media_type: "image" })));
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Arastirma hatasi");
     } finally {
@@ -521,6 +526,7 @@ function TabQuoteTweet({
         original_author: tweetAuthor,
         style,
         research_summary: researchSummary,
+        additional_context: additionalContext || undefined,
         length_preference: contentFormat,
         deep_verify: deepVerify,
         provider: provider || undefined,
@@ -902,6 +908,15 @@ function TabQuoteTweet({
               </label>
             </div>
           </div>
+
+          {/* Additional Context */}
+          <textarea
+            value={additionalContext}
+            onChange={(e) => setAdditionalContext(e.target.value)}
+            rows={2}
+            className="input w-full text-sm"
+            placeholder="Ek talimat (opsiyonel): Ornek: 'Karsi bir gorus belirt', 'Kendi deneyimimden bahset'"
+          />
 
           <button
             onClick={handleGenerate}
