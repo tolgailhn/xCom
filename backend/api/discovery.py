@@ -484,15 +484,28 @@ def get_smart_suggestions():
     # Trend-based suggestions (strong trends first)
     for trend in (trend_cache.get("trends") or [])[:10]:
         if trend.get("is_strong_trend"):
+            top_tweets = trend.get("top_tweets", [])[:5]
+            # Build a Turkish context description from top tweets
+            description_tr = ""
+            if top_tweets:
+                snippets = []
+                for tt in top_tweets[:3]:
+                    txt = (tt.get("text") or "")[:120].strip()
+                    if txt:
+                        snippets.append(txt)
+                if snippets:
+                    description_tr = " | ".join(snippets)
+
             suggestions.append({
                 "type": "trend",
                 "topic": trend["keyword"],
-                "reason": f"{trend['account_count']} hesapta trend, {trend['tweet_count']} tweet",
+                "reason": f"{trend['account_count']} hesap, {trend['tweet_count']} tweet, skor: {int(trend.get('trend_score', 0))}",
+                "description_tr": description_tr,
                 "engagement_potential": min(10, max(1, int(trend.get("trend_score", 0) / 500) + 3)),
                 "suggested_style": "informative",
                 "suggested_format": "single",
                 "suggested_hour": "14:07",
-                "top_tweets": trend.get("top_tweets", [])[:3],
+                "top_tweets": top_tweets,
                 "source_data": trend,
             })
 
@@ -502,11 +515,13 @@ def get_smart_suggestions():
             "type": "news",
             "topic": article.get("title", ""),
             "reason": f"Kaynak: {article.get('source', '')}",
+            "description_tr": article.get("summary", ""),
             "engagement_potential": 6,
             "suggested_style": "informative",
             "suggested_format": "spark",
             "suggested_hour": "10:22",
             "url": article.get("url", ""),
+            "top_tweets": [],
             "source_data": article,
         })
 
