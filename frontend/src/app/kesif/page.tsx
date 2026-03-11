@@ -8,6 +8,7 @@ import {
   triggerDiscoveryScan,
   getDiscoveryStatus,
   clearDiscoveryCache,
+  getSchedulerStatus,
   type DiscoveryConfig,
   type DiscoveryTweet,
   type DiscoveryStatus,
@@ -55,17 +56,21 @@ export default function KesifPage() {
   const [nextScanSec, setNextScanSec] = useState<number | null>(null);
   const [newAccount, setNewAccount] = useState("");
   const [newAccountPriority, setNewAccountPriority] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [schedulerJobs, setSchedulerJobs] = useState<any[]>([]);
 
   const loadData = useCallback(async () => {
     try {
-      const [configRes, tweetsRes, statusRes] = await Promise.all([
+      const [configRes, tweetsRes, statusRes, schedRes] = await Promise.all([
         getDiscoveryConfig(),
         getDiscoveryTweets(),
         getDiscoveryStatus(),
+        getSchedulerStatus().catch(() => ({ jobs: [] })),
       ]);
       setConfig(configRes.config);
       setTweets(tweetsRes.tweets);
       setStatus(statusRes);
+      setSchedulerJobs(schedRes.jobs || []);
       if (statusRes.next_scan_seconds != null) {
         setNextScanSec(statusRes.next_scan_seconds);
       }
@@ -170,6 +175,46 @@ export default function KesifPage() {
           </div>
         </div>
       )}
+
+      {/* Scheduler Worker Status */}
+      {schedulerJobs.length > 0 && (() => {
+        const JOB_LABELS: Record<string, string> = {
+          auto_topic_scanner: "Konu Tarama",
+          trend_analyzer: "Trend Analiz",
+          news_scanner: "Haber Tarama",
+          account_discoverer: "Hesap Kesfi",
+          discovery_checker: "Hesap Rotasyon",
+        };
+        const relevantJobs = schedulerJobs.filter((j: { id: string }) => JOB_LABELS[j.id]);
+        if (!relevantJobs.length) return null;
+        return (
+          <div className="card p-3">
+            <div className="text-xs font-medium mb-2 text-[var(--text-secondary)]">
+              Otomatik Tarama Durumlari
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {relevantJobs.map((job: { id: string; last_run: string | null; next_run: string | null }) => (
+                <div key={job.id} className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded bg-[var(--bg-secondary)]">
+                  <span className="text-[10px] font-medium">{JOB_LABELS[job.id]}</span>
+                  <span className="text-[10px] text-[var(--text-secondary)]">
+                    {job.last_run ? `Son: ${timeAgo(job.last_run)}` : "Henuz calismadi"}
+                  </span>
+                  {job.next_run && (
+                    <span className="text-[10px] text-[var(--accent-green)]">
+                      Sonraki: {timeAgo(job.next_run).includes("g") ? timeAgo(job.next_run) : (() => {
+                        try {
+                          const d = new Date(job.next_run);
+                          return d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+                        } catch { return ""; }
+                      })()}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Rotation Info */}
       {status?.last_scanned_per_account && Object.keys(status.last_scanned_per_account).length > 0 && (

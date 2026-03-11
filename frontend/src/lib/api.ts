@@ -975,6 +975,11 @@ export function deletePromptTemplate(templateId: string) {
   return apiFetch(`/api/settings/prompt-templates/${templateId}`, { method: "DELETE" });
 }
 
+// ── Faz 1: Scheduler Status ──
+export function getSchedulerStatus() {
+  return apiFetch("/api/discovery/scheduler-status");
+}
+
 // ── Faz 3-9: Auto-Scan, Trends, News, Suggested Accounts ──
 
 // Auto-Scan (Faz 3)

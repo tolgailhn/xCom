@@ -233,6 +233,19 @@ def clear_cache():
     return {"success": True, "message": "Cache temizlendi"}
 
 
+# ── Faz 1: Scheduler Status ──────────────────────────────
+
+@router.get("/scheduler-status")
+def get_scheduler_status():
+    """Tüm scheduler job'larının durumunu döndür (son/sonraki çalışma zamanı)."""
+    try:
+        from backend.scheduler_worker import get_scheduler_status as _get_status
+        return _get_status()
+    except Exception as e:
+        logger.exception("Scheduler status error")
+        raise HTTPException(500, f"Scheduler durumu alınamadı: {str(e)}")
+
+
 # ── Faz 3: Auto-Scan Endpoints ──────────────────────────
 
 @router.get("/auto-scan")

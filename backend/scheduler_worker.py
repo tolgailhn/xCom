@@ -20,6 +20,34 @@ TZ_TR = ZoneInfo("Europe/Istanbul")
 
 scheduler = BackgroundScheduler(timezone=TZ_TR)
 
+# ── Last-run tracking (Faz 1) ────────────────────────
+_last_run_times: dict[str, str] = {}  # job_id → ISO timestamp
+
+
+def _track_run(job_id: str):
+    """Record the last run time for a scheduler job."""
+    _last_run_times[job_id] = datetime.datetime.now(TZ_TR).isoformat()
+
+
+def get_scheduler_status() -> dict:
+    """Return status of all scheduler jobs (for /scheduler-status endpoint)."""
+    jobs = []
+    if scheduler.running:
+        for job in scheduler.get_jobs():
+            next_run = None
+            if job.next_run_time:
+                next_run = job.next_run_time.isoformat()
+            jobs.append({
+                "id": job.id,
+                "next_run": next_run,
+                "last_run": _last_run_times.get(job.id),
+            })
+    return {
+        "running": scheduler.running,
+        "jobs": jobs,
+        "total_jobs": len(jobs),
+    }
+
 
 def _publish_scheduled_post(post: dict) -> dict:
     """Tek bir zamanlanmis postu paylas. Sonuc dict doner."""
@@ -276,6 +304,7 @@ def _check_discovery():
     try:
         from backend.discovery_worker import scan_accounts
         scan_accounts()
+        _track_run("discovery_checker")
     except Exception:
         logger.exception("Discovery check error")
 
@@ -294,6 +323,7 @@ def _auto_scan_topics():
     try:
         from backend.auto_topic_scanner import run_auto_scan
         run_auto_scan()
+        _track_run("auto_topic_scanner")
     except Exception:
         logger.exception("Auto topic scan error")
 
@@ -303,6 +333,7 @@ def _analyze_trends():
     try:
         from backend.trend_analyzer import analyze_trends
         analyze_trends()
+        _track_run("trend_analyzer")
     except Exception:
         logger.exception("Trend analysis error")
 
@@ -312,6 +343,7 @@ def _scan_news_sources():
     try:
         from backend.news_scanner import scan_news
         scan_news()
+        _track_run("news_scanner")
     except Exception:
         logger.exception("News scan error")
 
@@ -321,6 +353,7 @@ def _discover_new_accounts():
     try:
         from backend.account_discoverer import discover_accounts
         discover_accounts()
+        _track_run("account_discoverer")
     except Exception:
         logger.exception("Account discovery error")
 
