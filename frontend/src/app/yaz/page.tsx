@@ -328,9 +328,9 @@ function YazContent() {
           initialUrl={searchParams.get("quote_url") || ""}
         />
       )}
-      {activeTab === "reply" && <TabQuickReply styles={styles} />}
-      {activeTab === "linkreply" && <TabLinkReply styles={styles} />}
-      {activeTab === "selfreply" && <TabSelfReply styles={styles} />}
+      {activeTab === "reply" && <TabQuickReply styles={styles} providers={providers} />}
+      {activeTab === "linkreply" && <TabLinkReply styles={styles} providers={providers} />}
+      {activeTab === "selfreply" && <TabSelfReply styles={styles} providers={providers} />}
     </div>
   );
 }
@@ -1119,7 +1119,7 @@ function TabQuoteTweet({
    TAB 2: HIZLI REPLY (Tara → Sec → Reply uret)
    ══════════════════════════════════════════════════════════ */
 
-function TabQuickReply({ styles }: { styles: StyleOption[] }) {
+function TabQuickReply({ styles, providers }: { styles: StyleOption[]; providers: ProviderOption[] }) {
   const [timeHours, setTimeHours] = useState(24);
   const [maxPerAccount, setMaxPerAccount] = useState(5);
   const [minEngagement, setMinEngagement] = useState(0);
@@ -1458,6 +1458,22 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
               </select>
             </div>
 
+            {providers.length > 0 && (
+              <div>
+                <label className="text-xs text-[var(--text-secondary)] block mb-1">AI Model</label>
+                <select
+                  value={replyProvider}
+                  onChange={(e) => setReplyProvider(e.target.value)}
+                  className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
+                >
+                  <option value="">Otomatik</option>
+                  {providers.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="flex-1 min-w-[200px]">
               <label className="text-xs text-[var(--text-secondary)] block mb-1">
                 Ek Talimat (opsiyonel)
@@ -1599,7 +1615,7 @@ function TabQuickReply({ styles }: { styles: StyleOption[] }) {
    TAB 3: LINKLE REPLY (URL yapistir → reply uret)
    ══════════════════════════════════════════════════════════ */
 
-function TabLinkReply({ styles }: { styles: StyleOption[] }) {
+function TabLinkReply({ styles, providers }: { styles: StyleOption[]; providers: ProviderOption[] }) {
   /* Tweet URL input */
   const [replyUrl, setReplyUrl] = useState("");
   const [extracting, setExtracting] = useState(false);
@@ -1624,6 +1640,7 @@ function TabLinkReply({ styles }: { styles: StyleOption[] }) {
   /* Reply generation */
   const [replyExtra, setReplyExtra] = useState("");
   const [replyStyle, setReplyStyle] = useState("reply");
+  const [replyProvider, setReplyProvider] = useState("");
   const [generatedReply, setGeneratedReply] = useState("");
   const [generating, setGenerating] = useState(false);
   const [publishingReply, setPublishingReply] = useState(false);
@@ -1710,6 +1727,7 @@ function TabLinkReply({ styles }: { styles: StyleOption[] }) {
         additional_context: replyExtra || "",
         is_thread: isThread,
         thread_count: originalTweet.thread_count || 1,
+        provider: replyProvider || undefined,
       })) as { text: string };
       if (!result.text || result.text.trim() === "") {
         setError("Reply uretilemedi — AI bos yanit dondu. Tekrar deneyin.");
@@ -1853,6 +1871,22 @@ function TabLinkReply({ styles }: { styles: StyleOption[] }) {
               </select>
             </div>
 
+            {providers.length > 0 && (
+              <div>
+                <label className="text-xs text-[var(--text-secondary)] block mb-1">AI Model</label>
+                <select
+                  value={replyProvider}
+                  onChange={(e) => setReplyProvider(e.target.value)}
+                  className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
+                >
+                  <option value="">Otomatik</option>
+                  {providers.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="flex-1 min-w-[200px]">
               <label className="text-xs text-[var(--text-secondary)] block mb-1">
                 Ek Talimat (opsiyonel)
@@ -1982,7 +2016,7 @@ function TabLinkReply({ styles }: { styles: StyleOption[] }) {
    TAB 5: SELF-REPLY — Kendi tweet'ine devam niteliğinde yanıt
    ══════════════════════════════════════════════════════════ */
 
-function TabSelfReply({ styles }: { styles: StyleOption[] }) {
+function TabSelfReply({ styles, providers }: { styles: StyleOption[]; providers: ProviderOption[] }) {
   // Input: tweet text or URL
   const [myTweetText, setMyTweetText] = useState("");
   const [myTweetUrl, setMyTweetUrl] = useState("");
@@ -1991,6 +2025,8 @@ function TabSelfReply({ styles }: { styles: StyleOption[] }) {
 
   // Generation
   const [replyCount, setReplyCount] = useState(3);
+  const [selfReplyStyle, setSelfReplyStyle] = useState("");
+  const [selfReplyProvider, setSelfReplyProvider] = useState("");
   const [generatedReplies, setGeneratedReplies] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [currentReplyIdx, setCurrentReplyIdx] = useState(0);
@@ -2072,6 +2108,8 @@ function TabSelfReply({ styles }: { styles: StyleOption[] }) {
           total_replies: replyCount,
           additional_context: additional,
           previous_replies: replies.filter((r) => r.trim()),
+          style: selfReplyStyle || undefined,
+          provider: selfReplyProvider || undefined,
         });
         replies.push(r.text || "");
       } catch {
@@ -2263,6 +2301,42 @@ function TabSelfReply({ styles }: { styles: StyleOption[] }) {
               ))}
             </select>
           </div>
+
+          {/* Style selector */}
+          <div>
+            <label className="text-xs text-[var(--text-secondary)]">
+              Reply Tarzi
+            </label>
+            <select
+              className="w-full p-2 mt-1 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-sm"
+              value={selfReplyStyle}
+              onChange={(e) => setSelfReplyStyle(e.target.value)}
+            >
+              <option value="">Varsayilan</option>
+              {styles.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* AI Provider */}
+          {providers.length > 0 && (
+            <div>
+              <label className="text-xs text-[var(--text-secondary)]">
+                AI Model
+              </label>
+              <select
+                className="w-full p-2 mt-1 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-sm"
+                value={selfReplyProvider}
+                onChange={(e) => setSelfReplyProvider(e.target.value)}
+              >
+                <option value="">Otomatik</option>
+                {providers.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Template management */}

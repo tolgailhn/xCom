@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   getStyles,
+  getProviders,
   discoverContentTopics,
   researchTopicStream,
   generateLongContent,
@@ -25,6 +26,11 @@ interface FormatOption {
   id: string;
   name: string;
   desc: string;
+}
+
+interface ProviderOption {
+  id: string;
+  name: string;
 }
 
 interface DiscoveredTopic {
@@ -110,6 +116,7 @@ export default function IcerikPage() {
   const [activeTab, setActiveTab] = useState<"discover" | "generate">("discover");
   const [contentStyles, setContentStyles] = useState<ContentStyle[]>([]);
   const [formats, setFormats] = useState<FormatOption[]>([]);
+  const [providers, setProviders] = useState<ProviderOption[]>([]);
 
   useEffect(() => {
     const t = searchParams.get("tab");
@@ -135,6 +142,9 @@ export default function IcerikPage() {
           setFormats(r.formats);
         }
       )
+      .catch(() => {});
+    getProviders()
+      .then((r: { providers: ProviderOption[] }) => setProviders(r.providers))
       .catch(() => {});
   }, []);
 
@@ -165,10 +175,10 @@ export default function IcerikPage() {
       </div>
 
       {activeTab === "discover" && (
-        <TabDiscover contentStyles={contentStyles} formats={formats} />
+        <TabDiscover contentStyles={contentStyles} formats={formats} providers={providers} />
       )}
       {activeTab === "generate" && (
-        <TabGenerate contentStyles={contentStyles} formats={formats} />
+        <TabGenerate contentStyles={contentStyles} formats={formats} providers={providers} />
       )}
     </div>
   );
@@ -181,9 +191,11 @@ export default function IcerikPage() {
 function TabDiscover({
   contentStyles,
   formats,
+  providers,
 }: {
   contentStyles: ContentStyle[];
   formats: FormatOption[];
+  providers: ProviderOption[];
 }) {
   const [focusArea, setFocusArea] = useState("");
   const [engine, setEngine] = useState("default");
@@ -198,6 +210,7 @@ function TabDiscover({
   const [genExtra, setGenExtra] = useState("");
   const [researchMode, setResearchMode] = useState("x_and_web");
   const [genEngine, setGenEngine] = useState("default");
+  const [genProvider, setGenProvider] = useState("");
 
   /* Generated content */
   const [generatedContent, setGeneratedContent] = useState("");
@@ -265,9 +278,9 @@ function TabDiscover({
       const result = (await generateLongContent({
         topic: topic.title,
         style: genStyle,
-        length: genFormat,
         research_context: researchContext,
         content_format: genFormat,
+        provider: genProvider || undefined,
       })) as { text: string; score: ScoreResult | null };
 
       setGeneratedContent(result.text);
@@ -485,6 +498,21 @@ function TabDiscover({
                   <option value="claude_code">Claude Code (Max)</option>
                 </select>
               </div>
+              {providers.length > 0 && (
+                <div>
+                  <label className="text-xs text-[var(--text-secondary)] block mb-1">AI Model</label>
+                  <select
+                    value={genProvider}
+                    onChange={(e) => setGenProvider(e.target.value)}
+                    className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
+                  >
+                    <option value="">Otomatik</option>
+                    {providers.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           </details>
 
@@ -565,9 +593,11 @@ function TabDiscover({
 function TabGenerate({
   contentStyles,
   formats,
+  providers,
 }: {
   contentStyles: ContentStyle[];
   formats: FormatOption[];
+  providers: ProviderOption[];
 }) {
   const [topic, setTopic] = useState("");
   const [style, setStyle] = useState("deneyim");
@@ -576,6 +606,7 @@ function TabGenerate({
   const [doResearch, setDoResearch] = useState(true);
   const [researchMode, setResearchMode] = useState("x_and_web");
   const [engine, setEngine] = useState("default");
+  const [provider, setProvider] = useState("");
 
   const [generatedContent, setGeneratedContent] = useState("");
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
@@ -626,10 +657,10 @@ function TabGenerate({
       const result = (await generateLongContent({
         topic,
         style,
-        length: contentFormat,
         research_context: researchContext,
         content_format: contentFormat,
         additional_instructions: extraInstructions || undefined,
+        provider: provider || undefined,
       })) as { text: string; score: ScoreResult | null };
 
       setGeneratedContent(result.text);
@@ -721,6 +752,21 @@ function TabGenerate({
               ))}
             </select>
           </div>
+          {providers.length > 0 && (
+            <div>
+              <label className="text-xs text-[var(--text-secondary)] block mb-1">AI Model</label>
+              <select
+                value={provider}
+                onChange={(e) => setProvider(e.target.value)}
+                className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Otomatik</option>
+                {providers.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <textarea

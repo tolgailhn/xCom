@@ -90,11 +90,13 @@ DAILY_SLOTS = {
 }
 
 ALGORITHM_CHECKLIST = [
+    {"key": "reply_back", "label": "Gelen TUM reply'lara geri yanit ver (conversation = 150x like!)", "impact": "150x like — EN ONEMLI sinyal"},
     {"key": "native_media", "label": "Her posta native medya koy (foto/GIF/video/poll)", "impact": "+%50-90 reach"},
     {"key": "self_reply", "label": "Attiktan sonra kendi postuna soruyla reply at", "impact": "Phoenix ranking boost"},
     {"key": "early_engage", "label": "Ilk 5-10 yorumu 30dk icinde cevapla", "impact": "Erken engagement sinyali"},
+    {"key": "community_post", "label": "1 Community tweet'i paylas (For You'da gorunur)", "impact": "Community visibility boost"},
     {"key": "no_external_link", "label": "External link varsa 1. reply'e koy, ana postta olmasin", "impact": "Link cezasi onleme"},
-    {"key": "diversify", "label": "Post turlerini cesitlendir (ayni turden ceza gelir)", "impact": "Diversity bonus"},
+    {"key": "asymmetric_time", "label": "Asimetrik saatlerde paylas (:07, :22, :43 — botlardan ayris)", "impact": "Organik sinyal"},
     {"key": "check_analytics", "label": "X Analytics: Impressions & Profile visits kontrol", "impact": "Zamanlama optimizasyonu"},
 ]
 

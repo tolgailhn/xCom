@@ -32,11 +32,11 @@ type SelfLogFilter = "all" | "published" | "ready" | "failed";
 
 export default function OtomatikYanitPage() {
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<"config" | "logs" | "self_reply">("config");
+  const [tab, setTab] = useState<"config" | "logs" | "self_reply" | "analytics">("config");
 
   useEffect(() => {
     const t = searchParams.get("tab");
-    if (t === "config" || t === "logs" || t === "self_reply") setTab(t);
+    if (t === "config" || t === "logs" || t === "self_reply" || t === "analytics") setTab(t);
   }, [searchParams]);
 
   // Auto-Reply state
@@ -64,6 +64,10 @@ export default function OtomatikYanitPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [logFilter, setLogFilter] = useState<LogFilter>("all");
   const [markingId, setMarkingId] = useState<string | null>(null);
+  const [logSearch, setLogSearch] = useState("");
+  const [logAccountFilter, setLogAccountFilter] = useState("");
+  const [selectedLogIds, setSelectedLogIds] = useState<Set<string>>(new Set());
+  const [bulkActioning, setBulkActioning] = useState(false);
 
   // Self-Reply state
   const [selfConfig, setSelfConfig] = useState<SelfReplyConfig>({
@@ -284,6 +288,52 @@ export default function OtomatikYanitPage() {
     }));
   }
 
+  // Bulk actions
+  async function handleBulkMarkPosted() {
+    if (selectedLogIds.size === 0) return;
+    setBulkActioning(true);
+    for (const id of selectedLogIds) {
+      try {
+        await markAutoReplyLogPosted(id);
+      } catch { /* skip */ }
+    }
+    setSelectedLogIds(new Set());
+    setBulkActioning(false);
+    const logsRes = await getAutoReplyLogs(200);
+    setLogs(logsRes.logs);
+  }
+
+  async function handleBulkDelete() {
+    if (selectedLogIds.size === 0) return;
+    setBulkActioning(true);
+    for (const id of selectedLogIds) {
+      try {
+        await deleteAutoReplyLog(id);
+      } catch { /* skip */ }
+    }
+    setSelectedLogIds(new Set());
+    setBulkActioning(false);
+    const logsRes = await getAutoReplyLogs(200);
+    setLogs(logsRes.logs);
+  }
+
+  function toggleLogSelection(id: string) {
+    setSelectedLogIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAllFiltered() {
+    if (selectedLogIds.size === filteredLogs.length) {
+      setSelectedLogIds(new Set());
+    } else {
+      setSelectedLogIds(new Set(filteredLogs.map((l) => l.id)));
+    }
+  }
+
   function formatTime(isoStr: string) {
     try {
       const d = new Date(isoStr);
@@ -298,12 +348,43 @@ export default function OtomatikYanitPage() {
     }
   }
 
-  // Auto-reply log filtering
+  function relativeTime(isoStr: string): string {
+    try {
+      const d = new Date(isoStr);
+      const now = new Date();
+      const diffMs = now.getTime() - d.getTime();
+      const diffMin = Math.floor(diffMs / 60000);
+      if (diffMin < 1) return "az once";
+      if (diffMin < 60) return `${diffMin} dk once`;
+      const diffHr = Math.floor(diffMin / 60);
+      if (diffHr < 24) return `${diffHr} saat once`;
+      const diffDay = Math.floor(diffHr / 24);
+      if (diffDay < 7) return `${diffDay} gun once`;
+      return formatTime(isoStr);
+    } catch {
+      return isoStr;
+    }
+  }
+
+  // Unique accounts from logs for filter dropdown
+  const uniqueAccounts = [...new Set(logs.map((l) => l.account).filter(Boolean))].sort();
+
+  // Auto-reply log filtering (status + account + text search)
   const filteredLogs = logs.filter((log) => {
-    if (logFilter === "all") return true;
-    if (logFilter === "ready") return log.status === "ready";
-    if (logFilter === "manually_posted") return log.status === "manually_posted" || log.status === "published";
-    if (logFilter === "failed") return log.status === "generation_failed" || log.status === "publish_failed";
+    // Status filter
+    if (logFilter === "ready" && log.status !== "ready") return false;
+    if (logFilter === "manually_posted" && log.status !== "manually_posted" && log.status !== "published") return false;
+    if (logFilter === "failed" && log.status !== "generation_failed" && log.status !== "publish_failed") return false;
+    // Account filter
+    if (logAccountFilter && log.account !== logAccountFilter) return false;
+    // Text search
+    if (logSearch) {
+      const q = logSearch.toLowerCase();
+      const inTweet = (log.tweet_text || "").toLowerCase().includes(q);
+      const inReply = (log.reply_text || "").toLowerCase().includes(q);
+      const inAccount = (log.account || "").toLowerCase().includes(q);
+      if (!inTweet && !inReply && !inAccount) return false;
+    }
     return true;
   });
 
@@ -489,6 +570,16 @@ export default function OtomatikYanitPage() {
               {selfStatus.today_replied}/{selfStatus.max_daily}
             </span>
           )}
+        </button>
+        <button
+          onClick={() => setTab("analytics")}
+          className={`px-4 py-2 rounded-t-lg text-sm font-medium transition-all ${
+            tab === "analytics"
+              ? "bg-[var(--accent-cyan)]/20 text-[var(--accent-cyan)] border-b-2 border-[var(--accent-cyan)]"
+              : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          }`}
+        >
+          Analitik
         </button>
       </div>
 
@@ -797,34 +888,91 @@ export default function OtomatikYanitPage() {
       {tab === "logs" && (
         <div className="space-y-4">
           {/* Filter Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex gap-2 flex-wrap">
-              {([
-                { key: "all" as LogFilter, label: "Tumu", count: logs.length },
-                { key: "ready" as LogFilter, label: "Bekleyen", count: readyCount },
-                { key: "manually_posted" as LogFilter, label: "Paylasilan", count: postedCount },
-                { key: "failed" as LogFilter, label: "Hatali", count: failedCount },
-              ]).map((f) => (
+          <div className="space-y-3">
+            {/* Status filters */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex gap-2 flex-wrap">
+                {([
+                  { key: "all" as LogFilter, label: "Tumu", count: logs.length },
+                  { key: "ready" as LogFilter, label: "Bekleyen", count: readyCount },
+                  { key: "manually_posted" as LogFilter, label: "Paylasilan", count: postedCount },
+                  { key: "failed" as LogFilter, label: "Hatali", count: failedCount },
+                ]).map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setLogFilter(f.key)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      logFilter === f.key
+                        ? "bg-[var(--accent-blue)]/20 text-[var(--accent-blue)]"
+                        : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                    }`}
+                  >
+                    {f.label} ({f.count})
+                  </button>
+                ))}
+              </div>
+              {logs.length > 0 && (
                 <button
-                  key={f.key}
-                  onClick={() => setLogFilter(f.key)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    logFilter === f.key
-                      ? "bg-[var(--accent-blue)]/20 text-[var(--accent-blue)]"
-                      : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                  }`}
+                  onClick={handleClearLogs}
+                  className="text-xs text-red-400 hover:text-red-300 transition-colors"
                 >
-                  {f.label} ({f.count})
+                  Tum Loglari Temizle
                 </button>
-              ))}
+              )}
             </div>
-            {logs.length > 0 && (
-              <button
-                onClick={handleClearLogs}
-                className="text-xs text-red-400 hover:text-red-300 transition-colors"
-              >
-                Tum Loglari Temizle
-              </button>
+
+            {/* Search + Account filter */}
+            <div className="flex flex-wrap gap-2">
+              <input
+                type="text"
+                value={logSearch}
+                onChange={(e) => setLogSearch(e.target.value)}
+                placeholder="Metin ara (tweet, reply, hesap)..."
+                className="flex-1 min-w-[200px] bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-xs focus:border-[var(--accent-blue)] focus:outline-none"
+              />
+              {uniqueAccounts.length > 1 && (
+                <select
+                  value={logAccountFilter}
+                  onChange={(e) => setLogAccountFilter(e.target.value)}
+                  className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
+                >
+                  <option value="">Tum Hesaplar</option>
+                  {uniqueAccounts.map((a) => (
+                    <option key={a} value={a}>@{a}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Bulk actions toolbar */}
+            {filteredLogs.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <button
+                  onClick={toggleSelectAllFiltered}
+                  className="px-2 py-1 rounded bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                >
+                  {selectedLogIds.size === filteredLogs.length ? "Secimi Kaldir" : `Tumunu Sec (${filteredLogs.length})`}
+                </button>
+                {selectedLogIds.size > 0 && (
+                  <>
+                    <span className="text-[var(--text-secondary)]">{selectedLogIds.size} secili</span>
+                    <button
+                      onClick={handleBulkMarkPosted}
+                      disabled={bulkActioning}
+                      className="px-2 py-1 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                    >
+                      {bulkActioning ? "Isleniyor..." : "Paylasildi Isaretle"}
+                    </button>
+                    <button
+                      onClick={handleBulkDelete}
+                      disabled={bulkActioning}
+                      className="px-2 py-1 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                    >
+                      {bulkActioning ? "Siliniyor..." : "Secilenleri Sil"}
+                    </button>
+                  </>
+                )}
+              </div>
             )}
           </div>
 
@@ -845,11 +993,17 @@ export default function OtomatikYanitPage() {
                 return (
                   <div
                     key={log.id}
-                    className={`card p-4 md:p-5 border-l-4 ${borderColor}`}
+                    className={`card p-4 md:p-5 border-l-4 ${borderColor} ${selectedLogIds.has(log.id) ? "ring-1 ring-[var(--accent-blue)]/50" : ""}`}
                   >
                     {/* Header */}
                     <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
                       <div className="flex flex-wrap items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedLogIds.has(log.id)}
+                          onChange={() => toggleLogSelection(log.id)}
+                          className="rounded cursor-pointer"
+                        />
                         <a
                           href={`https://x.com/${log.account}`}
                           target="_blank"
@@ -862,7 +1016,10 @@ export default function OtomatikYanitPage() {
                           {badge.label}
                         </span>
                         {log.engagement_score != null && log.engagement_score > 0 && (
-                          <span className="text-xs text-[var(--text-secondary)]">
+                          <span
+                            className="text-xs text-[var(--text-secondary)] cursor-help"
+                            title={`Score = likes x1 + RTs x20 + replies x13.5 + bookmarks x10`}
+                          >
                             Score: {Math.round(log.engagement_score)}
                           </span>
                         )}
@@ -878,8 +1035,11 @@ export default function OtomatikYanitPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-[var(--text-secondary)]">
-                          {formatTime(log.created_at)}
+                        <span
+                          className="text-xs text-[var(--text-secondary)] cursor-help"
+                          title={formatTime(log.created_at)}
+                        >
+                          {relativeTime(log.created_at)}
                         </span>
                         <button
                           onClick={() => handleDeleteLog(log.id)}
@@ -1426,6 +1586,235 @@ export default function OtomatikYanitPage() {
           </div>
         </div>
       )}
+
+      {/* ══════════════════════════════════════════════════ */}
+      {/* Analytics Tab */}
+      {/* ══════════════════════════════════════════════════ */}
+      {tab === "analytics" && <AnalyticsTab logs={logs} selfLogs={selfLogs} />}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   ANALYTICS TAB COMPONENT
+   ══════════════════════════════════════════════════════════ */
+
+function AnalyticsTab({ logs, selfLogs }: { logs: AutoReplyLog[]; selfLogs: SelfReplyLog[] }) {
+  // --- Computed analytics from existing logs ---
+  const allLogs = logs;
+  const total = allLogs.length;
+  const published = allLogs.filter(
+    (l) => l.status === "published" || l.status === "manually_posted"
+  ).length;
+  const failed = allLogs.filter(
+    (l) => l.status === "generation_failed" || l.status === "publish_failed"
+  ).length;
+  const ready = allLogs.filter((l) => l.status === "ready").length;
+  const successRate = total > 0 ? Math.round(((published / (published + failed)) || 0) * 100) : 0;
+
+  // Per-account stats
+  const accountStats: Record<string, { total: number; published: number; failed: number }> = {};
+  for (const log of allLogs) {
+    const acc = log.account || "unknown";
+    if (!accountStats[acc]) accountStats[acc] = { total: 0, published: 0, failed: 0 };
+    accountStats[acc].total++;
+    if (log.status === "published" || log.status === "manually_posted") accountStats[acc].published++;
+    if (log.status === "generation_failed" || log.status === "publish_failed") accountStats[acc].failed++;
+  }
+  const accountList = Object.entries(accountStats)
+    .sort(([, a], [, b]) => b.total - a.total);
+
+  // Hourly heatmap (which hours produce most replies)
+  const hourCounts = new Array(24).fill(0);
+  const hourPublished = new Array(24).fill(0);
+  for (const log of allLogs) {
+    try {
+      const h = new Date(log.created_at).getHours();
+      hourCounts[h]++;
+      if (log.status === "published" || log.status === "manually_posted") hourPublished[h]++;
+    } catch { /* skip */ }
+  }
+  const maxHourCount = Math.max(...hourCounts, 1);
+
+  // Self-reply stats
+  const selfTotal = selfLogs.length;
+  const selfPublished = selfLogs.filter((l) => l.status === "published").length;
+  const selfFailed = selfLogs.filter(
+    (l) => l.status === "generation_failed" || l.status === "publish_failed"
+  ).length;
+
+  // Daily trend (last 7 days)
+  const dailyCounts: Record<string, { total: number; published: number }> = {};
+  for (const log of allLogs) {
+    try {
+      const day = new Date(log.created_at).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" });
+      if (!dailyCounts[day]) dailyCounts[day] = { total: 0, published: 0 };
+      dailyCounts[day].total++;
+      if (log.status === "published" || log.status === "manually_posted") dailyCounts[day].published++;
+    } catch { /* skip */ }
+  }
+  const dailyList = Object.entries(dailyCounts).slice(-7);
+
+  return (
+    <div className="space-y-6">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="card p-4 text-center">
+          <div className="text-2xl font-bold text-[var(--accent-blue)]">{total}</div>
+          <div className="text-xs text-[var(--text-secondary)]">Toplam Reply</div>
+        </div>
+        <div className="card p-4 text-center">
+          <div className="text-2xl font-bold text-green-400">{published}</div>
+          <div className="text-xs text-[var(--text-secondary)]">Paylasilan</div>
+        </div>
+        <div className="card p-4 text-center">
+          <div className={`text-2xl font-bold ${successRate >= 70 ? "text-green-400" : successRate >= 40 ? "text-yellow-400" : "text-red-400"}`}>
+            %{successRate}
+          </div>
+          <div className="text-xs text-[var(--text-secondary)]">Basari Orani</div>
+        </div>
+        <div className="card p-4 text-center">
+          <div className="text-2xl font-bold text-purple-400">{selfPublished}</div>
+          <div className="text-xs text-[var(--text-secondary)]">Self Reply</div>
+        </div>
+      </div>
+
+      {/* Hourly Heatmap */}
+      <div className="card p-5">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
+          Saat Bazli Aktivite (Isi Haritasi)
+        </h3>
+        <div className="grid grid-cols-12 gap-1">
+          {hourCounts.map((count, hour) => {
+            const intensity = count / maxHourCount;
+            const bg = count === 0
+              ? "bg-[var(--bg-primary)]"
+              : intensity > 0.7
+              ? "bg-[var(--accent-blue)]"
+              : intensity > 0.4
+              ? "bg-[var(--accent-blue)]/60"
+              : "bg-[var(--accent-blue)]/30";
+            return (
+              <div
+                key={hour}
+                className={`${bg} rounded p-1.5 text-center cursor-help transition-all`}
+                title={`${String(hour).padStart(2, "0")}:00 — ${count} reply (${hourPublished[hour]} paylasilan)`}
+              >
+                <div className="text-[9px] text-[var(--text-secondary)]">
+                  {String(hour).padStart(2, "0")}
+                </div>
+                <div className="text-xs font-bold">{count || ""}</div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-3 mt-2 text-[10px] text-[var(--text-secondary)]">
+          <span>Az</span>
+          <div className="flex gap-0.5">
+            <div className="w-3 h-3 rounded bg-[var(--bg-primary)]" />
+            <div className="w-3 h-3 rounded bg-[var(--accent-blue)]/30" />
+            <div className="w-3 h-3 rounded bg-[var(--accent-blue)]/60" />
+            <div className="w-3 h-3 rounded bg-[var(--accent-blue)]" />
+          </div>
+          <span>Cok</span>
+        </div>
+      </div>
+
+      {/* Account Performance */}
+      {accountList.length > 0 && (
+        <div className="card p-5">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
+            Hesap Bazli Performans
+          </h3>
+          <div className="space-y-2">
+            {accountList.map(([account, stats]) => {
+              const rate = stats.total > 0 ? Math.round((stats.published / stats.total) * 100) : 0;
+              return (
+                <div key={account} className="flex items-center gap-3">
+                  <a
+                    href={`https://x.com/${account}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-[var(--accent-blue)] hover:underline min-w-[120px]"
+                  >
+                    @{account}
+                  </a>
+                  <div className="flex-1 h-2 bg-[var(--bg-primary)] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-green-500 rounded-full transition-all"
+                      style={{ width: `${rate}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-[var(--text-secondary)] min-w-[80px] text-right">
+                    {stats.published}/{stats.total} (%{rate})
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Daily Trend */}
+      {dailyList.length > 0 && (
+        <div className="card p-5">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
+            Gunluk Trend
+          </h3>
+          <div className="flex items-end gap-2 h-32">
+            {dailyList.map(([day, stats]) => {
+              const maxDaily = Math.max(...dailyList.map(([, s]) => s.total), 1);
+              const height = (stats.total / maxDaily) * 100;
+              const pubHeight = (stats.published / maxDaily) * 100;
+              return (
+                <div key={day} className="flex-1 flex flex-col items-center gap-1">
+                  <div className="relative w-full flex flex-col items-center" style={{ height: "100%" }}>
+                    <div className="w-full flex flex-col justify-end h-full">
+                      <div
+                        className="w-full bg-[var(--accent-blue)]/20 rounded-t relative"
+                        style={{ height: `${height}%`, minHeight: stats.total > 0 ? "4px" : "0" }}
+                      >
+                        <div
+                          className="absolute bottom-0 w-full bg-green-500/60 rounded-t"
+                          style={{ height: `${stats.total > 0 ? (pubHeight / height) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-[9px] text-[var(--text-secondary)]">{day}</div>
+                  <div className="text-[10px] font-medium">{stats.total}</div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-3 mt-2 text-[10px] text-[var(--text-secondary)]">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded bg-[var(--accent-blue)]/20" />
+              <span>Toplam</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded bg-green-500/60" />
+              <span>Paylasilan</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="card p-4">
+          <div className="text-xs text-[var(--text-secondary)] mb-1">Bekleyen Reply</div>
+          <div className="text-xl font-bold text-yellow-400">{ready}</div>
+        </div>
+        <div className="card p-4">
+          <div className="text-xs text-[var(--text-secondary)] mb-1">Basarisiz</div>
+          <div className="text-xl font-bold text-red-400">{failed}</div>
+        </div>
+        <div className="card p-4">
+          <div className="text-xs text-[var(--text-secondary)] mb-1">Self Reply Basarisiz</div>
+          <div className="text-xl font-bold text-red-400">{selfFailed}</div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -44,22 +44,11 @@ def pull_user_tweets(twikit_client, username: str, count: int = 500,
 
 def calculate_engagement_score(tweet: dict) -> float:
     """
-    Calculate weighted engagement score based on X algorithm weights.
-    RT = 20x, Reply = 13.5x, Like = 1x, Bookmark ≈ 10x
+    Calculate weighted engagement score based on X 2026 Phoenix algorithm weights.
+    Delegates to constants.py single source of truth.
     """
-    rt = _safe_int(tweet.get("retweet_count", 0))
-    reply = _safe_int(tweet.get("reply_count", 0))
-    like = _safe_int(tweet.get("like_count", 0))
-    impressions = _safe_int(tweet.get("impression_count", 0))
-
-    score = (rt * 20) + (reply * 13.5) + (like * 1)
-
-    # Engagement rate bonus (if impressions available)
-    if impressions > 0:
-        engagement_rate = (rt + reply + like) / impressions
-        score *= (1 + engagement_rate)
-
-    return round(score, 2)
+    from modules.constants import calculate_engagement_score as _calc
+    return _calc(tweet)
 
 
 def extract_keywords(text: str) -> list[str]:

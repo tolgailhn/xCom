@@ -8,17 +8,33 @@ import openai
 import json
 import random
 
-# X Algorithm optimization guidelines — based on real algorithm data (2025-2026)
+# X Algorithm optimization guidelines — based on X 2026 Phoenix Algorithm (Grok-powered)
 X_ALGORITHM_RULES = """
-## X/Twitter Algoritma Kuralları (Gerçek Veriler, 2025-2026):
+## X/Twitter Algoritma Kuralları (2026 Phoenix Algorithm — Grok tabanlı):
 
-### Engagement Puanlama (Algoritma ağırlıkları):
-- Retweet = 20x puan (en değerli!)
+### Engagement Puanlama (Algoritma ağırlıkları — 2026 güncel):
+- Conversation (reply + yazar geri reply) = 75x puan (toplam 150x! EN ÖNEMLİ!)
+- Retweet = 20x puan
 - Reply = 13.5x puan
-- Profil tıklaması = 12x puan
-- Link tıklaması = 11x puan
+- Profil ziyareti + etkileşim = 12x puan
 - Bookmark = 10x puan
-- Like = 1x puan (en düşük!)
+- Dwell time (2+ dk okuma) = 10x puan
+- Quote Tweet = ~10x puan
+- Like = 0.5x puan (en düşük!)
+- Report = -369x (felaket — negatif ton dikkat!)
+
+### KRİTİK: Conversation Multiplier
+- Birileri reply atıp sen geri reply atarsan = 150x like değeri
+- Bu yüzden: reply gelmesini teşvik et (güçlü görüş, tartışma başlat) ama doğrudan "ne düşünüyorsunuz?" SORMA
+
+### Sentiment Analizi (YENİ - Grok):
+- Grok sentiment analizi yapıyor — negatif/kavgacı ton yüksek engagement'a rağmen BASKIANIYOR
+- POZİTİF veya NÖTR ton kullan, yapıcı eleştiri OK ama hakaret/saldırı YASAK
+
+### İlk 100 Karakter Optimizasyonu:
+- Grok semantik anlıyor, hashtag gereksiz
+- İlk 100 karakterde ana keyword'ü doğal şekilde kullan
+- Hook'u güçlü yap — ilk satır SCROLL DURDURUCUSU olmalı
 
 ### Dwell Time (Okuma Süresi):
 - Algoritma kullanıcının tweet'te ne kadar süre harcadığını ölçer
@@ -75,10 +91,12 @@ KÖTÜ HOOK ÖRNEKLERİ (BUNLARI ASLA YAZMA):
 - "İşte neden 👇" ← klişe twitter kalıbı
 
 ### NEDEN BU FORMAT?
-- Retweet en değerli → İnsanların paylaşmak isteyeceği cesur fikirler yaz
+- Conversation 150x EN DEĞERLİ → Reply gelmesini sağla, güçlü görüş yaz (soru SORMA, iddialı ol)
+- Retweet 20x → İnsanların paylaşmak isteyeceği cesur fikirler yaz
 - Reply 13.5x → Güçlü görüş/tahmin yaz, insanlar itiraz etmek ya da onaylamak için reply atar
-- Dwell time → Paragrafları kısa tut, merak uyandır, okuttur
+- Dwell time 10x → Paragrafları kısa tut, merak uyandır, okuttur
 - Profil tıklaması 12x → Bilgili ve ilginç yaz, "bu kim?" dedirt
+- POZİTİF TON → Grok negatif tonu cezalandırıyor, yapıcı ve pozitif yaz
 """
 
 # Base system prompt for natural writing

@@ -38,12 +38,9 @@ MAX_TWEET_AGE_HOURS = 168
 
 
 def _engagement_score(tweet: dict) -> float:
-    """Tweet engagement score hesapla (X algorithm ağırlıkları)."""
-    likes = tweet.get("like_count", 0) or 0
-    rts = tweet.get("retweet_count", 0) or 0
-    replies = tweet.get("reply_count", 0) or 0
-    bookmarks = tweet.get("bookmark_count", 0) or 0
-    return likes * 1 + rts * 20 + replies * 13.5 + bookmarks * 10
+    """Tweet engagement score hesapla (constants.py tek kaynak)."""
+    from modules.constants import calculate_engagement_score
+    return calculate_engagement_score(tweet)
 
 
 def _is_retweet(tweet_text: str) -> bool:

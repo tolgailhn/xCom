@@ -76,12 +76,25 @@ Pages → tweet_pool (havuz yönetimi, akıllı seçim)
 ### AI Provider Sıralaması
 MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu sırayla kontrol eder.
 
-### Engagement Score Ağırlıkları (X Algorithm)
-**Tek kaynak: `tweet_analyzer.py` ve `twitter_scanner.py` aynı ağırlıkları kullanır.**
-- RT = 20x, Reply = 13.5x, Like = 1x, Bookmark ≈ 10x
-- `twitter_scanner.py:AITopic.engagement_score` → tarama sıralaması için
-- `tweet_analyzer.py:calculate_engagement_score()` → detaylı analiz için (impressions bonus dahil)
-- `calculate_relevance()` divisor = 1000 (bu ağırlıklarla uyumlu)
+### Engagement Score Ağırlıkları (X 2026 Phoenix Algorithm)
+**Tek kaynak: `backend/modules/constants.py` → `ENGAGEMENT_WEIGHTS` dict**
+- Conversation (reply + yazar geri reply) = 75x (toplam 150x like!)  ← EN ÖNEMLİ
+- RT = 20x, Reply = 13.5x, Profile Visit = 12x, Bookmark = 10x
+- Dwell Time (2+ dk okuma) = 10x, Like = 0.5x (baseline)
+- Report = -369x (felaket)
+- **Kullanan dosyalar**: tweet_analyzer.py, twitter_scanner.py, auto_reply_worker.py, discovery_worker.py
+- `content_generator.py` system prompt'ta da bu ağırlıkları referans eder
+
+### X 2026 Algoritma Kritik Bulguları
+1. **Conversation multiplier EN ÖNEMLİ sinyal** — Reply atıp geri reply alınca = 150x like
+2. **Premium zorunlu gibi** — Premium hesaplar 10-15x daha fazla erişim
+3. **İlk 30-60 dakika kritik** — Erken engagement dağılımı belirliyor
+4. **Harici link'ler %50-90 erişim düşürüyor** — Link'i reply'a koy
+5. **Thread'ler 3x daha fazla toplam engagement** — Optimum 4-8 tweet
+6. **Hashtag'ler gereksiz** — Grok semantik anlıyor, ilk 100 karakterde keyword önemli
+7. **Negatif ton cezalandırılıyor** — Grok sentiment analizi yapıyor
+8. **Community postları For You'da görünüyor** (Şubat 2026'dan beri)
+9. **Asimetrik saatler** — :07, :22, :43 gibi saatlerde paylaş (botlardan ayrışma)
 
 ### Arama Motoru: DuckDuckGo
 - `deep_research.py` paralel arama kullanır (ThreadPoolExecutor, 4 worker)
@@ -112,13 +125,17 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 | 2026-03-04 | media_urls araştırma akışında korunuyor | Daha önce AITopic→ResearchResult dönüşümünde kayboluyordu |
 | 2026-03-05 | sniffio cvar wrapper (`_ensure_sniffio_asyncio`) | httpcore→sniffio `run_coroutine_threadsafe` task'larında async library algılayamıyor → wrapper cvar set eder |
 | 2026-03-05 | Transport hataları re-auth tetiklemiyor | `weak reference`/`async library` hataları auth değil transport sorunu, re-auth aynı hatayı tekrarlıyordu |
+| 2026-03-11 | Engagement weights → `constants.py` tek kaynak | 4+ yerde tanımlı tutarsız ağırlıklar tek dosyaya taşındı |
+| 2026-03-11 | 2026 Phoenix Algorithm ağırlıkları | Conversation 75x (150x toplam), Dwell 10x, Like 0.5x eklendi |
+| 2026-03-11 | Checklist 8 maddeye güncellendi | Community posting, reply-back, asimetrik saat eklendi |
+| 2026-03-11 | Generator API provider eksikleri düzeltildi | icerik + yaz sayfalarında 4 tab'da provider dropdown eksikti |
 
 ---
 
 ## Bilinen Sorunlar / Teknik Borç
 
 ### Aktif Sorunlar
-- [ ] **Engagement weights 3 yerde tanımlı**: `twitter_scanner.py`, `tweet_analyzer.py`, `content_generator.py` (system prompt). Tek bir `ENGAGEMENT_WEIGHTS` sabiti yapılabilir.
+- [x] **Engagement weights 4+ yerde tanımlı** → `constants.py` tek kaynağa taşındı (2026-03-11)
 - [ ] **Kategori tanımları 2 yerde**: `twitter_scanner.py:CATEGORY_KEYWORDS` ve `telegram_notifier.py`. Tek kaynağa taşınabilir.
 - [ ] **Hardcoded config**: Account listesi, API limitleri, timeout'lar ayrı bir `config.py`'ye taşınabilir.
 - [ ] **Test eksikliği**: Hiçbir modülde unit test yok.
@@ -490,3 +507,35 @@ Streamlit: `streamlit_app.py` -> Next.js: `xcom-aktif/frontend/src/app/page.tsx`
 - **feat**: Haftalık özet (post sayısı, medya oranı, self-reply oranı, tür dağılımı)
 - **feat**: `style_manager.py` — `load_posting_log()`, `save_posting_log()`, `log_scheduled_post()`, `load_daily_checklist()`, `save_daily_checklist()`
 - **feat**: `streamlit_app.py` — Ana sayfada "Bugünkü Plan" özet kartı + geri sayım
+
+### 2026-03-11 (2026 Algoritma Güncellemesi + Yanıtlar Sayfası)
+- **fix**: `icerik/page.tsx` — TabDiscover ve TabGenerate'e provider dropdown eklendi (eksikti)
+- **fix**: `yaz/page.tsx` — TabLinkReply ve TabSelfReply'a provider dropdown eklendi (eksikti)
+- **fix**: `yaz/page.tsx` — TabQuickReply'a provider dropdown UI eklendi (state vardı, UI yoktu)
+- **fix**: `icerik/page.tsx` — generateLongContent redundant `length` parametresi kaldırıldı
+- **feat**: `backend/modules/constants.py` — Engagement ağırlıkları tek kaynağa taşındı (2026 Phoenix)
+- **feat**: `backend/api/calendar.py` — Checklist 6→8 maddeye güncellendi (community, reply-back, asimetrik saat)
+- **feat**: `otomatik-yanit/page.tsx` — Yanıtlar sayfası: filtreleme, arama, relative time, tooltip, bulk actions
+- **feat**: `otomatik-yanit/page.tsx` — Analitik tab: başarı oranı, hesap performansı, saat ısı haritası
+- **docs**: `CLAUDE.md` — 2026 algoritma bulguları, engagement ağırlıkları, devam eden işler bölümü
+
+---
+
+## DEVAM EDEN İŞLER (Session Arası Hafıza)
+
+Bu bölüm her session sonunda güncellenir. Yeni session başladığında buraya bak.
+
+### Aktif Çalışma (2026-03-11)
+- [x] Aşama 0: Generator API provider eksikleri düzeltildi
+- [x] Aşama 1: CLAUDE.md güncellendi (2026 algoritma + unutma çözümü)
+- [ ] Aşama 2: `constants.py` oluştur + engagement ağırlıkları tek kaynağa taşı
+- [ ] Aşama 3: Checklist 2026'ya güncelle (8 madde)
+- [ ] Aşama 4: Yanıtlar sayfası filtreleme & UX iyileştirmeleri
+- [ ] Aşama 5: Yanıtlar sayfası analitik tab
+
+### Planlanan İyileştirmeler (Sonraki Session'lar)
+- En iyi paylaşım saati analizi
+- Rakip analizi
+- Tüm reply özelliklerini tek "Yanıt Merkezi" sayfasında birleştirme
+- Dry-run modu (kaydetmeden reply önizleme)
+- 90 günden eski logları otomatik temizleme

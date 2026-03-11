@@ -45,9 +45,9 @@ class AITopic:
 
     @property
     def engagement_score(self) -> float:
-        # X algorithm weights: RT=20x, Reply=13.5x, Like=1x
-        return (self.like_count * 1 + self.retweet_count * 20 +
-                self.reply_count * 13.5)
+        from modules.constants import W_RT, W_REPLY, W_LIKE, W_BOOKMARK
+        return (self.like_count * W_LIKE + self.retweet_count * W_RT +
+                self.reply_count * W_REPLY)
 
     @property
     def total_engagement(self) -> int:
