@@ -46,6 +46,10 @@ WRITING_STYLES = {
     "samimi": {
         "name": "Samimi / Kişisel",
         "description": "Kişisel deneyim odaklı, çok doğal ve samimi tweet yazımı",
+        "examples": [
+            "ya claude code'u bi denedim dün gece, 3 saatte bütün backend'i refactor etti. valla şaşırdım, cursor'dan fersah fersah iyi. tek sıkıntı token limiti, uzun session'larda biraz yavaşlıyor ama genel olarak müthiş.",
+            "bi baktım herkes ai agent yapıyor, ben de dedim bi deneyeyim. crewai kurdum, 2 agent tanımladım, birbirleriyle konuşturdum. sonuç: 45 dakika döngüde kaldılar. agent'lar henüz o kadar akıllı değil bence, ama potansiyel var.",
+        ],
         "prompt": """
 yazım tarzı: SAMİMİ / KİŞİSEL — EN DOĞAL HALİN
 
@@ -80,6 +84,10 @@ Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadele
     "profesyonel": {
         "name": "Profesyonel / Bilgilendirici",
         "description": "Bilgi odaklı, profesyonel ama sıcak",
+        "examples": [
+            "anthropic claude 4'ü duyurdu. reasoning benchmark'larında gpt-4o'yu %18 geride bırakıyor, fiyat aynı kalmış. asıl dikkat çeken kısım 200K context'te performans kaybı neredeyse sıfır — uzun belge analizi için oyun değiştirici olabilir.",
+            "meta llama 4 scout açık kaynak olarak yayınlandı. 109B parametre ama 16 expert mixture-of-experts ile çalışıyor, inference maliyeti beklentinin altında. bence asıl etki enterprise tarafında olacak, fine-tune maliyeti claude'un onda biri.",
+        ],
         "prompt": """
 yazım tarzı: PROFESYONEL / BİLGİLENDİRİCİ
 
@@ -115,6 +123,10 @@ Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadele
     "hook": {
         "name": "Hook / Viral Tarz",
         "description": "Güçlü açılış, cesur fikirler, viral potansiyeli yüksek",
+        "examples": [
+            "cursor'a aylık $20 veren herkes yanlış yapıyor. claude code'u 2 hafta test ettim — aynı işi yapıyor, ücretsiz, ve terminal'den çıkmana gerek yok. cursor'un tek avantajı GUI, ama o da 3 ay içinde kapanacak farkı.",
+            "ai startup'ların %90'ı 2 yıl içinde kapanacak. neden mi? hepsi aynı şeyi yapıyor — openai api'nin üstüne wrapper. asıl kazananlar infra kuranlar olacak, wrapper değil.",
+        ],
         "prompt": """
 yazım tarzı: HOOK / VİRAL
 
@@ -154,6 +166,10 @@ Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadele
     "analitik": {
         "name": "Analitik / Derinlemesine",
         "description": "Derinlemesine analiz, karşılaştırma ve tahminler",
+        "examples": [
+            "herkes gpt-5'in benchmark'larına bakıyor ama asıl hikaye başka. openai reasoning modeline 3x daha fazla compute harcıyor, bu da inference maliyetini katladı. yani evet daha akıllı, ama her sorgu 3 kat pahalı. enterprise müşteriler bunu tolere eder mi? geçen yıl gpt-4 çıktığında aynı tartışma oldu, sonuç: %60'ı gpt-3.5'te kaldı.",
+            "open source vs closed source tartışmasında herkes yanlış noktaya bakıyor. mesele model kalitesi değil, data flywheel. openai her gün milyarlarca sorgudan öğreniyor, llama ise statik dataset'le eğitiliyor. açık kaynak model kalitesinde yetişebilir ama veri döngüsünde asla yakalayamaz.",
+        ],
         "prompt": """
 yazım tarzı: ANALİTİK / DERİNLEMESİNE
 
@@ -194,6 +210,10 @@ Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadele
     "haber": {
         "name": "Haber / Bilgi Paylaşımı",
         "description": "Detaylı AI haber paylaşımı — bilgi + kişisel yorum",
+        "examples": [
+            "nvidia blackwell ultra tanıtıldı — tek çipte 288GB HBM4 bellek, önceki nesle göre inference'da 4x hızlanma var. fiyat henüz açıklanmadı ama b200'e göre %40 pahalı olması bekleniyor. hyperscaler'lar için tasarlanmış, bireysel kullanıcılar için h100 hala daha mantıklı.",
+            "openai codex'i yeniden canlandırdı, bu sefer cloud sandbox'ta çalışan otonom kodlama agent'ı olarak. github repo'na bağlıyorsun, issue atıyorsun, PR açıp gönderiyor. test ettiklerinde basit bug fix'lerde %83 başarı oranı görmüşler.",
+        ],
         "prompt": """
 yazım tarzı: HABER / BİLGİ PAYLAŞIMI
 
@@ -229,6 +249,10 @@ Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadele
     "agresif": {
         "name": "Agresif / Enerjik",
         "description": "Direkt, enerjik, fırsat odaklı — güçlü ton",
+        "examples": [
+            "hala chatgpt'ye \"blog yazısı yaz\" diyip çıkanı kopyalayan var. olm 2026'dayız, ai agent'lar senin yerine araştırma yapıp, veri çekip, analiz edip sunuyor. sen hala prompt mühendisliği yapıyorsun. uyan artık.",
+            "claude code çıktı, bedava, terminal'den tüm projeyi yönetiyor. cursor'a para veren herkes dur ve düşünsün. 3 ay içinde herkes buna geçecek, şimdiden başlayanlar avantajlı.",
+        ],
         "prompt": """
 yazım tarzı: AGRESİF / ENERJİK
 
@@ -262,6 +286,10 @@ Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadele
     "quote_tweet": {
         "name": "Quote Tweet / Yorum",
         "description": "Tweet'e kendi yorumunu ekle, doğal ve samimi",
+        "examples": [
+            "tam olarak bu. ben de geçen hafta aynı şeyi yaşadım, 3 farklı agent framework'ü denedim hiçbiri production'a hazır değil. potansiyel var ama herkes demo yapıp gerçek dünyada çalışmıyor.",
+            "buna katılmıyorum açıkçası. evet benchmark'larda iyi ama gerçek kullanımda latency korkunç. ben production'da test ettim, cold start 8 saniye. kullanıcı o kadar beklemez.",
+        ],
         "prompt": """
 yazım tarzı: QUOTE TWEET / YORUM
 
@@ -315,6 +343,10 @@ Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadele
     "tolga": {
         "name": "Tolga Style",
         "description": "Gelişmeyi detaylarıyla aktaran, bilgi yoğun, pratik değer sunan format",
+        "examples": [
+            "claude code terminal tabanlı bir ai kodlama asistanı ve şu an piyasadaki en güçlü seçenek. kurulumu basit — npm ile yükleyip api key giriyorsun, o kadar. asıl gücü ajanik çalışmasında, bir dosyayı okuyup düzenleme, test çalıştırma, git commit atma gibi işlemleri sırayla kendi yapabiliyor. SSH desteği gelmiş, uzak sunuculara bağlanıp direkt orada çalışabiliyorsun.",
+            "windsurf cascade gerçekten ilginç bir yaklaşım getirmiş. IDE içinde agent çalışıyor ama sadece kod yazmıyor — dosya sistemi, terminal, tarayıcı hepsini kullanabiliyor. fiyatı cursor'un yarısı, pro plan aylık $10. asıl farkı multi-file editing'de, tek seferde 15-20 dosyayı tutarlı şekilde düzenleyebiliyor.",
+        ],
         "prompt": """
 yazım tarzı: TOLGA STYLE
 
@@ -368,6 +400,10 @@ Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadele
     "tolga_news": {
         "name": "Tolga News / Haber Aktarımı",
         "description": "Gelişmeyi detaylı araştırıp takipçilere bilgi aktaran haber formatı",
+        "examples": [
+            "xai grok 4'ü duyurdu — üç versiyon var: standart, reasoning ve multi-agent. multi-agent versiyonda 4 farklı ajan paralel tartışıp konsensüs oluşturuyor, tek modelin karar vermesinden daha güvenilir sonuçlar çıkıyor. halüsinasyon oranı %12'den %4.2'ye düşmüş, bu ciddi bir iyileşme. native tool calling gelmiş, yani doğrudan fonksiyon çağırma, web arama, dosya analizi yapabiliyor. 256K-2M token context window ile uzun belgelerle çalışmak artık gerçekten mümkün. fiyatlandırma henüz net değil — supergrok aylık ~30$ ama api tarafı belirsiz, bu birçok geliştirici için deneme engeli olabilir.",
+            "google deepmind gemini 3'ü sessizce yayınladı. 2 milyon token context window gelmiş, multimodal tarafında video anlama artık gerçek zamanlı çalışıyor. benchmark'larda gpt-5'le neredeyse eşit ama fiyatı yarısı. asıl dikkat çeken google'ın enterprise hamlesi — vertex ai entegrasyonu kutunun içinden çıkıyor, ayrı kurulum gerekmiyor. bu openai'ın enterprise müşterilerine doğrudan rakip.",
+        ],
         "prompt": """
 yazım tarzı: TOLGA NEWS / HABER AKTARIMI
 
@@ -435,6 +471,10 @@ Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadele
     "hurricane": {
         "name": "Hurricane Style",
         "description": "Provokasyon, kontrast, kısa-vurucu, konuşma dili — viral odaklı",
+        "examples": [
+            "cursor kullanıp hala aylık $200 veren adamlar var\n\nclaude code bedava\n\naçıp denesenize olm",
+            "herkes ai öğreniyorum diyor\n\nkimse bi proje yapmıyor\n\nöğrenmek = yapmak. chatgpt'ye soru sormak öğrenmek değil",
+        ],
         "prompt": """
 yazım tarzı: HURRICANE STYLE — KISA, KESKİN, VİRAL
 
@@ -498,6 +538,10 @@ Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadele
     "mentalist": {
         "name": "Mentalist / Düşündürücü",
         "description": "Psikolojik derinlik, insan davranışı analizi, düşündürücü bakış açısı",
+        "examples": [
+            "insanlar yeni ai tool çıkınca hemen \"işimizi alacak\" diyor ama fark etmedikleri şey başka. asıl korkuları işsiz kalmak değil — kontrol kaybı. kendi uzmanlık alanında bir makinenin daha iyi olması ego'ya dokunuyor. bu yüzden ilk tepki her zaman savunma.",
+            "dikkat ederseniz ai konusunda en çok korkan kişiler onu en az kullananlar. neden? bilinmezlik korkusu. bi kere oturup deneseler korkuları azalır ama beyinleri \"ya başarısız olursam\" diye engelliyor. klasik kaçınma davranışı.",
+        ],
         "prompt": """
 yazım tarzı: MENTALİST / DÜŞÜNDÜRÜCÜ
 
@@ -531,6 +575,10 @@ Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadele
     "sigma": {
         "name": "Sigma / Keskin Görüş",
         "description": "Net, filtresiz, bağımsız düşünce — kalabalığın tersine giden keskin bakış",
+        "examples": [
+            "herkes openai'a tapıyor ama işin gerçeği şu: closed source modeller 2 yıl içinde commodity olacak. asıl değer modelde değil, datada. kendi verinle fine-tune edemeyen şirketler api bağımlısı olarak kalacak.",
+            "popüler ama yanlış: \"ai herkesi kodlama öğrenmeye zorluyor.\" hayır. ai kodlamayı öğrenmeyi gereksiz kılıyor. 3 yıl içinde doğal dille yazılım geliştirmek normal olacak. syntax bilmek avantaj değil, problem çözme yeteneği avantaj.",
+        ],
         "prompt": """
 yazım tarzı: SIGMA / KESKİN GÖRÜŞ
 
@@ -564,6 +612,10 @@ Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadele
     "doomer": {
         "name": "Doomer / Eleştirmen",
         "description": "Realist/karamsar bakış, abartıyı söndüren, risklere odaklanan eleştirel analiz",
+        "examples": [
+            "herkes ai agent'lara bayılıyor ama kimse maliyetten bahsetmiyor. bir agent task'ı ortalama 50-200 api call yapıyor. gpt-4o fiyatıyla bu task başına $0.50-$2. günde 1000 task çalıştırsan aylık $15K-$60K. \"otomasyon tasarruf sağlıyor\" diyenlere soruyorum: hangi tasarruf?",
+            "yeni çıkan her ai model \"benchmark'larda lider\" diye tanıtılıyor. ama benchmark'lar gerçek kullanımı yansıtmıyor. mmlu'da %95 alan model basit bir müşteri mailini düzgün cevaplayamıyor. benchmark kirliliği ciddi bir sorun ve kimse konuşmuyor.",
+        ],
         "prompt": """
 yazım tarzı: DOOMER / ELEŞTİRMEN
 
@@ -597,6 +649,10 @@ Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadele
     "reply": {
         "name": "Reply / Hızlı Yanıt",
         "description": "Kısa, doğal ve etkileşim yaratan tweet yanıtı",
+        "examples": [
+            "bunu production'da test ettim, cold start süresi söylendiği kadar düşük değil. ama warm state'te gerçekten hızlı, orayı teslim etmek lazım.",
+            "açıkçası bunun asıl etkisi enterprise tarafında olacak. bireysel geliştiriciler zaten alternatif buluyor ama büyük şirketler için compliance + güvenlik kombinasyonu başka yerde yok.",
+        ],
         "prompt": """
 yazım tarzı: REPLY / HIZLI YANIT
 
@@ -635,6 +691,23 @@ Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadele
 """,
     },
 }
+
+# ============================================================================
+# STYLE CATEGORIES — Stil grupları (user prompt kuralları + angle filtreleme)
+# ============================================================================
+
+STYLE_CATEGORIES = {
+    "news": ["haber", "tolga_news", "profesyonel", "tolga"],
+    "personal": ["samimi", "agresif", "hurricane"],
+    "analytical": ["analitik", "mentalist", "sigma", "doomer"],
+    "viral": ["hook"],
+    "interactive": ["quote_tweet", "reply"],
+}
+
+_STYLE_TO_CATEGORY = {}
+for _cat, _styles in STYLE_CATEGORIES.items():
+    for _s in _styles:
+        _STYLE_TO_CATEGORY[_s] = _cat
 
 # ============================================================================
 # CONTENT FORMATS — Named format system with specific writing strategies
@@ -976,6 +1049,64 @@ TWEET_ANGLES = [
 def _pick_random_angle() -> dict:
     """Pick a random tweet angle for variety."""
     return random.choice(TWEET_ANGLES)
+
+
+# ============================================================================
+# CATEGORY-SPECIFIC USER PROMPT RULES
+# ============================================================================
+
+_USER_PROMPT_RULES = {
+    "news": """KURALLAR:
+- %100 doğal, insan yazısı olmalı
+- Robotik kalıplar YASAK
+- Klişe açılışlar YASAK (Heyecan verici gelişme!, Yapay zeka dünyasında... vs.)
+- Araştırmadaki somut bilgileri (rakamlar, tarihler, fiyatlar, teknik detaylar) tweet'e aktar — bilgi kaybetme
+- %80 BİLGİ AKTARIMI, %20 kişisel perspektif
+- Bilgiyi zaten BİLİYORMUŞ gibi yaz — "araştırdım" DEĞİL, direkt aktar
+- Teknik detayları doğru ver
+- ASLA kaynak belirtme — "@şuhesap diyor ki", "X'te şöyle yazıyorlar", "yorumlarda" gibi ifadeler YASAK
+- ⛔ BİLGİ UYDURMA: "X'te bazıları diyor", "kullanıcılar şüpheli" gibi kaynaksız iddialar YASAK
+- YUKARIDAKI BAKIŞ AÇISINA SADIK KAL""",
+
+    "personal": """KURALLAR:
+- %100 doğal, insan yazısı olmalı
+- Robotik kalıplar YASAK
+- Klişe açılışlar YASAK (Heyecan verici gelişme!, Yapay zeka dünyasında... vs.)
+- Kendi bakış açını ve yorumunu ekle
+- Teknik detayları doğru ver
+- ASLA kaynak belirtme — "@şuhesap diyor ki", "X'te şöyle yazıyorlar", "yorumlarda" gibi ifadeler YASAK
+- Bilgiyi KENDİ DENEYİMİN gibi yaz — "test ettim", "bence", "gördüğüm kadarıyla"
+- ⛔ BİLGİ UYDURMA: "X'te bazıları diyor", "kullanıcılar şüpheli" gibi kaynaksız iddialar YASAK
+- YUKARIDAKI BAKIŞ AÇISINA SADIK KAL""",
+
+    "analytical": """KURALLAR:
+- %100 doğal, insan yazısı olmalı
+- Robotik kalıplar YASAK
+- Klişe açılışlar YASAK (Heyecan verici gelişme!, Yapay zeka dünyasında... vs.)
+- Yüzeysel yorum değil, DERİN analiz yap — verilerle, karşılaştırmayla, sebep-sonuçla
+- Kendi analitik perspektifini ekle — sadece bilgi verme, YORUMLA
+- ASLA kaynak belirtme — "@şuhesap diyor ki", "X'te şöyle yazıyorlar", "yorumlarda" gibi ifadeler YASAK
+- ⛔ BİLGİ UYDURMA: "X'te bazıları diyor", "kullanıcılar şüpheli" gibi kaynaksız iddialar YASAK
+- YUKARIDAKI BAKIŞ AÇISINA SADIK KAL""",
+
+    "viral": """KURALLAR:
+- %100 doğal, insan yazısı olmalı
+- Robotik kalıplar YASAK
+- İlk cümle HER ŞEY — scroll durduracak hook ile başla
+- Kısa ve vurucu yaz, gereksiz açıklama yapma
+- Net ve cesur görüş bildir, ortada kalma
+- ASLA kaynak belirtme — "@şuhesap diyor ki", "X'te şöyle yazıyorlar" gibi ifadeler YASAK
+- ⛔ BİLGİ UYDURMA YASAK
+- YUKARIDAKI BAKIŞ AÇISINA SADIK KAL""",
+
+    "interactive": """KURALLAR:
+- %100 doğal, insan yazısı olmalı
+- Robotik kalıplar YASAK
+- KISA YAZ — bu yanıt/yorum, uzun analiz değil
+- Kendi perspektifini/deneyimini ekle — boş onay YASAK
+- ASLA kaynak belirtme
+- ⛔ BİLGİ UYDURMA YASAK""",
+}
 
 
 def get_available_formats(context: str = "tweet") -> dict:
@@ -1705,10 +1836,33 @@ Eğitim verisi (DNA) yok. Günlük Türkçe tonu kullan: samimi, kısa cümleler
 "ya, bence, harbiden, bi baktım, cidden" gibi doğal ifadeler kullan. Robotik/akademik dil YASAK.
 """
 
-        # Stil prompt'u DNA'dan SONRA — sadece yapı/format rehberi
+        # Stil prompt'u DNA'dan SONRA
+        style_prompt = style_info['prompt']
+
+        # DNA yoksa: stil sadece yapı değil, SES de stilden gelsin
+        if not self.training_context:
+            style_prompt = style_prompt.replace(
+                "## SES KAYNAGI:\nBu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.",
+                "## SES KAYNAGI:\nEğitim verisi (DNA) yok. Bu stildeki TON, SES, KELİME SEÇİMİ ve YAKLAŞIM kurallarının hepsi senin sesin. Yapıyı DA sesi DE bu stilden ve örneklerden al."
+            )
+
         prompt += f"""
-{style_info['prompt']}
+{style_prompt}
 """
+
+        # Stil örneklerini bütçe izin veriyorsa enjekte et
+        style_examples = style_info.get('examples', [])
+        if style_examples:
+            examples_text = "\n---\n".join(style_examples)
+            examples_block = f"""
+## BU TARZDA ÖRNEK TWEET'LER (tonu, yapıyı ve kelime seçimini bunlardan öğren):
+{examples_text}
+
+Bu örneklerin TONUNU ve YAPISINI referans al. İçeriği kopyalama — kendi konunu bu tarzda yaz.
+"""
+            # Bütçe kontrolü: DNA 25K ise örnekler sığmaz (DNA zaten ses referansı veriyor)
+            if len(prompt) + len(examples_block) < 33000:
+                prompt += examples_block
 
         if user_samples:
             samples_text = "\n".join([f"- {s}" for s in user_samples[:5]])
@@ -1891,9 +2045,20 @@ Kısa yaz (5-15 kelime) ama yukarıdaki kişinin tonu ve kelime tercihleriyle.
             if fmt:
                 format_block = f"\n{fmt['prompt_instructions']}\n"
 
-        # Pick angle: forced (multi-angle mode) or random
-        angle = forced_angle if forced_angle else _pick_random_angle()
+        # Pick angle: forced (multi-angle mode) or category-filtered
+        category = _STYLE_TO_CATEGORY.get(style, "personal")
+        if forced_angle:
+            angle = forced_angle
+        elif category == "news":
+            # Haber stillerinde contrarian/future_prediction çıkar (stille çelişir)
+            compatible = [a for a in TWEET_ANGLES if a["id"] not in ("contrarian", "future_prediction")]
+            angle = random.choice(compatible)
+        else:
+            angle = _pick_random_angle()
         angle_block = f"\n{angle['instruction']}\n"
+
+        # Kategori-bazlı kurallar
+        rules_block = _USER_PROMPT_RULES.get(category, _USER_PROMPT_RULES["personal"])
 
         prompt = f"""Aşağıdaki AI gelişmesi/konusu hakkında bir tweet yaz.
 
@@ -1905,16 +2070,7 @@ KONU:
 {format_block if format_block else (f"MAKSİMUM KARAKTER: {max_length}" if max_length > 0 else "Karakter sınırı yok (X Premium)")}
 {angle_block}
 
-KURALLAR:
-- %100 doğal, insan yazısı olmalı
-- Robotik kalıplar YASAK
-- Klişe açılışlar YASAK (Heyecan verici gelişme!, Yapay zeka dünyasında... vs.)
-- Kendi bakış açını ve yorumunu ekle
-- Teknik detayları doğru ver
-- ASLA kaynak belirtme — "@şuhesap diyor ki", "X'te şöyle yazıyorlar", "yorumlarda" gibi ifadeler YASAK
-- Bilgiyi KENDİ DENEYİMİN gibi yaz — "test ettim", "bence", "gördüğüm kadarıyla"
-- ⛔ BİLGİ UYDURMA: "X'te bazıları diyor", "kullanıcılar şüpheli" gibi kaynaksız iddialar YASAK
-- YUKARIDAKI BAKIŞ AÇISINA SADIK KAL — her konunun birden fazla açısı var, sen sadece belirtilen açıdan yaz
+{rules_block}
 
 FORMAT:
 - Paragraflar arasında boş satır bırak
