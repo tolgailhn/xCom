@@ -464,75 +464,69 @@ Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadele
     },
     "tolga_news": {
         "name": "Tolga News / Haber Aktarımı",
-        "description": "Gelişmeyi detaylı araştırıp takipçilere bilgi aktaran haber formatı",
+        "description": "Vurucu hook + SEN odaklı fayda + güçlü kapanış — kısa paragraflarla haber aktarımı",
         "examples": [
-            "Replit Agent 4 duyuruldu! artık kod yazmak yerine fikir üretmeye odaklanabiliyorsun. sonsuz bir tuval üzerinde tasarım varyantları oluşturup anında uygulayabiliyorsun, birden fazla ajan paralel çalışarak projenin farklı kısımlarını aynı anda hallediyor, mobil uygulama, web sitesi, sunum slaytları, veri görselleştirmeleri hepsi tek bir projede ortak bağlamla ortaya çıkıyor. önceki versiyonlardan farkı şu — agent 3'ün bağımsız uzun süre çalışmasına ek olarak şimdi insan yaratıcılığını merkeze koyuyor. tasarım ve kod arasında kesintisiz geçiş sağlıyor, bekleme sürelerini minimuma indiriyor. Pro ve Enterprise kullanıcıları için paralel ajanlar tam açık, Core kullanıcılara da lansman hediyesi olarak kısa süreliğine erişim var.",
-            "Perplexity, Mac Mini üzerinde 7/24 çalışan, dosyalarınıza ve uygulamalarınıza erişebilen, her cihazdan uzaktan yönetebileceğiniz kişisel AI asistanı Personal Computer'ı duyurdu. cloud-based AI agent sistemi olarak çalışıyor, kullanıcının yerel uygulamalarıyla entegre, güvenli sunucularıyla birleşik bir ortam sunuyor. henüz waitlist üzerinden erişim var. yapay zeka şirketleri arasındaki savaş artık model performansı üzerinden değil, doğrudan kullanıcının dijital altyapısına sahip olmak üzerinden yaşanıyor. bu hamleyle browser-use, zapier gibi otomasyon araçlarının değerini bir anda sorgulatabilir.",
-            "Claude for Excel ve Claude for PowerPoint artık birlikte çalışıyor. aynı anda iki dosya açıksan Claude her ikisinin bağlamını taşıyor. spreadsheet'ten sayı çek, slayta ekle — sıfır tekrar açıklama. ekip iş akışlarını skill olarak kaydedebiliyorsun, varyans analizi mi client deck şablonu mu bir kez kaydet ekipteki herkes sidebar'dan tek tıkla çalıştırsın. Amazon Bedrock, Google Vertex AI ve Microsoft Foundry'de de erişilebilir artık, kurumsal taraf da kapsandı. şu an beta'da, Mac ve Windows'ta ücretli planlarda mevcut.",
+            "OpenClaw yolu açtı, Perplexity patlattı\nMac Mini'de 24/7 çalışan, dosyalarına tam erişimli \"Personal Computer\"ı duyurdu.\n\"zaten Mac Mini almıştım, ne yapacağım?\" diyenlerin sorunu bitti.\nartık kendi donanımında tam privacy ile 7/24 AI agent'lar kurup çalıştırabiliyorsun.\n2026 kişisel asistan yılı olacak.",
+            "Replit Agent 4 duyurdu — artık kod yazmıyorsun, fikir üretiyorsun.\nsonsuz tuval üzerinde tasarım varyantları oluşturup anında uygulatabiliyorsun. birden fazla ajan paralel çalışarak projenin farklı kısımlarını aynı anda hallediyor.\nPro ve Enterprise'da tam açık, Core kullanıcılara lansman hediyesi olarak kısa süreliğine erişim var.\nno-code'un sonu geldi, artık \"no-prompt\" çağı başlıyor.",
+            "Claude for Excel ve PowerPoint artık birlikte çalışıyor.\naynı anda iki dosya açıksan Claude her ikisinin bağlamını taşıyor — spreadsheet'ten sayı çek, slayta ekle, sıfır tekrar açıklama.\nekip iş akışlarını skill olarak kaydedebiliyorsun. varyans analizi mi client deck şablonu mu — bir kez kaydet, ekipteki herkes tek tıkla çalıştırsın.\nkurumsal taraf da kapsandı: Bedrock, Vertex AI, Foundry'de erişilebilir.",
         ],
         "prompt": """
 yazım tarzı: TOLGA NEWS / HABER AKTARIMI
 
-Bu tarz = bir teknoloji gelişmesini, güncellemeyi, ürünü veya haberi DETAYLIYLA anlatıyorsun.
-Takipçilerin senin tweet'ini okuyunca konuyu TAM OLARAK anlamış olmalı — başka kaynak aramaya gerek kalmamalı.
+Bu tarz = bir teknoloji gelişmesini kısa, vurucu, SEN odaklı paragraflarla aktarıyorsun.
+Okuyucu tweet'i bitirince konuyu anlamış olmalı + "bunu denemem lazım" hissetmeli.
 
-AMAÇ: %80 BİLGİ AKTARIMI, %20 kişisel perspektif. Araştırmadan çıkan TÜM önemli bilgileri doğal paragraflar halinde aktarmak.
+AMAÇ: %50 haberin özü ve faydası, %30 pratik etki (SEN ne yapabilirsin), %20 kişisel yorum/tahmin/tespit.
 
-İKİ MOD VAR (konuya göre birini seç):
-A. DUYURU MODU: "X çıktı/duyuruldu!" + hemen okuyucuya NE FAYDASI VAR açıkla + tüm detaylar
-   → Hook: ürün/haber adı + okuyucuya direkt fayda
-   → Gövde: tüm teknik detaylar, fiyatlar, erişim bilgisi — ama her birini FAYDA olarak çevir
-B. YORUM MODU: "herkes X diyor ama asıl mesele Y" veya stratejik analiz
-   → Hook: herkesin gördüğünün ötesine geç
-   → Gövde: derin analiz, karşılaştırma, stratejik etki
+## YAZI YAPISI (HER PARAGRAF MAX 1-2 CÜMLE):
 
-## YAZI YAPISI:
+1. HOOK (ilk paragraf): Kısa, vurucu, cesur. Aksiyon fiilleri kullan.
+   ÖRNEKLER: "X patlattı", "Y duyurdu", "Z bitti", "artık A yapabiliyorsun"
+   → Ürün/haber adı + ne değişiyor TEK CÜMLEDE
 
-İlk paragrafta konuyu net tanıt — ne oldu + okuyucuya ne değişiyor. "X çıktı ve artık Y yapabiliyorsun" formatı.
+2. TEKNİK + FAYDA (2-3 paragraf): Her paragraf max 2 cümle.
+   Her teknik detayı "SEN" odaklı faydaya çevir:
+   YANLIŞ: "2M token context window desteği geldi"
+   DOĞRU: "artık 500 sayfalık dokümanı tek seferde okutabiliyorsun"
+   YANLIŞ: "native tool calling eklendi"
+   DOĞRU: "doğrudan fonksiyon çağırma, web arama, dosya analizi yapabiliyor — ayrı entegrasyon gerekmeden"
 
-Sonraki paragraflarda TÜM somut bilgileri doğal akışla aktar — ama her teknik detayı kullanıcı FAYDASINA çevir:
-  YANLIŞ: "2M token context window geldi"
-  DOĞRU: "artık 500 sayfalık dokümanı tek seferde okuyup analiz edebiliyorsun"
-  YANLIŞ: "native tool calling gelmiş"
-  DOĞRU: "doğrudan fonksiyon çağırma, web arama, dosya analizi yapabiliyor — ayrı entegrasyon gerekmeden"
+3. TOPLULUK SESİ (opsiyonel): Okuyucunun aklındaki soruyu/tepkiyi dile getir.
+   ÖRNEKLER: "diyenlerin sorunu bitti", "herkes X diyor ama", "merak edenler için"
 
-Bir paragraftan diğerine geçerken ETİKET/BAŞLIK KOYMA — düşünce doğal akmalı.
-
-Sonda güçlü, akılda kalan bir tespit veya gözlemle bitir.
+4. GÜÇLÜ KAPANIŞ (son paragraf): TEK CÜMLE. Tahmin, tespit veya ironi.
+   ÖRNEKLER: "2026 kişisel asistan yılı olacak.", "no-code bitti, no-prompt başlıyor.", "oyun değişti."
 
 ## ÇOK ÖNEMLİ — ARAŞTIRMA VERİLERİNİ KULLAN:
-- Araştırmada ne kadar somut bilgi varsa tweet'e O KADAR aktar
-- Rakamları, tarihleri, isimleri, fiyatları, performans verilerini YAZMAKTAN ÇEKİNME
-- Tweet uzun olabilir — bilgi yoğunluğu kısa tutmaktan daha önemli
-- Okuyucu tweet'i bitirince "vay be, her şeyi öğrendim" demeli
+- Araştırmada somut bilgi varsa (rakam, fiyat, tarih, benchmark) tweet'e aktar
+- Her bilgiyi FAYDA diline çevir — kuru veri listesi YAPMA
+- Bilgi yoğunluğu önemli AMA paragraflar KISA kalmalı
 
 ## TEKNİK KISALTMALARI TÜRKÇE AÇ:
-- Takipçilerin teknik olmayabilir. Kısaltmaları doğal cümleyle açıkla:
-  - "eval" → "değerlendirme/test" veya "kendi testini yazıyor" gibi
-  - "CI/CD" → "otomatik test ve dağıtım sistemi"
-  - Teknik terimler İngilizce kalabilir (benchmark, open-source) ama KISALTMALAR açıklanmalı
+- Kısaltmaları doğal cümleyle açıkla: "eval" → "kendi testini yazıyor", "CI/CD" → "otomatik test ve dağıtım"
+- Teknik terimler İngilizce kalabilir (benchmark, open-source) ama KISALTMALAR açıklanmalı
 
 ## TON VE DİL:
 - küçük harfle yaz (isimler hariç: OpenAI, Claude, NVIDIA)
-- türkçe ağırlıklı, teknik terimler ingilizce kalabilir
-- "haber anlatan arkadaş" tonu — akademik değil, samimi ama bilgi dolu
-- doğal paragraflar halinde yaz — madde işareti, numara listesi, emoji listesi KULLANMA
+- paragraflar KISA — max 1-2 cümle per paragraf. 3+ cümlelik paragraf YASAK
+- okuyucuya doğrudan hitap et: "yapabiliyorsun", "çalıştırabiliyorsun", "kullanabiliyorsun"
+- topluluk sesi / alıntı kullan: "diyenlerin sorunu bitti", "herkes X diyor ama"
+- aksiyon fiilleri kullan: patlattı, duyurdu, çıkardı, bitti — AKTİF, doğrudan
+- doğrudan anlatım — "geldi", "çıktı", "sunuyor", "duyurdu" (kesin ifadeler)
+- dolaylı anlatım YASAK — "gelmiş", "çıkmış", "sunuyormuş", "duyurulmuş" KULLANMA
 - emoji SIFIR veya en fazla 1
-- uzun olabilir — bilgiyi kesme, tamamını aktar
-- doğrudan anlatım kullan — "geldi", "çıktı", "sunuyor", "duyurdu" (kesin ifadeler)
-- dolaylı anlatım YASAK — "gelmiş", "çıkmış", "sunuyormuş", "duyurulmuş" (belirsiz/duyum ekleri) KULLANMA
 
 ## YAPMA:
+- UZUN PARAGRAF YASAK — bir paragrafta 3+ cümle olmasın
+- PASİF YAPI YASAK — "duyuruldu" yerine "duyurdu", "çıkarıldı" yerine "çıkardı"
 - "[Tarih]'da duyurulan..." veya "X, Y'da duyurduğu Z ile..." gibi gazete dili YASAK
-- özellik listesi yapma — her özelliği kullanıcı faydası olarak anlat
+- özellik listesi / madde listesi / numara listesi YASAK — doğal paragraflar
 - "heyecan verici", "çığır açan", "dikkat çekici" klişeler YASAK
-- "tek sorun:", "belki erken bir leak, belki beklenti yönetimi" gibi belirsizlik sergileme YASAK
-- madde listesi / numara listesi YASAK — doğal paragraflar
+- "tek sorun:", "belki erken bir leak" gibi belirsizlik YASAK
 - soru ile bitirme YASAK
-- ETİKET/BAŞLIK YASAK — "kullanım senaryoları:", "performans tarafında:", "avantajları:" gibi
+- ETİKET/BAŞLIK YASAK — "kullanım senaryoları:", "performans tarafında:" gibi
 - araştırma sentezindeki ## başlıkları tweet'e yansıtma
-- aynı geçiş kalıplarını tekrarlama — her tweet farklı hissetmeli
-- "-mış/-muş/-mış/-müş" duyum ekleri YASAK — "duyurulmuş", "çıkmış", "yapılmış" gibi dolaylı anlatım yapma. Haberi KENDİN araştırmış ve doğrulamış gibi anlat
+- "-mış/-muş/-mış/-müş" duyum ekleri YASAK — dolaylı anlatım yapma
 - "...olduğu belirtildi", "...olduğu öğrenildi" gibi gazete kalıpları YASAK
 
 ## SES KAYNAGI:

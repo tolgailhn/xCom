@@ -598,35 +598,48 @@ async def research_stream(request: ResearchRequest):
         # Build AI client for research analysis/synthesis.
         # Research always uses MiniMax (fast & cheap) for sentezleme — NOT the user's
         # tweet generation provider. Tweet provider (Gemini, Groq, etc.) is separate.
-        # Fallback: MiniMax > Groq > OpenAI > Anthropic (cheapest first)
+        # Fallback chain: MiniMax > Groq > OpenAI > Anthropic (cheapest first)
+        # If the primary provider fails (e.g. MiniMax 429), we retry synthesis with the next one.
+        from backend.config import get_settings
+        s = get_settings()
+
+        def _build_ai_providers():
+            """Build ordered list of available AI providers for research."""
+            providers = []
+            if s.minimax_api_key:
+                providers.append(("minimax", s.minimax_api_key, "https://api.minimaxi.chat/v1", "MiniMax-M2.5"))
+            if s.groq_api_key:
+                providers.append(("groq", s.groq_api_key, "https://api.groq.com/openai/v1", "llama-3.3-70b-versatile"))
+            if s.openai_api_key:
+                providers.append(("openai", s.openai_api_key, None, "gpt-4o"))
+            if s.anthropic_api_key:
+                providers.append(("anthropic", s.anthropic_api_key, None, "claude-haiku-4-5-20251001"))
+            return providers
+
+        def _make_ai_client(provider_name, api_key, base_url):
+            """Create AI client for a given provider."""
+            if provider_name == "anthropic":
+                import anthropic
+                return anthropic.Anthropic(api_key=api_key)
+            else:
+                from openai import OpenAI
+                kwargs = {"api_key": api_key}
+                if base_url:
+                    kwargs["base_url"] = base_url
+                return OpenAI(**kwargs)
+
+        all_providers = _build_ai_providers()
         ai_client = None
         ai_model = None
         ai_provider = "minimax"
-        try:
-            from backend.config import get_settings
-            s = get_settings()
-            if s.minimax_api_key:
-                from openai import OpenAI
-                ai_client = OpenAI(api_key=s.minimax_api_key, base_url="https://api.minimaxi.chat/v1")
-                ai_provider = "minimax"
-                ai_model = "MiniMax-M2.5"
-            elif s.groq_api_key:
-                from openai import OpenAI
-                ai_client = OpenAI(api_key=s.groq_api_key, base_url="https://api.groq.com/openai/v1")
-                ai_provider = "groq"
-                ai_model = "llama-3.3-70b-versatile"
-            elif s.openai_api_key:
-                from openai import OpenAI
-                ai_client = OpenAI(api_key=s.openai_api_key)
-                ai_provider = "openai"
-                ai_model = "gpt-4o"
-            elif s.anthropic_api_key:
-                import anthropic
-                ai_client = anthropic.Anthropic(api_key=s.anthropic_api_key)
-                ai_provider = "anthropic"
-                ai_model = "claude-haiku-4-5-20251001"
-        except Exception:
-            pass
+        if all_providers:
+            prov_name, prov_key, prov_url, prov_model = all_providers[0]
+            try:
+                ai_client = _make_ai_client(prov_name, prov_key, prov_url)
+                ai_provider = prov_name
+                ai_model = prov_model
+            except Exception:
+                pass
 
         # Claude Code path
         if request.engine == "claude_code":
@@ -684,7 +697,7 @@ async def research_stream(request: ResearchRequest):
             except Exception as e:
                 logger.warning("Scanner creation failed: %s", e)
 
-        return do_research(
+        result = do_research(
             tweet_text=request.topic,
             tweet_author=request.tweet_author,
             tweet_id=request.tweet_id if scanner else "",  # Only pass tweet_id when scanner exists
@@ -697,6 +710,32 @@ async def research_stream(request: ResearchRequest):
             progress_callback=progress_callback,
             research_sources=request.research_sources if request.research_sources else None,
         )
+
+        # Fallback: if synthesis failed (e.g. MiniMax 429), retry with next provider
+        if (hasattr(result, "synthesized_brief") and not result.synthesized_brief
+                and hasattr(result, "summary") and result.summary
+                and len(all_providers) > 1):
+            from backend.modules.deep_research import ai_synthesize_research
+            for prov_name, prov_key, prov_url, prov_model in all_providers[1:]:
+                try:
+                    progress_callback(f"{ai_provider} sentez başarısız, {prov_name} deneniyor...")
+                    fb_client = _make_ai_client(prov_name, prov_key, prov_url)
+                    brief = ai_synthesize_research(
+                        raw_summary=result.summary,
+                        original_tweet=getattr(result, "full_thread_text", "") or getattr(result, "original_tweet_text", ""),
+                        ai_client=fb_client,
+                        ai_model=prov_model,
+                        provider=prov_name,
+                    )
+                    if brief:
+                        result.synthesized_brief = brief
+                        progress_callback(f"Araştırma sentezi tamamlandı ({prov_name})")
+                        break
+                except Exception as e:
+                    logger.warning("Synthesis fallback %s failed: %s", prov_name, e)
+                    continue
+
+        return result
 
     async def event_generator():
         loop = asyncio.get_event_loop()
