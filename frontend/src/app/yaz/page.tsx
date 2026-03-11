@@ -2423,7 +2423,7 @@ function TabSelfReply({ styles }: { styles: StyleOption[] }) {
                 </button>
                 <button
                   onClick={() => {
-                    const full = generatedReplies.map((r, i) => `[Reply ${i + 1}]\n${r}`).join("\n\n");
+                    const full = generatedReplies.join("\n\n");
                     copyText(full);
                   }}
                   className="btn-secondary px-4"
@@ -2513,7 +2513,7 @@ function TabSelfReply({ styles }: { styles: StyleOption[] }) {
               </div>
               <button
                 onClick={() => {
-                  const full = generatedReplies.map((r, i) => `[Reply ${i + 1}]\n${r}`).join("\n\n");
+                  const full = generatedReplies.join("\n\n");
                   copyText(full);
                 }}
                 className="btn-secondary w-full"
