@@ -28,6 +28,7 @@ class GenerateRequest(BaseModel):
     content_format: str = ""
     quote_url: str = ""
     provider: str = ""  # "", "minimax", "groq", "anthropic", "openai" — empty = auto
+    additional_instructions: str = ""  # Extra user instructions for generation
 
 
 class QuoteTweetRequest(BaseModel):
@@ -388,6 +389,7 @@ async def generate_long_content(request: GenerateRequest):
             research_context=request.research_context,
             style=request.style,
             length=effective_length,
+            additional_instructions=request.additional_instructions,
         )
         return GenerateResponse(text=text, score=_score_text(text))
     except Exception as e:

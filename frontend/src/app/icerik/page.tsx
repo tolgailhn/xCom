@@ -629,6 +629,7 @@ function TabGenerate({
         length: contentFormat,
         research_context: researchContext,
         content_format: contentFormat,
+        additional_instructions: extraInstructions || undefined,
       })) as { text: string; score: ScoreResult | null };
 
       setGeneratedContent(result.text);
