@@ -274,7 +274,7 @@ function TabDiscover({
         researchContext = `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}`;
         if (research.media_urls?.length) {
           setResearchMediaUrls(research.media_urls);
-          setMediaResults(research.media_urls.map((url: string) => ({ url, source: "research", media_type: "image" })));
+          setMediaResults(research.media_urls.map((url: string) => ({ url, source: "research", type: "image" })));
         }
       } catch {
         // Research optional, continue
@@ -658,7 +658,7 @@ function TabGenerate({
           setResearchData(researchContext);
           if (research.media_urls?.length) {
             setResearchMediaUrls(research.media_urls);
-            setMediaResults(research.media_urls.map((url: string) => ({ url, source: "research", media_type: "image" })));
+            setMediaResults(research.media_urls.map((url: string) => ({ url, source: "research", type: "image" })));
           }
         } catch {
           // Research optional
