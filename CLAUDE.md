@@ -130,6 +130,7 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 | 2026-03-11 | Checklist 8 maddeye güncellendi | Community posting, reply-back, asimetrik saat eklendi |
 | 2026-03-11 | Generator API provider eksikleri düzeltildi | icerik + yaz sayfalarında 4 tab'da provider dropdown eksikti |
 | 2026-03-11 | `min_faves` operatörü kaldırıldı | Twikit (ücretsiz arama) bu operatörü desteklemiyor → 400 Bad Request. Client-side filtreleme zaten mevcut |
+| 2026-03-11 | MiniMax `<tool_call>` ve `<think>` tag temizliği | MiniMax bazen tool_call/think tag'leri döndürüyor, 3 yerde regex ile temizleniyor |
 
 ---
 
@@ -535,6 +536,7 @@ Bu bölüm her session sonunda güncellenir. Yeni session başladığında buray
 - [x] Aşama 0: Generator API provider eksikleri düzeltildi
 - [x] Aşama 1: CLAUDE.md güncellendi (2026 algoritma + unutma çözümü)
 - [x] Aşama 6: `min_faves` operatörü kaldırıldı (scanner.py + deep_research.py) — Twikit desteklemiyor
+- [x] Aşama 7: MiniMax `<minimax:tool_call>` ve `<think>` tag temizliği eklendi (3 dosya)
 - [ ] Aşama 2: `constants.py` oluştur + engagement ağırlıkları tek kaynağa taşı
 - [ ] Aşama 3: Checklist 2026'ya güncelle (8 madde)
 - [ ] Aşama 4: Yanıtlar sayfası filtreleme & UX iyileştirmeleri
