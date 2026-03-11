@@ -37,9 +37,9 @@ COOKIES_PATH = DATA_DIR / "twikit_cookies.json"
 
 # ---------- Global rate limiter for Twikit requests ----------
 # Prevents rapid-fire requests that cause Twitter to temporarily ban the account.
-TWIKIT_MIN_DELAY = 2.0  # minimum seconds between consecutive requests
-TWIKIT_BACKOFF_MULTIPLIER = 2.0  # multiply delay on consecutive errors
-TWIKIT_MAX_DELAY = 30.0  # max backoff delay
+TWIKIT_MIN_DELAY = 1.5  # minimum seconds between consecutive requests
+TWIKIT_BACKOFF_MULTIPLIER = 1.5  # multiply delay on consecutive errors
+TWIKIT_MAX_DELAY = 8.0  # max backoff delay (was 30s — caused 2-3 min hangs)
 _twikit_last_request_time: float = 0.0
 _twikit_consecutive_errors: int = 0
 _twikit_rate_lock = threading.Lock()
@@ -539,9 +539,9 @@ class TwikitSearchClient:
                 # NotFound = search returned no results or endpoint changed
                 # TypeError/AttributeError = parsing issue, not auth
                 # Do NOT re-auth — it blocks the thread and won't fix these errors.
+                # Do NOT increment rate limit backoff — these are NOT rate limit issues.
                 self.last_error = f"Arama hatası ({err_name}): {e}"
                 print(f"Twikit search {err_name} — NOT re-authing (not an auth issue): {e}")
-                _twikit_rate_limit_error()
             else:
                 # Only Unauthorized should trigger re-auth
                 print(f"Twikit search {err_name}, attempting re-auth...")
