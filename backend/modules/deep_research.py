@@ -273,7 +273,14 @@ def _call_ai(ai_client, provider: str, ai_model: str | None, prompt: str,
                 max_tokens=max_tokens,
                 temperature=temperature,
             )
-            return response.choices[0].message.content.strip()
+            text = response.choices[0].message.content.strip()
+            # Strip unwanted MiniMax tags (tool_call, think)
+            if provider == "minimax" and text:
+                import re as _re
+                text = _re.sub(r'<think>.*?</think>', '', text, flags=_re.DOTALL).strip()
+                text = _re.sub(r'<minimax:tool_call>.*?</minimax:tool_call>', '', text, flags=_re.DOTALL).strip()
+                text = _re.sub(r'<minimax:tool_call>.*', '', text, flags=_re.DOTALL).strip()
+            return text
     except Exception as e:
         print(f"AI call error ({provider}): {e}")
         return None

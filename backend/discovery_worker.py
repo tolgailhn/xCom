@@ -145,6 +145,13 @@ def _generate_turkish_summary(tweets: list[dict]) -> dict[str, str]:
                 result = _json.loads(resp.read().decode("utf-8"))
                 ai_text = result.get("choices", [{}])[0].get("message", {}).get("content", "")
 
+            # Strip unwanted MiniMax tags
+            if provider == "minimax" and ai_text:
+                import re as _re
+                ai_text = _re.sub(r'<think>.*?</think>', '', ai_text, flags=_re.DOTALL).strip()
+                ai_text = _re.sub(r'<minimax:tool_call>.*?</minimax:tool_call>', '', ai_text, flags=_re.DOTALL).strip()
+                ai_text = _re.sub(r'<minimax:tool_call>.*', '', ai_text, flags=_re.DOTALL).strip()
+
         elif provider == "anthropic":
             url = "https://api.anthropic.com/v1/messages"
             headers = {

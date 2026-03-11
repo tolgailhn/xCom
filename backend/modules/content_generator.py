@@ -2527,9 +2527,12 @@ Paragraflari kısa tut, metin duvarı olmasın. Sadece içerik metnini yaz."""
             temperature=0.9,
         )
         text = response.choices[0].message.content.strip()
-        # Strip <think> tags from reasoning models (MiniMax, etc.)
+        # Strip unwanted tags from MiniMax and reasoning models
         import re
         text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+        text = re.sub(r'<minimax:tool_call>.*?</minimax:tool_call>', '', text, flags=re.DOTALL).strip()
+        # Also strip orphaned opening tags (no closing tag)
+        text = re.sub(r'<minimax:tool_call>.*', '', text, flags=re.DOTALL).strip()
         return text
 
     def analyze_image(self, image_url: str, context: str = "") -> str:
