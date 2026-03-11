@@ -52,7 +52,7 @@ class ResearchRequest(BaseModel):
     topic: str
     depth: str = "normal"
     engine: str = "default"
-    agentic: bool = False  # Disabled: agentic mode skips DuckDuckGo pipeline causing empty results
+    agentic: bool = True  # AI browses autonomously for best results
     research_sources: list[str] = []  # ["web", "reddit", "news", "x"]
     tweet_id: str = ""  # For thread fetching
     tweet_author: str = ""
@@ -252,7 +252,7 @@ async def generate_quote_tweet_endpoint(request: QuoteTweetRequest):
                 model = "MiniMax-M2.5"
                 if _s.minimax_api_key:
                     from openai import OpenAI
-                    ai_client = OpenAI(api_key=_s.minimax_api_key, base_url="https://api.minimax.io/v1")
+                    ai_client = OpenAI(api_key=_s.minimax_api_key, base_url="https://api.minimaxi.chat/v1")
                 elif _s.groq_api_key:
                     from openai import OpenAI
                     ai_client = OpenAI(api_key=_s.groq_api_key, base_url="https://api.groq.com/openai/v1")
@@ -421,7 +421,7 @@ async def do_research_endpoint(request: ResearchRequest):
             _s2 = _gs2()
             if _s2.minimax_api_key:
                 from openai import OpenAI
-                ai_client = OpenAI(api_key=_s2.minimax_api_key, base_url="https://api.minimax.io/v1")
+                ai_client = OpenAI(api_key=_s2.minimax_api_key, base_url="https://api.minimaxi.chat/v1")
                 ai_model = "MiniMax-M2.5"
             elif _s2.groq_api_key:
                 from openai import OpenAI
@@ -594,7 +594,7 @@ async def research_stream(request: ResearchRequest):
             s = get_settings()
             if s.minimax_api_key:
                 from openai import OpenAI
-                ai_client = OpenAI(api_key=s.minimax_api_key, base_url="https://api.minimax.io/v1")
+                ai_client = OpenAI(api_key=s.minimax_api_key, base_url="https://api.minimaxi.chat/v1")
                 ai_provider = "minimax"
                 ai_model = "MiniMax-M2.5"
             elif s.groq_api_key:
