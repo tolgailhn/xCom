@@ -1553,33 +1553,40 @@ ARAŞTIRMA VERİSİ (reply'da kullanabilirsin ama ZORUNLU DEĞİL):
 {research_context[:2000]}
 """
 
-        user_prompt = f"""SENİN TWEET'İN (bu senin kendi attığın tweet):
-"{my_tweet}"
+        # Extract key topic from tweet for context-aware reply
+        tweet_short = my_tweet[:200].strip()
 
-Bu tweet'e HEMEN (0-2 dk içinde) atacağın TEK BİR doğal self-reply yaz.
+        # Randomize reply direction to avoid repetitive outputs
+        import random
+        reply_angles = [
+            "Tweet'teki konuyla ilgili merak uyandıran bir SORU sor",
+            "Tweet'teki konuyla ilgili KİŞİSEL bir gözlem/deneyim paylaş",
+            "Tweet'te bahsedilen şeyin EN ÖNEMLİ detayını vurgula",
+            "Tweet'teki konuyla ilgili bir ÇAĞRI yap (deneyin, bakın, yazın gibi)",
+            "Tweet'teki konuya FARKLI bir açıdan kısa bir yorum ekle",
+            "Tweet'teki konunun PRATİK etkisini 1 cümleyle belirt",
+        ]
+        chosen_angle = random.choice(reply_angles)
 
-ÖRNEKLER (bunlardan esinlen ama KOPYALAMA):
-- "sizce bu ne değiştirir?"
-- "prompt isteyen DM atsın"
-- "detay thread aşağıda 👇"
-- "bunu test eden var mı?"
-- "asıl ilginç olan kısım şu aslında..."
-- "kaynak bırakıyorum merak edenler için"
-- "bence asıl mesele burada"
-- "deneyimleyen varsa yazın merak ediyorum"
+        prev_block = ""
+        if previous_replies:
+            prev_block = f"\nÖNCEKİ REPLY'LAR (bunlardan FARKLI bir şey yaz):\n" + "\n".join(f"- {r}" for r in previous_replies[:3])
+
+        user_prompt = f"""SENİN TWEET'İN:
+"{tweet_short}"
+
+GÖREV: {chosen_angle}
 
 KURALLAR:
-- SADECE 1 reply — 2. reply ATILMAYACAK, bu yüzden değerli yap
-- MAX 1-2 cümle, çok KISA tut (ideal: 5-15 kelime)
-- Doğal ol — arkadaşına yazıyormuşsun gibi
-- Tweet'in içeriğine uygun reply at (teknik konuysa teknik detay, haber konuysa yorum)
-- Hashtag KULLANMA
+- SADECE 1-2 cümle, max 15 kelime ideal
+- Tweet'in İÇERİĞİNE ÖZGÜ yaz — genel/jenerik cevap YASAK
+- Doğal, samimi Türkçe — arkadaşına yazıyormuşsun gibi
+- Hashtag KULLANMA, tırnak işareti KULLANMA
 - "Buna ek olarak" gibi yapay kalıplar YASAK
 - Uydurma bilgi YASAK
-{f"- Ek not: {additional_context}" if additional_context else ""}
+{f"- Ek bağlam: {additional_context}" if additional_context else ""}{prev_block}
 {research_block}
-
-SADECE reply metnini yaz, başka bir şey yazma."""
+SADECE reply metnini yaz, başka açıklama ekleme."""
 
         return self._dispatch(system_prompt, user_prompt)
 
@@ -2135,12 +2142,14 @@ TÜRKÇE yazıyorsun. Bu BİR BAŞKASINA YANIT DEĞİL — kendi tweet'ine 0-2 d
 5. "Buna ek olarak" gibi yapay geçiş kalıpları YASAK
 6. Samimi Türkçe, sohbet tonu
 
-## İYİ REPLY TİPLERİ:
-- Soru: "sizce bu ne değiştirir?", "bunu test eden var mı?"
-- CTA: "prompt isteyen DM atsın", "kaynak bırakıyorum"
-- Detay: "asıl ilginç olan kısım şu aslında..."
-- Kişisel: "ben denedim, ciddi fark var"
-- Gözlem: "bu sessiz sessiz her şeyi değiştiriyor"
+## İYİ REPLY TİPLERİ (sadece ilham — bunları KOPYALAMA, tweet'in konusuna özgü yaz):
+- Soru tipi: tweet'teki konuyla ilgili merak uyandıran kısa soru
+- Detay tipi: tweet'te bahsetmediğin ama ilginç olan bir detay ekle
+- Kişisel tipi: kendi deneyiminden kısa bir gözlem paylaş
+- Çağrı tipi: okuyucuyu harekete geçiren kısa bir davet
+
+⚠️ ÖNEMLİ: Her seferinde FARKLI bir açıdan yaz. Jenerik/genel cümleler YASAK.
+Tweet'in konusundaki spesifik isimleri, ürünleri, kavramları kullan.
 """
 
         if self.training_context:
