@@ -9,6 +9,7 @@ import {
   getStyles,
   addDraft,
   schedulePost,
+  scoreNewsValue,
 } from "@/lib/api";
 
 /* ── Types ──────────────────────────────────────────── */
@@ -63,6 +64,11 @@ export default function TabNews() {
   // Filter
   const [filterSource, setFilterSource] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // News value scores (Faz 6)
+  const [newsScores, setNewsScores] = useState<Record<number, { score: number; reason: string }>>({});
+  const [scoringAll, setScoringAll] = useState(false);
+  const [minScoreFilter, setMinScoreFilter] = useState(0);
 
   // Draft/schedule
   const [actionMsg, setActionMsg] = useState<Record<number, string>>({});
@@ -202,6 +208,22 @@ export default function TabNews() {
     } catch { /* ignore */ }
   };
 
+  const handleScoreAll = async () => {
+    if (articles.length === 0) return;
+    setScoringAll(true);
+    try {
+      const texts = articles.map(a => `${a.title} — ${a.body}`);
+      const result = await scoreNewsValue(texts);
+      const scores: Record<number, { score: number; reason: string }> = {};
+      for (const s of result.scores || []) {
+        const idx = (s.index || 1) - 1;
+        scores[idx] = { score: s.score || 5, reason: s.reason || "" };
+      }
+      setNewsScores(scores);
+    } catch { /* ignore */ }
+    finally { setScoringAll(false); }
+  };
+
   const openInX = (text: string) => {
     window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
   };
@@ -214,8 +236,9 @@ export default function TabNews() {
 
   const allSources = [...new Set(articles.map(a => a.source))].sort();
 
-  const filteredArticles = articles.filter(a => {
+  const filteredArticles = articles.filter((a, idx) => {
     if (filterSource && a.source !== filterSource) return false;
+    if (minScoreFilter > 0 && newsScores[idx] && newsScores[idx].score < minScoreFilter) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return a.title.toLowerCase().includes(q) || a.body.toLowerCase().includes(q);
@@ -258,6 +281,24 @@ export default function TabNews() {
             <option value="">Tum Kaynaklar</option>
             {allSources.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
+          {Object.keys(newsScores).length > 0 && (
+            <select
+              value={minScoreFilter}
+              onChange={(e) => setMinScoreFilter(Number(e.target.value))}
+              className="input-field text-sm py-1"
+            >
+              <option value={0}>Tum Skorlar</option>
+              <option value={4}>4+ (Orta+)</option>
+              <option value={7}>7+ (Onemli)</option>
+            </select>
+          )}
+          <button
+            onClick={handleScoreAll}
+            disabled={scoringAll || articles.length === 0}
+            className="btn-secondary text-sm py-1"
+          >
+            {scoringAll ? "Skorlaniyor..." : Object.keys(newsScores).length > 0 ? "Tekrar Skorla" : "AI Skorla"}
+          </button>
         </div>
 
         {/* Style/format/provider */}
@@ -336,6 +377,15 @@ export default function TabNews() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{article.title}</span>
+                        {newsScores[i] && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 ${
+                            newsScores[i].score >= 7 ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)]" :
+                            newsScores[i].score >= 4 ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]" :
+                            "bg-[var(--text-secondary)]/20 text-[var(--text-secondary)]"
+                          }`} title={newsScores[i].reason}>
+                            {newsScores[i].score}/10
+                          </span>
+                        )}
                         <span className="text-[10px] text-[var(--text-secondary)]">{isExpanded ? "▲" : "▼"}</span>
                       </div>
                       {article.body && (

@@ -4,6 +4,7 @@ Son 24 saatte takip edilen hesapların en iyi tweetlerini listeler,
 araştırma ve quote tweet üretimi sağlar.
 """
 import logging
+import re
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -377,3 +378,142 @@ def trigger_account_discovery():
         return {"success": True, "total": len(active)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Faz 6: AI News Value Scoring ──────────────────────
+
+class ScoreNewsValueRequest(BaseModel):
+    texts: list[str]  # List of texts to score
+
+
+@router.post("/score-newsvalue")
+def score_news_value(req: ScoreNewsValueRequest):
+    """AI ile metin(ler)e haber değeri skoru at (1-10)."""
+    if not req.texts:
+        return {"scores": []}
+
+    try:
+        from backend.api.helpers import get_ai_provider
+
+        provider, api_key, _ = get_ai_provider()
+        if not api_key:
+            raise HTTPException(400, "AI API anahtarı bulunamadı")
+
+        # Build prompt for batch scoring
+        texts_block = "\n---\n".join(
+            f"[{i+1}] {t[:500]}" for i, t in enumerate(req.texts[:20])
+        )
+
+        prompt = (
+            "Her metin icin AI/teknoloji haberi degeri skoru ver (1-10).\n"
+            "1-3 = kisisel tweet, reklam, spam, genel sohbet\n"
+            "4-6 = orta onem, genel AI haberi\n"
+            "7-10 = buyuk duyuru, yeni model, onemli arastirma, kesif\n\n"
+            f"Metinler:\n{texts_block}\n\n"
+            "SADECE JSON array olarak yanit ver, baska bir sey yazma:\n"
+            f'[{{"index": 1, "score": 7, "reason": "kisa aciklama"}}]'
+        )
+
+        scores = _call_ai_for_scores(provider, api_key, prompt)
+        return {"scores": scores}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("News value scoring error")
+        raise HTTPException(500, f"Skorlama hatası: {str(e)}")
+
+
+def _call_ai_for_scores(provider: str, api_key: str, prompt: str) -> list[dict]:
+    """Call AI provider and parse score results."""
+    response_text = ""
+
+    if provider == "anthropic":
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        response_text = resp.content[0].text
+    elif provider == "minimax":
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key, base_url="https://api.minimaxi.chat/v1")
+        resp = client.chat.completions.create(
+            model="MiniMax-Text-01",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        response_text = resp.choices[0].message.content or ""
+    else:
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        response_text = resp.choices[0].message.content or ""
+
+    # Parse JSON from response
+    try:
+        # Extract JSON array
+        match = re.search(r'\[.*\]', response_text, re.DOTALL)
+        if match:
+            import json
+            return json.loads(match.group())
+    except Exception:
+        pass
+
+    return []
+
+
+# ── Faz 9: Active Account Search ──────────────────────
+
+class SearchAccountsRequest(BaseModel):
+    query: str
+    max_results: int = 10
+
+
+@router.post("/search-accounts")
+def search_accounts(req: SearchAccountsRequest):
+    """X'te aktif hesap araması (Twikit ile)."""
+    if not req.query.strip():
+        raise HTTPException(400, "Arama sorgusu boş olamaz")
+
+    try:
+        from backend.modules.twikit_client import get_twikit_client
+        import asyncio
+
+        client = get_twikit_client()
+        if not client:
+            raise HTTPException(400, "Twikit cookie ayarlı değil")
+
+        loop = asyncio.new_event_loop()
+        try:
+            users = loop.run_until_complete(
+                client.search_user(req.query.strip(), count=min(req.max_results, 20))
+            )
+        finally:
+            loop.close()
+
+        results = []
+        for u in users:
+            results.append({
+                "username": getattr(u, "screen_name", "") or getattr(u, "username", ""),
+                "display_name": getattr(u, "name", ""),
+                "followers": getattr(u, "followers_count", 0),
+                "following": getattr(u, "following_count", 0),
+                "bio": getattr(u, "description", "") or "",
+                "verified": getattr(u, "verified", False) or getattr(u, "is_blue_verified", False),
+                "profile_image": getattr(u, "profile_image_url_https", ""),
+            })
+
+        return {"accounts": results, "total": len(results)}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Account search error")
+        raise HTTPException(500, f"Hesap arama hatası: {str(e)}")

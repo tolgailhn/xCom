@@ -1031,3 +1031,19 @@ export function acceptSuggestedAccount(username: string, isPriority: boolean = f
 export function triggerAccountDiscovery() {
   return apiFetch("/api/discovery/suggested-accounts/discover", { method: "POST" });
 }
+
+// Faz 6: News Value Scoring
+export function scoreNewsValue(texts: string[]) {
+  return apiFetch("/api/discovery/score-newsvalue", {
+    method: "POST",
+    body: JSON.stringify({ texts }),
+  });
+}
+
+// Faz 9: Active Account Search
+export function searchAccounts(query: string, maxResults: number = 10) {
+  return apiFetch("/api/discovery/search-accounts", {
+    method: "POST",
+    body: JSON.stringify({ query, max_results: maxResults }),
+  });
+}
