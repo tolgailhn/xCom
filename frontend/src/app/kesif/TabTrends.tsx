@@ -11,14 +11,35 @@ import {
   extractTweet,
   getStyles,
   addDraft,
-  schedulePost,
   findMedia,
   generateInfographic,
   aiScoreTrends,
   publishTweet,
-  TweetMediaItem,
-  TweetUrl,
+  type TweetMediaItem,
+  type TweetUrl,
 } from "@/lib/api";
+
+import {
+  AIScoreBadge,
+  CircularGauge,
+  StyleFormatBar,
+  ResearchPanel,
+  GenerationPanel,
+  MediaSection,
+  LinksBox,
+  timeAgo,
+  formatNumber,
+  formatDateStr,
+  formatDateLabel,
+  isLowQualityTweet,
+  openInX,
+  copyToClipboard,
+  type StyleOption,
+  type FormatOption,
+  type ResearchData,
+  type GeneratedData,
+  type MediaItem,
+} from "@/components/discovery";
 
 /* ── Types ──────────────────────────────────────────── */
 
@@ -53,68 +74,6 @@ interface TrendHistoryEntry {
   total_tweets_analyzed: number;
 }
 
-interface StyleOption { id: string; name: string; desc: string }
-interface FormatOption { id: string; name: string; desc: string }
-
-interface ResearchState {
-  summary: string;
-  key_points: string[];
-  sources: { title: string; url?: string }[];
-  progress: string;
-}
-
-/* ── Helpers ────────────────────────────────────────── */
-
-function formatDateStr(d: Date): string {
-  return d.toISOString().split("T")[0];
-}
-
-function formatDateDisplay(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
-  const today = formatDateStr(new Date());
-  const yesterday = formatDateStr(new Date(Date.now() - 86400000));
-  if (dateStr === today) return "Bugun";
-  if (dateStr === yesterday) return "Dun";
-  return d.toLocaleDateString("tr-TR", { day: "numeric", month: "long", weekday: "short" });
-}
-
-function scoreColor(score: number, maxScore: number): string {
-  const pct = maxScore > 0 ? score / maxScore : 0;
-  if (pct >= 0.7) return "var(--accent-green)";
-  if (pct >= 0.4) return "var(--accent-amber)";
-  return "var(--text-secondary)";
-}
-
-function relativeTime(dateStr: string): string {
-  if (!dateStr) return "";
-  try {
-    const now = Date.now();
-    const then = new Date(dateStr).getTime();
-    if (isNaN(then)) return "";
-    const diff = now - then;
-    const absDiff = Math.abs(diff);
-    const mins = Math.floor(absDiff / 60000);
-    if (mins < 1) return "az once";
-    if (mins < 60) return `${mins}dk once`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}sa once`;
-    const days = Math.floor(hrs / 24);
-    return `${days}g once`;
-  } catch {
-    return "";
-  }
-}
-
-function formatEngagement(n: number): string {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
-  return n.toFixed(0);
-}
-
-function isGMTweet(text: string): boolean {
-  return /^(gm|gn|good morning|good night|good evening)\b/i.test(text.trim()) || /how('?s| is) your (day|week|weekend|morning)/i.test(text);
-}
-
 /* ── Component ──────────────────────────────────────── */
 
 export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number }) {
@@ -133,36 +92,33 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
   const [filterMinScore, setFilterMinScore] = useState(0);
   const [filterAccount, setFilterAccount] = useState("");
   const [sortBy, setSortBy] = useState<"score" | "ai">("ai");
+  const [hideGM, setHideGM] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
 
   // AI scoring
   const [aiScoring, setAiScoring] = useState(false);
   const [aiScoredCount, setAiScoredCount] = useState(0);
 
-  // Expanded panels
+  // Expansion: trend-level + tweet-level progressive disclosure
   const [expandedTrend, setExpandedTrend] = useState<string | null>(null);
-  const [activeResearch, setActiveResearch] = useState<string | null>(null);
-  const [activeGenerate, setActiveGenerate] = useState<string | null>(null);
+  const [expandedTweet, setExpandedTweet] = useState<string | null>(null);  // compositeKey
+  const [workflowTweet, setWorkflowTweet] = useState<string | null>(null);  // compositeKey
 
-  // Trend-level research & generation state
-  const [researchData, setResearchData] = useState<Record<string, ResearchState>>({});
+  // Research & Generation (both trend-level and tweet-level share same maps)
+  const [researchData, setResearchData] = useState<Record<string, ResearchData>>({});
   const [researchingKey, setResearchingKey] = useState<string | null>(null);
-  const [generatedTexts, setGeneratedTexts] = useState<Record<string, { text: string; score: number; thread_parts?: string[] }>>({});
+  const [generatedTexts, setGeneratedTexts] = useState<Record<string, GeneratedData>>({});
+  const [editedTexts, setEditedTexts] = useState<Record<string, string>>({});
   const [generatingKey, setGeneratingKey] = useState<string | null>(null);
+  const [researchExpanded, setResearchExpanded] = useState<Set<string>>(new Set(["__all__"]));
 
-  // Per-tweet state
-  const [tweetResearchData, setTweetResearchData] = useState<Record<string, ResearchState>>({});
-  const [tweetResearchingKey, setTweetResearchingKey] = useState<string | null>(null);
-  const [tweetGeneratedTexts, setTweetGeneratedTexts] = useState<Record<string, { text: string; score: number; thread_parts?: string[] }>>({});
-  const [tweetGeneratingKey, setTweetGeneratingKey] = useState<string | null>(null);
-  const [tweetEditedTexts, setTweetEditedTexts] = useState<Record<string, string>>({});
-  const [activeTweetKey, setActiveTweetKey] = useState<string | null>(null);
-
-  // Per-tweet media & URLs
+  // Media
   const [tweetMedia, setTweetMedia] = useState<Record<string, TweetMediaItem[]>>({});
   const [tweetUrls, setTweetUrls] = useState<Record<string, TweetUrl[]>>({});
-
-  // GM tweet filter
-  const [hideGM, setHideGM] = useState(true);
+  const [mediaResults, setMediaResults] = useState<Record<string, MediaItem[]>>({});
+  const [mediaLoading, setMediaLoading] = useState<string | null>(null);
+  const [infographicData, setInfographicData] = useState<Record<string, { image: string; format: string }>>({});
+  const [infographicLoading, setInfographicLoading] = useState<string | null>(null);
 
   // Style/format/provider
   const [styles, setStyles] = useState<StyleOption[]>([]);
@@ -171,23 +127,12 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
   const [selectedFormat, setSelectedFormat] = useState("spark");
   const [selectedProvider, setSelectedProvider] = useState("");
 
-  // Draft/schedule
-  const [actionMsg, setActionMsg] = useState<Record<string, string>>({});
-  const [showSchedule, setShowSchedule] = useState<string | null>(null);
-  const [scheduleTime, setScheduleTime] = useState("");
-
-  // Media & Infographic
-  const [mediaResults, setMediaResults] = useState<Record<string, any[]>>({});
-  const [mediaLoading, setMediaLoading] = useState<string | null>(null);
-  const [infographicResults, setInfographicResults] = useState<Record<string, string>>({});
-  const [infographicLoading, setInfographicLoading] = useState<string | null>(null);
-
-  // Refs for scroll-to-trend
+  // Refs
   const trendRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   /* ── Load data ──────────────────────────────────────── */
 
-  const loadTrends = async () => {
+  const loadTrends = useCallback(async () => {
     try {
       const [trendData, historyData] = await Promise.all([
         getTrends(),
@@ -199,357 +144,168 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
       setTrendHistory(historyData.history || []);
     } catch { /* ignore */ }
     finally { setLoading(false); }
-  };
+  }, []);
 
-  useEffect(() => { loadTrends(); }, [refreshTrigger]);
+  useEffect(() => { loadTrends(); }, [refreshTrigger, loadTrends]);
 
   useEffect(() => {
     getStyles()
-      .then((r: { styles: StyleOption[]; formats: FormatOption[] }) => {
-        setStyles(r.styles);
-        setFormats(r.formats);
-      })
+      .then((r: { styles: StyleOption[]; formats: FormatOption[] }) => { setStyles(r.styles); setFormats(r.formats); })
       .catch(() => {});
   }, []);
 
-  // Auto-trigger AI scoring in background on mount
+  // Auto AI scoring on mount
   useEffect(() => {
     aiScoreTrends()
-      .then(res => {
-        setAiScoredCount(res.scored || 0);
-        if (res.scored > 0) loadTrends();  // Reload to get updated scores
-      })
+      .then((res: { scored: number }) => { setAiScoredCount(res.scored || 0); if (res.scored > 0) loadTrends(); })
       .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* ── Date navigation ────────────────────────────────── */
+  /* ── Computed ──────────────────────────────────────── */
 
   const availableDates = useMemo(() => {
     const dates = new Set<string>();
-    if (trends.length > 0) {
-      const todayStr = formatDateStr(new Date());
-      dates.add(todayStr);
-    }
-    for (const h of trendHistory) {
-      if (h.date) dates.add(h.date);
-    }
+    if (trends.length > 0) dates.add(formatDateStr(new Date()));
+    for (const h of trendHistory) { if (h.date) dates.add(h.date); }
     return Array.from(dates).sort().reverse();
   }, [trends, trendHistory]);
 
   const displayTrends = useMemo(() => {
-    if (selectedDate === "today" || selectedDate === formatDateStr(new Date())) {
-      return trends;
-    }
-    const entry = trendHistory.find(h => h.date === selectedDate);
+    if (selectedDate === "today" || selectedDate === formatDateStr(new Date())) return trends;
+    const entry = trendHistory.find((h: TrendHistoryEntry) => h.date === selectedDate);
     return entry?.trends || [];
   }, [selectedDate, trends, trendHistory]);
 
   const goToDate = (offset: number) => {
-    const currentIdx = selectedDate === "today"
-      ? 0
-      : availableDates.indexOf(selectedDate);
+    const currentIdx = selectedDate === "today" ? 0 : availableDates.indexOf(selectedDate);
     const newIdx = Math.max(0, Math.min(availableDates.length - 1, currentIdx + offset));
     setSelectedDate(availableDates[newIdx] || "today");
   };
 
-  /* ── Filtered trends ────────────────────────────────── */
-
   const filteredTrends = useMemo(() => {
     let result = displayTrends;
-    if (filterStrong) result = result.filter(t => t.is_strong_trend);
-    if (filterMinScore > 0) result = result.filter(t => t.trend_score >= filterMinScore);
-    if (filterAccount) result = result.filter(t => t.accounts.some(a => a.toLowerCase().includes(filterAccount.toLowerCase())));
-    if (sortBy === "ai") {
-      result = [...result].sort((a, b) => (b.ai_relevance_score || 0) - (a.ai_relevance_score || 0));
-    }
+    if (filterStrong) result = result.filter((t: Trend) => t.is_strong_trend);
+    if (filterMinScore > 0) result = result.filter((t: Trend) => t.trend_score >= filterMinScore);
+    if (filterAccount) result = result.filter((t: Trend) => t.accounts.some((a: string) => a.toLowerCase().includes(filterAccount.toLowerCase())));
+    if (sortBy === "ai") result = [...result].sort((a, b) => (b.ai_relevance_score || 0) - (a.ai_relevance_score || 0));
     return result;
   }, [displayTrends, filterStrong, filterMinScore, filterAccount, sortBy]);
 
-  const maxScore = useMemo(() => Math.max(...(filteredTrends.map(t => t.trend_score) || [1])), [filteredTrends]);
+  const maxScore = useMemo(() => Math.max(...(filteredTrends.map((t: Trend) => t.trend_score) || [1])), [filteredTrends]);
 
   const allAccounts = useMemo(() => {
     const acc = new Set<string>();
-    displayTrends.forEach(t => t.accounts.forEach(a => acc.add(a)));
+    displayTrends.forEach((t: Trend) => t.accounts.forEach((a: string) => acc.add(a)));
     return Array.from(acc).sort();
   }, [displayTrends]);
 
-  const strongCount = useMemo(() => filteredTrends.filter(t => t.is_strong_trend).length, [filteredTrends]);
+  const strongCount = useMemo(() => filteredTrends.filter((t: Trend) => t.is_strong_trend).length, [filteredTrends]);
 
-  /* ── Scroll to trend ─────────────────────────────────── */
+  const activeFilterCount = [filterStrong, hideGM, filterMinScore > 0, filterAccount].filter(Boolean).length;
 
   const scrollToTrend = useCallback((keyword: string) => {
     setExpandedTrend(keyword);
-    setTimeout(() => {
-      const el = trendRefs.current[keyword];
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }, 100);
+    setTimeout(() => { trendRefs.current[keyword]?.scrollIntoView({ behavior: "smooth", block: "start" }); }, 100);
   }, []);
 
   /* ── Handlers ───────────────────────────────────────── */
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
-    try {
-      await triggerTrendAnalysis();
-      await loadTrends();
-    } catch { /* ignore */ }
+    try { await triggerTrendAnalysis(); await loadTrends(); } catch { /* ignore */ }
     finally { setAnalyzing(false); }
   };
 
-  const handleResearch = async (trend: Trend) => {
-    const key = trend.keyword;
+  const handleResearch = useCallback(async (key: string, topic: string, tweetUrl?: string, account?: string, tweetId?: string) => {
     setResearchingKey(key);
-    setActiveResearch(key);
-    setResearchData(prev => ({
-      ...prev,
-      [key]: { summary: "", key_points: [], sources: [], progress: "Baslatiliyor..." },
-    }));
+    setWorkflowTweet(key);
+    setResearchData((prev: Record<string, ResearchData>) => ({ ...prev, [key]: { summary: "", key_points: [], sources: [], progress: "Baslatiliyor..." } }));
 
     try {
-      // Use the first tweet's full text for better research context
-      const firstTweet = trend.top_tweets[0];
-      let topic = trend.keyword;
-      if (firstTweet) {
-        // Try to extract full thread text from first tweet
+      let fullText = topic;
+      if (tweetUrl) {
         try {
-          const tweetUrl = firstTweet.tweet_url || (firstTweet.tweet_id ? `https://x.com/${firstTweet.account}/status/${firstTweet.tweet_id}` : "");
-          if (tweetUrl) {
-            const extracted = await extractTweet(tweetUrl);
-            if (extracted?.full_thread_text) {
-              topic = extracted.full_thread_text;
-            } else if (extracted?.text) {
-              topic = extracted.text;
-            }
-            // Capture media and URLs
-            const tweetId = `${key}::0`;
-            if (extracted?.media_items?.length) {
-              setTweetMedia(prev => ({...prev, [tweetId]: extracted.media_items}));
-            }
-            const allUrls = [...(extracted?.urls || []), ...(extracted?.thread_urls || [])];
-            if (allUrls.length) {
-              setTweetUrls(prev => ({...prev, [tweetId]: allUrls}));
-            }
-            if (extracted?.thread_media?.length) {
-              setTweetMedia(prev => ({...prev, [tweetId]: [...(prev[tweetId] || []), ...extracted.thread_media]}));
-            }
-          }
-        } catch {
-          // Fallback: use first tweet text + keyword
-          topic = `${trend.keyword}: ${firstTweet.text}`;
-        }
-      }
-
-      const result = await researchTopicStream(
-        {
-          topic,
-          engine: "default",
-          tweet_id: firstTweet?.tweet_id || "",
-          tweet_author: firstTweet?.account || "",
-        },
-        (progress) => {
-          setResearchData(prev => ({
-            ...prev,
-            [key]: { ...prev[key], progress },
-          }));
-        },
-      );
-
-      setResearchData(prev => ({
-        ...prev,
-        [key]: { summary: result.summary, key_points: result.key_points, sources: result.sources, progress: "" },
-      }));
-    } catch (e) {
-      setResearchData(prev => ({
-        ...prev,
-        [key]: { ...prev[key], progress: `Hata: ${e instanceof Error ? e.message : "Bilinmeyen hata"}` },
-      }));
-    } finally {
-      setResearchingKey(null);
-    }
-  };
-
-  const handleGenerate = async (trend: Trend) => {
-    const key = trend.keyword;
-    setGeneratingKey(key);
-    setActiveGenerate(key);
-
-    try {
-      const research = researchData[key];
-      let researchContext = "";
-      if (research?.summary) {
-        researchContext = `Arastirma Ozeti:\n${research.summary}\n\nAnahtar Noktalar:\n${research.key_points.join("\n")}`;
-      }
-      const tweetContext = trend.top_tweets.slice(0, 3).map(t => `@${t.account} (${t.engagement} eng): ${t.text}`).join("\n---\n");
-
-      const result = await generateTweet({
-        topic: `${trend.keyword} hakkinda tweet yaz`,
-        style: selectedStyle,
-        length: selectedFormat,
-        content_format: selectedFormat,
-        research_context: researchContext
-          ? `${researchContext}\n\nTrend Tweet Ornekleri:\n${tweetContext}`
-          : `Trend: ${trend.keyword}\n${trend.account_count} hesapta goruldu.\n\nOrnek Tweetler:\n${tweetContext}`,
-        provider: selectedProvider || undefined,
-      });
-
-      setGeneratedTexts(prev => ({
-        ...prev,
-        [key]: { text: result.tweet || result.text || "", score: result.score?.overall || result.quality_score || 0, thread_parts: result.thread_parts },
-      }));
-    } catch (e) {
-      setGeneratedTexts(prev => ({
-        ...prev,
-        [key]: { text: `Hata: ${e instanceof Error ? e.message : "Bilinmeyen"}`, score: 0 },
-      }));
-    } finally {
-      setGeneratingKey(null);
-    }
-  };
-
-  const handleTweetResearch = async (trend: Trend, tweetIdx: number) => {
-    const tw = trend.top_tweets[tweetIdx];
-    const compositeKey = `${trend.keyword}::${tweetIdx}`;
-    setTweetResearchingKey(compositeKey);
-    setActiveTweetKey(compositeKey);
-    setTweetResearchData(prev => ({
-      ...prev,
-      [compositeKey]: { summary: "", key_points: [], sources: [], progress: "Arastirma baslatiliyor..." },
-    }));
-
-    try {
-      // Try to extract full tweet/thread text first (like TabTweets pattern)
-      let fullText = tw.text;
-      try {
-        const tweetUrl = tw.tweet_url || (tw.tweet_id ? `https://x.com/${tw.account}/status/${tw.tweet_id}` : "");
-        if (tweetUrl) {
           const extracted = await extractTweet(tweetUrl);
           if (extracted?.full_thread_text) fullText = extracted.full_thread_text;
           else if (extracted?.text) fullText = extracted.text;
-          // Capture media and URLs
-          if (extracted?.media_items?.length) {
-            setTweetMedia(prev => ({...prev, [compositeKey]: extracted.media_items}));
-          }
+          if (extracted?.media_items?.length) setTweetMedia((prev: Record<string, TweetMediaItem[]>) => ({ ...prev, [key]: extracted.media_items }));
           const allUrls = [...(extracted?.urls || []), ...(extracted?.thread_urls || [])];
-          if (allUrls.length) {
-            setTweetUrls(prev => ({...prev, [compositeKey]: allUrls}));
-          }
-          if (extracted?.thread_media?.length) {
-            setTweetMedia(prev => ({...prev, [compositeKey]: [...(prev[compositeKey] || []), ...extracted.thread_media]}));
-          }
-        }
-      } catch { /* use original text */ }
+          if (allUrls.length) setTweetUrls((prev: Record<string, TweetUrl[]>) => ({ ...prev, [key]: allUrls }));
+          if (extracted?.thread_media?.length) setTweetMedia((prev: Record<string, TweetMediaItem[]>) => ({ ...prev, [key]: [...(prev[key] || []), ...extracted.thread_media] }));
+        } catch { fullText = topic; }
+      }
 
       const result = await researchTopicStream(
-        {
-          topic: fullText,
-          engine: "default",
-          tweet_id: tw.tweet_id || "",
-          tweet_author: tw.account,
-        },
-        (progress) => {
-          setTweetResearchData(prev => ({ ...prev, [compositeKey]: { ...prev[compositeKey], progress } }));
-        },
+        { topic: fullText, engine: "default", tweet_id: tweetId || "", tweet_author: account || "" },
+        (progress: string) => setResearchData((prev: Record<string, ResearchData>) => ({ ...prev, [key]: { ...prev[key], progress } })),
       );
-      setTweetResearchData(prev => ({
-        ...prev,
-        [compositeKey]: { summary: result.summary, key_points: result.key_points, sources: result.sources, progress: "" },
-      }));
+      setResearchData((prev: Record<string, ResearchData>) => ({ ...prev, [key]: { summary: result.summary, key_points: result.key_points, sources: result.sources, progress: "" } }));
     } catch (e) {
-      setTweetResearchData(prev => ({
-        ...prev,
-        [compositeKey]: { ...prev[compositeKey], progress: `Hata: ${e instanceof Error ? e.message : "Bilinmeyen hata"}` },
-      }));
-    } finally {
-      setTweetResearchingKey(null);
-    }
-  };
+      setResearchData((prev: Record<string, ResearchData>) => ({ ...prev, [key]: { ...prev[key], progress: `Hata: ${e instanceof Error ? e.message : "Bilinmeyen hata"}` } }));
+    } finally { setResearchingKey(null); }
+  }, []);
 
-  const handleTweetGenerate = async (trend: Trend, tweetIdx: number) => {
-    const tw = trend.top_tweets[tweetIdx];
-    const compositeKey = `${trend.keyword}::${tweetIdx}`;
-    setTweetGeneratingKey(compositeKey);
-
+  const handleTrendGenerate = useCallback(async (trend: Trend) => {
+    const key = trend.keyword;
+    setGeneratingKey(key);
     try {
-      const research = tweetResearchData[compositeKey];
-      const researchSummary = research?.summary ? `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}` : "";
-      const result = await generateQuoteTweet({
-        original_tweet: tw.text,
-        original_author: tw.account,
-        style: selectedStyle,
-        research_summary: researchSummary,
-        length_preference: selectedFormat,
+      const research = researchData[key];
+      const researchContext = research?.summary ? `Arastirma Ozeti:\n${research.summary}\n\nAnahtar Noktalar:\n${research.key_points.join("\n")}` : "";
+      const tweetContext = trend.top_tweets.slice(0, 3).map(t => `@${t.account} (${t.engagement} eng): ${t.text}`).join("\n---\n");
+      const result = await generateTweet({
+        topic: `${trend.keyword} hakkinda tweet yaz`,
+        style: selectedStyle, length: selectedFormat, content_format: selectedFormat,
+        research_context: researchContext ? `${researchContext}\n\nTrend Tweet Ornekleri:\n${tweetContext}` : `Trend: ${trend.keyword}\n${trend.account_count} hesapta goruldu.\n\nOrnek Tweetler:\n${tweetContext}`,
         provider: selectedProvider || undefined,
       });
+      setGeneratedTexts((prev: Record<string, GeneratedData>) => ({ ...prev, [key]: { text: result.tweet || result.text || "", score: result.score?.overall || result.quality_score || 0, thread_parts: result.thread_parts } }));
+    } catch (e) {
+      setGeneratedTexts((prev: Record<string, GeneratedData>) => ({ ...prev, [key]: { text: `Hata: ${e instanceof Error ? e.message : "Bilinmeyen"}`, score: 0 } }));
+    } finally { setGeneratingKey(null); }
+  }, [researchData, selectedStyle, selectedFormat, selectedProvider]);
+
+  const handleTweetGenerate = useCallback(async (tw: TrendTweet, compositeKey: string) => {
+    setGeneratingKey(compositeKey);
+    try {
+      const research = researchData[compositeKey];
+      const researchSummary = research?.summary ? `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}` : "";
+      const result = await generateQuoteTweet({
+        original_tweet: tw.text, original_author: tw.account, style: selectedStyle,
+        research_summary: researchSummary, length_preference: selectedFormat, provider: selectedProvider || undefined,
+      });
       const text = result.text || "";
-      setTweetGeneratedTexts(prev => ({ ...prev, [compositeKey]: { text, score: result.score?.overall || 0, thread_parts: result.thread_parts } }));
-      setTweetEditedTexts(prev => ({ ...prev, [compositeKey]: text }));
+      setGeneratedTexts((prev: Record<string, GeneratedData>) => ({ ...prev, [compositeKey]: { text, score: result.score?.overall || 0, thread_parts: result.thread_parts } }));
+      setEditedTexts((prev: Record<string, string>) => ({ ...prev, [compositeKey]: text }));
     } catch (e) {
       const errText = `Hata: ${e instanceof Error ? e.message : "Bilinmeyen"}`;
-      setTweetGeneratedTexts(prev => ({ ...prev, [compositeKey]: { text: errText, score: 0 } }));
-      setTweetEditedTexts(prev => ({ ...prev, [compositeKey]: errText }));
-    } finally {
-      setTweetGeneratingKey(null);
-    }
-  };
+      setGeneratedTexts((prev: Record<string, GeneratedData>) => ({ ...prev, [compositeKey]: { text: errText, score: 0 } }));
+    } finally { setGeneratingKey(null); }
+  }, [researchData, selectedStyle, selectedFormat, selectedProvider]);
 
-  const handleSaveDraft = async (key: string, textSource: "trend" | "tweet" = "trend") => {
-    const text = textSource === "tweet" ? (tweetEditedTexts[key] || tweetGeneratedTexts[key]?.text) : generatedTexts[key]?.text;
-    if (!text) return;
-    const topic = key.includes("::") ? key.split("::")[0] : key;
-    try {
-      await addDraft({ text, topic, style: selectedStyle });
-      setActionMsg(prev => ({ ...prev, [key]: "Taslak kaydedildi!" }));
-      setTimeout(() => setActionMsg(prev => ({ ...prev, [key]: "" })), 3000);
-    } catch { /* ignore */ }
-  };
-
-  const handleSchedule = async (key: string, textSource: "trend" | "tweet" = "trend") => {
-    const text = textSource === "tweet" ? (tweetEditedTexts[key] || tweetGeneratedTexts[key]?.text) : generatedTexts[key]?.text;
-    if (!text || !scheduleTime) return;
-    try {
-      await schedulePost({ text, scheduled_time: scheduleTime });
-      setActionMsg(prev => ({ ...prev, [key]: `Zamanlandi: ${new Date(scheduleTime).toLocaleString("tr-TR")}` }));
-      setShowSchedule(null);
-      setScheduleTime("");
-      setTimeout(() => setActionMsg(prev => ({ ...prev, [key]: "" })), 3000);
-    } catch { /* ignore */ }
-  };
-
-  const openInX = (text: string) => window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
-  const copyText = (text: string, key: string) => {
-    navigator.clipboard.writeText(text);
-    setActionMsg(prev => ({ ...prev, [key]: "Kopyalandi!" }));
-    setTimeout(() => setActionMsg(prev => ({ ...prev, [key]: "" })), 2000);
-  };
-
-  const handleFindMedia = async (key: string, query: string) => {
+  const handleFindMedia = useCallback(async (key: string, query: string) => {
     setMediaLoading(key);
-    try {
-      const result = await findMedia(query.slice(0, 200), "both");
-      setMediaResults(prev => ({ ...prev, [key]: result.results || [] }));
-    } catch (e) {
-      console.error("Media search failed:", e);
-      setMediaResults(prev => ({ ...prev, [key]: [] }));
-    } finally {
-      setMediaLoading(null);
-    }
-  };
+    try { const r = await findMedia(query.slice(0, 200), "both"); setMediaResults((prev: Record<string, MediaItem[]>) => ({ ...prev, [key]: r.results || [] })); }
+    catch { setMediaResults((prev: Record<string, MediaItem[]>) => ({ ...prev, [key]: [] })); }
+    finally { setMediaLoading(null); }
+  }, []);
 
-  const handleInfographic = async (key: string, topic: string, keyPoints: string[]) => {
+  const handleInfographic = useCallback(async (key: string, topic: string, keyPoints: string[]) => {
     setInfographicLoading(key);
     try {
       const result = await generateInfographic({ topic, key_points: keyPoints });
-      if (result.image_base64) {
-        setInfographicResults(prev => ({ ...prev, [key]: result.image_base64 }));
-      }
-    } catch (e) {
-      console.error("Infographic failed:", e);
-    } finally {
-      setInfographicLoading(null);
-    }
+      if (result.image_base64) setInfographicData((prev: Record<string, { image: string; format: string }>) => ({ ...prev, [key]: { image: result.image_base64, format: result.image_format || "png" } }));
+    } catch { /* ignore */ }
+    finally { setInfographicLoading(null); }
+  }, []);
+
+  /* ── Score helpers ─────────────────────────────────── */
+
+  const scoreColor = (score: number) => {
+    const pct = maxScore > 0 ? score / maxScore : 0;
+    if (pct >= 0.7) return "var(--accent-green)";
+    if (pct >= 0.4) return "var(--accent-amber)";
+    return "var(--text-secondary)";
   };
 
   /* ── Render ─────────────────────────────────────────── */
@@ -575,188 +331,119 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-[var(--text-primary)]">Trend Ozeti</span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent-blue)]/15 text-[var(--accent-blue)] font-medium">
-                {filteredTrends.length} trend
-              </span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent-blue)]/15 text-[var(--accent-blue)] font-medium">{filteredTrends.length} trend</span>
               {strongCount > 0 && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent-amber)]/15 text-[var(--accent-amber)] font-medium">
-                  {strongCount} guclu
-                </span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent-amber)]/15 text-[var(--accent-amber)] font-medium">{strongCount} guclu</span>
               )}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {filteredTrends.map((t) => (
-              <button
-                key={t.keyword}
-                onClick={() => scrollToTrend(t.keyword)}
+            {filteredTrends.map((t: Trend) => (
+              <button key={t.keyword} onClick={() => scrollToTrend(t.keyword)}
                 className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 hover:scale-105 ${
                   t.is_strong_trend
-                    ? "bg-gradient-to-r from-[var(--accent-amber)]/20 to-[var(--accent-amber)]/5 text-[var(--accent-amber)] border-[var(--accent-amber)]/30 hover:border-[var(--accent-amber)]/60 hover:shadow-[0_0_12px_var(--accent-amber)/20]"
+                    ? "bg-gradient-to-r from-[var(--accent-amber)]/20 to-[var(--accent-amber)]/5 text-[var(--accent-amber)] border-[var(--accent-amber)]/30 hover:border-[var(--accent-amber)]/60"
                     : expandedTrend === t.keyword
                       ? "bg-[var(--accent-blue)]/15 text-[var(--accent-blue)] border-[var(--accent-blue)]/40"
                       : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/40"
-                }`}
-              >
+                }`}>
                 {t.is_strong_trend && <span className="text-[10px]">&#9650;</span>}
                 <span>{t.keyword}</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                  t.is_strong_trend
-                    ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]"
-                    : "bg-[var(--bg-primary)] text-[var(--text-secondary)]"
-                }`}>
-                  {t.account_count}
-                </span>
+                <AIScoreBadge score={t.ai_relevance_score} reason={t.ai_relevance_reason} size="sm" />
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--bg-primary)] text-[var(--text-secondary)]">{t.account_count}</span>
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* Day navigation - Modern pill style */}
+      {/* Day navigation */}
       {availableDates.length > 0 && (
         <div className="flex items-center gap-1.5 bg-[var(--bg-secondary)]/60 backdrop-blur-sm rounded-full p-1.5 border border-[var(--border)]/50">
-          <button
-            onClick={() => goToDate(1)}
-            disabled={availableDates.indexOf(selectedDate === "today" ? availableDates[0] : selectedDate) >= availableDates.length - 1}
-            className="px-3.5 py-2 rounded-full text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] disabled:opacity-30 transition-all duration-200"
-          >
-            &#8592;
-          </button>
+          <button onClick={() => goToDate(1)} disabled={availableDates.indexOf(selectedDate === "today" ? availableDates[0] : selectedDate) >= availableDates.length - 1}
+            className="px-3.5 py-2 rounded-full text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] disabled:opacity-30 transition-all">&#8592;</button>
           <div className="flex-1 flex items-center justify-center gap-2">
-            <span className="text-sm font-bold text-[var(--text-primary)]">
-              {selectedDate === "today" ? "Bugun" : formatDateDisplay(selectedDate)}
-            </span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] font-medium">
-              {filteredTrends.length} trend
-            </span>
+            <span className="text-sm font-bold text-[var(--text-primary)]">{selectedDate === "today" ? "Bugun" : formatDateLabel(selectedDate)}</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] font-medium">{filteredTrends.length} trend</span>
           </div>
-          <button
-            onClick={() => goToDate(-1)}
-            disabled={selectedDate === "today" || availableDates.indexOf(selectedDate) <= 0}
-            className="px-3.5 py-2 rounded-full text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] disabled:opacity-30 transition-all duration-200"
-          >
-            &#8594;
-          </button>
-          <button
-            onClick={() => setSelectedDate("today")}
+          <button onClick={() => goToDate(-1)} disabled={selectedDate === "today" || availableDates.indexOf(selectedDate) <= 0}
+            className="px-3.5 py-2 rounded-full text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] disabled:opacity-30 transition-all">&#8594;</button>
+          <button onClick={() => setSelectedDate("today")}
             className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 ${
-              selectedDate === "today"
-                ? "bg-[var(--accent-blue)] text-white shadow-[0_0_12px_var(--accent-blue)/30]"
-                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)]"
-            }`}
-          >
-            Bugun
-          </button>
+              selectedDate === "today" ? "bg-[var(--accent-blue)] text-white shadow-[0_0_12px_var(--accent-blue)/30]" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)]"
+            }`}>Bugun</button>
         </div>
       )}
 
-      {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          onClick={() => setFilterStrong(!filterStrong)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-            filterStrong
-              ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border-[var(--accent-amber)]/30"
-              : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--accent-amber)]/50"
-          }`}
-        >
-          Guclu Trendler
-        </button>
-        <button
-          onClick={() => setHideGM(!hideGM)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-            hideGM
-              ? "bg-[var(--accent-red)]/20 text-[var(--accent-red)] border-[var(--accent-red)]/30"
-              : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--accent-red)]/50"
-          }`}
-        >
-          GM/GN Gizle
-        </button>
-        <select
-          value={filterMinScore}
-          onChange={e => setFilterMinScore(Number(e.target.value))}
-          className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]"
-        >
-          <option value={0}>Min Skor: Tumu</option>
-          <option value={100}>100+</option>
-          <option value={500}>500+</option>
-          <option value={1000}>1000+</option>
-        </select>
-        {allAccounts.length > 0 && (
-          <select
-            value={filterAccount}
-            onChange={e => setFilterAccount(e.target.value)}
-            className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]"
-          >
-            <option value="">Tum Hesaplar</option>
-            {allAccounts.map(a => (
-              <option key={a} value={a}>@{a}</option>
-            ))}
+      {/* ═══ Filter Bar (2-tier) ═══ */}
+      <div className="space-y-2">
+        {/* Tier 1: Always visible */}
+        <div className="flex flex-wrap items-center gap-2">
+          <select value={sortBy} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortBy(e.target.value as "score" | "ai")}
+            className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]">
+            <option value="ai">Siralama: AI Onerisi</option>
+            <option value="score">Siralama: Skor</option>
           </select>
+          {allAccounts.length > 0 && (
+            <select value={filterAccount} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterAccount(e.target.value)}
+              className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]">
+              <option value="">Tum Hesaplar</option>
+              {allAccounts.map((a: string) => <option key={a} value={a}>@{a}</option>)}
+            </select>
+          )}
+          <button onClick={() => setShowFilters(!showFilters)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+              showFilters || activeFilterCount > 0
+                ? "bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] border-[var(--accent-blue)]/30"
+                : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--accent-blue)]/50"
+            }`}>
+            Filtreler{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+          </button>
+          <button onClick={async () => {
+              setAiScoring(true);
+              try { const res = await aiScoreTrends(); setAiScoredCount(res.scored || 0); if (res.scored > 0) await loadTrends(); } catch { /* ignore */ }
+              setAiScoring(false);
+            }} disabled={aiScoring}
+            className="px-3 py-1.5 rounded-full text-xs font-medium border transition-all bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] border-[var(--accent-blue)]/30 hover:bg-[var(--accent-blue)]/30 disabled:opacity-50">
+            {aiScoring ? "Skorlaniyor..." : `AI Skorla${aiScoredCount > 0 ? ` (${aiScoredCount})` : ""}`}
+          </button>
+        </div>
+
+        {/* Tier 2: Collapsible */}
+        {showFilters && (
+          <div className="flex flex-wrap items-center gap-2 p-2 rounded-lg bg-[var(--bg-secondary)]/40 border border-[var(--border)]/30">
+            <button onClick={() => setFilterStrong(!filterStrong)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                filterStrong ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border-[var(--accent-amber)]/30" : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)]"
+              }`}>Guclu Trendler</button>
+            <button onClick={() => setHideGM(!hideGM)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                hideGM ? "bg-[var(--accent-red)]/20 text-[var(--accent-red)] border-[var(--accent-red)]/30" : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)]"
+              }`}>GM/GN Gizle</button>
+            <select value={filterMinScore} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterMinScore(Number(e.target.value))}
+              className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]">
+              <option value={0}>Min Skor: Tumu</option>
+              <option value={100}>100+</option>
+              <option value={500}>500+</option>
+              <option value={1000}>1000+</option>
+            </select>
+          </div>
         )}
-        <select
-          value={sortBy}
-          onChange={e => setSortBy(e.target.value as "score" | "ai")}
-          className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]"
-        >
-          <option value="score">Siralama: Skor</option>
-          <option value="ai">Siralama: AI Onerisi</option>
-        </select>
-        <button
-          onClick={async () => {
-            setAiScoring(true);
-            try {
-              const res = await aiScoreTrends();
-              setAiScoredCount(res.scored || 0);
-              if (res.scored > 0) await loadTrends();
-            } catch (e) { console.error("AI trend scoring failed:", e); }
-            setAiScoring(false);
-          }}
-          disabled={aiScoring}
-          className="px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] border-[var(--accent-blue)]/30 hover:bg-[var(--accent-blue)]/30 disabled:opacity-50"
-        >
-          {aiScoring ? "Skorlaniyor..." : `AI Skorla${aiScoredCount > 0 ? ` (${aiScoredCount})` : ""}`}
-        </button>
       </div>
 
-      {/* Style/Format/Provider bar */}
+      {/* Style/Format/Provider */}
       <div className="glass-card p-3">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-blue)]" />
           <span className="text-xs font-medium text-[var(--text-secondary)]">Tweet Uretim Ayarlari</span>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <select value={selectedStyle} onChange={e => setSelectedStyle(e.target.value)} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]">
-            {styles.length > 0 ? styles.map(s => <option key={s.id} value={s.id}>{s.name}</option>) : (
-              <>
-                <option value="informative">Bilgilendirici</option>
-                <option value="provocative">Provoke Edici</option>
-                <option value="technical">Teknik</option>
-                <option value="storytelling">Hikaye</option>
-                <option value="analytical">Analitik</option>
-              </>
-            )}
-          </select>
-          <select value={selectedFormat} onChange={e => setSelectedFormat(e.target.value)} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]">
-            {formats.length > 0 ? formats.map(f => <option key={f.id} value={f.id}>{f.name}</option>) : (
-              <>
-                <option value="spark">Micro Tweet</option>
-                <option value="single">Tek Tweet</option>
-                <option value="short_thread">Kisa Thread</option>
-                <option value="thread">Thread</option>
-              </>
-            )}
-          </select>
-          <select value={selectedProvider} onChange={e => setSelectedProvider(e.target.value)} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]">
-            <option value="">Varsayilan AI</option>
-            <option value="minimax">MiniMax</option>
-            <option value="anthropic">Claude</option>
-            <option value="openai">GPT</option>
-            <option value="groq">Groq</option>
-            <option value="gemini">Gemini</option>
-          </select>
-        </div>
+        <StyleFormatBar
+          styles={styles} formats={formats}
+          selectedStyle={selectedStyle} setSelectedStyle={setSelectedStyle}
+          selectedFormat={selectedFormat} setSelectedFormat={setSelectedFormat}
+          selectedProvider={selectedProvider} setSelectedProvider={setSelectedProvider}
+          compact
+        />
       </div>
 
       {/* ════ Trend Cards ════ */}
@@ -772,110 +459,55 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
               {displayTrends.length === 0 ? "Henuz trend tespit edilmedi" : "Filtrelere uyan trend yok"}
             </div>
             <div className="text-xs text-[var(--text-secondary)] max-w-sm leading-relaxed">
-              {displayTrends.length === 0
-                ? "Kesfet ve otomatik tarama verileri biriktikce trendler burada gorunecek. Yukaridaki \"Trend Analiz Et\" butonu ile hemen analiz baslatin."
-                : "Filtreleri genisleterek daha fazla sonuc gorebilirsiniz."}
+              {displayTrends.length === 0 ? "\"Trend Analiz Et\" butonu ile hemen analiz baslatin." : "Filtreleri genisleterek daha fazla sonuc gorebilirsiniz."}
             </div>
           </div>
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredTrends.map((trend) => {
+          {filteredTrends.map((trend: Trend) => {
             const key = trend.keyword;
             const isExpanded = expandedTrend === key;
-            const research = researchData[key];
-            const generated = generatedTexts[key];
-            const isResearching = researchingKey === key;
-            const isGenerating = generatingKey === key;
-            const scorePct = maxScore > 0 ? (trend.trend_score / maxScore) * 100 : 0;
             const trendColor = trend.is_strong_trend ? "var(--accent-amber)" : "var(--accent-blue)";
+            const scorePct = maxScore > 0 ? (trend.trend_score / maxScore) * 100 : 0;
 
             return (
-              <div
-                key={key}
-                ref={el => { trendRefs.current[key] = el; }}
+              <div key={key} ref={(el: HTMLDivElement | null) => { trendRefs.current[key] = el; }}
                 className="glass-card overflow-hidden hover:shadow-lg transition-all duration-300"
-                style={{ borderLeft: `3px solid ${trend.is_strong_trend ? "var(--accent-amber)" : "var(--accent-blue)"}` }}
-              >
+                style={{ borderLeft: `3px solid ${trendColor}` }}>
+
                 {/* ──── Trend Header (clickable) ──── */}
-                <div
-                  className="p-4 cursor-pointer hover:bg-[var(--accent-blue)]/5 transition-all duration-200"
-                  onClick={() => setExpandedTrend(isExpanded ? null : key)}
-                >
+                <button className="w-full text-left p-4 hover:bg-[var(--accent-blue)]/5 transition-all duration-200"
+                  onClick={() => setExpandedTrend(isExpanded ? null : key)}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      {/* Keyword title */}
+                      {/* Keyword + badges */}
                       <div className="flex items-center gap-2 flex-wrap mb-2">
-                        <span
-                          className="text-xl font-extrabold tracking-tight"
-                          style={{ color: trendColor }}
-                        >
-                          {key}
-                        </span>
+                        <span className="text-xl font-extrabold tracking-tight" style={{ color: trendColor }}>{key}</span>
                         {trend.is_strong_trend && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-[var(--accent-amber)]/25 to-[var(--accent-amber)]/10 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30">
-                            &#9650; GUCLU TREND
-                          </span>
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-[var(--accent-amber)]/25 to-[var(--accent-amber)]/10 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30">&#9650; GUCLU TREND</span>
                         )}
-                        {trend.ai_relevance_score != null && trend.ai_relevance_score >= 7 && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent-green)]/15 text-[var(--accent-green)] font-medium" title={trend.ai_relevance_reason || ""}>
-                            AI: {trend.ai_relevance_score}/10
-                          </span>
-                        )}
-                        {trend.ai_relevance_score != null && trend.ai_relevance_score <= 3 && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent-red)]/15 text-[var(--accent-red)] font-medium" title={trend.ai_relevance_reason || ""}>
-                            AI: {trend.ai_relevance_score}/10
-                          </span>
-                        )}
-                        {trend.ai_relevance_score != null && trend.ai_relevance_score > 3 && trend.ai_relevance_score < 7 && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--text-secondary)]/15 text-[var(--text-secondary)] font-medium" title={trend.ai_relevance_reason || ""}>
-                            AI: {trend.ai_relevance_score}/10
-                          </span>
-                        )}
-                        <span className="text-[10px] text-[var(--text-secondary)]">
-                          {isExpanded ? "&#9650;" : "&#9660;"}
-                        </span>
+                        <AIScoreBadge score={trend.ai_relevance_score} reason={trend.ai_relevance_reason} />
+                        <span className="text-sm text-[var(--text-secondary)]" style={{ transform: isExpanded ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.2s", display: "inline-block" }}>&#9654;</span>
                       </div>
 
-                      {/* Circular score gauge */}
-                      <div className="flex items-center gap-2.5 mb-2.5">
-                        <div className="relative w-12 h-12 flex items-center justify-center">
-                          <svg className="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
-                            <circle cx="18" cy="18" r="14" fill="none" stroke="var(--bg-primary)" strokeWidth="3" />
-                            <circle
-                              cx="18" cy="18" r="14" fill="none"
-                              stroke={scoreColor(trend.trend_score, maxScore)}
-                              strokeWidth="3"
-                              strokeDasharray={`${Math.min(100, scorePct) * 0.88} 88`}
-                              strokeLinecap="round"
-                              className="transition-all duration-700"
-                            />
-                          </svg>
-                          <span className="absolute text-sm font-black tabular-nums" style={{ color: scoreColor(trend.trend_score, maxScore) }}>
-                            {trend.trend_score.toFixed(0)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Account pills with avatar letter */}
-                      <div className="flex flex-wrap gap-1.5">
-                        {trend.accounts.slice(0, 6).map((acc) => (
-                          <span key={acc} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] text-[10px] font-medium border border-[var(--accent-blue)]/15">
-                            <span className="w-3.5 h-3.5 rounded-full bg-[var(--accent-blue)]/20 flex items-center justify-center text-[8px] font-bold">
-                              {acc[0]?.toUpperCase()}
+                      {/* Score gauge + account pills */}
+                      <div className="flex items-center gap-3 mb-2">
+                        <CircularGauge value={trend.trend_score} maxValue={maxScore} size={44} strokeWidth={3}
+                          colorFn={() => scoreColor(trend.trend_score)} />
+                        <div className="flex flex-wrap gap-1.5">
+                          {trend.accounts.slice(0, 5).map((acc: string) => (
+                            <span key={acc} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] text-[10px] font-medium border border-[var(--accent-blue)]/15">
+                              <span className="w-3.5 h-3.5 rounded-full bg-[var(--accent-blue)]/20 flex items-center justify-center text-[8px] font-bold">{acc[0]?.toUpperCase()}</span>
+                              @{acc}
                             </span>
-                            @{acc}
-                          </span>
-                        ))}
-                        {trend.accounts.length > 6 && (
-                          <span className="px-2 py-0.5 rounded-full bg-[var(--bg-secondary)] text-[10px] text-[var(--text-secondary)]">
-                            +{trend.accounts.length - 6} daha
-                          </span>
-                        )}
+                          ))}
+                          {trend.accounts.length > 5 && <span className="px-2 py-0.5 rounded-full bg-[var(--bg-secondary)] text-[10px] text-[var(--text-secondary)]">+{trend.accounts.length - 5} daha</span>}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Stats badges (right side) */}
+                    {/* Stats badges */}
                     <div className="flex gap-2 shrink-0">
                       <div className="flex flex-col items-center px-3 py-1.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border)]">
                         <span className="text-base font-bold text-[var(--text-primary)]">{trend.account_count}</span>
@@ -886,370 +518,153 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
                         <span className="text-[9px] text-[var(--text-secondary)]">tweet</span>
                       </div>
                       <div className="flex flex-col items-center px-3 py-1.5 rounded-xl bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/20">
-                        <span className="text-base font-bold text-[var(--accent-green)]">
-                          {formatEngagement(trend.total_engagement)}
-                        </span>
+                        <span className="text-base font-bold text-[var(--accent-green)]">{formatNumber(trend.total_engagement)}</span>
                         <span className="text-[9px] text-[var(--text-secondary)]">eng.</span>
                       </div>
                     </div>
                   </div>
 
                   {/* First tweet preview (collapsed only) */}
-                  {trend.top_tweets.length > 0 && !isExpanded && (
+                  {!isExpanded && trend.top_tweets.length > 0 && (
                     <div className="mt-3 rounded-lg bg-[var(--bg-primary)]/80 border border-[var(--border)]/60 px-3 py-2.5">
-                      {/* Turkish summary if available */}
                       {trend.top_tweets[0].summary_tr && (
-                        <div className="text-xs text-[var(--accent-cyan)] mb-1.5 font-semibold px-2 py-1 rounded-md bg-[var(--accent-cyan)]/8 inline-block">
-                          {trend.top_tweets[0].summary_tr}
-                        </div>
+                        <div className="text-xs text-[var(--accent-cyan)] mb-1.5 font-semibold px-2 py-1 rounded-md bg-[var(--accent-cyan)]/8 inline-block">{trend.top_tweets[0].summary_tr}</div>
                       )}
                       <div className="flex items-start gap-2 text-xs">
-                        <span className="w-5 h-5 rounded-full bg-gradient-to-br from-[var(--accent-blue)]/20 to-[var(--accent-purple)]/10 ring-1 ring-[var(--accent-blue)]/20 flex items-center justify-center text-[9px] font-bold text-[var(--accent-blue)] shrink-0 mt-0.5">
-                          {trend.top_tweets[0].account[0]?.toUpperCase()}
-                        </span>
+                        <span className="w-5 h-5 rounded-full bg-gradient-to-br from-[var(--accent-blue)]/20 to-[var(--accent-purple)]/10 flex items-center justify-center text-[9px] font-bold text-[var(--accent-blue)] shrink-0 mt-0.5">{trend.top_tweets[0].account[0]?.toUpperCase()}</span>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 mb-0.5">
                             <span className="text-[var(--accent-blue)] font-semibold">@{trend.top_tweets[0].account}</span>
-                            {trend.top_tweets[0].created_at && (
-                              <span className="text-[10px] text-[var(--text-secondary)]">{relativeTime(trend.top_tweets[0].created_at)}</span>
-                            )}
+                            {trend.top_tweets[0].created_at && <span className="text-[10px] text-[var(--text-secondary)]">{timeAgo(trend.top_tweets[0].created_at)} once</span>}
                           </div>
                           <span className="text-[var(--text-secondary)] line-clamp-2 leading-relaxed">{trend.top_tweets[0].text}</span>
                         </div>
                       </div>
                     </div>
                   )}
-                </div>
+                </button>
 
                 {/* ──── Expanded Content ──── */}
                 {isExpanded && (
                   <div className="border-t border-[var(--border)] p-4 space-y-4">
-                    {/* Top tweets */}
+                    {/* Tweets with progressive disclosure */}
                     {trend.top_tweets.length > 0 && (
                       <div>
-                        <div className="text-xs font-medium text-[var(--text-secondary)] mb-3">
-                          Tweet&apos;ler ({trend.top_tweets.length})
-                        </div>
-                        <div className="space-y-3">
-                          {trend.top_tweets.filter(t => !hideGM || !isGMTweet(t.text)).map((tw, i) => {
+                        <div className="text-xs font-medium text-[var(--text-secondary)] mb-3">Tweet&apos;ler ({trend.top_tweets.filter((t: TrendTweet) => !hideGM || !isLowQualityTweet(t.text)).length})</div>
+                        <div className="space-y-2">
+                          {trend.top_tweets.filter((t: TrendTweet) => !hideGM || !isLowQualityTweet(t.text)).map((tw: TrendTweet, i: number) => {
                             const origIdx = trend.top_tweets.indexOf(tw);
-                            const compositeKey = `${key}::${origIdx}`;
-                            const twResearch = tweetResearchData[compositeKey];
-                            const twGenerated = tweetGeneratedTexts[compositeKey];
-                            const twEdited = tweetEditedTexts[compositeKey] || "";
-                            const isTwResearching = tweetResearchingKey === compositeKey;
-                            const isTwGenerating = tweetGeneratingKey === compositeKey;
-                            const isActive = activeTweetKey === compositeKey;
-                            const tweetUrl = tw.tweet_url || (tw.tweet_id ? `https://x.com/${tw.account}/status/${tw.tweet_id}` : "");
+                            const ck = `${key}::${origIdx}`;
+                            const isTwExpanded = expandedTweet === ck;
+                            const isTwWorkflow = workflowTweet === ck;
+                            const twUrl = tw.tweet_url || (tw.tweet_id ? `https://x.com/${tw.account}/status/${tw.tweet_id}` : "");
 
                             return (
-                              <div key={i} className="rounded-xl bg-[var(--bg-primary)] border border-[var(--border)] overflow-hidden hover:bg-gradient-to-br hover:from-[var(--accent-blue)]/[0.03] hover:to-transparent transition-all duration-300">
-                                <div className="p-3.5">
-                                  {/* Turkish summary badge */}
-                                  {tw.summary_tr && (
-                                    <div className="mb-2.5 px-3 py-2 rounded-lg bg-[var(--accent-cyan)]/10 border border-[var(--accent-cyan)]/20">
-                                      <span className="text-xs text-[var(--accent-cyan)] font-semibold leading-relaxed">
-                                        {tw.summary_tr}
-                                      </span>
-                                    </div>
-                                  )}
-
-                                  {/* Author line */}
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                      <span className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--accent-blue)]/25 to-[var(--accent-purple)]/15 ring-2 ring-[var(--accent-blue)]/20 flex items-center justify-center text-[10px] font-bold text-[var(--accent-blue)]">
-                                        {tw.account[0]?.toUpperCase()}
-                                      </span>
-                                      <a
-                                        href={`https://x.com/${tw.account}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-[var(--accent-blue)] text-xs font-semibold hover:underline"
-                                        onClick={e => e.stopPropagation()}
-                                      >
-                                        @{tw.account}
-                                      </a>
-                                      {tw.created_at && (
-                                        <span className="text-[10px] text-[var(--text-secondary)]">
-                                          {relativeTime(tw.created_at)}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <span className="text-[11px] px-2.5 py-1 rounded-full bg-[var(--accent-green)]/15 text-[var(--accent-green)] border border-[var(--accent-green)]/25 font-bold tabular-nums">
-                                      {formatEngagement(tw.engagement)} eng.
-                                    </span>
-                                  </div>
-
-                                  {/* Tweet text */}
-                                  <p className="text-sm leading-relaxed text-[var(--text-primary)] mb-3">{tw.text}</p>
-
-                                  {/* Action buttons */}
-                                  <div className="flex flex-wrap gap-2">
-                                    {tweetUrl && (
-                                      <a
-                                        href={tweetUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium rounded-lg bg-[var(--accent-blue)]/15 text-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/25 border border-[var(--accent-blue)]/20 transition-colors"
-                                        onClick={e => e.stopPropagation()}
-                                      >
-                                        Tweet&apos;e Git &#8599;
-                                      </a>
-                                    )}
-                                    <button
-                                      onClick={() => handleTweetResearch(trend, origIdx)}
-                                      disabled={isTwResearching}
-                                      className="px-2.5 py-1.5 text-[11px] font-medium rounded-lg bg-[var(--accent-green)]/15 text-[var(--accent-green)] hover:bg-[var(--accent-green)]/25 border border-[var(--accent-green)]/20 transition-colors disabled:opacity-50"
-                                    >
-                                      {isTwResearching ? "Arastiriliyor..." : twResearch?.summary ? "Tekrar Arastir" : "Arastir"}
-                                    </button>
-                                    <a
-                                      href={`https://x.com/${tw.account}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium rounded-lg bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)] transition-colors"
-                                      onClick={e => e.stopPropagation()}
-                                    >
-                                      Profil
-                                    </a>
-                                  </div>
-                                </div>
-
-                                {isTwResearching && twResearch?.progress && (
-                                  <div className="px-3.5 pb-2 text-xs text-[var(--accent-blue)] animate-pulse">{twResearch.progress}</div>
-                                )}
-
-                                {isActive && twResearch?.summary && (
-                                  <div className="border-t border-[var(--border)] p-3.5 space-y-3">
-                                    <div className="rounded-xl bg-gradient-to-br from-[var(--accent-green)]/5 to-transparent border border-[var(--accent-green)]/20 p-4 space-y-2.5">
-                                      <div className="text-xs font-bold text-[var(--accent-green)]">Arastirma Sonuclari</div>
-                                      <p className="text-xs leading-relaxed text-[var(--text-primary)]">{twResearch.summary.replace(/<think>[\s\S]*?<\/think>/g, "").trim()}</p>
-                                      {twResearch.key_points.length > 0 && (
-                                        <ul className="text-xs space-y-1.5 pl-1">
-                                          {twResearch.key_points.map((kp, ki) => (
-                                            <li key={ki} className="flex items-start gap-2 text-[var(--text-secondary)]">
-                                              <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: ki % 3 === 0 ? "var(--accent-blue)" : ki % 3 === 1 ? "var(--accent-green)" : "var(--accent-amber)" }} />
-                                              <span>{kp}</span>
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      )}
-                                      {twResearch.sources.length > 0 && (
-                                        <div className="pt-2 border-t border-[var(--border)]/50">
-                                          <div className="text-[10px] font-medium text-[var(--text-secondary)] mb-1.5">Kaynaklar ({twResearch.sources.length})</div>
-                                          <div className="flex flex-wrap gap-1.5">
-                                            {twResearch.sources.slice(0, 5).map((s, si) => (
-                                              <div key={si}>
-                                                {s.url ? (
-                                                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-[var(--accent-blue)]/8 text-[var(--accent-blue)] border border-[var(--accent-blue)]/15 hover:bg-[var(--accent-blue)]/15 hover:border-[var(--accent-blue)]/30 transition-all duration-200">
-                                                    {s.title} &#8599;
-                                                  </a>
-                                                ) : (
-                                                  <span className="inline-flex text-[10px] px-2 py-1 rounded-lg bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border)]">{s.title}</span>
-                                                )}
-                                              </div>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                    {/* Tweet Gorselleri */}
-                                    {tweetMedia[compositeKey]?.length > 0 && (
-                                      <div className="mt-3 glass-card p-3 rounded-xl">
-                                        <h4 className="text-sm font-semibold mb-2 text-[var(--text-secondary)]">Tweet Gorselleri</h4>
-                                        <div className="grid grid-cols-2 gap-2">
-                                          {tweetMedia[compositeKey].map((m, mi) => (
-                                            <div key={mi} className="relative group rounded-lg overflow-hidden border border-[var(--border-primary)]/30">
-                                              {m.type === 'image' ? (
-                                                <img src={m.url} alt="" className="w-full h-32 object-cover" />
-                                              ) : (
-                                                <div className="w-full h-32 bg-[var(--bg-tertiary)] flex items-center justify-center">
-                                                  <span className="text-2xl">&#127916;</span>
-                                                  {m.thumbnail && <img src={m.thumbnail} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60" />}
-                                                </div>
-                                              )}
-                                              <a href={m.url} target="_blank" rel="noopener noreferrer" download
-                                                className="absolute bottom-1 right-1 px-2 py-1 rounded-md text-xs font-medium bg-[var(--accent-blue)] text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                                                {m.type === 'video' ? 'Video Indir' : 'Indir'}
-                                              </a>
-                                            </div>
-                                          ))}
-                                        </div>
+                              <div key={i} className="rounded-xl bg-[var(--bg-primary)] border border-[var(--border)] overflow-hidden transition-all duration-300">
+                                {/* Level 1: Tweet summary (always visible) */}
+                                <button className="w-full text-left p-3 hover:bg-[var(--accent-blue)]/[0.03] transition-colors"
+                                  onClick={() => { setExpandedTweet(isTwExpanded ? null : ck); if (isTwExpanded) setWorkflowTweet((w: string | null) => w === ck ? null : w); }}>
+                                  <div className="flex items-start gap-2.5">
+                                    <span className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--accent-blue)]/25 to-[var(--accent-purple)]/15 flex items-center justify-center text-[10px] font-bold text-[var(--accent-blue)] shrink-0">{tw.account[0]?.toUpperCase()}</span>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-[var(--accent-blue)] text-xs font-semibold">@{tw.account}</span>
+                                        {tw.created_at && <span className="text-[10px] text-[var(--text-secondary)]">{timeAgo(tw.created_at)} once</span>}
                                       </div>
-                                    )}
-                                    <div className="pt-2 border-t border-[var(--border)] space-y-2">
-                                      <div className="text-[10px] font-medium text-[var(--text-secondary)]">Uretim Ayarlari</div>
-                                      <div className="flex flex-wrap items-center gap-2">
-                                        <select value={selectedStyle} onChange={e => setSelectedStyle(e.target.value)} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1 text-[11px] text-[var(--text-primary)]">
-                                          {styles.length > 0 ? styles.map(s => <option key={s.id} value={s.id}>{s.name}</option>) : (
-                                            <>
-                                              <option value="informative">Bilgilendirici</option>
-                                              <option value="provocative">Provoke Edici</option>
-                                              <option value="technical">Teknik</option>
-                                              <option value="storytelling">Hikaye</option>
-                                              <option value="analytical">Analitik</option>
-                                            </>
-                                          )}
-                                        </select>
-                                        <select value={selectedFormat} onChange={e => setSelectedFormat(e.target.value)} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1 text-[11px] text-[var(--text-primary)]">
-                                          {formats.length > 0 ? formats.map(f => <option key={f.id} value={f.id}>{f.name}</option>) : (
-                                            <>
-                                              <option value="spark">Micro Tweet</option>
-                                              <option value="single">Tek Tweet</option>
-                                              <option value="short_thread">Kisa Thread</option>
-                                              <option value="thread">Thread</option>
-                                            </>
-                                          )}
-                                        </select>
-                                        <select value={selectedProvider} onChange={e => setSelectedProvider(e.target.value)} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1 text-[11px] text-[var(--text-primary)]">
-                                          <option value="">Varsayilan AI</option>
-                                          <option value="minimax">MiniMax</option>
-                                          <option value="anthropic">Claude</option>
-                                          <option value="openai">GPT</option>
-                                          <option value="groq">Groq</option>
-                                          <option value="gemini">Gemini</option>
-                                        </select>
-                                        <button onClick={() => handleTweetGenerate(trend, origIdx)} disabled={isTwGenerating} className="btn-primary text-xs">
-                                          {isTwGenerating ? "Uretiliyor..." : twGenerated?.text ? "Tekrar Uret" : "Tweet Uret"}
-                                        </button>
-                                      </div>
+                                      {!isTwExpanded && (
+                                        <>
+                                          {tw.summary_tr && <p className="text-xs text-[var(--accent-cyan)] font-medium mt-0.5 line-clamp-1">{tw.summary_tr}</p>}
+                                          <p className="text-xs text-[var(--text-secondary)] mt-0.5 line-clamp-2">{tw.text}</p>
+                                        </>
+                                      )}
                                     </div>
-                                    {twGenerated && (
-                                      <div className="space-y-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border)] p-4">
-                                        {twGenerated.thread_parts && twGenerated.thread_parts.length > 1 ? (
-                                          <>
-                                            {/* Thread preview */}
-                                            <div className="bg-[var(--bg-secondary)]/60 rounded-lg p-3 border border-[var(--accent-purple)]/30 space-y-2">
-                                              <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-purple)]/20 text-[var(--accent-purple)] font-medium">
-                                                  Thread ({twGenerated.thread_parts.length} tweet)
-                                                </span>
-                                                {twGenerated.score > 0 && (
-                                                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${twGenerated.score >= 80 ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)]" : twGenerated.score >= 60 ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]" : "bg-[var(--accent-red)]/20 text-[var(--accent-red)]"}`}>
-                                                    {twGenerated.score}/100
-                                                  </span>
-                                                )}
-                                              </div>
-                                              {twGenerated.thread_parts.map((part, i) => (
-                                                <div key={i} className="flex gap-2 items-start">
-                                                  <span className="text-[10px] text-[var(--accent-purple)] font-bold mt-0.5 shrink-0">{i + 1}/{twGenerated.thread_parts!.length}</span>
-                                                  <p className="text-xs text-[var(--text-primary)] leading-relaxed">{part.replace(/^\d+\/\s*/, "")}</p>
-                                                </div>
-                                              ))}
-                                            </div>
-                                            {/* Thread action buttons */}
-                                            <div className="flex flex-wrap gap-2">
-                                              <button
-                                                onClick={async () => {
-                                                  try {
-                                                    await publishTweet({ text: twGenerated.thread_parts![0], thread_parts: twGenerated.thread_parts });
-                                                  } catch {}
-                                                }}
-                                                className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
-                                                style={{ background: "linear-gradient(135deg, var(--accent-purple), var(--accent-blue))" }}
-                                              >
-                                                Thread Paylas
-                                              </button>
-                                              <button
-                                                onClick={() => openInX(twGenerated.thread_parts![0].replace(/^\d+\/\s*/, ""))}
-                                                className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
-                                                style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}
-                                              >
-                                                X&apos;te Ac (ilk tweet)
-                                              </button>
-                                              <button onClick={() => copyText(twGenerated.thread_parts!.join("\n\n"), compositeKey)} className="btn-secondary text-xs">Kopyala</button>
-                                              <button onClick={() => handleTweetGenerate(trend, origIdx)} disabled={isTwGenerating} className="btn-secondary text-xs">{isTwGenerating ? "..." : "Yeniden Uret"}</button>
-                                              <button onClick={() => handleSaveDraft(compositeKey, "tweet")} className="btn-secondary text-xs">Taslak Kaydet</button>
-                                            </div>
-                                          </>
-                                        ) : (
-                                          <>
-                                        {/* Tweet card preview */}
-                                        <div className="flex items-start gap-3">
-                                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--accent-blue)] to-[var(--accent-purple)] flex items-center justify-center text-white text-sm font-bold shrink-0">X</div>
-                                          <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between mb-1">
-                                              <div className="text-[11px] text-[var(--text-secondary)]">Olusturulan Tweet</div>
-                                              {twGenerated.score > 0 && (
-                                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${twGenerated.score >= 80 ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)]" : twGenerated.score >= 60 ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]" : "bg-[var(--accent-red)]/20 text-[var(--accent-red)]"}`}>
-                                                  {twGenerated.score}/100
-                                                </span>
-                                              )}
-                                            </div>
-                                            <textarea value={twEdited} onChange={e => setTweetEditedTexts(prev => ({ ...prev, [compositeKey]: e.target.value }))} className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm w-full min-h-[80px] resize-y focus:border-[var(--accent-blue)] focus:outline-none leading-relaxed" rows={Math.min(6, Math.max(3, twEdited.split("\n").length + 1))} />
-                                          </div>
+                                    <div className="shrink-0 flex items-center gap-2">
+                                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--accent-green)]/15 text-[var(--accent-green)] font-bold tabular-nums">{formatNumber(tw.engagement)}</span>
+                                      <span className="text-xs text-[var(--text-secondary)]" style={{ transform: isTwExpanded ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.2s" }}>&#9654;</span>
+                                    </div>
+                                  </div>
+                                </button>
+
+                                {/* Level 2: Expanded tweet + action buttons */}
+                                {isTwExpanded && (
+                                  <div className="px-3 pb-3 space-y-3 border-t border-[var(--border)]/30">
+                                    {/* Full text */}
+                                    <div className="pt-2">
+                                      {tw.summary_tr && (
+                                        <div className="mb-2 px-3 py-2 rounded-lg bg-[var(--accent-cyan)]/10 border border-[var(--accent-cyan)]/20">
+                                          <span className="text-xs text-[var(--accent-cyan)] font-semibold leading-relaxed">{tw.summary_tr}</span>
                                         </div>
-                                        <div className="flex items-center justify-between text-[10px] text-[var(--text-secondary)] pl-[52px]">
-                                          <span>{twEdited.length} karakter</span>
-                                          {twEdited.length > 280 && <span className="text-[var(--accent-amber)]">Thread olarak paylasmayi dusunun</span>}
-                                        </div>
-                                        {/* Action buttons with primary/secondary distinction */}
-                                        <div className="flex flex-wrap gap-2 pl-[52px]">
-                                          <button onClick={() => openInX(twEdited)} className="btn-primary text-xs px-4">X&apos;te Ac</button>
-                                          {tw.tweet_url && (
-                                            <button onClick={() => window.open(`https://x.com/intent/tweet?url=${encodeURIComponent(tw.tweet_url!)}`, "_blank")} className="btn-secondary text-xs">X Quote Ac</button>
-                                          )}
-                                          <button onClick={() => copyText(twEdited, compositeKey)} className="btn-secondary text-xs">Kopyala</button>
-                                          <button onClick={() => handleTweetGenerate(trend, origIdx)} disabled={isTwGenerating} className="btn-secondary text-xs">{isTwGenerating ? "..." : "Yeniden Uret"}</button>
-                                          <button onClick={() => handleSaveDraft(compositeKey, "tweet")} className="btn-secondary text-xs">Taslak Kaydet</button>
-                                        </div>
-                                          </>
-                                        )}
-                                        <div className="flex flex-wrap gap-2 pl-[52px] mt-1">
-                                          <button onClick={() => handleFindMedia(compositeKey, twEdited)} disabled={mediaLoading === compositeKey} className="btn-secondary text-xs">
-                                            {mediaLoading === compositeKey ? "Araniyor..." : "Gorsel/Video Bul"}
-                                          </button>
-                                          <button onClick={() => handleInfographic(compositeKey, twEdited, [])} disabled={infographicLoading === compositeKey} className="btn-secondary text-xs">
-                                            {infographicLoading === compositeKey ? "Olusturuluyor..." : "Gemini Infografik"}
-                                          </button>
-                                        </div>
-                                        {showSchedule === compositeKey && (
-                                          <div className="flex items-center gap-2 p-2 rounded bg-[var(--bg-primary)]">
-                                            <input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]" />
-                                            <button onClick={() => handleSchedule(compositeKey, "tweet")} disabled={!scheduleTime} className="btn-primary text-xs">Onayla</button>
+                                      )}
+                                      <p className="text-sm leading-relaxed text-[var(--text-primary)]">{tw.text}</p>
+                                    </div>
+
+                                    {/* Action buttons */}
+                                    <div className="flex flex-wrap gap-2 pt-2 border-t border-[var(--border)]/20">
+                                      <button onClick={() => handleResearch(ck, tw.text, twUrl, tw.account, tw.tweet_id)}
+                                        disabled={researchingKey === ck}
+                                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300 disabled:opacity-50"
+                                        style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}>
+                                        {researchingKey === ck ? "Arastiriliyor..." : (researchData[ck]?.summary ? "Tekrar Arastir" : "Arastir")}
+                                      </button>
+                                      <button onClick={() => { setWorkflowTweet(isTwWorkflow ? null : ck); if (!researchData[ck]?.summary) handleResearch(ck, tw.text, twUrl, tw.account, tw.tweet_id); }}
+                                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
+                                        style={{ background: "linear-gradient(135deg, var(--accent-green), var(--accent-blue))" }}>Tweet Uret</button>
+                                      {twUrl && (
+                                        <a href={twUrl} target="_blank" rel="noopener noreferrer"
+                                          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all inline-flex items-center"
+                                          onClick={(e: React.MouseEvent) => e.stopPropagation()}>X&apos;te Ac</a>
+                                      )}
+                                    </div>
+
+                                    {/* Level 3: Workflow panel */}
+                                    {isTwWorkflow && (
+                                      <div className="space-y-3 pt-2">
+                                        <ResearchPanel
+                                          research={researchData[ck]}
+                                          isResearching={researchingKey === ck}
+                                          isExpanded={researchExpanded.has(ck) || researchExpanded.has("__all__")}
+                                          onToggleExpand={() => setResearchExpanded((prev: Set<string>) => { const n = new Set(prev); n.has(ck) ? n.delete(ck) : n.add(ck); return n; })}
+                                        />
+
+                                        {researchData[ck]?.summary && (
+                                          <div className="space-y-3 pt-2 border-t border-[var(--border-primary)]/20">
+                                            <StyleFormatBar styles={styles} formats={formats}
+                                              selectedStyle={selectedStyle} setSelectedStyle={setSelectedStyle}
+                                              selectedFormat={selectedFormat} setSelectedFormat={setSelectedFormat}
+                                              selectedProvider={selectedProvider} setSelectedProvider={setSelectedProvider} compact />
+                                            <button onClick={() => handleTweetGenerate(tw, ck)} disabled={generatingKey === ck}
+                                              className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300 disabled:opacity-50"
+                                              style={{ background: "linear-gradient(135deg, var(--accent-green), var(--accent-blue))" }}>
+                                              {generatingKey === ck ? "Uretiliyor..." : "Tweet Uret"}
+                                            </button>
                                           </div>
                                         )}
-                                        {actionMsg[compositeKey] && <div className="text-xs text-[var(--accent-green)]">{actionMsg[compositeKey]}</div>}
-                                        {/* Media results */}
-                                        {mediaResults[compositeKey]?.length > 0 && (
-                                          <div className="mt-2 pl-[52px]">
-                                            <h4 className="text-xs font-medium text-[var(--text-secondary)] mb-2">Bulunan Gorseller</h4>
-                                            <div className="grid grid-cols-3 gap-2">
-                                              {mediaResults[compositeKey].map((m: any, mi: number) => (
-                                                <div key={mi} className="relative group rounded-lg overflow-hidden border border-[var(--border)] aspect-video bg-[var(--bg-secondary)]">
-                                                  <img src={m.thumbnail_url || m.url} alt={m.title || ""} className="w-full h-full object-cover" loading="lazy" />
-                                                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                                                    <a href={m.url} target="_blank" rel="noopener noreferrer" className="px-2 py-1 text-[10px] bg-white/20 rounded text-white hover:bg-white/30">Ac</a>
-                                                    {m.media_type === 'video' && <a href={m.url} download className="px-2 py-1 text-[10px] bg-[var(--accent-green)]/40 rounded text-white hover:bg-[var(--accent-green)]/60">Indir</a>}
-                                                  </div>
-                                                  <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-1 py-0.5 text-[9px] text-white/80 truncate">{m.source}</div>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          </div>
-                                        )}
-                                        {/* Infographic result */}
-                                        {infographicResults[compositeKey] && (
-                                          <div className="mt-2 pl-[52px]">
-                                            <h4 className="text-xs font-medium text-[var(--text-secondary)] mb-2">Infografik</h4>
-                                            <img src={`data:image/png;base64,${infographicResults[compositeKey]}`} alt="Infografik" className="max-w-full rounded-lg border border-[var(--border)]" />
-                                            <a href={`data:image/png;base64,${infographicResults[compositeKey]}`} download="infographic.png" className="inline-block mt-1 text-xs text-[var(--accent-blue)] hover:underline">Gorseli Indir</a>
-                                          </div>
-                                        )}
-                                        {/* Baglantilar */}
-                                        {tweetUrls[compositeKey]?.length > 0 && (
-                                          <div className="mt-3 glass-card p-3 rounded-xl" style={{borderLeft: '3px solid var(--accent-blue)'}}>
-                                            <h4 className="text-sm font-semibold mb-2 text-[var(--text-secondary)]">Baglantilar</h4>
-                                            <p className="text-xs text-[var(--text-muted)] mb-2">Bu linkleri 2. tweetinize ekleyebilirsiniz</p>
-                                            <div className="space-y-1.5">
-                                              {tweetUrls[compositeKey].map((u, ui) => (
-                                                <div key={ui} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-[var(--bg-tertiary)]/50 hover:bg-[var(--bg-tertiary)] transition-colors">
-                                                  <a href={u.url} target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--accent-blue)] hover:underline truncate flex-1">{u.display_url || u.url}</a>
-                                                  <button onClick={() => {navigator.clipboard.writeText(u.url)}} className="px-2 py-1 text-xs rounded-md bg-[var(--bg-secondary)] hover:bg-[var(--accent-blue)] hover:text-white transition-colors">Kopyala</button>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          </div>
+
+                                        <GenerationPanel
+                                          generated={generatedTexts[ck]}
+                                          editedText={editedTexts[ck] || generatedTexts[ck]?.text || ""}
+                                          setEditedText={(t: string) => setEditedTexts((prev: Record<string, string>) => ({ ...prev, [ck]: t }))}
+                                          isGenerating={generatingKey === ck}
+                                          onGenerate={() => handleTweetGenerate(tw, ck)}
+                                          onPublish={async (text: string, parts?: string[]) => { try { await publishTweet({ text, thread_parts: parts || [] }); } catch { /* ignore */ } }}
+                                          onOpenInX={openInX}
+                                          onOpenQuote={twUrl ? () => window.open(`https://x.com/intent/tweet?url=${encodeURIComponent(twUrl)}`, "_blank") : undefined}
+                                          onCopy={copyToClipboard}
+                                          onSaveDraft={async (text: string) => { await addDraft({ text, topic: key, style: selectedStyle }); }}
+                                          tweetUrl={twUrl}
+                                        />
+
+                                        {generatedTexts[ck] && <LinksBox links={tweetUrls[ck] || []} />}
+                                        {generatedTexts[ck] && (
+                                          <MediaSection
+                                            mediaResults={mediaResults[ck]}
+                                            mediaLoading={mediaLoading === ck}
+                                            onFindMedia={() => handleFindMedia(ck, editedTexts[ck] || generatedTexts[ck]?.text || tw.text)}
+                                            infographicData={infographicData[ck]}
+                                            infographicLoading={infographicLoading === ck}
+                                            onGenerateInfographic={() => handleInfographic(ck, editedTexts[ck] || generatedTexts[ck]?.text || tw.text, researchData[ck]?.key_points || [])}
+                                            tweetMedia={tweetMedia[ck]}
+                                          />
                                         )}
                                       </div>
                                     )}
@@ -1262,227 +677,64 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
                       </div>
                     )}
 
-                    {/* Trend-level actions */}
-                    <div className="border-t border-[var(--border)] pt-3 space-y-2">
+                    {/* ── Trend-level actions ── */}
+                    <div className="border-t border-[var(--border)] pt-3 space-y-3">
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-amber)]" />
                         <span className="text-xs font-medium text-[var(--text-secondary)]">Tum trend hakkinda</span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <select value={selectedStyle} onChange={e => setSelectedStyle(e.target.value)} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1 text-[11px] text-[var(--text-primary)]">
-                          {styles.length > 0 ? styles.map(s => <option key={s.id} value={s.id}>{s.name}</option>) : (
-                            <>
-                              <option value="informative">Bilgilendirici</option>
-                              <option value="provocative">Provoke Edici</option>
-                              <option value="technical">Teknik</option>
-                              <option value="storytelling">Hikaye</option>
-                              <option value="analytical">Analitik</option>
-                            </>
-                          )}
-                        </select>
-                        <select value={selectedFormat} onChange={e => setSelectedFormat(e.target.value)} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1 text-[11px] text-[var(--text-primary)]">
-                          {formats.length > 0 ? formats.map(f => <option key={f.id} value={f.id}>{f.name}</option>) : (
-                            <>
-                              <option value="spark">Micro Tweet</option>
-                              <option value="single">Tek Tweet</option>
-                              <option value="short_thread">Kisa Thread</option>
-                              <option value="thread">Thread</option>
-                            </>
-                          )}
-                        </select>
-                        <select value={selectedProvider} onChange={e => setSelectedProvider(e.target.value)} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1 text-[11px] text-[var(--text-primary)]">
-                          <option value="">Varsayilan AI</option>
-                          <option value="minimax">MiniMax</option>
-                          <option value="anthropic">Claude</option>
-                          <option value="openai">GPT</option>
-                          <option value="groq">Groq</option>
-                          <option value="gemini">Gemini</option>
-                        </select>
-                      </div>
-                      <div className="flex gap-2 mt-1">
-                        <button onClick={() => handleResearch(trend)} disabled={isResearching} className="btn-secondary text-xs">
-                          {isResearching ? "Arastiriliyor..." : activeResearch === key && research?.summary ? "Tekrar Arastir" : "Tum Trendi Arastir"}
+                      <div className="flex gap-2">
+                        <button onClick={() => {
+                            const firstTweet = trend.top_tweets[0];
+                            const twUrl = firstTweet?.tweet_url || (firstTweet?.tweet_id ? `https://x.com/${firstTweet.account}/status/${firstTweet.tweet_id}` : "");
+                            handleResearch(key, trend.keyword + (firstTweet ? `: ${firstTweet.text}` : ""), twUrl, firstTweet?.account, firstTweet?.tweet_id);
+                          }}
+                          disabled={researchingKey === key}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all disabled:opacity-50"
+                          style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}>
+                          {researchingKey === key ? "Arastiriliyor..." : (researchData[key]?.summary ? "Tekrar Arastir" : "Tum Trendi Arastir")}
                         </button>
-                        <button onClick={() => handleGenerate(trend)} disabled={isGenerating} className="btn-primary text-xs px-5">
-                          {isGenerating ? "Uretiliyor..." : activeGenerate === key && generated?.text ? "Tekrar Uret" : "Tweet Uret"}
+                        <button onClick={() => handleTrendGenerate(trend)} disabled={generatingKey === key}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all disabled:opacity-50"
+                          style={{ background: "linear-gradient(135deg, var(--accent-green), var(--accent-blue))" }}>
+                          {generatingKey === key ? "Uretiliyor..." : (generatedTexts[key]?.text ? "Tekrar Uret" : "Tweet Uret")}
                         </button>
                       </div>
+
+                      {/* Trend-level research */}
+                      <ResearchPanel
+                        research={researchData[key]}
+                        isResearching={researchingKey === key}
+                        isExpanded={researchExpanded.has(key) || researchExpanded.has("__all__")}
+                        onToggleExpand={() => setResearchExpanded((prev: Set<string>) => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; })}
+                      />
+
+                      {/* Trend-level generated tweet */}
+                      <GenerationPanel
+                        generated={generatedTexts[key]}
+                        editedText={editedTexts[key] || generatedTexts[key]?.text || ""}
+                        setEditedText={(t: string) => setEditedTexts((prev: Record<string, string>) => ({ ...prev, [key]: t }))}
+                        isGenerating={generatingKey === key}
+                        onGenerate={() => handleTrendGenerate(trend)}
+                        onPublish={async (text: string, parts?: string[]) => { try { await publishTweet({ text, thread_parts: parts || [] }); } catch { /* ignore */ } }}
+                        onOpenInX={openInX}
+                        onCopy={copyToClipboard}
+                        onSaveDraft={async (text: string) => { await addDraft({ text, topic: key, style: selectedStyle }); }}
+                      />
+
+                      {generatedTexts[key] && <LinksBox links={tweetUrls[key] || []} />}
+                      {generatedTexts[key] && (
+                        <MediaSection
+                          mediaResults={mediaResults[key]}
+                          mediaLoading={mediaLoading === key}
+                          onFindMedia={() => handleFindMedia(key, editedTexts[key] || generatedTexts[key]?.text || trend.keyword)}
+                          infographicData={infographicData[key]}
+                          infographicLoading={infographicLoading === key}
+                          onGenerateInfographic={() => handleInfographic(key, editedTexts[key] || generatedTexts[key]?.text || trend.keyword, researchData[key]?.key_points || [])}
+                          tweetMedia={tweetMedia[key]}
+                        />
+                      )}
                     </div>
-
-                    {/* Trend-level research */}
-                    {activeResearch === key && research && (
-                      <div className="space-y-2">
-                        {research.progress && <div className="text-xs text-[var(--accent-blue)] animate-pulse">{research.progress}</div>}
-                        {research.summary && (
-                          <div className="rounded-xl bg-gradient-to-br from-[var(--accent-blue)]/5 to-transparent border border-[var(--accent-blue)]/20 p-4 space-y-3">
-                            <div className="text-xs font-bold text-[var(--accent-blue)]">Arastirma Sonuclari</div>
-                            <p className="text-sm text-[var(--text-primary)] leading-relaxed">{research.summary}</p>
-                            {research.key_points.length > 0 && (
-                              <ul className="text-sm space-y-2 pl-1">
-                                {research.key_points.map((kp, i) => (
-                                  <li key={i} className="flex items-start gap-2 text-[var(--text-secondary)]">
-                                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: i % 3 === 0 ? "var(--accent-blue)" : i % 3 === 1 ? "var(--accent-green)" : "var(--accent-amber)" }} />
-                                    <span>{kp}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                            {research.sources.length > 0 && (
-                              <div className="pt-2 border-t border-[var(--border)]/50">
-                                <div className="text-[10px] font-medium text-[var(--text-secondary)] mb-2">Kaynaklar</div>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {research.sources.map((s, i) => (
-                                    <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-[var(--accent-blue)]/8 text-[var(--accent-blue)] border border-[var(--accent-blue)]/15 hover:bg-[var(--accent-blue)]/15 hover:border-[var(--accent-blue)]/30 transition-all duration-200">
-                                      {s.title || s.url} &#8599;
-                                    </a>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Trend-level generated tweet */}
-                    {activeGenerate === key && generated && (
-                      <div className="space-y-3">
-                        {generated.thread_parts && generated.thread_parts.length > 1 ? (
-                          <>
-                            {/* Thread preview */}
-                            <div className="bg-[var(--bg-secondary)]/60 rounded-lg p-3 border border-[var(--accent-purple)]/30 space-y-2">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-purple)]/20 text-[var(--accent-purple)] font-medium">
-                                  Thread ({generated.thread_parts.length} tweet)
-                                </span>
-                                {generated.score > 0 && (
-                                  <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${generated.score >= 80 ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)]" : generated.score >= 60 ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]" : "bg-[var(--text-secondary)]/20 text-[var(--text-secondary)]"}`}>
-                                    {generated.score}/100
-                                  </span>
-                                )}
-                              </div>
-                              {generated.thread_parts.map((part, i) => (
-                                <div key={i} className="flex gap-2 items-start">
-                                  <span className="text-[10px] text-[var(--accent-purple)] font-bold mt-0.5 shrink-0">{i + 1}/{generated.thread_parts!.length}</span>
-                                  <p className="text-xs text-[var(--text-primary)] leading-relaxed">{part.replace(/^\d+\/\s*/, "")}</p>
-                                </div>
-                              ))}
-                            </div>
-                            {/* Thread action buttons */}
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    await publishTweet({ text: generated.thread_parts![0], thread_parts: generated.thread_parts });
-                                  } catch {}
-                                }}
-                                className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
-                                style={{ background: "linear-gradient(135deg, var(--accent-purple), var(--accent-blue))" }}
-                              >
-                                Thread Paylas
-                              </button>
-                              <button
-                                onClick={() => openInX(generated.thread_parts![0].replace(/^\d+\/\s*/, ""))}
-                                className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
-                                style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}
-                              >
-                                X&apos;te Ac (ilk tweet)
-                              </button>
-                              <button onClick={() => copyText(generated.thread_parts!.join("\n\n"), key)} className="btn-secondary text-xs">Kopyala</button>
-                              <button onClick={() => handleGenerate(trend)} disabled={isGenerating} className="btn-secondary text-xs">{isGenerating ? "..." : "Yeniden Uret"}</button>
-                              <button onClick={() => handleSaveDraft(key)} className="btn-secondary text-xs">Taslak Kaydet</button>
-                              <button onClick={() => setShowSchedule(showSchedule === key ? null : key)} className="btn-secondary text-xs">Zamanla</button>
-                            </div>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              <button onClick={() => handleFindMedia(key, generated.thread_parts![0])} disabled={mediaLoading === key} className="btn-secondary text-xs">
-                                {mediaLoading === key ? "Araniyor..." : "Gorsel/Video Bul"}
-                              </button>
-                              <button onClick={() => handleInfographic(key, generated.thread_parts!.join("\n\n"), research?.key_points || [])} disabled={infographicLoading === key} className="btn-secondary text-xs">
-                                {infographicLoading === key ? "Olusturuluyor..." : "Gemini Infografik"}
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                        {/* Tweet card preview */}
-                        <div className="rounded-xl bg-[var(--bg-primary)] border border-[var(--border)] p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--accent-blue)] to-[var(--accent-purple)] flex items-center justify-center text-white text-sm font-bold shrink-0">X</div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-1">
-                                <div className="text-[11px] text-[var(--text-secondary)]">Olusturulan Tweet</div>
-                                {generated.score > 0 && (
-                                  <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${generated.score >= 80 ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)]" : generated.score >= 60 ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]" : "bg-[var(--text-secondary)]/20 text-[var(--text-secondary)]"}`}>
-                                    {generated.score}/100
-                                  </span>
-                                )}
-                              </div>
-                              <textarea
-                                value={generated.text}
-                                onChange={e => setGeneratedTexts(prev => ({ ...prev, [key]: { ...prev[key], text: e.target.value } }))}
-                                rows={Math.min(8, Math.max(3, generated.text.split("\n").length + 1))}
-                                className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm w-full resize-y focus:border-[var(--accent-blue)] focus:outline-none leading-relaxed"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] pl-[52px]">
-                          <span>{generated.text.length} karakter</span>
-                          {generated.text.length > 280 && <span className="text-[var(--accent-amber)]">Thread olarak paylasmayi dusunun</span>}
-                        </div>
-                        {/* Action buttons with primary/secondary distinction */}
-                        <div className="flex flex-wrap gap-2 pl-[52px]">
-                          <button onClick={() => openInX(generated.text)} className="btn-primary text-xs px-4">X&apos;te Ac</button>
-                          <button onClick={() => copyText(generated.text, key)} className="btn-secondary text-xs">Kopyala</button>
-                          <button onClick={() => handleGenerate(trend)} disabled={isGenerating} className="btn-secondary text-xs">{isGenerating ? "..." : "Yeniden Uret"}</button>
-                          <button onClick={() => handleSaveDraft(key)} className="btn-secondary text-xs">Taslak Kaydet</button>
-                          <button onClick={() => setShowSchedule(showSchedule === key ? null : key)} className="btn-secondary text-xs">Zamanla</button>
-                        </div>
-                        <div className="flex flex-wrap gap-2 pl-[52px] mt-1">
-                          <button onClick={() => handleFindMedia(key, generated.text)} disabled={mediaLoading === key} className="btn-secondary text-xs">
-                            {mediaLoading === key ? "Araniyor..." : "Gorsel/Video Bul"}
-                          </button>
-                          <button onClick={() => handleInfographic(key, generated.text, research?.key_points || [])} disabled={infographicLoading === key} className="btn-secondary text-xs">
-                            {infographicLoading === key ? "Olusturuluyor..." : "Gemini Infografik"}
-                          </button>
-                        </div>
-                          </>
-                        )}
-                        {showSchedule === key && (
-                          <div className="flex items-center gap-2 p-2 rounded bg-[var(--bg-primary)]">
-                            <input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]" />
-                            <button onClick={() => handleSchedule(key)} disabled={!scheduleTime} className="btn-primary text-xs">Onayla</button>
-                          </div>
-                        )}
-                        {actionMsg[key] && <div className="text-xs text-[var(--accent-green)]">{actionMsg[key]}</div>}
-                        {/* Media results */}
-                        {mediaResults[key]?.length > 0 && (
-                          <div className="mt-2 pl-[52px]">
-                            <h4 className="text-xs font-medium text-[var(--text-secondary)] mb-2">Bulunan Gorseller</h4>
-                            <div className="grid grid-cols-3 gap-2">
-                              {mediaResults[key].map((m: any, mi: number) => (
-                                <div key={mi} className="relative group rounded-lg overflow-hidden border border-[var(--border)] aspect-video bg-[var(--bg-secondary)]">
-                                  <img src={m.thumbnail_url || m.url} alt={m.title || ""} className="w-full h-full object-cover" loading="lazy" />
-                                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                                    <a href={m.url} target="_blank" rel="noopener noreferrer" className="px-2 py-1 text-[10px] bg-white/20 rounded text-white hover:bg-white/30">Ac</a>
-                                    {m.media_type === 'video' && <a href={m.url} download className="px-2 py-1 text-[10px] bg-[var(--accent-green)]/40 rounded text-white hover:bg-[var(--accent-green)]/60">Indir</a>}
-                                  </div>
-                                  <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-1 py-0.5 text-[9px] text-white/80 truncate">{m.source}</div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {/* Infographic result */}
-                        {infographicResults[key] && (
-                          <div className="mt-2 pl-[52px]">
-                            <h4 className="text-xs font-medium text-[var(--text-secondary)] mb-2">Infografik</h4>
-                            <img src={`data:image/png;base64,${infographicResults[key]}`} alt="Infografik" className="max-w-full rounded-lg border border-[var(--border)]" />
-                            <a href={`data:image/png;base64,${infographicResults[key]}`} download="infographic.png" className="inline-block mt-1 text-xs text-[var(--accent-blue)] hover:underline">Gorseli Indir</a>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
