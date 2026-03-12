@@ -120,7 +120,7 @@ SPAM_PATTERNS = [
     r"(?i)(affordable|cheap|discount|promo code|coupon)",
     r"(?i)(join my|subscribe to my|check my link)",
     # Promotional / corporate fluff
-    r"(?i)(thank you for|teşekkür ederiz|uzun süredir|proud to announce|excited to share|thrilled to)",
+    r"(?i)(thank you for|proud to announce|excited to share|thrilled to|honored to)",
     r"(?i)(we('re| are) hiring|job opening|apply now|join our team|career opportunity)",
     r"(?i)(happy birthday|congratulations|congrats to|shout ?out to)",
     r"(?i)(don'?t miss|register now|sign up today|limited time|early bird|save \d+%)",
@@ -130,15 +130,20 @@ SPAM_PATTERNS = [
     r"(?i)^(agree|disagree|thoughts|this|wow|amazing|incredible|game.?changer)[.!?]?$",
     r"(?i)(retweet if|like if|who else|raise your hand|tag someone)",
     r"(?i)(alpha leak|insider info|you won'?t believe|secret.{0,10}reveal)",
-    # Turkish greetings and casual content
-    r"(?i)(günaydın|gunaydın|iyi geceler|iyi akşamlar|hayırlı sabahlar|hayirli sabahlar)",
-    r"(?i)(selamlar|selam herkese|herkese merhaba|nasılsınız|keyifli günler|keyifli gunler)",
-    r"(?i)(hayırlı cumalar|hayirli cumalar|iyi haftalar|iyi hafta sonları|mutlu yıllar|iyi bayramlar)",
-    r"(?i)^(merhaba|selam|hey|sa|as|slm|mrb)[.!?\s]*$",
-    r"(?i)(takip ediyorum|destek olun|rt yapın|rt yapin|beğenin|begenin|like atın|like atin)",
-    # Turkish promotional / low-value
-    r"(?i)(herkese iyi günler|herkese iyi geceler|güzel bir gün|guzel bir gun)",
-    r"(?i)^(teşekkürler|tesekkurler|sağ ?olun|sag ?olun)[.!?\s]*$",
+    # English greetings / casual / low-value content
+    r"(?i)^(good morning|good night|good evening|hello|hey|hi|gm|gn)[.!?\s]*$",
+    r"(?i)(happy (monday|tuesday|wednesday|thursday|friday|saturday|sunday))",
+    r"(?i)(happy new year|happy holidays|merry christmas|happy thanksgiving|happy easter)",
+    r"(?i)^(have a (great|good|nice|wonderful) (day|week|weekend|evening|night))[.!?\s]*$",
+    r"(?i)^(thank you all|thanks everyone|appreciate it|grateful for)[.!?\s]*$",
+    r"(?i)^(what a (day|week|time|journey|ride))[.!?\s]*$",
+    # Personal updates / non-informative
+    r"(?i)^(feeling|just woke up|can'?t sleep|so tired|need coffee|coffee time)",
+    r"(?i)(my weekend|my vacation|my trip|day off|self care|mental health day)",
+    r"(?i)^(lol|lmao|haha|omg|bruh|fr fr|no cap|real talk|ngl)[.!?\s]*$",
+    # Vague hype without substance
+    r"(?i)^(the future is here|mind blown|this is huge|let that sink in|read that again)[.!?\s]*$",
+    r"(?i)^(I love this|love this|so true|facts|100%|exactly|period)[.!?\s]*$",
 ]
 
 # Non-AI content patterns — these indicate the tweet is NOT about AI tech
