@@ -32,7 +32,7 @@ interface SearchResult {
   profile_image: string;
 }
 
-type SortKey = "score" | "avg_engagement" | "followers" | "appearances";
+type SortKey = "score" | "avg_engagement" | "followers" | "appearances" | "date";
 
 /* ── Helpers ────────────────────────────────────────── */
 
@@ -220,6 +220,7 @@ export default function TabSuggestedAccounts({ refreshTrigger }: { refreshTrigge
         case "avg_engagement": return b.avg_engagement - a.avg_engagement;
         case "followers": return b.followers - a.followers;
         case "appearances": return b.appearances - a.appearances;
+        case "date": return new Date(b.discovered_at).getTime() - new Date(a.discovered_at).getTime();
         default: return 0;
       }
     });
@@ -424,6 +425,7 @@ export default function TabSuggestedAccounts({ refreshTrigger }: { refreshTrigge
             className="input-field text-sm w-auto"
           >
             <option value="score">Skor</option>
+            <option value="date">Yeniden Eskiye</option>
             <option value="avg_engagement">Engagement</option>
             <option value="followers">Takipci</option>
             <option value="appearances">Gorulme</option>

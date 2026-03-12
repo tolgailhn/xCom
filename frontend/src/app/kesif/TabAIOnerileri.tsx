@@ -547,8 +547,8 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
           <select value={sortBy} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortBy(e.target.value as "ai" | "engagement" | "newest")}
             className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]">
             <option value="ai">Siralama: AI Skoru</option>
-            <option value="engagement">Siralama: Engagement</option>
             <option value="newest">Siralama: Yeniden Eskiye</option>
+            <option value="engagement">Siralama: Engagement</option>
           </select>
           <button onClick={() => setShowFilters(!showFilters)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
