@@ -1068,8 +1068,11 @@ Yanıtı sadece JSON array olarak döndür: [{{"idx": 1, "score": 8, "reason": "
         )
 
         text = response.choices[0].message.content.strip()
-        import re as re_mod
-        json_match = re_mod.search(r'\[[\s\S]*\]', text)
+        # MiniMax tag temizliği
+        text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+        text = re.sub(r'<minimax:tool_call>.*?</minimax:tool_call>', '', text, flags=re.DOTALL).strip()
+        text = re.sub(r'<minimax:tool_call>.*', '', text, flags=re.DOTALL).strip()
+        json_match = re.search(r'\[[\s\S]*\]', text)
         if json_match:
             scores = json.loads(json_match.group())
         else:
@@ -1184,8 +1187,11 @@ Yanıtı sadece JSON array olarak döndür: [{{"idx": 1, "score": 8, "reason": "
         )
 
         text = response.choices[0].message.content.strip()
-        import re as re_mod
-        json_match = re_mod.search(r'\[[\s\S]*\]', text)
+        # MiniMax tag temizliği
+        text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+        text = re.sub(r'<minimax:tool_call>.*?</minimax:tool_call>', '', text, flags=re.DOTALL).strip()
+        text = re.sub(r'<minimax:tool_call>.*', '', text, flags=re.DOTALL).strip()
+        json_match = re.search(r'\[[\s\S]*\]', text)
         if json_match:
             scores = json.loads(json_match.group())
         else:
@@ -1298,8 +1304,11 @@ Yanıtı sadece JSON array olarak döndür: [{{"idx": 1, "score": 8, "reason": "
         )
 
         text = response.choices[0].message.content.strip()
-        import re as re_mod
-        json_match = re_mod.search(r'\[[\s\S]*\]', text)
+        # MiniMax tag temizliği
+        text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+        text = re.sub(r'<minimax:tool_call>.*?</minimax:tool_call>', '', text, flags=re.DOTALL).strip()
+        text = re.sub(r'<minimax:tool_call>.*', '', text, flags=re.DOTALL).strip()
+        json_match = re.search(r'\[[\s\S]*\]', text)
         if json_match:
             scores = json.loads(json_match.group())
         else:

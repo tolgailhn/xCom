@@ -115,7 +115,7 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
   // Filters
   const [filterType, setFilterType] = useState<"all" | "trend" | "news">("all");
   const [filterMinEngagement, setFilterMinEngagement] = useState(0);
-  const [sortBy, setSortBy] = useState<"engagement" | "ai">("engagement");
+  const [sortBy, setSortBy] = useState<"engagement" | "ai">("ai");
 
   // AI scoring
   const [aiScoring, setAiScoring] = useState(false);
@@ -569,7 +569,7 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
               const res = await aiScoreSuggestions();
               setAiScoredCount(res.scored || 0);
               if (res.scored > 0) await loadData();
-            } catch { /* ignore */ }
+            } catch (e) { console.error("AI suggestion scoring failed:", e); }
             setAiScoring(false);
           }}
           disabled={aiScoring}

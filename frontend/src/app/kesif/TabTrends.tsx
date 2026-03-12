@@ -132,7 +132,7 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
   const [filterStrong, setFilterStrong] = useState(false);
   const [filterMinScore, setFilterMinScore] = useState(0);
   const [filterAccount, setFilterAccount] = useState("");
-  const [sortBy, setSortBy] = useState<"score" | "ai">("score");
+  const [sortBy, setSortBy] = useState<"score" | "ai">("ai");
 
   // AI scoring
   const [aiScoring, setAiScoring] = useState(false);
@@ -710,7 +710,7 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
               const res = await aiScoreTrends();
               setAiScoredCount(res.scored || 0);
               if (res.scored > 0) await loadTrends();
-            } catch { /* ignore */ }
+            } catch (e) { console.error("AI trend scoring failed:", e); }
             setAiScoring(false);
           }}
           disabled={aiScoring}

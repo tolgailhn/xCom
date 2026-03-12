@@ -165,7 +165,7 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
   // AI Scoring
   const [aiScoring, setAiScoring] = useState(false);
   const [aiScoredCount, setAiScoredCount] = useState(0);
-  const [sortBy, setSortBy] = useState<"default" | "ai">("default");
+  const [sortBy, setSortBy] = useState<"default" | "ai">("ai");
 
   // TR Ceviri
   const [summarizing, setSummarizing] = useState(false);
@@ -563,7 +563,7 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
               // Reload tweets to get updated scores
               const r = await getDiscoveryTweets();
               setTweets(r.tweets);
-            } catch { /* ignore */ }
+            } catch (e) { console.error("AI tweet scoring failed:", e); }
             setAiScoring(false);
           }}
           disabled={aiScoring}
