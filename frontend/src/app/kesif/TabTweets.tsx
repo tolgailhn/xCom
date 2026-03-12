@@ -16,6 +16,8 @@ import {
   getSharedTweets,
   type DiscoveryTweet,
   type DiscoveryStatus,
+  type TweetMediaItem,
+  type TweetUrl,
 } from "@/lib/api";
 
 /* ── Helpers ─────────────────────────────────────────── */
@@ -57,8 +59,30 @@ function formatDateLabel(dateStr: string): string {
   }
 }
 
+const GM_FILTER_REGEX = /^(GM|GN|Good\s*morning|Good\s*night)\b/i;
+const GM_FILTER_REGEX2 = /how\s+is\s+your\s+(week|day)/i;
+
+function isLowQualityTweet(text: string): boolean {
+  return GM_FILTER_REGEX.test(text.trim()) || GM_FILTER_REGEX2.test(text);
+}
+
+function getImportanceColor(importance: string): string {
+  switch (importance) {
+    case "yuksek": return "var(--accent-green)";
+    case "orta": return "var(--accent-amber)";
+    default: return "var(--text-secondary)";
+  }
+}
+
+function getScoreColor(score: number): string {
+  if (score >= 80) return "var(--accent-green)";
+  if (score >= 50) return "var(--accent-amber)";
+  if (score >= 20) return "var(--accent-blue)";
+  return "var(--text-secondary)";
+}
+
 const importanceBadge: Record<string, { label: string; cls: string }> = {
-  yuksek: { label: "Yuksek", cls: "bg-[var(--accent-red)]/20 text-[var(--accent-red)] border-[var(--accent-red)]/30" },
+  yuksek: { label: "Yuksek", cls: "bg-[var(--accent-green)]/20 text-[var(--accent-green)] border-[var(--accent-green)]/30" },
   orta: { label: "Orta", cls: "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border-[var(--accent-amber)]/30" },
   dusuk: { label: "Dusuk", cls: "bg-[var(--text-secondary)]/20 text-[var(--text-secondary)] border-[var(--text-secondary)]/30" },
 };
@@ -73,6 +97,13 @@ interface FormatOption {
   id: string;
   name: string;
   desc: string;
+}
+
+interface ExtractedMedia {
+  media_items: TweetMediaItem[];
+  urls: TweetUrl[];
+  thread_urls: TweetUrl[];
+  thread_media: TweetMediaItem[];
 }
 
 /* ── Props ───────────────────────────────────────────── */
@@ -97,6 +128,9 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
   const [researchingId, setResearchingId] = useState<string | null>(null);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
 
+  // Per-tweet extracted media
+  const [extractedMedia, setExtractedMedia] = useState<Record<string, ExtractedMedia>>({});
+
   // Style & length per tweet
   const [styles, setStyles] = useState<StyleOption[]>([]);
   const [formats, setFormats] = useState<FormatOption[]>([]);
@@ -116,6 +150,7 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
   const [filterAccount, setFilterAccount] = useState("");
   const [filterImportance, setFilterImportance] = useState("");
   const [selectedDate, setSelectedDate] = useState<string>(formatDateStr(new Date()));
+  const [hideGM, setHideGM] = useState(true);
 
   // Accordion: hesap bazli gruplama
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
@@ -187,6 +222,14 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
           fullText = extracted.full_thread_text;
         } else if (extracted?.text) {
           fullText = extracted.text;
+        }
+        // Capture media and URLs from extracted tweet
+        const mediaItems: TweetMediaItem[] = extracted?.media_items || [];
+        const urls: TweetUrl[] = extracted?.urls || [];
+        const threadUrls: TweetUrl[] = extracted?.thread_urls || [];
+        const threadMedia: TweetMediaItem[] = extracted?.thread_media || [];
+        if (mediaItems.length > 0 || urls.length > 0 || threadUrls.length > 0 || threadMedia.length > 0) {
+          setExtractedMedia(prev => ({ ...prev, [id]: { media_items: mediaItems, urls, thread_urls: threadUrls, thread_media: threadMedia } }));
         }
       } catch {
         // extract basarisiz olursa orijinal text kullan
@@ -365,6 +408,7 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
     if (filterAccount && t.account.toLowerCase() !== filterAccount.toLowerCase()) return false;
     if (filterImportance && t.importance !== filterImportance) return false;
     if (hideShared && sharedTweetIds.has(t.tweet_id)) return false;
+    if (hideGM && isLowQualityTweet(t.text)) return false;
     if (selectedDate !== "all") {
       try {
         const tweetDate = new Date(t.created_at);
@@ -382,25 +426,25 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
   return (
     <div className="space-y-4">
       {/* Date Navigation Bar */}
-      <div className="glass-card p-3">
+      <div className="backdrop-blur-sm bg-[var(--bg-secondary)]/80 border border-[var(--border-primary)]/50 rounded-xl p-3">
         <div className="flex items-center justify-between">
           <button
             onClick={() => goToDate(-1)}
             disabled={selectedDate === "all" || selectedDate <= minDateStr}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors disabled:opacity-30"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-primary)]/60 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-all duration-300 disabled:opacity-30"
           >
             &larr; Onceki Gun
           </button>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSelectedDate("all")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedDate === "all" ? "bg-[var(--accent-blue)] text-white" : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${selectedDate === "all" ? "bg-[var(--accent-blue)] text-white shadow-md shadow-[var(--accent-blue)]/20" : "bg-[var(--bg-primary)]/60 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
             >
               Tumunu ({tweets.length})
             </button>
             <button
               onClick={goToToday}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedDate === todayStr ? "bg-[var(--accent-blue)] text-white" : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${selectedDate === todayStr ? "bg-[var(--accent-blue)] text-white shadow-md shadow-[var(--accent-blue)]/20" : "bg-[var(--bg-primary)]/60 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
             >
               Bugun
             </button>
@@ -416,19 +460,19 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
           <button
             onClick={() => goToDate(1)}
             disabled={selectedDate === "all" || selectedDate >= todayStr}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors disabled:opacity-30"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-primary)]/60 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-all duration-300 disabled:opacity-30"
           >
             Sonraki Gun &rarr;
           </button>
         </div>
       </div>
 
-      {/* Other Filters */}
-      <div className="flex flex-wrap gap-3 items-center">
+      {/* Filter Bar - Pill Style */}
+      <div className="flex flex-wrap gap-2 items-center">
         <select
           value={filterAccount}
           onChange={e => setFilterAccount(e.target.value)}
-          className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
+          className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border-primary)]/50 rounded-full px-3 py-1.5 text-xs backdrop-blur-sm focus:ring-2 focus:ring-[var(--accent-blue)]/30 transition-all"
         >
           <option value="">Tum Hesaplar</option>
           {uniqueAccounts.map(a => (
@@ -438,7 +482,7 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
         <select
           value={filterImportance}
           onChange={e => setFilterImportance(e.target.value)}
-          className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
+          className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border-primary)]/50 rounded-full px-3 py-1.5 text-xs backdrop-blur-sm focus:ring-2 focus:ring-[var(--accent-blue)]/30 transition-all"
         >
           <option value="">Tum Onem</option>
           <option value="yuksek">Yuksek</option>
@@ -447,7 +491,7 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
         </select>
         <button
           onClick={() => setGroupByAccount(!groupByAccount)}
-          className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-colors ${groupByAccount ? "bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] border border-[var(--accent-blue)]/30" : "bg-[var(--bg-secondary)] text-[var(--text-secondary)]"}`}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 border ${groupByAccount ? "bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] border-[var(--accent-blue)]/30 shadow-sm shadow-[var(--accent-blue)]/10" : "bg-[var(--bg-primary)]/60 text-[var(--text-secondary)] border-[var(--border-primary)]/50"}`}
         >
           {groupByAccount ? "Hesap Grubu: Acik" : "Hesap Grubu: Kapali"}
         </button>
@@ -465,39 +509,59 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
             setTranslatingAll(false);
           }}
           disabled={translatingAll || summarizing || filteredTweets.length === 0}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30 hover:bg-[var(--accent-amber)]/30 transition-colors disabled:opacity-50"
+          className="px-3 py-1.5 rounded-full text-xs font-medium bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30 hover:bg-[var(--accent-amber)]/30 transition-all duration-300 disabled:opacity-50"
         >
           {translatingAll ? "Cevriliyor..." : `Tumunu Cevir (${filteredTweets.length})`}
         </button>
         <button
           onClick={() => setHideShared(!hideShared)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 ${
             hideShared
-              ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)] border-[var(--accent-green)]/30"
-              : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--accent-green)]/50"
+              ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)] border-[var(--accent-green)]/30 shadow-sm shadow-[var(--accent-green)]/10"
+              : "bg-[var(--bg-primary)]/60 text-[var(--text-secondary)] border-[var(--border-primary)]/50 hover:border-[var(--accent-green)]/50"
           }`}
         >
           {hideShared ? "Paylasilanlari Gizle \u2713" : "Paylasilanlari Gizle"}
           {sharedTweetIds.size > 0 && ` (${sharedTweetIds.size})`}
         </button>
+        <button
+          onClick={() => setHideGM(!hideGM)}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 ${
+            hideGM
+              ? "bg-[var(--accent-purple)]/20 text-[var(--accent-purple)] border-[var(--accent-purple)]/30 shadow-sm shadow-[var(--accent-purple)]/10"
+              : "bg-[var(--bg-primary)]/60 text-[var(--text-secondary)] border-[var(--border-primary)]/50 hover:border-[var(--accent-purple)]/50"
+          }`}
+        >
+          {hideGM ? "GM/GN Gizle \u2713" : "GM/GN Goster"}
+        </button>
         {(summarizing || translatingAll) && (
           <span className="text-[10px] text-[var(--accent-amber)] animate-pulse">TR ceviri uretiliyor...</span>
         )}
-        <span className="text-xs text-[var(--text-secondary)]">
-          {filteredTweets.length} tweet gosteriliyor
+        <span className="text-xs text-[var(--text-secondary)] ml-auto">
+          {filteredTweets.length} tweet
         </span>
       </div>
 
       {/* Tweet cards */}
       {filteredTweets.length === 0 ? (
-        <div className="glass-card p-8 text-center">
-          <p className="text-[var(--text-secondary)]">
+        <div className="backdrop-blur-sm bg-[var(--bg-secondary)]/80 border border-[var(--border-primary)]/50 rounded-xl p-12 text-center">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" className="mx-auto mb-4 opacity-30">
+            <rect x="8" y="16" width="48" height="36" rx="4" stroke="currentColor" strokeWidth="2" />
+            <path d="M8 24h48" stroke="currentColor" strokeWidth="2" />
+            <circle cx="16" cy="36" r="3" fill="currentColor" opacity="0.3" />
+            <rect x="24" y="33" width="24" height="2" rx="1" fill="currentColor" opacity="0.3" />
+            <rect x="24" y="38" width="16" height="2" rx="1" fill="currentColor" opacity="0.2" />
+          </svg>
+          <p className="text-[var(--text-secondary)] text-sm">
             {tweets.length === 0 ? "Henuz tweet taranmadi. \"Simdi Tara\" butonuna basin." : "Filtreye uygun tweet bulunamadi."}
+          </p>
+          <p className="text-[var(--text-secondary)]/60 text-xs mt-1">
+            {tweets.length > 0 && hideGM && "GM/GN filtresi aktif. Kaldirmak icin butona basin."}
           </p>
         </div>
       ) : groupByAccount && !filterAccount ? (
         /* Hesap bazli accordion gruplama */
-        <div className="space-y-2">
+        <div className="space-y-3">
           {(() => {
             const groups: Record<string, DiscoveryTweet[]> = {};
             for (const t of filteredTweets) {
@@ -523,8 +587,9 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
               }, "");
               const startIdx = globalIdx;
               globalIdx += accountTweets.length;
+              const scoreColor = getScoreColor(maxScore);
               return (
-                <div key={account} className="glass-card overflow-hidden">
+                <div key={account} className="backdrop-blur-sm bg-[var(--bg-secondary)]/80 border border-[var(--border-primary)]/50 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-[var(--accent-blue)]/5">
                   <button
                     onClick={() => {
                       setExpandedAccounts(prev => {
@@ -533,38 +598,53 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
                         return next;
                       });
                     }}
-                    className="w-full flex items-center justify-between gap-3 p-3 hover:bg-[var(--bg-secondary)] transition-colors"
+                    className="w-full flex items-center justify-between gap-3 p-4 hover:bg-[var(--bg-primary)]/30 transition-all duration-300"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-lg font-bold" style={{ transform: isExpanded ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.2s" }}>&#9654;</span>
-                      <a
-                        href={`https://x.com/${account}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-semibold text-[var(--accent-blue)] hover:underline text-sm"
-                        onClick={e => e.stopPropagation()}
-                      >
-                        @{account}
-                      </a>
-                      <span className="text-xs text-[var(--text-secondary)] bg-[var(--bg-secondary)] px-2 py-0.5 rounded-full">
-                        {accountTweets.length} tweet
-                      </span>
-                      {isPriority && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30">
-                          Oncelikli
-                        </span>
-                      )}
+                      {/* Gradient avatar */}
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
+                        style={{ background: `linear-gradient(135deg, ${scoreColor}, ${scoreColor}80)` }}>
+                        {account.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={`https://x.com/${account}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-semibold text-[var(--accent-blue)] hover:underline text-sm"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            @{account}
+                          </a>
+                          <span className="text-[10px] text-[var(--text-secondary)] bg-[var(--bg-primary)]/60 px-2 py-0.5 rounded-full">
+                            {accountTweets.length} tweet
+                          </span>
+                          {isPriority && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30">
+                              Oncelikli
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-[var(--text-secondary)] mt-0.5">
+                          {timeAgo(latestTime)} once
+                        </div>
+                      </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-xs text-[var(--text-secondary)]">{timeAgo(latestTime)}</span>
-                      <div className="text-right">
-                        <span className="text-sm font-bold">{Math.round(maxScore)}</span>
-                        <span className="text-[10px] text-[var(--text-secondary)] ml-1">max</span>
-                      </div>
+                      {/* Circular engagement gauge */}
+                      <svg width="40" height="40" viewBox="0 0 44 44">
+                        <circle cx="22" cy="22" r="18" fill="none" stroke="var(--border-primary)" strokeWidth="3" opacity="0.2" />
+                        <circle cx="22" cy="22" r="18" fill="none" stroke={scoreColor} strokeWidth="3"
+                          strokeDasharray={`${Math.min((maxScore / 100) * 113, 113)} 113`}
+                          strokeLinecap="round" transform="rotate(-90 22 22)" />
+                        <text x="22" y="26" textAnchor="middle" fill={scoreColor} fontSize="12" fontWeight="bold">{Math.round(maxScore)}</text>
+                      </svg>
+                      <span className="text-lg" style={{ transform: isExpanded ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.2s" }}>&#9654;</span>
                     </div>
                   </button>
                   {isExpanded && (
-                    <div className="space-y-3 p-3 pt-0 border-t border-[var(--border)]">
+                    <div className="space-y-3 p-4 pt-0 border-t border-[var(--border-primary)]/30">
                       {accountTweets.map((tweet, idx) => (
                         <TweetCard
                           key={tweet.tweet_id}
@@ -606,6 +686,7 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
                           isTranslating={translatingIds.has(tweet.tweet_id)}
                           isShared={sharedTweetIds.has(tweet.tweet_id)}
                           onToggleShared={() => handleToggleShared(tweet.tweet_id)}
+                          extractedMedia={extractedMedia[tweet.tweet_id]}
                         />
                       ))}
                     </div>
@@ -659,6 +740,7 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
               isTranslating={translatingIds.has(tweet.tweet_id)}
               isShared={sharedTweetIds.has(tweet.tweet_id)}
               onToggleShared={() => handleToggleShared(tweet.tweet_id)}
+              extractedMedia={extractedMedia[tweet.tweet_id]}
             />
           ))}
         </div>
@@ -706,6 +788,7 @@ function TweetCard({
   isTranslating,
   isShared,
   onToggleShared,
+  extractedMedia,
 }: {
   tweet: DiscoveryTweet;
   index: number;
@@ -743,21 +826,75 @@ function TweetCard({
   isTranslating: boolean;
   isShared?: boolean;
   onToggleShared?: () => void;
+  extractedMedia?: ExtractedMedia;
 }) {
   const badge = importanceBadge[tweet.importance] || importanceBadge.dusuk;
   const [draftSaved, setDraftSaved] = useState(false);
   const [editedText, setEditedText] = useState("");
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (generatedResult?.text) setEditedText(generatedResult.text);
   }, [generatedResult?.text]);
 
+  const importanceColor = getImportanceColor(tweet.importance);
+  const scoreColor = getScoreColor(tweet.display_score);
+
+  // Collect all links from tweet + thread + extracted data
+  const allLinks: TweetUrl[] = [];
+  const seenUrls = new Set<string>();
+  const addUrl = (u: TweetUrl) => {
+    if (!seenUrls.has(u.url)) { seenUrls.add(u.url); allLinks.push(u); }
+  };
+  // From discovery tweet
+  if (tweet.urls) tweet.urls.forEach(addUrl);
+  if (tweet.thread_parts) {
+    tweet.thread_parts.forEach(p => {
+      if (p.urls) p.urls.forEach(addUrl);
+    });
+  }
+  // From extracted data
+  if (extractedMedia) {
+    extractedMedia.urls.forEach(addUrl);
+    extractedMedia.thread_urls.forEach(addUrl);
+  }
+
+  // Collect all tweet media
+  const allTweetMedia: TweetMediaItem[] = [];
+  const seenMediaUrls = new Set<string>();
+  const addMedia = (m: TweetMediaItem) => {
+    if (!seenMediaUrls.has(m.url)) { seenMediaUrls.add(m.url); allTweetMedia.push(m); }
+  };
+  if (tweet.media_items) tweet.media_items.forEach(addMedia);
+  if (tweet.thread_parts) {
+    tweet.thread_parts.forEach(p => {
+      if (p.media_items) p.media_items.forEach(addMedia);
+    });
+  }
+  if (extractedMedia) {
+    extractedMedia.media_items.forEach(addMedia);
+    extractedMedia.thread_media.forEach(addMedia);
+  }
+
+  const handleCopyUrl = (url: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedUrl(url);
+    setTimeout(() => setCopiedUrl(null), 2000);
+  };
+
   return (
-    <div className={`glass-card p-4 space-y-3${isShared ? " opacity-50" : ""}`}>
+    <div
+      className={`backdrop-blur-sm bg-[var(--bg-secondary)]/80 border border-[var(--border-primary)]/50 rounded-xl p-4 space-y-3 transition-all duration-300 hover:shadow-lg hover:shadow-[var(--accent-blue)]/10${isShared ? " opacity-50" : ""}`}
+      style={{ borderLeft: `3px solid ${importanceColor}` }}
+    >
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <span className="text-lg font-bold text-[var(--text-secondary)] shrink-0">#{index}</span>
+          {/* Gradient avatar */}
+          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+            style={{ background: `linear-gradient(135deg, var(--accent-blue), var(--accent-purple))` }}>
+            {tweet.account.charAt(0).toUpperCase()}
+          </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <a
@@ -769,15 +906,15 @@ function TweetCard({
                 @{tweet.account}
               </a>
               {tweet.is_priority && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30">
                   Oncelikli
                 </span>
               )}
-              <span className={`text-[10px] px-1.5 py-0.5 rounded border ${badge.cls}`}>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${badge.cls}`}>
                 {badge.label}
               </span>
               {tweet.is_thread && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent-purple)]/20 text-[var(--accent-purple)] border border-[var(--accent-purple)]/30">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--accent-purple)]/20 text-[var(--accent-purple)] border border-[var(--accent-purple)]/30">
                   Thread ({tweet.thread_parts.length})
                 </span>
               )}
@@ -787,9 +924,15 @@ function TweetCard({
             </div>
           </div>
         </div>
-        <div className="text-right shrink-0">
-          <div className="text-sm font-bold">{Math.round(tweet.display_score)}</div>
-          <div className="text-[10px] text-[var(--text-secondary)]">skor</div>
+        <div className="shrink-0">
+          {/* Circular engagement gauge */}
+          <svg width="40" height="40" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="18" fill="none" stroke="var(--border-primary)" strokeWidth="3" opacity="0.2" />
+            <circle cx="22" cy="22" r="18" fill="none" stroke={scoreColor} strokeWidth="3"
+              strokeDasharray={`${Math.min((tweet.display_score / 100) * 113, 113)} 113`}
+              strokeLinecap="round" transform="rotate(-90 22 22)" />
+            <text x="22" y="26" textAnchor="middle" fill={scoreColor} fontSize="12" fontWeight="bold">{Math.round(tweet.display_score)}</text>
+          </svg>
         </div>
       </div>
 
@@ -808,7 +951,7 @@ function TweetCard({
             &#127481;&#127479; {tweet.summary_tr}
           </div>
           <details className="group">
-            <summary className="text-[11px] text-[var(--text-secondary)] cursor-pointer hover:text-[var(--accent-purple)]">
+            <summary className="text-[11px] text-[var(--text-secondary)] cursor-pointer hover:text-[var(--accent-purple)] transition-colors">
               Orijinal tweet&apos;i gor
             </summary>
             <div className="mt-1 text-xs leading-relaxed whitespace-pre-wrap text-[var(--text-secondary)] opacity-70">{tweet.text}</div>
@@ -823,7 +966,7 @@ function TweetCard({
         <div>
           <button
             onClick={onToggleThread}
-            className="text-xs text-[var(--accent-purple)] hover:underline"
+            className="text-xs text-[var(--accent-purple)] hover:underline transition-colors"
           >
             {isThreadExpanded ? "Thread'i Gizle" : `Thread'i Gor (${tweet.thread_parts.length} tweet)`}
           </button>
@@ -840,11 +983,12 @@ function TweetCard({
       )}
 
       {/* Action buttons */}
-      <div className="flex flex-wrap gap-2 pt-1 border-t border-[var(--border)]">
+      <div className="flex flex-wrap gap-2 pt-2 border-t border-[var(--border-primary)]/30">
         <button
           onClick={onResearch}
           disabled={isResearching}
-          className="btn-primary text-xs"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300 disabled:opacity-50"
+          style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}
         >
           {isResearching ? "Arastiriliyor..." : "Arastir"}
         </button>
@@ -852,27 +996,27 @@ function TweetCard({
           href={tweet.tweet_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="btn-secondary text-xs inline-flex items-center"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/50 transition-all duration-300 inline-flex items-center"
         >
           Tweet&apos;i Gor
         </a>
-        <button onClick={onOpenQuoteInX} className="btn-secondary text-xs">
+        <button onClick={onOpenQuoteInX} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/50 transition-all duration-300">
           X Quote Ac
         </button>
         <button
           onClick={onTranslate}
           disabled={isTranslating}
-          className="text-xs px-2 py-1 rounded bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30 hover:bg-[var(--accent-amber)]/30 transition-colors disabled:opacity-50"
+          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30 hover:bg-[var(--accent-amber)]/30 transition-all duration-300 disabled:opacity-50"
         >
           {isTranslating ? "Cevriliyor..." : "&#127481;&#127479; Cevir"}
         </button>
         {onToggleShared && (
           <button
             onClick={(e) => { e.stopPropagation(); onToggleShared(); }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-300 ${
               isShared
                 ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)] border-[var(--accent-green)]/30"
-                : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--accent-green)]/50"
+                : "bg-[var(--bg-primary)]/60 text-[var(--text-secondary)] border-[var(--border-primary)]/50 hover:border-[var(--accent-green)]/50"
             }`}
           >
             {isShared ? "\u2713 Paylasild" : "Paylasild"}
@@ -882,35 +1026,86 @@ function TweetCard({
 
       {/* Research progress */}
       {researchResult?.progress && (
-        <div className="text-xs text-[var(--accent-blue)] animate-pulse">
+        <div className="text-xs text-[var(--accent-blue)] animate-pulse flex items-center gap-2">
+          <div className="w-3 h-3 border-2 border-[var(--accent-blue)] border-t-transparent rounded-full animate-spin" />
           {researchResult.progress}
+        </div>
+      )}
+
+      {/* Tweet Media from extraction */}
+      {allTweetMedia.length > 0 && (
+        <div className="backdrop-blur-sm bg-gradient-to-br from-[var(--accent-purple)]/5 to-transparent rounded-lg p-3 border border-[var(--accent-purple)]/20">
+          <h5 className="text-xs font-semibold text-[var(--accent-purple)] mb-2">Tweet Gorselleri ({allTweetMedia.length})</h5>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {allTweetMedia.map((m, i) => (
+              <div key={i} className="relative group rounded-lg overflow-hidden bg-[var(--bg-primary)]/60 border border-[var(--border-primary)]/30">
+                {m.type === "video" ? (
+                  <>
+                    {m.thumbnail ? (
+                      <img src={m.thumbnail} alt={`Video ${i + 1}`} className="w-full max-h-48 object-cover" loading="lazy" />
+                    ) : (
+                      <div className="w-full h-32 flex items-center justify-center text-[var(--text-secondary)]">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                      </div>
+                    )}
+                    <a
+                      href={m.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    >
+                      <span className="px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-[var(--accent-purple)]/80">Video Indir</span>
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    <img src={m.thumbnail || m.url} alt={`Gorsel ${i + 1}`} className="w-full max-h-48 object-cover rounded-lg" loading="lazy" />
+                    <a
+                      href={m.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    >
+                      <span className="px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-[var(--accent-blue)]/80">Indir</span>
+                    </a>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Research results */}
       {researchResult && researchResult.summary && (
-        <div className="space-y-3 bg-[var(--bg-secondary)] rounded-lg p-3">
+        <div className="space-y-3 backdrop-blur-sm bg-gradient-to-br from-[var(--accent-blue)]/5 to-transparent rounded-xl p-4 border border-[var(--accent-blue)]/20">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-semibold text-[var(--accent-green)]">Arastirma Sonuclari</h4>
-            <button onClick={onSetActiveResearch} className="text-[10px] text-[var(--text-secondary)] hover:underline">
+            <h4 className="text-xs font-semibold text-[var(--accent-green)] flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[var(--accent-green)]" />
+              Arastirma Sonuclari
+            </h4>
+            <button onClick={onSetActiveResearch} className="text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
               {isResearchActive ? "Gizle" : "Goster"}
             </button>
           </div>
           {isResearchActive && (
             <>
-              <p className="text-xs leading-relaxed">
+              <p className="text-xs leading-relaxed text-[var(--text-primary)]">
                 {researchResult.summary.replace(/<think>[\s\S]*?<\/think>/g, "").trim()}
               </p>
               {researchResult.key_points.length > 0 && (
-                <ul className="text-xs space-y-1 list-disc pl-4 text-[var(--text-secondary)]">
+                <ul className="text-xs space-y-1.5 pl-1">
                   {researchResult.key_points.map((kp, i) => (
-                    <li key={i}>{kp}</li>
+                    <li key={i} className="flex items-start gap-2 text-[var(--text-secondary)]">
+                      <span className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: i < 3 ? "var(--accent-green)" : i < 6 ? "var(--accent-amber)" : "var(--text-secondary)" }} />
+                      {kp}
+                    </li>
                   ))}
                 </ul>
               )}
               {researchResult.sources.length > 0 && (
                 <details className="text-[10px]">
-                  <summary className="cursor-pointer text-[var(--text-secondary)]">
+                  <summary className="cursor-pointer text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
                     Kaynaklar ({researchResult.sources.length})
                   </summary>
                   <div className="mt-1 space-y-0.5">
@@ -930,19 +1125,19 @@ function TweetCard({
           )}
 
           {/* Generate section */}
-          <div className="pt-2 border-t border-[var(--border)] space-y-3">
+          <div className="pt-3 border-t border-[var(--border-primary)]/30 space-y-3">
             <div className="flex flex-wrap gap-2 items-center">
-              <select value={tweetStyle} onChange={e => setTweetStyle(e.target.value)} className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs">
+              <select value={tweetStyle} onChange={e => setTweetStyle(e.target.value)} className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border-primary)]/50 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-[var(--accent-blue)]/30 transition-all">
                 {styles.length > 0 ? styles.map(s => <option key={s.id} value={s.id}>{s.name}</option>) : (
                   <option value="quote_tweet">Quote Tweet</option>
                 )}
               </select>
-              <select value={tweetLength} onChange={e => setTweetLength(e.target.value)} className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs">
+              <select value={tweetLength} onChange={e => setTweetLength(e.target.value)} className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border-primary)]/50 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-[var(--accent-blue)]/30 transition-all">
                 {formats.length > 0 ? formats.map(f => <option key={f.id} value={f.id}>{f.name}</option>) : (
                   <option value="spark">Spark</option>
                 )}
               </select>
-              <select value={provider} onChange={e => setProvider(e.target.value)} className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs">
+              <select value={provider} onChange={e => setProvider(e.target.value)} className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border-primary)]/50 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-[var(--accent-blue)]/30 transition-all">
                 <option value="">Otomatik</option>
                 <option value="anthropic">Claude</option>
                 <option value="openai">GPT</option>
@@ -952,7 +1147,8 @@ function TweetCard({
               <button
                 onClick={onGenerate}
                 disabled={isGenerating}
-                className="btn-primary text-xs"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300 disabled:opacity-50"
+                style={{ background: "linear-gradient(135deg, var(--accent-green), var(--accent-blue))" }}
               >
                 {isGenerating ? "Uretiliyor..." : "Tweet Uret"}
               </button>
@@ -961,30 +1157,47 @@ function TweetCard({
 
           {/* Generated tweet */}
           {generatedResult && (
-            <div className="space-y-3 bg-[var(--bg-primary)] rounded-lg p-3">
+            <div className="space-y-3 backdrop-blur-sm bg-[var(--bg-primary)]/60 rounded-xl p-4 border border-[var(--border-primary)]/30">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-semibold text-[var(--accent-amber)]">Uretilen Tweet</h4>
+                <h4 className="text-xs font-semibold text-[var(--accent-amber)] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[var(--accent-amber)]" />
+                  Uretilen Tweet
+                </h4>
                 {generatedResult.score > 0 && (
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded ${generatedResult.score >= 80 ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)]" : generatedResult.score >= 60 ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]" : "bg-[var(--accent-red)]/20 text-[var(--accent-red)]"}`}>
-                    {generatedResult.score}/100
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <svg width="28" height="28" viewBox="0 0 44 44">
+                      <circle cx="22" cy="22" r="16" fill="none" stroke="var(--border-primary)" strokeWidth="2.5" opacity="0.2" />
+                      <circle cx="22" cy="22" r="16" fill="none"
+                        stroke={generatedResult.score >= 80 ? "var(--accent-green)" : generatedResult.score >= 60 ? "var(--accent-amber)" : "var(--accent-red)"}
+                        strokeWidth="2.5"
+                        strokeDasharray={`${(generatedResult.score / 100) * 100} 100`}
+                        strokeLinecap="round" transform="rotate(-90 22 22)" />
+                      <text x="22" y="26" textAnchor="middle"
+                        fill={generatedResult.score >= 80 ? "var(--accent-green)" : generatedResult.score >= 60 ? "var(--accent-amber)" : "var(--accent-red)"}
+                        fontSize="11" fontWeight="bold">{generatedResult.score}</text>
+                    </svg>
+                  </div>
                 )}
               </div>
 
-              <textarea
-                value={editedText}
-                onChange={e => setEditedText(e.target.value)}
-                className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm w-full min-h-[80px] resize-y"
-                rows={3}
-              />
-              <div className="text-[10px] text-[var(--text-secondary)] text-right">
-                {editedText.length} karakter
+              {/* X-style preview card */}
+              <div className="bg-[var(--bg-secondary)]/60 rounded-lg p-3 border border-[var(--border-primary)]/20">
+                <textarea
+                  value={editedText}
+                  onChange={e => setEditedText(e.target.value)}
+                  className="bg-transparent text-[var(--text-primary)] text-sm w-full min-h-[80px] resize-y outline-none"
+                  rows={3}
+                />
+                <div className="text-[10px] text-[var(--text-secondary)] text-right mt-1">
+                  {editedText.length} karakter
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => onOpenInX(editedText)}
-                  className="btn-primary text-xs"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
+                  style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}
                 >
                   X&apos;te Ac
                 </button>
@@ -992,17 +1205,17 @@ function TweetCard({
                   onClick={() => {
                     window.open(tweet.tweet_url, "_blank");
                   }}
-                  className="btn-secondary text-xs"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/50 transition-all duration-300"
                 >
                   X Quote Ac
                 </button>
-                <button onClick={() => onCopy(editedText)} className="btn-secondary text-xs">
+                <button onClick={() => onCopy(editedText)} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/50 transition-all duration-300">
                   Kopyala
                 </button>
                 <button
                   onClick={onGenerate}
                   disabled={isGenerating}
-                  className="btn-secondary text-xs"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/50 transition-all duration-300 disabled:opacity-50"
                 >
                   Yeniden Uret
                 </button>
@@ -1012,25 +1225,49 @@ function TweetCard({
                     setDraftSaved(true);
                     setTimeout(() => setDraftSaved(false), 3000);
                   }}
-                  className="btn-secondary text-xs"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-green)]/50 transition-all duration-300"
                 >
                   {draftSaved ? "Kaydedildi!" : "Taslak Kaydet"}
                 </button>
               </div>
 
+              {/* Links box */}
+              {allLinks.length > 0 && (
+                <div className="backdrop-blur-sm bg-[var(--bg-primary)]/40 rounded-lg p-3 border border-[var(--border-primary)]/30"
+                  style={{ borderLeft: "3px solid var(--accent-blue)" }}>
+                  <h5 className="text-xs font-semibold text-[var(--accent-blue)] mb-1.5">Baglantilar</h5>
+                  <p className="text-[10px] text-[var(--text-secondary)] mb-2">Bu linkleri 2. tweetinize ekleyebilirsiniz</p>
+                  <div className="space-y-1.5">
+                    {allLinks.map((link, i) => (
+                      <div key={i} className="flex items-center justify-between gap-2 text-xs bg-[var(--bg-secondary)]/60 rounded-lg px-2.5 py-1.5">
+                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-[var(--accent-blue)] hover:underline truncate min-w-0">
+                          {link.display_url || link.url}
+                        </a>
+                        <button
+                          onClick={() => handleCopyUrl(link.url)}
+                          className="text-[10px] px-2 py-0.5 rounded bg-[var(--bg-primary)]/60 text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-primary)]/30 transition-all duration-200 shrink-0"
+                        >
+                          {copiedUrl === link.url ? "Kopyalandi!" : "Kopyala"}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Media finder */}
-              <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-[var(--border)]">
+              <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-[var(--border-primary)]/30">
                 <button
                   onClick={onFindMedia}
                   disabled={mediaLoading}
-                  className="btn-secondary text-xs"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-cyan)]/50 transition-all duration-300 disabled:opacity-50"
                 >
                   {mediaLoading ? "Araniyor..." : "Gorsel/Video Bul"}
                 </button>
                 <button
                   onClick={onInfographic}
                   disabled={infographicLoading}
-                  className="btn-secondary text-xs"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-amber)]/50 transition-all duration-300 disabled:opacity-50"
                 >
                   {infographicLoading ? "Uretiliyor..." : "Gemini Infografik"}
                 </button>
@@ -1039,18 +1276,19 @@ function TweetCard({
               {/* Media results */}
               {mediaResults && mediaResults.length > 0 && (
                 <div className="space-y-2">
-                  <h5 className="text-xs font-semibold text-[var(--accent-cyan)]">
+                  <h5 className="text-xs font-semibold text-[var(--accent-cyan)] flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[var(--accent-cyan)]" />
                     Bulunan Medya ({mediaResults.length})
                   </h5>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {mediaResults.slice(0, 6).map((m, i) => {
                       const thumb = m.thumbnail_url || m.preview || m.url;
                       return (
-                        <a key={i} href={m.url} target="_blank" rel="noopener noreferrer" className="block bg-[var(--bg-secondary)] rounded p-1.5 hover:ring-2 ring-[var(--accent-blue)] transition-all">
+                        <a key={i} href={m.url} target="_blank" rel="noopener noreferrer" className="block bg-[var(--bg-primary)]/60 rounded-lg p-1.5 hover:ring-2 ring-[var(--accent-blue)] transition-all duration-300 border border-[var(--border-primary)]/20">
                           {thumb ? (
                             <img src={thumb} alt={m.title || ""} className="w-full h-24 object-cover rounded" loading="lazy" />
                           ) : (
-                            <div className="w-full h-24 flex items-center justify-center text-xs text-[var(--text-secondary)] bg-[var(--bg-primary)] rounded">Gorsel</div>
+                            <div className="w-full h-24 flex items-center justify-center text-xs text-[var(--text-secondary)] bg-[var(--bg-secondary)]/60 rounded">Gorsel</div>
                           )}
                           <div className="text-[9px] text-[var(--text-secondary)] mt-1 truncate">{m.title || m.source || ""}</div>
                         </a>
@@ -1066,12 +1304,13 @@ function TweetCard({
                   <img
                     src={`data:image/${infographicData.format};base64,${infographicData.image}`}
                     alt="Infografik"
-                    className="w-full rounded-lg border border-[var(--border)]"
+                    className="w-full rounded-lg border border-[var(--border-primary)]/30"
                   />
                   <a
                     href={`data:image/${infographicData.format};base64,${infographicData.image}`}
                     download={`infographic_${Date.now()}.${infographicData.format}`}
-                    className="btn-primary text-xs inline-block"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-white inline-block transition-all duration-300"
+                    style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}
                   >
                     Gorseli Indir
                   </a>
