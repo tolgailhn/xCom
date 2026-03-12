@@ -82,7 +82,7 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
   // Filters
   const [filterType, setFilterType] = useState<"all" | "trend" | "news">("all");
   const [filterMinEngagement, setFilterMinEngagement] = useState(0);
-  const [sortBy, setSortBy] = useState<"engagement" | "ai">("ai");
+  const [sortBy, setSortBy] = useState<"engagement" | "ai" | "newest">("ai");
   const [showFilters, setShowFilters] = useState(false);
 
   // AI scoring
@@ -169,6 +169,11 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
   const filteredWithIdx = useMemo(() => {
     const mapped = filtered.map((s: Suggestion) => ({ suggestion: s, originalIdx: suggestions.indexOf(s) }));
     if (sortBy === "ai") mapped.sort((a: { suggestion: Suggestion }, b: { suggestion: Suggestion }) => (b.suggestion.ai_relevance_score || 0) - (a.suggestion.ai_relevance_score || 0));
+    else if (sortBy === "newest") mapped.sort((a: { suggestion: Suggestion }, b: { suggestion: Suggestion }) => {
+      const ta = a.suggestion.news_date ? new Date(a.suggestion.news_date).getTime() : 0;
+      const tb = b.suggestion.news_date ? new Date(b.suggestion.news_date).getTime() : 0;
+      return tb - ta;
+    });
     return mapped;
   }, [filtered, suggestions, sortBy]);
 
@@ -350,9 +355,10 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
               </button>
             ))}
           </div>
-          <select value={sortBy} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortBy(e.target.value as "engagement" | "ai")}
+          <select value={sortBy} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortBy(e.target.value as "engagement" | "ai" | "newest")}
             className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]">
             <option value="ai">Siralama: AI Onerisi</option>
+            <option value="newest">Siralama: Yeniden Eskiye</option>
             <option value="engagement">Siralama: Engagement</option>
           </select>
           <button onClick={() => setShowFilters(!showFilters)}

@@ -114,7 +114,7 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
   // AI Scoring & Sort
   const [aiScoring, setAiScoring] = useState(false);
   const [aiScoredCount, setAiScoredCount] = useState(0);
-  const [sortBy, setSortBy] = useState<"default" | "ai">("ai");
+  const [sortBy, setSortBy] = useState<"default" | "ai" | "newest">("ai");
 
   // Translation
   const [summarizing, setSummarizing] = useState(false);
@@ -266,6 +266,7 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
   });
 
   if (sortBy === "ai") filteredTweets.sort((a, b) => (b.ai_relevance_score || 0) - (a.ai_relevance_score || 0));
+  else if (sortBy === "newest") filteredTweets.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const uniqueAccounts = [...new Set(tweets.map(t => t.account))].sort();
 
@@ -273,7 +274,7 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
   const activeFilterCount = [filterImportance, hideShared, hideGM].filter(Boolean).length;
 
   // When AI sort is active, force flat list
-  const showAccordion = groupByAccount && !filterAccount && sortBy !== "ai";
+  const showAccordion = groupByAccount && !filterAccount && sortBy !== "ai" && sortBy !== "newest";
 
   // Collect links for a tweet
   const collectLinks = (tweet: DiscoveryTweet, extracted?: ExtractedMedia): TweetUrl[] => {
@@ -536,9 +537,10 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
       <div className="space-y-2">
         {/* Tier 1: Always visible */}
         <div className="flex flex-wrap gap-2 items-center">
-          <select value={sortBy} onChange={e => setSortBy(e.target.value as "default" | "ai")}
+          <select value={sortBy} onChange={e => setSortBy(e.target.value as "default" | "ai" | "newest")}
             className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border-primary)]/50 rounded-full px-3 py-1.5 text-xs backdrop-blur-sm focus:ring-2 focus:ring-[var(--accent-blue)]/30 transition-all">
             <option value="ai">AI Onerisi</option>
+            <option value="newest">Yeniden Eskiye</option>
             <option value="default">Varsayilan</option>
           </select>
           <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)}

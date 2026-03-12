@@ -108,6 +108,7 @@ interface FeedItem {
   newsBody?: string;
   newsSource?: string;
   sourceKeywords?: string[];
+  timestamp?: string;
   // original data refs
   _suggestion?: Suggestion;
   _trend?: TrendItem;
@@ -126,7 +127,7 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
   // Filters
   const [filterSource, setFilterSource] = useState<"all" | "suggestion" | "trend" | "tweet">("all");
   const [filterMinEngagement, setFilterMinEngagement] = useState(0);
-  const [sortBy, setSortBy] = useState<"ai" | "engagement">("ai");
+  const [sortBy, setSortBy] = useState<"ai" | "engagement" | "newest">("ai");
   const [showFilters, setShowFilters] = useState(false);
 
   // AI scoring
@@ -184,6 +185,7 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
     newsBody: s.news_body,
     newsSource: s.news_source,
     sourceKeywords: s.source_keywords,
+    timestamp: s.news_date || (s.top_tweets?.[0] as ClusterTweet & { created_at?: string })?.created_at || (s.tweets?.[0] as ClusterTweet & { created_at?: string })?.created_at,
     _suggestion: s,
     _key: `sug-${idx}-${s.topic.slice(0, 30)}`,
   }), []);
@@ -204,6 +206,7 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
       tweet_url: tw.tweet_url,
     })),
     sourceKeywords: t.accounts?.slice(0, 5),
+    timestamp: t.detected_at,
     _trend: t,
     _key: `trend-${idx}-${t.keyword.slice(0, 30)}`,
   }), []);
@@ -225,6 +228,7 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
       tweet_url: dt.tweet_url,
     }],
     url: dt.tweet_url,
+    timestamp: dt.created_at,
     _discoveryTweet: dt,
     _key: `tweet-${dt.tweet_id}`,
   }), []);
@@ -313,6 +317,12 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
     const arr = [...filtered];
     if (sortBy === "ai") {
       arr.sort((a: FeedItem, b: FeedItem) => (b.aiScore || 0) - (a.aiScore || 0));
+    } else if (sortBy === "newest") {
+      arr.sort((a: FeedItem, b: FeedItem) => {
+        const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+        const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+        return tb - ta;
+      });
     } else {
       arr.sort((a: FeedItem, b: FeedItem) => b.engagementPotential - a.engagementPotential);
     }
@@ -534,10 +544,11 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
               </button>
             ))}
           </div>
-          <select value={sortBy} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortBy(e.target.value as "ai" | "engagement")}
+          <select value={sortBy} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortBy(e.target.value as "ai" | "engagement" | "newest")}
             className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]">
             <option value="ai">Siralama: AI Skoru</option>
             <option value="engagement">Siralama: Engagement</option>
+            <option value="newest">Siralama: Yeniden Eskiye</option>
           </select>
           <button onClick={() => setShowFilters(!showFilters)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${

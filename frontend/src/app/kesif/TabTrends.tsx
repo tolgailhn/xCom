@@ -91,7 +91,7 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
   const [filterStrong, setFilterStrong] = useState(false);
   const [filterMinScore, setFilterMinScore] = useState(0);
   const [filterAccount, setFilterAccount] = useState("");
-  const [sortBy, setSortBy] = useState<"score" | "ai">("ai");
+  const [sortBy, setSortBy] = useState<"score" | "ai" | "newest">("ai");
   const [hideGM, setHideGM] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -189,6 +189,7 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
     if (filterMinScore > 0) result = result.filter((t: Trend) => t.trend_score >= filterMinScore);
     if (filterAccount) result = result.filter((t: Trend) => t.accounts.some((a: string) => a.toLowerCase().includes(filterAccount.toLowerCase())));
     if (sortBy === "ai") result = [...result].sort((a, b) => (b.ai_relevance_score || 0) - (a.ai_relevance_score || 0));
+    else if (sortBy === "newest") result = [...result].sort((a, b) => new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime());
     return result;
   }, [displayTrends, filterStrong, filterMinScore, filterAccount, sortBy]);
 
@@ -379,9 +380,10 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
       <div className="space-y-2">
         {/* Tier 1: Always visible */}
         <div className="flex flex-wrap items-center gap-2">
-          <select value={sortBy} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortBy(e.target.value as "score" | "ai")}
+          <select value={sortBy} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortBy(e.target.value as "score" | "ai" | "newest")}
             className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]">
             <option value="ai">Siralama: AI Onerisi</option>
+            <option value="newest">Siralama: Yeniden Eskiye</option>
             <option value="score">Siralama: Skor</option>
           </select>
           {allAccounts.length > 0 && (
