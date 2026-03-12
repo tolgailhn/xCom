@@ -850,10 +850,42 @@ export default function TabTrends() {
                                         </details>
                                       )}
                                     </div>
-                                    <div className="pt-2 border-t border-[var(--border)]">
-                                      <button onClick={() => handleTweetGenerate(trend, i)} disabled={isTwGenerating} className="btn-primary text-xs">
-                                        {isTwGenerating ? "Uretiliyor..." : twGenerated?.text ? "Tekrar Uret" : "Tweet Uret"}
-                                      </button>
+                                    <div className="pt-2 border-t border-[var(--border)] space-y-2">
+                                      <div className="text-[10px] font-medium text-[var(--text-secondary)]">Uretim Ayarlari</div>
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <select value={selectedStyle} onChange={e => setSelectedStyle(e.target.value)} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1 text-[11px] text-[var(--text-primary)]">
+                                          {styles.length > 0 ? styles.map(s => <option key={s.id} value={s.id}>{s.name}</option>) : (
+                                            <>
+                                              <option value="informative">Bilgilendirici</option>
+                                              <option value="provocative">Provoke Edici</option>
+                                              <option value="technical">Teknik</option>
+                                              <option value="storytelling">Hikaye</option>
+                                              <option value="analytical">Analitik</option>
+                                            </>
+                                          )}
+                                        </select>
+                                        <select value={selectedFormat} onChange={e => setSelectedFormat(e.target.value)} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1 text-[11px] text-[var(--text-primary)]">
+                                          {formats.length > 0 ? formats.map(f => <option key={f.id} value={f.id}>{f.name}</option>) : (
+                                            <>
+                                              <option value="spark">Micro Tweet</option>
+                                              <option value="single">Tek Tweet</option>
+                                              <option value="short_thread">Kisa Thread</option>
+                                              <option value="thread">Thread</option>
+                                            </>
+                                          )}
+                                        </select>
+                                        <select value={selectedProvider} onChange={e => setSelectedProvider(e.target.value)} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1 text-[11px] text-[var(--text-primary)]">
+                                          <option value="">Varsayilan AI</option>
+                                          <option value="minimax">MiniMax</option>
+                                          <option value="anthropic">Claude</option>
+                                          <option value="openai">GPT</option>
+                                          <option value="groq">Groq</option>
+                                          <option value="gemini">Gemini</option>
+                                        </select>
+                                        <button onClick={() => handleTweetGenerate(trend, i)} disabled={isTwGenerating} className="btn-primary text-xs">
+                                          {isTwGenerating ? "Uretiliyor..." : twGenerated?.text ? "Tekrar Uret" : "Tweet Uret"}
+                                        </button>
+                                      </div>
                                     </div>
                                     {twGenerated && (
                                       <div className="space-y-2 bg-[var(--bg-secondary)] rounded-lg p-3">
@@ -896,8 +928,39 @@ export default function TabTrends() {
                     )}
 
                     {/* Trend-level actions */}
-                    <div className="border-t border-[var(--border)] pt-3">
-                      <div className="text-xs font-medium text-[var(--text-secondary)] mb-2">Tum trend hakkinda:</div>
+                    <div className="border-t border-[var(--border)] pt-3 space-y-2">
+                      <div className="text-xs font-medium text-[var(--text-secondary)]">Tum trend hakkinda:</div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <select value={selectedStyle} onChange={e => setSelectedStyle(e.target.value)} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1 text-[11px] text-[var(--text-primary)]">
+                          {styles.length > 0 ? styles.map(s => <option key={s.id} value={s.id}>{s.name}</option>) : (
+                            <>
+                              <option value="informative">Bilgilendirici</option>
+                              <option value="provocative">Provoke Edici</option>
+                              <option value="technical">Teknik</option>
+                              <option value="storytelling">Hikaye</option>
+                              <option value="analytical">Analitik</option>
+                            </>
+                          )}
+                        </select>
+                        <select value={selectedFormat} onChange={e => setSelectedFormat(e.target.value)} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1 text-[11px] text-[var(--text-primary)]">
+                          {formats.length > 0 ? formats.map(f => <option key={f.id} value={f.id}>{f.name}</option>) : (
+                            <>
+                              <option value="spark">Micro Tweet</option>
+                              <option value="single">Tek Tweet</option>
+                              <option value="short_thread">Kisa Thread</option>
+                              <option value="thread">Thread</option>
+                            </>
+                          )}
+                        </select>
+                        <select value={selectedProvider} onChange={e => setSelectedProvider(e.target.value)} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1 text-[11px] text-[var(--text-primary)]">
+                          <option value="">Varsayilan AI</option>
+                          <option value="minimax">MiniMax</option>
+                          <option value="anthropic">Claude</option>
+                          <option value="openai">GPT</option>
+                          <option value="groq">Groq</option>
+                          <option value="gemini">Gemini</option>
+                        </select>
+                      </div>
                       <div className="flex gap-2">
                         <button onClick={() => handleResearch(trend)} disabled={isResearching} className="btn-secondary text-xs">
                           {isResearching ? "Arastiriliyor..." : activeResearch === key && research?.summary ? "Tekrar Arastir" : "Tum Trendi Arastir"}
