@@ -15,6 +15,7 @@ import {
   findMedia,
   generateInfographic,
   aiScoreTrends,
+  publishTweet,
   TweetMediaItem,
   TweetUrl,
 } from "@/lib/api";
@@ -145,13 +146,13 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
   // Trend-level research & generation state
   const [researchData, setResearchData] = useState<Record<string, ResearchState>>({});
   const [researchingKey, setResearchingKey] = useState<string | null>(null);
-  const [generatedTexts, setGeneratedTexts] = useState<Record<string, { text: string; score: number }>>({});
+  const [generatedTexts, setGeneratedTexts] = useState<Record<string, { text: string; score: number; thread_parts?: string[] }>>({});
   const [generatingKey, setGeneratingKey] = useState<string | null>(null);
 
   // Per-tweet state
   const [tweetResearchData, setTweetResearchData] = useState<Record<string, ResearchState>>({});
   const [tweetResearchingKey, setTweetResearchingKey] = useState<string | null>(null);
-  const [tweetGeneratedTexts, setTweetGeneratedTexts] = useState<Record<string, { text: string; score: number }>>({});
+  const [tweetGeneratedTexts, setTweetGeneratedTexts] = useState<Record<string, { text: string; score: number; thread_parts?: string[] }>>({});
   const [tweetGeneratingKey, setTweetGeneratingKey] = useState<string | null>(null);
   const [tweetEditedTexts, setTweetEditedTexts] = useState<Record<string, string>>({});
   const [activeTweetKey, setActiveTweetKey] = useState<string | null>(null);
@@ -396,7 +397,7 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
 
       setGeneratedTexts(prev => ({
         ...prev,
-        [key]: { text: result.tweet || result.text || "", score: result.score?.overall || result.quality_score || 0 },
+        [key]: { text: result.tweet || result.text || "", score: result.score?.overall || result.quality_score || 0, thread_parts: result.thread_parts },
       }));
     } catch (e) {
       setGeneratedTexts(prev => ({
@@ -483,7 +484,7 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
         provider: selectedProvider || undefined,
       });
       const text = result.text || "";
-      setTweetGeneratedTexts(prev => ({ ...prev, [compositeKey]: { text, score: result.score?.overall || 0 } }));
+      setTweetGeneratedTexts(prev => ({ ...prev, [compositeKey]: { text, score: result.score?.overall || 0, thread_parts: result.thread_parts } }));
       setTweetEditedTexts(prev => ({ ...prev, [compositeKey]: text }));
     } catch (e) {
       const errText = `Hata: ${e instanceof Error ? e.message : "Bilinmeyen"}`;

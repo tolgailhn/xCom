@@ -15,6 +15,7 @@ import {
   unmarkTweetShared,
   getSharedTweets,
   aiScoreDiscoveryTweets,
+  publishTweet,
   type DiscoveryTweet,
   type DiscoveryStatus,
   type TweetMediaItem,
@@ -125,7 +126,7 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
 
   // Per-tweet research & generation state
   const [researchData, setResearchData] = useState<Record<string, { summary: string; key_points: string[]; sources: { title: string; url?: string }[]; progress: string }>>({});
-  const [generatedTexts, setGeneratedTexts] = useState<Record<string, { text: string; score: number }>>({});
+  const [generatedTexts, setGeneratedTexts] = useState<Record<string, { text: string; score: number; thread_parts?: string[] }>>({});
   const [researchingId, setResearchingId] = useState<string | null>(null);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
 
@@ -299,7 +300,7 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
 
       setGeneratedTexts(prev => ({
         ...prev,
-        [id]: { text: result.text, score: result.score?.overall || 0 },
+        [id]: { text: result.text, score: result.score?.overall || 0, thread_parts: result.thread_parts },
       }));
     } catch (e) {
       setGeneratedTexts(prev => ({
@@ -843,7 +844,7 @@ function TweetCard({
   isResearchActive: boolean;
   isGenerateActive: boolean;
   researchResult?: { summary: string; key_points: string[]; sources: { title: string; url?: string }[]; progress: string };
-  generatedResult?: { text: string; score: number };
+  generatedResult?: { text: string; score: number; thread_parts?: string[] };
   isResearching: boolean;
   isGenerating: boolean;
   onResearch: () => void;
@@ -1239,56 +1240,119 @@ function TweetCard({
                 )}
               </div>
 
-              {/* X-style preview card */}
-              <div className="bg-[var(--bg-secondary)]/60 rounded-lg p-3 border border-[var(--border-primary)]/20">
-                <textarea
-                  value={editedText}
-                  onChange={e => setEditedText(e.target.value)}
-                  className="bg-transparent text-[var(--text-primary)] text-sm w-full min-h-[80px] resize-y outline-none"
-                  rows={3}
-                />
-                <div className="text-[10px] text-[var(--text-secondary)] text-right mt-1">
-                  {editedText.length} karakter
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => onOpenInX(editedText)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
-                  style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}
-                >
-                  X&apos;te Ac
-                </button>
-                <button
-                  onClick={() => {
-                    window.open(tweet.tweet_url, "_blank");
-                  }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/50 transition-all duration-300"
-                >
-                  X Quote Ac
-                </button>
-                <button onClick={() => onCopy(editedText)} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/50 transition-all duration-300">
-                  Kopyala
-                </button>
-                <button
-                  onClick={onGenerate}
-                  disabled={isGenerating}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/50 transition-all duration-300 disabled:opacity-50"
-                >
-                  Yeniden Uret
-                </button>
-                <button
-                  onClick={async () => {
-                    await onSaveDraft(editedText);
-                    setDraftSaved(true);
-                    setTimeout(() => setDraftSaved(false), 3000);
-                  }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-green)]/50 transition-all duration-300"
-                >
-                  {draftSaved ? "Kaydedildi!" : "Taslak Kaydet"}
-                </button>
-              </div>
+              {/* Thread or single tweet preview */}
+              {generatedResult.thread_parts && generatedResult.thread_parts.length > 1 ? (
+                <>
+                  <div className="bg-[var(--bg-secondary)]/60 rounded-lg p-3 border border-[var(--accent-purple)]/30 space-y-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-purple)]/20 text-[var(--accent-purple)] font-medium">
+                        Thread ({generatedResult.thread_parts.length} tweet)
+                      </span>
+                    </div>
+                    {generatedResult.thread_parts.map((part, i) => (
+                      <div key={i} className="flex gap-2 items-start">
+                        <span className="text-[10px] text-[var(--accent-purple)] font-bold mt-0.5 shrink-0">{i + 1}/{generatedResult.thread_parts!.length}</span>
+                        <p className="text-xs text-[var(--text-primary)] leading-relaxed">{part.replace(/^\d+\/\s*/, "")}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={async () => {
+                        try {
+                          await publishTweet({ text: generatedResult.thread_parts![0], thread_parts: generatedResult.thread_parts! });
+                          setDraftSaved(true);
+                          setTimeout(() => setDraftSaved(false), 3000);
+                        } catch { /* ignore */ }
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
+                      style={{ background: "linear-gradient(135deg, var(--accent-purple), var(--accent-blue))" }}
+                    >
+                      Thread Paylas
+                    </button>
+                    <button
+                      onClick={() => onOpenInX(generatedResult.thread_parts![0].replace(/^\d+\/\s*/, ""))}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
+                      style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}
+                    >
+                      X&apos;te Ac (ilk tweet)
+                    </button>
+                    <button
+                      onClick={() => {
+                        const threadText = generatedResult.thread_parts!.map((p, i) => `${i + 1}/${generatedResult.thread_parts!.length} ${p.replace(/^\d+\/\s*/, "")}`).join("\n\n");
+                        onCopy(threadText);
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/50 transition-all duration-300"
+                    >
+                      Kopyala
+                    </button>
+                    <button onClick={onGenerate} disabled={isGenerating} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/50 transition-all duration-300 disabled:opacity-50">
+                      Yeniden Uret
+                    </button>
+                    <button
+                      onClick={async () => {
+                        await onSaveDraft(editedText);
+                        setDraftSaved(true);
+                        setTimeout(() => setDraftSaved(false), 3000);
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-green)]/50 transition-all duration-300"
+                    >
+                      {draftSaved ? "Kaydedildi!" : "Taslak Kaydet"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="bg-[var(--bg-secondary)]/60 rounded-lg p-3 border border-[var(--border-primary)]/20">
+                    <textarea
+                      value={editedText}
+                      onChange={e => setEditedText(e.target.value)}
+                      className="bg-transparent text-[var(--text-primary)] text-sm w-full min-h-[80px] resize-y outline-none"
+                      rows={3}
+                    />
+                    <div className="text-[10px] text-[var(--text-secondary)] text-right mt-1">
+                      {editedText.length} karakter
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => onOpenInX(editedText)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
+                      style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}
+                    >
+                      X&apos;te Ac
+                    </button>
+                    <button
+                      onClick={() => {
+                        window.open(tweet.tweet_url, "_blank");
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/50 transition-all duration-300"
+                    >
+                      X Quote Ac
+                    </button>
+                    <button onClick={() => onCopy(editedText)} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/50 transition-all duration-300">
+                      Kopyala
+                    </button>
+                    <button
+                      onClick={onGenerate}
+                      disabled={isGenerating}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/50 transition-all duration-300 disabled:opacity-50"
+                    >
+                      Yeniden Uret
+                    </button>
+                    <button
+                      onClick={async () => {
+                        await onSaveDraft(editedText);
+                        setDraftSaved(true);
+                        setTimeout(() => setDraftSaved(false), 3000);
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-green)]/50 transition-all duration-300"
+                    >
+                      {draftSaved ? "Kaydedildi!" : "Taslak Kaydet"}
+                    </button>
+                  </div>
+                </>
+              )}
 
               {/* Links box */}
               {allLinks.length > 0 && (

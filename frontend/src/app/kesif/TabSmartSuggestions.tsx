@@ -13,6 +13,7 @@ import {
   extractTweet,
   generateInfographic,
   aiScoreSuggestions,
+  publishTweet,
   TweetMediaItem,
   TweetUrl,
 } from "@/lib/api";
@@ -63,6 +64,7 @@ interface ResearchResult {
 interface GeneratedTweet {
   text: string;
   score: number;
+  thread_parts?: string[];
 }
 
 const PROVIDER_OPTIONS = [

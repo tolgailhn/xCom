@@ -143,6 +143,7 @@ FORMATS = [
     {"id": "spark", "name": "Spark — Kisa Hikaye", "desc": "Kisa hikaye, aciklama (400-600 kar)"},
     {"id": "storm", "name": "Storm — Derin Analiz", "desc": "Derin analiz, uzun hikaye (700-1000 kar)"},
     {"id": "thread", "name": "Thread — Seri Anlatim", "desc": "3-5 tweet serisi (her biri max 280 kar)"},
+    {"id": "deep_thread", "name": "Thread Derin Analiz", "desc": "Detayli thread: 5-10 tweet, konuyu derinlemesine analiz (her biri max 280 kar)"},
     {"id": "thunder", "name": "Thunder — En Derin", "desc": "En uzun ve detayli format (1200-1500 kar)"},
     {"id": "mega", "name": "Mega — Ultra Detayli", "desc": "En uzun single-post, makale tarzi tweet (1500-2000 kar)"},
 ]
@@ -189,13 +190,17 @@ async def generate_tweet(request: GenerateRequest):
         generator = await asyncio.to_thread(create_generator, request.topic, request.provider)
         logger.info(f"Generating tweet: style={request.style}, provider={generator.provider}, topic={request.topic[:80]}")
 
-        if request.thread:
+        is_deep_thread = request.content_format == "deep_thread"
+        is_thread = request.thread or is_deep_thread
+
+        if is_thread:
             parts = await asyncio.wait_for(asyncio.to_thread(
                 generator.generate_thread,
                 topic_text=request.topic,
                 style=request.style,
                 additional_context=request.research_context,
-            ), timeout=90)
+                deep_analysis=is_deep_thread,
+            ), timeout=120)
             full_text = "\n\n---\n\n".join(parts) if parts else ""
             if not full_text.strip():
                 logger.warning(f"Thread generation returned empty: style={request.style}, provider={generator.provider}")

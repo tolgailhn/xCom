@@ -1649,7 +1649,8 @@ Sadece düzeltilmiş tweet metnini yaz, başka bir şey yazma."""
     def generate_thread(self, topic_text: str, topic_source: str = "",
                         style: str = "analitik", num_tweets: int = 5,
                         additional_context: str = "",
-                        user_samples: list = None) -> list[str]:
+                        user_samples: list = None,
+                        deep_analysis: bool = False) -> list[str]:
         """
         Generate a tweet thread
 
@@ -1660,6 +1661,7 @@ Sadece düzeltilmiş tweet metnini yaz, başka bir şey yazma."""
             num_tweets: Number of tweets in thread
             additional_context: Extra instructions
             user_samples: Sample tweets for style matching
+            deep_analysis: If True, generate a detailed 5-10 tweet deep analysis thread
 
         Returns:
             List of tweet texts forming a thread
@@ -1669,7 +1671,32 @@ Sadece düzeltilmiş tweet metnini yaz, başka bir şey yazma."""
 
         system_prompt = self._build_system_prompt(style, user_samples)
 
-        user_prompt = f"""Aşağıdaki konu hakkında {num_tweets} tweet'lik bir thread yaz.
+        if deep_analysis:
+            user_prompt = f"""Bu konuyu derinlemesine analiz eden bir X thread'i yaz.
+
+Konu:
+{topic_text}
+
+{f"Kaynak: {topic_source}" if topic_source else ""}
+{f"Araştırma ve ek bilgiler: {additional_context}" if additional_context else ""}
+
+DERİN ANALİZ THREAD KURALLARI:
+- 5-10 tweet arası yaz (konunun derinliğine göre sen karar ver, yüzeysel konularda 5-6, derin konularda 8-10)
+- Her tweet MUTLAKA max 280 karakter
+- 1/ = dikkat çekici hook tweet (soru veya cesur iddia ile başla)
+- 2/-8/ = her biri farklı bir alt başlık, perspektif veya veri noktası olsun
+- Son tweet = güçlü kapanış + tartışma çağrısı ("Siz ne düşünüyorsunuz?" gibi)
+- Tweet'leri 1/, 2/, 3/ şeklinde numaralandır
+- Her tweeti --- ile ayır
+- Hashtag KULLANMA
+- Doğal geçişler kullan, okuyucu bağlansın
+- Her tweet kendi başına da anlam ifade etmeli
+- Gerçek veriler, somut örnekler, teknik detaylar ekle
+- %100 doğal insan yazısı, bot tonu olmasın
+
+Sadece tweet metinlerini yaz, başka bir şey yazma."""
+        else:
+            user_prompt = f"""Aşağıdaki konu hakkında {num_tweets} tweet'lik bir thread yaz.
 
 Konu:
 {topic_text}
