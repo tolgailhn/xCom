@@ -122,11 +122,15 @@ def analyze_trends():
 
         for kw in found_keywords:
             keyword_accounts[kw].add(account)
+            tweet_id = tweet.get("tweet_id", "")
             keyword_tweets[kw].append({
-                "tweet_id": tweet.get("tweet_id", ""),
-                "text": (tweet.get("text", "") or "")[:150],
+                "tweet_id": tweet_id,
+                "text": (tweet.get("text", "") or "")[:300],
                 "account": account,
                 "engagement": engagement,
+                "tweet_url": f"https://x.com/{account}/status/{tweet_id}" if tweet_id else "",
+                "summary_tr": tweet.get("summary_tr", ""),
+                "created_at": tweet.get("created_at", ""),
             })
             keyword_total_engagement[kw] += engagement
 

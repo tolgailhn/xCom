@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   getTrends,
   getTrendHistory,
@@ -16,9 +16,13 @@ import {
 /* ── Types ──────────────────────────────────────────── */
 
 interface TrendTweet {
+  tweet_id?: string;
   text: string;
   account: string;
   engagement: number;
+  tweet_url?: string;
+  summary_tr?: string;
+  created_at?: string;
 }
 
 interface Trend {
@@ -72,6 +76,32 @@ function scoreColor(score: number, maxScore: number): string {
   return "var(--text-secondary)";
 }
 
+function relativeTime(dateStr: string): string {
+  if (!dateStr) return "";
+  try {
+    const now = Date.now();
+    const then = new Date(dateStr).getTime();
+    if (isNaN(then)) return "";
+    const diff = now - then;
+    const absDiff = Math.abs(diff);
+    const mins = Math.floor(absDiff / 60000);
+    if (mins < 1) return "az once";
+    if (mins < 60) return `${mins}dk once`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}sa once`;
+    const days = Math.floor(hrs / 24);
+    return `${days}g once`;
+  } catch {
+    return "";
+  }
+}
+
+function formatEngagement(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
+  return n.toFixed(0);
+}
+
 /* ── Component ──────────────────────────────────────── */
 
 export default function TabTrends() {
@@ -121,6 +151,9 @@ export default function TabTrends() {
   const [showSchedule, setShowSchedule] = useState<string | null>(null);
   const [scheduleTime, setScheduleTime] = useState("");
 
+  // Refs for scroll-to-trend
+  const trendRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
   /* ── Load data ──────────────────────────────────────── */
 
   const loadTrends = async () => {
@@ -152,12 +185,10 @@ export default function TabTrends() {
 
   const availableDates = useMemo(() => {
     const dates = new Set<string>();
-    // Current trends
     if (trends.length > 0) {
       const todayStr = formatDateStr(new Date());
       dates.add(todayStr);
     }
-    // History dates
     for (const h of trendHistory) {
       if (h.date) dates.add(h.date);
     }
@@ -168,7 +199,6 @@ export default function TabTrends() {
     if (selectedDate === "today" || selectedDate === formatDateStr(new Date())) {
       return trends;
     }
-    // Find from history
     const entry = trendHistory.find(h => h.date === selectedDate);
     return entry?.trends || [];
   }, [selectedDate, trends, trendHistory]);
@@ -198,6 +228,20 @@ export default function TabTrends() {
     displayTrends.forEach(t => t.accounts.forEach(a => acc.add(a)));
     return Array.from(acc).sort();
   }, [displayTrends]);
+
+  const strongCount = useMemo(() => filteredTrends.filter(t => t.is_strong_trend).length, [filteredTrends]);
+
+  /* ── Scroll to trend ─────────────────────────────────── */
+
+  const scrollToTrend = useCallback((keyword: string) => {
+    setExpandedTrend(keyword);
+    setTimeout(() => {
+      const el = trendRefs.current[keyword];
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 100);
+  }, []);
 
   /* ── Handlers ───────────────────────────────────────── */
 
@@ -391,6 +435,50 @@ export default function TabTrends() {
         </button>
       </div>
 
+      {/* ════ Trend Overview Panel ════ */}
+      {filteredTrends.length > 0 && (
+        <div className="glass-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-[var(--text-primary)]">Trend Ozeti</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent-blue)]/15 text-[var(--accent-blue)] font-medium">
+                {filteredTrends.length} trend
+              </span>
+              {strongCount > 0 && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent-amber)]/15 text-[var(--accent-amber)] font-medium">
+                  {strongCount} guclu
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {filteredTrends.map((t) => (
+              <button
+                key={t.keyword}
+                onClick={() => scrollToTrend(t.keyword)}
+                className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 hover:scale-105 ${
+                  t.is_strong_trend
+                    ? "bg-gradient-to-r from-[var(--accent-amber)]/20 to-[var(--accent-amber)]/5 text-[var(--accent-amber)] border-[var(--accent-amber)]/30 hover:border-[var(--accent-amber)]/60 hover:shadow-[0_0_12px_var(--accent-amber)/20]"
+                    : expandedTrend === t.keyword
+                      ? "bg-[var(--accent-blue)]/15 text-[var(--accent-blue)] border-[var(--accent-blue)]/40"
+                      : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/40"
+                }`}
+              >
+                {t.is_strong_trend && <span className="text-[10px]">&#9650;</span>}
+                <span>{t.keyword}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  t.is_strong_trend
+                    ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]"
+                    : "bg-[var(--bg-primary)] text-[var(--text-secondary)]"
+                }`}>
+                  {t.account_count}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Day navigation */}
       {availableDates.length > 0 && (
         <div className="flex items-center gap-2 bg-[var(--bg-secondary)] rounded-xl p-2">
@@ -399,7 +487,7 @@ export default function TabTrends() {
             disabled={availableDates.indexOf(selectedDate === "today" ? availableDates[0] : selectedDate) >= availableDates.length - 1}
             className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-primary)] hover:bg-[var(--accent-blue)]/10 disabled:opacity-30 transition-colors"
           >
-            ← Onceki
+            &#8592; Onceki
           </button>
           <div className="flex-1 text-center">
             <span className="text-sm font-bold text-[var(--text-primary)]">
@@ -414,7 +502,7 @@ export default function TabTrends() {
             disabled={selectedDate === "today" || availableDates.indexOf(selectedDate) <= 0}
             className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-primary)] hover:bg-[var(--accent-blue)]/10 disabled:opacity-30 transition-colors"
           >
-            Sonraki →
+            Sonraki &#8594;
           </button>
           <button
             onClick={() => setSelectedDate("today")}
@@ -501,7 +589,7 @@ export default function TabTrends() {
         </div>
       </div>
 
-      {/* Trend cards */}
+      {/* ════ Trend Cards ════ */}
       {filteredTrends.length === 0 ? (
         <div className="glass-card p-8 text-center text-[var(--text-secondary)]">
           {displayTrends.length === 0
@@ -509,7 +597,7 @@ export default function TabTrends() {
             : "Filtrelere uyan trend bulunamadi."}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {filteredTrends.map((trend) => {
             const key = trend.keyword;
             const isExpanded = expandedTrend === key;
@@ -518,36 +606,52 @@ export default function TabTrends() {
             const isResearching = researchingKey === key;
             const isGenerating = generatingKey === key;
             const scorePct = maxScore > 0 ? (trend.trend_score / maxScore) * 100 : 0;
+            const trendColor = trend.is_strong_trend ? "var(--accent-amber)" : "var(--accent-blue)";
 
             return (
-              <div key={key} className="glass-card overflow-hidden">
-                {/* Strong trend indicator */}
-                {trend.is_strong_trend && (
-                  <div className="h-1 bg-gradient-to-r from-[var(--accent-amber)] to-[var(--accent-amber)]/30" />
-                )}
+              <div
+                key={key}
+                ref={el => { trendRefs.current[key] = el; }}
+                className="glass-card overflow-hidden"
+              >
+                {/* Top gradient bar */}
+                <div
+                  className="h-1"
+                  style={{
+                    background: trend.is_strong_trend
+                      ? "linear-gradient(90deg, var(--accent-amber), var(--accent-amber)/30)"
+                      : "linear-gradient(90deg, var(--accent-blue)/60, transparent)",
+                  }}
+                />
 
-                {/* Trend header — clickable */}
+                {/* ──── Trend Header (clickable) ──── */}
                 <div
                   className="p-4 cursor-pointer hover:bg-[var(--accent-blue)]/5 transition-colors"
                   onClick={() => setExpandedTrend(isExpanded ? null : key)}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
+                      {/* Keyword title */}
                       <div className="flex items-center gap-2 flex-wrap mb-2">
-                        <span className="text-base font-bold text-[var(--text-primary)]">{key}</span>
+                        <span
+                          className="text-lg font-extrabold tracking-tight"
+                          style={{ color: trendColor }}
+                        >
+                          {key}
+                        </span>
                         {trend.is_strong_trend && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30">
-                            GUCLU TREND
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-[var(--accent-amber)]/25 to-[var(--accent-amber)]/10 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30">
+                            &#9650; GUCLU TREND
                           </span>
                         )}
                         <span className="text-[10px] text-[var(--text-secondary)]">
-                          {isExpanded ? "▲" : "▼"}
+                          {isExpanded ? "&#9650;" : "&#9660;"}
                         </span>
                       </div>
 
                       {/* Score bar */}
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-primary)] overflow-hidden max-w-[200px]">
+                      <div className="flex items-center gap-2 mb-2.5">
+                        <div className="flex-1 h-2 rounded-full bg-[var(--bg-primary)] overflow-hidden max-w-[220px]">
                           <div
                             className="h-full rounded-full transition-all duration-500"
                             style={{
@@ -556,60 +660,88 @@ export default function TabTrends() {
                             }}
                           />
                         </div>
-                        <span className="text-xs font-semibold" style={{ color: scoreColor(trend.trend_score, maxScore) }}>
+                        <span
+                          className="text-sm font-bold tabular-nums"
+                          style={{ color: scoreColor(trend.trend_score, maxScore) }}
+                        >
                           {trend.trend_score.toFixed(0)}
                         </span>
                       </div>
 
-                      {/* Account pills */}
-                      <div className="flex flex-wrap gap-1">
+                      {/* Account pills with avatar letter */}
+                      <div className="flex flex-wrap gap-1.5">
                         {trend.accounts.slice(0, 6).map((acc) => (
-                          <span key={acc} className="px-1.5 py-0.5 rounded-full bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] text-[10px] font-medium">
+                          <span key={acc} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] text-[10px] font-medium border border-[var(--accent-blue)]/15">
+                            <span className="w-3.5 h-3.5 rounded-full bg-[var(--accent-blue)]/20 flex items-center justify-center text-[8px] font-bold">
+                              {acc[0]?.toUpperCase()}
+                            </span>
                             @{acc}
                           </span>
                         ))}
                         {trend.accounts.length > 6 && (
-                          <span className="text-[10px] text-[var(--text-secondary)]">+{trend.accounts.length - 6}</span>
+                          <span className="px-2 py-0.5 rounded-full bg-[var(--bg-secondary)] text-[10px] text-[var(--text-secondary)]">
+                            +{trend.accounts.length - 6} daha
+                          </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Stats badges */}
+                    {/* Stats badges (right side) */}
                     <div className="flex gap-2 shrink-0">
-                      <div className="flex flex-col items-center px-2 py-1 rounded-lg bg-[var(--bg-primary)]">
-                        <span className="text-sm font-bold text-[var(--text-primary)]">{trend.account_count}</span>
+                      <div className="flex flex-col items-center px-3 py-1.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border)]">
+                        <span className="text-base font-bold text-[var(--text-primary)]">{trend.account_count}</span>
                         <span className="text-[9px] text-[var(--text-secondary)]">hesap</span>
                       </div>
-                      <div className="flex flex-col items-center px-2 py-1 rounded-lg bg-[var(--bg-primary)]">
-                        <span className="text-sm font-bold text-[var(--text-primary)]">{trend.tweet_count}</span>
+                      <div className="flex flex-col items-center px-3 py-1.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border)]">
+                        <span className="text-base font-bold text-[var(--text-primary)]">{trend.tweet_count}</span>
                         <span className="text-[9px] text-[var(--text-secondary)]">tweet</span>
                       </div>
-                      <div className="flex flex-col items-center px-2 py-1 rounded-lg bg-[var(--bg-primary)]">
-                        <span className="text-sm font-bold text-[var(--accent-green)]">{trend.total_engagement.toFixed(0)}</span>
+                      <div className="flex flex-col items-center px-3 py-1.5 rounded-xl bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/20">
+                        <span className="text-base font-bold text-[var(--accent-green)]">
+                          {formatEngagement(trend.total_engagement)}
+                        </span>
                         <span className="text-[9px] text-[var(--text-secondary)]">eng.</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* First tweet preview (always visible) */}
+                  {/* First tweet preview (collapsed only) */}
                   {trend.top_tweets.length > 0 && !isExpanded && (
-                    <div className="mt-3 flex gap-2 text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2">
-                      <span className="text-[var(--accent-blue)] shrink-0 font-semibold">@{trend.top_tweets[0].account}</span>
-                      <span className="text-[var(--text-secondary)] line-clamp-1">{trend.top_tweets[0].text}</span>
+                    <div className="mt-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border)] px-3 py-2.5">
+                      {/* Turkish summary if available */}
+                      {trend.top_tweets[0].summary_tr && (
+                        <div className="text-xs text-[var(--accent-cyan)] mb-1.5 font-medium">
+                          {trend.top_tweets[0].summary_tr}
+                        </div>
+                      )}
+                      <div className="flex items-start gap-2 text-xs">
+                        <span className="w-5 h-5 rounded-full bg-[var(--accent-blue)]/15 flex items-center justify-center text-[9px] font-bold text-[var(--accent-blue)] shrink-0 mt-0.5">
+                          {trend.top_tweets[0].account[0]?.toUpperCase()}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-[var(--accent-blue)] font-semibold">@{trend.top_tweets[0].account}</span>
+                            {trend.top_tweets[0].created_at && (
+                              <span className="text-[10px] text-[var(--text-secondary)]">{relativeTime(trend.top_tweets[0].created_at)}</span>
+                            )}
+                          </div>
+                          <span className="text-[var(--text-secondary)] line-clamp-2 leading-relaxed">{trend.top_tweets[0].text}</span>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
 
-                {/* Expanded content */}
+                {/* ──── Expanded Content ──── */}
                 {isExpanded && (
                   <div className="border-t border-[var(--border)] p-4 space-y-4">
-                    {/* Top tweets — each with individual research/generate */}
+                    {/* Top tweets */}
                     {trend.top_tweets.length > 0 && (
                       <div>
-                        <div className="text-xs font-medium text-[var(--text-secondary)] mb-2">
+                        <div className="text-xs font-medium text-[var(--text-secondary)] mb-3">
                           Tweet&apos;ler ({trend.top_tweets.length})
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           {trend.top_tweets.map((tw, i) => {
                             const compositeKey = `${key}::${i}`;
                             const twResearch = tweetResearchData[compositeKey];
@@ -618,39 +750,87 @@ export default function TabTrends() {
                             const isTwResearching = tweetResearchingKey === compositeKey;
                             const isTwGenerating = tweetGeneratingKey === compositeKey;
                             const isActive = activeTweetKey === compositeKey;
+                            const tweetUrl = tw.tweet_url || (tw.tweet_id ? `https://x.com/${tw.account}/status/${tw.tweet_id}` : "");
 
                             return (
-                              <div key={i} className="rounded-lg bg-[var(--bg-primary)] overflow-hidden">
-                                <div className="p-3">
-                                  <div className="flex items-center justify-between mb-1.5">
-                                    <div className="flex items-center gap-2">
-                                      <a href={`https://x.com/${tw.account}`} target="_blank" rel="noopener noreferrer"
-                                        className="text-[var(--accent-blue)] text-xs font-semibold hover:underline"
-                                        onClick={e => e.stopPropagation()}>
-                                        @{tw.account}
-                                      </a>
-                                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent-green)]/10 text-[var(--accent-green)]">
-                                        {tw.engagement.toFixed(0)} eng.
+                              <div key={i} className="rounded-xl bg-[var(--bg-primary)] border border-[var(--border)] overflow-hidden">
+                                <div className="p-3.5">
+                                  {/* Turkish summary badge */}
+                                  {tw.summary_tr && (
+                                    <div className="mb-2 px-3 py-1.5 rounded-lg bg-[var(--accent-cyan)]/8 border border-[var(--accent-cyan)]/15">
+                                      <span className="text-xs text-[var(--accent-cyan)] font-medium leading-relaxed">
+                                        {tw.summary_tr}
                                       </span>
                                     </div>
+                                  )}
+
+                                  {/* Author line */}
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="w-6 h-6 rounded-full bg-[var(--accent-blue)]/15 flex items-center justify-center text-[10px] font-bold text-[var(--accent-blue)]">
+                                        {tw.account[0]?.toUpperCase()}
+                                      </span>
+                                      <a
+                                        href={`https://x.com/${tw.account}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[var(--accent-blue)] text-xs font-semibold hover:underline"
+                                        onClick={e => e.stopPropagation()}
+                                      >
+                                        @{tw.account}
+                                      </a>
+                                      {tw.created_at && (
+                                        <span className="text-[10px] text-[var(--text-secondary)]">
+                                          {relativeTime(tw.created_at)}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-green)]/10 text-[var(--accent-green)] border border-[var(--accent-green)]/20 font-medium">
+                                      {formatEngagement(tw.engagement)} eng.
+                                    </span>
                                   </div>
-                                  <p className="text-sm leading-relaxed text-[var(--text-primary)]">{tw.text}</p>
-                                  <div className="flex gap-2 mt-2">
-                                    <button onClick={() => handleTweetResearch(trend, i)} disabled={isTwResearching} className="btn-primary text-xs">
+
+                                  {/* Tweet text */}
+                                  <p className="text-sm leading-relaxed text-[var(--text-primary)] mb-3">{tw.text}</p>
+
+                                  {/* Action buttons */}
+                                  <div className="flex flex-wrap gap-2">
+                                    {tweetUrl && (
+                                      <a
+                                        href={tweetUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium rounded-lg bg-[var(--accent-blue)]/15 text-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/25 border border-[var(--accent-blue)]/20 transition-colors"
+                                        onClick={e => e.stopPropagation()}
+                                      >
+                                        Tweet&apos;e Git &#8599;
+                                      </a>
+                                    )}
+                                    <button
+                                      onClick={() => handleTweetResearch(trend, i)}
+                                      disabled={isTwResearching}
+                                      className="px-2.5 py-1.5 text-[11px] font-medium rounded-lg bg-[var(--accent-green)]/15 text-[var(--accent-green)] hover:bg-[var(--accent-green)]/25 border border-[var(--accent-green)]/20 transition-colors disabled:opacity-50"
+                                    >
                                       {isTwResearching ? "Arastiriliyor..." : twResearch?.summary ? "Tekrar Arastir" : "Arastir"}
                                     </button>
-                                    <a href={`https://x.com/${tw.account}`} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs inline-flex items-center">
+                                    <a
+                                      href={`https://x.com/${tw.account}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium rounded-lg bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)] transition-colors"
+                                      onClick={e => e.stopPropagation()}
+                                    >
                                       Profil
                                     </a>
                                   </div>
                                 </div>
 
                                 {isTwResearching && twResearch?.progress && (
-                                  <div className="px-3 pb-2 text-xs text-[var(--accent-blue)] animate-pulse">{twResearch.progress}</div>
+                                  <div className="px-3.5 pb-2 text-xs text-[var(--accent-blue)] animate-pulse">{twResearch.progress}</div>
                                 )}
 
                                 {isActive && twResearch?.summary && (
-                                  <div className="border-t border-[var(--border)] p-3 space-y-3">
+                                  <div className="border-t border-[var(--border)] p-3.5 space-y-3">
                                     <div className="space-y-2">
                                       <h4 className="text-xs font-semibold text-[var(--accent-green)]">Arastirma Sonuclari</h4>
                                       <p className="text-xs leading-relaxed">{twResearch.summary.replace(/<think>[\s\S]*?<\/think>/g, "").trim()}</p>
