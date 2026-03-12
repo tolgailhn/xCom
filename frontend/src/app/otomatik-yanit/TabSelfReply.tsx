@@ -189,7 +189,7 @@ export default function TabSelfReply({
         </div>
 
         {/* Settings Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium mb-1">Gunluk Max Tweet</label>
             <input
@@ -206,47 +206,7 @@ export default function TabSelfReply({
               className="input w-full"
             />
             <p className="text-xs text-[var(--text-secondary)] mt-1">
-              Gunde max kac tweet&apos;e self-reply atilsin
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Tweet Basi Reply</label>
-            <input
-              type="number"
-              value={selfConfig.replies_per_tweet}
-              onChange={(e) =>
-                setSelfConfig((prev) => ({
-                  ...prev,
-                  replies_per_tweet: parseInt(e.target.value) || 3,
-                }))
-              }
-              min={1}
-              max={5}
-              className="input w-full"
-            />
-            <p className="text-xs text-[var(--text-secondary)] mt-1">
-              Her tweet&apos;e kac self-reply atilsin
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Reply Araligi (dk)</label>
-            <input
-              type="number"
-              value={selfConfig.reply_interval_minutes}
-              onChange={(e) =>
-                setSelfConfig((prev) => ({
-                  ...prev,
-                  reply_interval_minutes: parseInt(e.target.value) || 15,
-                }))
-              }
-              min={5}
-              max={60}
-              className="input w-full"
-            />
-            <p className="text-xs text-[var(--text-secondary)] mt-1">
-              Self-reply&apos;lar arasi bekleme suresi
+              Gunde max kac tweet&apos;e self-reply atilsin (her tweet&apos;e 1 reply)
             </p>
           </div>
         </div>
@@ -353,9 +313,8 @@ export default function TabSelfReply({
         <h4 className="text-sm font-semibold text-purple-400 mb-2">Nasil Calisir?</h4>
         <ul className="text-xs text-[var(--text-secondary)] space-y-1">
           <li>- Her 15 dakikada kendi tweetlerin kontrol edilir</li>
-          <li>- Son {selfConfig.max_tweet_age_days} gundeki orijinal tweetlerine {selfConfig.replies_per_tweet} self-reply uretilir</li>
+          <li>- Son {selfConfig.max_tweet_age_days} gundeki orijinal tweetlerine 1 self-reply uretilir</li>
           <li>- Gunde max {selfConfig.max_daily_tweets} tweet&apos;e self-reply atilir</li>
-          <li>- Reply&apos;lar {selfConfig.reply_interval_minutes} dk arayla paylasilir</li>
           <li>- Her reply farkli bir acidan devam eder: ek bilgi, deneyim, CTA</li>
           <li>- Zaten reply atilmis tweetlere tekrar atilmaz</li>
           <li>- Training DNA&apos;n (tolga style) kullanilarak dogal reply uretilir</li>

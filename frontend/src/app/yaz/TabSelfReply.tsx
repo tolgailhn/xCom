@@ -53,7 +53,7 @@ export default function TabSelfReply({ styles, providers }: { styles: StyleOptio
   const [extracting, setExtracting] = useState(false);
 
   // Generation
-  const [replyCount, setReplyCount] = useState(3);
+  const [replyCount, setReplyCount] = useState(1);
   const [selfReplyStyle, setSelfReplyStyle] = useState("");
   const [selfReplyProvider, setSelfReplyProvider] = useState("");
   const [generatedReplies, setGeneratedReplies] = useState<string[]>([]);
@@ -307,9 +307,6 @@ export default function TabSelfReply({ styles, providers }: { styles: StyleOptio
               onChange={(e) => setReplyCount(Number(e.target.value))}
             >
               <option value={1}>1 reply</option>
-              <option value={2}>2 reply</option>
-              <option value={3}>3 reply (onerilen)</option>
-              <option value={4}>4 reply</option>
             </select>
           </div>
 
