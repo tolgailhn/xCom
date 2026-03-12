@@ -432,7 +432,7 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
                 }} />
 
                 {/* ── Level 1: Card Header (always visible, clickable) ── */}
-                <button className="w-full text-left p-4 hover:bg-[var(--bg-secondary)]/30 transition-colors"
+                <div className="w-full text-left p-4 hover:bg-[var(--bg-secondary)]/30 transition-colors cursor-pointer" role="button" tabIndex={0}
                   onClick={() => { setExpandedIdx(isExpanded ? null : idx); if (isExpanded) setWorkflowIdx((w: number | null) => w === idx ? null : w); }}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -485,7 +485,7 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
                       </div>
                     </div>
                   </div>
-                </button>
+                </div>
 
                 {/* ── Level 2: Expanded — full content + action buttons ── */}
                 {isExpanded && (

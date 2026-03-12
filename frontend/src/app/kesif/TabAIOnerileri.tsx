@@ -611,7 +611,7 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
                 }} />
 
                 {/* ── Level 1: Card Header ── */}
-                <button className="w-full text-left p-4 hover:bg-[var(--bg-secondary)]/30 transition-colors"
+                <div className="w-full text-left p-4 hover:bg-[var(--bg-secondary)]/30 transition-colors cursor-pointer" role="button" tabIndex={0}
                   onClick={() => { setExpandedIdx(isExpanded ? null : idx); if (isExpanded) setWorkflowIdx(w => w === idx ? null : w); }}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -665,7 +665,7 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
                       </div>
                     </div>
                   </div>
-                </button>
+                </div>
 
                 {/* ── Level 2: Expanded — full content + action buttons ── */}
                 {isExpanded && (
