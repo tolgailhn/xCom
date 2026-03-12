@@ -671,6 +671,8 @@ export interface SelfReplyConfig {
   enabled: boolean;
   username: string;
   max_daily_tweets: number;
+  replies_per_tweet: number;
+  reply_interval_minutes: number;
   min_tweet_age_minutes: number;
   max_tweet_age_days: number;
   style: string;

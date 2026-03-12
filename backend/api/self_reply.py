@@ -24,6 +24,8 @@ class SelfReplyConfigRequest(BaseModel):
     enabled: bool = False
     username: str = ""
     max_daily_tweets: int = 4
+    replies_per_tweet: int = 1
+    reply_interval_minutes: int = 0
     min_tweet_age_minutes: int = 2
     max_tweet_age_days: int = 1
     style: str = "samimi"

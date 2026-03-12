@@ -632,6 +632,8 @@ def load_self_reply_config() -> dict:
         "enabled": False,
         "username": "",
         "max_daily_tweets": 4,
+        "replies_per_tweet": 1,
+        "reply_interval_minutes": 0,
         "min_tweet_age_minutes": 2,
         "max_tweet_age_days": 1,
         "style": "samimi",
