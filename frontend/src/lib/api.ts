@@ -1125,3 +1125,11 @@ export function analyzeMyTweets(): Promise<{ analysis: any; last_analyzed: strin
 export function aiScoreDiscoveryTweets(): Promise<{ scored: number; message?: string }> {
   return apiFetch("/api/discovery/ai-score-tweets", { method: "POST" });
 }
+
+export function aiScoreTrends(): Promise<{ scored: number; message?: string }> {
+  return apiFetch("/api/discovery/ai-score-trends", { method: "POST" });
+}
+
+export function aiScoreSuggestions(): Promise<{ scored: number; message?: string }> {
+  return apiFetch("/api/discovery/ai-score-suggestions", { method: "POST" });
+}

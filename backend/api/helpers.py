@@ -52,6 +52,49 @@ def get_ai_provider(preferred: str = "") -> tuple[str, str, str | None]:
     raise ValueError("No AI API key configured. Set MINIMAX_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY.")
 
 
+def get_ai_client(preferred: str = "") -> tuple:
+    """
+    Get an OpenAI-compatible client + model name for direct API calls.
+    Uses get_ai_provider() to pick the best available provider,
+    then creates an OpenAI SDK client with the appropriate base_url.
+
+    Returns: (client, model_name)
+    """
+    from openai import OpenAI
+
+    provider, api_key, model_override = get_ai_provider(preferred)
+
+    PROVIDER_CONFIG = {
+        "minimax": ("MiniMax-M2.5", "https://api.minimax.io/v1"),
+        "groq": ("llama-3.3-70b-versatile", "https://api.groq.com/openai/v1"),
+        "openai": ("gpt-4o", None),
+        "gemini": ("gemini-3.1-flash-lite", "https://generativelanguage.googleapis.com/v1beta/openai/"),
+    }
+
+    if provider == "anthropic":
+        # Anthropic doesn't have OpenAI-compatible API natively.
+        # Use anthropic SDK wrapped in OpenAI-like interface.
+        # For scoring tasks, prefer other providers first.
+        # Fallback: use anthropic via their beta OpenAI-compatible endpoint
+        client = OpenAI(
+            api_key=api_key,
+            base_url="https://api.anthropic.com/v1/",
+        )
+        return client, model_override or "claude-sonnet-4-20250514"
+
+    if provider == "claude_code":
+        raise ValueError("Claude Code CLI cannot be used for direct API calls. Configure MiniMax, OpenAI, or another API key.")
+
+    default_model, base_url = PROVIDER_CONFIG.get(provider, ("gpt-4o", None))
+
+    if base_url:
+        client = OpenAI(api_key=api_key, base_url=base_url)
+    else:
+        client = OpenAI(api_key=api_key)
+
+    return client, model_override or default_model
+
+
 def get_available_providers() -> list[dict]:
     """Return list of available AI providers with their status."""
     s = get_settings()

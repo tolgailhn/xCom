@@ -1094,3 +1094,231 @@ Yanıtı sadece JSON array olarak döndür: [{{"idx": 1, "score": 8, "reason": "
     except Exception as e:
         logger.exception("AI scoring error")
         raise HTTPException(500, f"AI skorlama hatası: {str(e)}")
+
+
+@router.post("/ai-score-trends")
+async def ai_score_trends():
+    """Trend konularını kullanıcı profiline göre MiniMax ile skorla."""
+    import asyncio
+    import json
+    from pathlib import Path
+    from datetime import datetime
+
+    data_dir = Path(__file__).parent.parent.parent / "data"
+    analysis_path = data_dir / "my_tweets_analysis.json"
+    trend_path = data_dir / "trend_cache.json"
+
+    if not analysis_path.exists():
+        raise HTTPException(400, "Önce kendi tweetlerinizi analiz edin")
+
+    with open(analysis_path, "r", encoding="utf-8") as f:
+        analysis_data = json.load(f)
+    analysis = analysis_data.get("analysis", {})
+    if not analysis:
+        raise HTTPException(400, "Analiz verisi boş")
+
+    if not trend_path.exists():
+        return {"scored": 0}
+
+    with open(trend_path, "r", encoding="utf-8") as f:
+        trend_cache = json.load(f)
+
+    trends = trend_cache.get("trends", [])
+    if not trends:
+        return {"scored": 0}
+
+    # Skorlanmamış veya 1 saatten eski skorlu trendleri seç
+    now = datetime.now()
+    to_score = []
+    for tr in trends[:50]:
+        last_scored = tr.get("ai_scored_at", "")
+        if last_scored:
+            try:
+                scored_time = datetime.fromisoformat(last_scored)
+                if (now - scored_time).total_seconds() < 3600:
+                    continue
+            except Exception:
+                pass
+        to_score.append(tr)
+
+    if not to_score:
+        return {"scored": 0, "message": "Tüm trendler zaten skorlanmış"}
+
+    batch = to_score[:20]
+    topics = analysis.get("topics", [])
+    avoid = analysis.get("avoid_topics", [])
+    best = analysis.get("best_performing_topics", [])
+    style = analysis.get("style", "")
+
+    trend_list = "\n".join([
+        f"{i+1}. [{tr.get('keyword', '')}] (skor: {tr.get('trend_score', 0)}, {tr.get('tweet_count', 0)} tweet) "
+        f"Öne çıkan: {' | '.join([(t.get('text', '')[:150]) for t in (tr.get('top_tweets', []) or [])[:2]])}"
+        for i, tr in enumerate(batch)
+    ])
+
+    try:
+        from backend.api.helpers import get_ai_client
+        client, model = get_ai_client()
+
+        prompt = f"""Kullanıcı profili:
+- İlgilendiği konular: {', '.join(topics)}
+- En iyi performans alan konular: {', '.join(best)}
+- Yazım tarzı: {style}
+- İlgilenmediği konular: {', '.join(avoid)}
+
+Aşağıdaki {len(batch)} trend konusunu bu kullanıcıya uygunluk açısından 1-10 arası skorla.
+10 = kullanıcının tarzına çok uygun, kesinlikle bu konuda paylaşım yapmalı
+1 = hiç ilgisi yok veya kaçınması gereken konu
+
+Trendler:
+{trend_list}
+
+Yanıtı sadece JSON array olarak döndür: [{{"idx": 1, "score": 8, "reason": "kısa neden"}}, ...]"""
+
+        response = await asyncio.to_thread(
+            lambda: client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2,
+            )
+        )
+
+        text = response.choices[0].message.content.strip()
+        import re as re_mod
+        json_match = re_mod.search(r'\[[\s\S]*\]', text)
+        if json_match:
+            scores = json.loads(json_match.group())
+        else:
+            return {"scored": 0, "error": "AI yanıt parse edilemedi"}
+
+        score_map = {s["idx"]: s for s in scores if "idx" in s}
+        for i, tr in enumerate(batch):
+            score_data = score_map.get(i + 1, {})
+            tr["ai_relevance_score"] = score_data.get("score", 5)
+            tr["ai_relevance_reason"] = score_data.get("reason", "")
+            tr["ai_scored_at"] = now.isoformat()
+
+        with open(trend_path, "w", encoding="utf-8") as f:
+            json.dump(trend_cache, f, ensure_ascii=False, indent=2)
+
+        return {"scored": len(batch), "message": f"{len(batch)} trend skorlandı"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("AI trend scoring error")
+        raise HTTPException(500, f"Trend skorlama hatası: {str(e)}")
+
+
+@router.post("/ai-score-suggestions")
+async def ai_score_suggestions():
+    """Akıllı önerileri kullanıcı profiline göre MiniMax ile skorla."""
+    import asyncio
+    import json
+    from pathlib import Path
+    from datetime import datetime
+
+    data_dir = Path(__file__).parent.parent.parent / "data"
+    analysis_path = data_dir / "my_tweets_analysis.json"
+    suggestions_path = data_dir / "clustered_suggestions.json"
+
+    if not analysis_path.exists():
+        raise HTTPException(400, "Önce kendi tweetlerinizi analiz edin")
+
+    with open(analysis_path, "r", encoding="utf-8") as f:
+        analysis_data = json.load(f)
+    analysis = analysis_data.get("analysis", {})
+    if not analysis:
+        raise HTTPException(400, "Analiz verisi boş")
+
+    if not suggestions_path.exists():
+        return {"scored": 0}
+
+    with open(suggestions_path, "r", encoding="utf-8") as f:
+        suggestions_cache = json.load(f)
+
+    suggestions = suggestions_cache.get("suggestions", [])
+    if not suggestions:
+        return {"scored": 0}
+
+    now = datetime.now()
+    to_score = []
+    for sg in suggestions[:50]:
+        last_scored = sg.get("ai_scored_at", "")
+        if last_scored:
+            try:
+                scored_time = datetime.fromisoformat(last_scored)
+                if (now - scored_time).total_seconds() < 3600:
+                    continue
+            except Exception:
+                pass
+        to_score.append(sg)
+
+    if not to_score:
+        return {"scored": 0, "message": "Tüm öneriler zaten skorlanmış"}
+
+    batch = to_score[:20]
+    topics = analysis.get("topics", [])
+    avoid = analysis.get("avoid_topics", [])
+    best = analysis.get("best_performing_topics", [])
+    style = analysis.get("style", "")
+
+    suggestion_list = "\n".join([
+        f"{i+1}. [{sg.get('type', 'trend')}] {sg.get('topic_tr', sg.get('topic', ''))} "
+        f"(engagement: {sg.get('engagement_potential', 0)}) "
+        f"Neden: {sg.get('reasoning', sg.get('reason', ''))[:150]}"
+        for i, sg in enumerate(batch)
+    ])
+
+    try:
+        from backend.api.helpers import get_ai_client
+        client, model = get_ai_client()
+
+        prompt = f"""Kullanıcı profili:
+- İlgilendiği konular: {', '.join(topics)}
+- En iyi performans alan konular: {', '.join(best)}
+- Yazım tarzı: {style}
+- İlgilenmediği konular: {', '.join(avoid)}
+
+Aşağıdaki {len(batch)} içerik önerisini bu kullanıcıya uygunluk açısından 1-10 arası skorla.
+10 = kullanıcının tarzına çok uygun, kesinlikle paylaşmalı
+1 = hiç ilgisi yok
+
+Öneriler:
+{suggestion_list}
+
+Yanıtı sadece JSON array olarak döndür: [{{"idx": 1, "score": 8, "reason": "kısa neden"}}, ...]"""
+
+        response = await asyncio.to_thread(
+            lambda: client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2,
+            )
+        )
+
+        text = response.choices[0].message.content.strip()
+        import re as re_mod
+        json_match = re_mod.search(r'\[[\s\S]*\]', text)
+        if json_match:
+            scores = json.loads(json_match.group())
+        else:
+            return {"scored": 0, "error": "AI yanıt parse edilemedi"}
+
+        score_map = {s["idx"]: s for s in scores if "idx" in s}
+        for i, sg in enumerate(batch):
+            score_data = score_map.get(i + 1, {})
+            sg["ai_relevance_score"] = score_data.get("score", 5)
+            sg["ai_relevance_reason"] = score_data.get("reason", "")
+            sg["ai_scored_at"] = now.isoformat()
+
+        with open(suggestions_path, "w", encoding="utf-8") as f:
+            json.dump(suggestions_cache, f, ensure_ascii=False, indent=2)
+
+        return {"scored": len(batch), "message": f"{len(batch)} öneri skorlandı"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("AI suggestion scoring error")
+        raise HTTPException(500, f"Öneri skorlama hatası: {str(e)}")

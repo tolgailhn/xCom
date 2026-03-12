@@ -360,6 +360,78 @@ def _auto_cluster_suggestions():
         logger.exception("Auto content suggestion/clustering error")
 
 
+def _auto_analyze_my_tweets(cache_path=None):
+    """Tweet çekiminden sonra otomatik MiniMax analizi yap."""
+    import json
+    from pathlib import Path
+    from datetime import datetime
+
+    if cache_path is None:
+        cache_path = Path(__file__).parent.parent / "data" / "my_tweets_cache.json"
+
+    if not cache_path.exists():
+        return
+
+    with open(cache_path, "r", encoding="utf-8") as f:
+        cache = json.load(f)
+
+    tweets = cache.get("tweets", [])
+    if not tweets:
+        return
+
+    top_tweets = tweets[:50]
+    tweet_texts = "\n---\n".join([
+        f"[{tw.get('like_count', 0)} like, {tw.get('retweet_count', 0)} RT] {tw['text'][:300]}"
+        for tw in top_tweets
+    ])
+
+    from backend.api.helpers import get_ai_client
+    client, model = get_ai_client()
+
+    prompt = f"""Aşağıda bir X (Twitter) kullanıcısının son 50 tweet'i var. Bunları analiz et ve şu bilgileri JSON olarak döndür:
+
+1. "topics": Kullanıcının en çok paylaşım yaptığı konular (liste, max 10)
+2. "style": Yazım tarzı özeti (2-3 cümle)
+3. "engagement_patterns": Hangi tür içerikler daha çok etkileşim alıyor (2-3 cümle)
+4. "best_performing_topics": En yüksek etkileşim alan konu başlıkları (liste, max 5)
+5. "avoid_topics": Kullanıcının paylaşmadığı/ilgilenmediği konular (liste, max 5)
+6. "posting_frequency": Günde ortalama kaç tweet
+7. "content_type_distribution": {{"haber_analizi": %, "kisisel_yorum": %, "teknik": %, "diger": %}}
+8. "recommended_topics": Bu kullanıcıya önerilecek konu önerileri (liste, max 5)
+
+Tweetler:
+{tweet_texts}
+
+Sadece JSON döndür, başka bir şey yazma."""
+
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+    )
+
+    text = response.choices[0].message.content.strip()
+    import re as re_mod
+    json_match = re_mod.search(r'\{[\s\S]*\}', text)
+    if json_match:
+        analysis = json.loads(json_match.group())
+    else:
+        analysis = {"raw_response": text}
+
+    result = {
+        "analysis": analysis,
+        "last_analyzed": datetime.now().isoformat(),
+        "tweet_count": len(top_tweets),
+        "username": cache.get("username", ""),
+    }
+
+    analysis_path = cache_path.parent / "my_tweets_analysis.json"
+    with open(analysis_path, "w", encoding="utf-8") as f:
+        json.dump(result, f, ensure_ascii=False, indent=2)
+
+    logger.info(f"Auto-analyze: {len(top_tweets)} tweets analyzed, topics: {analysis.get('topics', [])[:5]}")
+
+
 def _fetch_my_tweets():
     """Her 2 saatte kullanıcının kendi tweetlerini çek ve analiz et."""
     try:
@@ -427,6 +499,14 @@ def _fetch_my_tweets():
 
         _track_run("my_tweet_fetcher")
         logger.info(f"My tweets fetched: {len(tweets)} tweets for @{username}")
+
+        # Otomatik MiniMax analizi — tweet çekimi başarılıysa
+        if tweets:
+            try:
+                _auto_analyze_my_tweets(cache_path)
+                logger.info("Auto-analyze completed after tweet fetch")
+            except Exception:
+                logger.exception("Auto-analyze after fetch failed")
     except Exception:
         logger.exception("My tweets fetch error")
 
