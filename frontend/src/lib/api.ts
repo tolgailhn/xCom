@@ -535,3 +535,29 @@ export function getPostHistory() {
 export function clearPostHistory() {
   return apiFetch("/api/settings/post-history", { method: "DELETE" });
 }
+
+// ── Auto Self-Reply ──────────────────────────────────────
+
+export function getAutoReplySettings() {
+  return apiFetch("/api/auto-reply/settings");
+}
+
+export function saveAutoReplySettings(settings: {
+  enabled: boolean;
+  check_interval_minutes: number;
+  lookback_hours: number;
+  reply_style: string;
+}) {
+  return apiFetch("/api/auto-reply/settings", {
+    method: "POST",
+    body: JSON.stringify(settings),
+  });
+}
+
+export function getAutoReplyLog() {
+  return apiFetch("/api/auto-reply/log");
+}
+
+export function triggerAutoReply() {
+  return apiFetch("/api/auto-reply/run-now", { method: "POST" });
+}

@@ -2,7 +2,10 @@
 X AI Otomasyon - FastAPI Backend
 """
 import sys
+import asyncio
+import logging
 from pathlib import Path
+from contextlib import asynccontextmanager
 
 # Ensure project root is in sys.path so 'backend.xxx' imports work
 # regardless of which directory uvicorn is started from
@@ -23,10 +26,48 @@ from backend.api.settings import router as settings_router
 from backend.api.analytics import router as analytics_router
 from backend.api.calendar import router as calendar_router
 from backend.api.drafts import router as drafts_router
+from backend.api.auto_reply import router as auto_reply_router
+
+_logger = logging.getLogger("auto_reply_scheduler")
+
+
+async def _auto_reply_loop():
+    """Background loop that runs auto self-reply on configured interval."""
+    await asyncio.sleep(30)  # initial delay to let app fully start
+    while True:
+        try:
+            from backend.modules.style_manager import load_auto_reply_settings
+            settings = load_auto_reply_settings()
+            interval = max(settings.get("check_interval_minutes", 30), 15) * 60
+
+            if settings.get("enabled"):
+                from backend.modules.auto_reply import run_auto_reply_cycle
+                result = await asyncio.to_thread(run_auto_reply_cycle)
+                _logger.info(f"Auto-reply cycle done: {result}")
+
+            await asyncio.sleep(interval)
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            _logger.error(f"Auto-reply loop error: {e}")
+            await asyncio.sleep(300)  # 5 min cooldown on error
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(_auto_reply_loop())
+    yield
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
 
 app = FastAPI(
     title="X AI Otomasyon API",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # CORS - frontend'in backend'e erismesi icin
@@ -51,6 +92,7 @@ app.include_router(settings_router, prefix="/api/settings", tags=["settings"])
 app.include_router(analytics_router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(calendar_router, prefix="/api/calendar", tags=["calendar"])
 app.include_router(drafts_router, prefix="/api/drafts", tags=["drafts"])
+app.include_router(auto_reply_router, prefix="/api/auto-reply", tags=["auto-reply"])
 
 
 @app.get("/api/health")
