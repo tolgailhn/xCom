@@ -456,7 +456,7 @@ def _fetch_my_tweets():
             return
 
         from backend.modules.tweet_analyzer import pull_user_tweets
-        raw_tweets = pull_user_tweets(username, count=100, twikit_client=client)
+        raw_tweets = pull_user_tweets(client, username, count=100)
 
         tweets = []
         for tw in raw_tweets:

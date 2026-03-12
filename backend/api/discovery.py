@@ -835,7 +835,7 @@ async def fetch_my_tweets(body: dict = None):
             raise HTTPException(500, "Twikit auth başarısız")
 
         from backend.modules.tweet_analyzer import pull_user_tweets
-        raw_tweets = await asyncio.to_thread(pull_user_tweets, username, count=100, twikit_client=client)
+        raw_tweets = await asyncio.to_thread(pull_user_tweets, client, username, count=100)
 
         tweets = []
         for tw in raw_tweets:
