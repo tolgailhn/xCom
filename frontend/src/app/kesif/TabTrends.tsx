@@ -1347,6 +1347,63 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
                     {/* Trend-level generated tweet */}
                     {activeGenerate === key && generated && (
                       <div className="space-y-3">
+                        {generated.thread_parts && generated.thread_parts.length > 1 ? (
+                          <>
+                            {/* Thread preview */}
+                            <div className="bg-[var(--bg-secondary)]/60 rounded-lg p-3 border border-[var(--accent-purple)]/30 space-y-2">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-purple)]/20 text-[var(--accent-purple)] font-medium">
+                                  Thread ({generated.thread_parts.length} tweet)
+                                </span>
+                                {generated.score > 0 && (
+                                  <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${generated.score >= 80 ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)]" : generated.score >= 60 ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]" : "bg-[var(--text-secondary)]/20 text-[var(--text-secondary)]"}`}>
+                                    {generated.score}/100
+                                  </span>
+                                )}
+                              </div>
+                              {generated.thread_parts.map((part, i) => (
+                                <div key={i} className="flex gap-2 items-start">
+                                  <span className="text-[10px] text-[var(--accent-purple)] font-bold mt-0.5 shrink-0">{i + 1}/{generated.thread_parts!.length}</span>
+                                  <p className="text-xs text-[var(--text-primary)] leading-relaxed">{part.replace(/^\d+\/\s*/, "")}</p>
+                                </div>
+                              ))}
+                            </div>
+                            {/* Thread action buttons */}
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await publishTweet({ text: generated.thread_parts![0], thread_parts: generated.thread_parts });
+                                  } catch {}
+                                }}
+                                className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
+                                style={{ background: "linear-gradient(135deg, var(--accent-purple), var(--accent-blue))" }}
+                              >
+                                Thread Paylas
+                              </button>
+                              <button
+                                onClick={() => openInX(generated.thread_parts![0].replace(/^\d+\/\s*/, ""))}
+                                className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
+                                style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}
+                              >
+                                X&apos;te Ac (ilk tweet)
+                              </button>
+                              <button onClick={() => copyText(generated.thread_parts!.join("\n\n"), key)} className="btn-secondary text-xs">Kopyala</button>
+                              <button onClick={() => handleGenerate(trend)} disabled={isGenerating} className="btn-secondary text-xs">{isGenerating ? "..." : "Yeniden Uret"}</button>
+                              <button onClick={() => handleSaveDraft(key)} className="btn-secondary text-xs">Taslak Kaydet</button>
+                              <button onClick={() => setShowSchedule(showSchedule === key ? null : key)} className="btn-secondary text-xs">Zamanla</button>
+                            </div>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              <button onClick={() => handleFindMedia(key, generated.thread_parts![0])} disabled={mediaLoading === key} className="btn-secondary text-xs">
+                                {mediaLoading === key ? "Araniyor..." : "Gorsel/Video Bul"}
+                              </button>
+                              <button onClick={() => handleInfographic(key, generated.thread_parts!.join("\n\n"), research?.key_points || [])} disabled={infographicLoading === key} className="btn-secondary text-xs">
+                                {infographicLoading === key ? "Olusturuluyor..." : "Gemini Infografik"}
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
                         {/* Tweet card preview */}
                         <div className="rounded-xl bg-[var(--bg-primary)] border border-[var(--border)] p-4">
                           <div className="flex items-start gap-3">
@@ -1389,6 +1446,8 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
                             {infographicLoading === key ? "Olusturuluyor..." : "Gemini Infografik"}
                           </button>
                         </div>
+                          </>
+                        )}
                         {showSchedule === key && (
                           <div className="flex items-center gap-2 p-2 rounded bg-[var(--bg-primary)]">
                             <input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]" />
