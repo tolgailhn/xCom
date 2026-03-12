@@ -92,6 +92,17 @@ function ScoreGauge({ score }: { score: number }) {
   );
 }
 
+/* ── Category Helper ───────────────────────────────── */
+
+function getAccountCategory(account: SuggestedAccount): { label: string; color: string } {
+  const bio = (account.sample_tweet || '').toLowerCase();
+  if (/researcher|professor|phd|scientist|lab\b/i.test(bio)) return { label: 'Arastirmaci', color: 'var(--accent-purple)' };
+  if (/founder|ceo|cto|co-founder/i.test(bio)) return { label: 'Kurucu', color: 'var(--accent-green)' };
+  if (/engineer|developer|dev\b|coding|programmer/i.test(bio)) return { label: 'Gelistirici', color: 'var(--accent-blue)' };
+  if (/journalist|reporter|editor|writer/i.test(bio)) return { label: 'Gazeteci', color: 'var(--accent-amber)' };
+  return { label: 'AI Icerik', color: 'var(--text-secondary)' };
+}
+
 /* ── Component ──────────────────────────────────────── */
 
 export default function TabSuggestedAccounts() {
@@ -99,6 +110,9 @@ export default function TabSuggestedAccounts() {
   const [loading, setLoading] = useState(true);
   const [discovering, setDiscovering] = useState(false);
   const [actionMsg, setActionMsg] = useState("");
+
+  // Batch selection
+  const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(new Set());
 
   // Sort & filter
   const [sortBy, setSortBy] = useState<SortKey>("score");
@@ -144,8 +158,36 @@ export default function TabSuggestedAccounts() {
   const handleDismiss = async (username: string) => {
     try {
       await dismissSuggestedAccount(username);
+      setSelectedAccounts(prev => { const next = new Set(prev); next.delete(username); return next; });
       await loadAccounts();
     } catch { /* ignore */ }
+  };
+
+  const toggleSelect = (username: string) => {
+    setSelectedAccounts(prev => {
+      const next = new Set(prev);
+      if (next.has(username)) next.delete(username);
+      else next.add(username);
+      return next;
+    });
+  };
+
+  const handleBatchAccept = async () => {
+    for (const username of selectedAccounts) {
+      try { await acceptSuggestedAccount(username, false); } catch { /* ignore */ }
+    }
+    setSelectedAccounts(new Set());
+    setActionMsg(`${selectedAccounts.size} hesap eklendi!`);
+    await loadAccounts();
+    setTimeout(() => setActionMsg(""), 3000);
+  };
+
+  const handleBatchDismiss = async () => {
+    for (const username of selectedAccounts) {
+      try { await dismissSuggestedAccount(username); } catch { /* ignore */ }
+    }
+    setSelectedAccounts(new Set());
+    await loadAccounts();
   };
 
   const handleSearch = async () => {
@@ -225,6 +267,33 @@ export default function TabSuggestedAccounts() {
           </button>
         </div>
       </div>
+
+      {/* ── Batch Actions ── */}
+      {selectedAccounts.size > 0 && (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--accent-blue)]/10 border border-[var(--accent-blue)]/30">
+          <span className="text-xs font-medium text-[var(--accent-blue)]">{selectedAccounts.size} hesap secildi</span>
+          <div className="flex gap-2 ml-auto">
+            <button
+              onClick={handleBatchAccept}
+              className="px-4 py-1.5 rounded-lg text-xs font-medium bg-[var(--accent-green)]/20 text-[var(--accent-green)] border border-[var(--accent-green)]/30 hover:border-[var(--accent-green)]/60 transition-all"
+            >
+              Secilenleri Ekle
+            </button>
+            <button
+              onClick={handleBatchDismiss}
+              className="px-4 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--accent-red)] hover:bg-[var(--accent-red)]/10 border border-[var(--border)] transition-all"
+            >
+              Secilenleri Gec
+            </button>
+            <button
+              onClick={() => setSelectedAccounts(new Set())}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+            >
+              Temizle
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Action Message ── */}
       {actionMsg && (
@@ -388,16 +457,26 @@ export default function TabSuggestedAccounts() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {displayAccounts.map((acc) => {
             const color = scoreColor(acc.score);
+            const category = getAccountCategory(acc);
+            const isSelected = selectedAccounts.has(acc.username);
 
             return (
               <div
                 key={acc.username}
-                className="glass-card overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-[var(--accent-blue)]/5 group"
+                className={`glass-card overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-[var(--accent-blue)]/5 group ${isSelected ? "ring-2 ring-[var(--accent-blue)]/50" : ""}`}
                 style={{ borderLeft: `3px solid ${color}` }}
               >
                 <div className="p-4 flex flex-col gap-3">
-                  {/* ── Top row: Avatar + Info + Score Gauge ── */}
+                  {/* ── Top row: Checkbox + Avatar + Info + Score Gauge ── */}
                   <div className="flex items-center gap-3">
+                    {/* Checkbox */}
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleSelect(acc.username)}
+                      className="w-4 h-4 shrink-0 rounded border-[var(--border)] accent-[var(--accent-blue)] cursor-pointer"
+                    />
+
                     {/* Avatar */}
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[var(--accent-blue)] to-[var(--accent-purple)] flex items-center justify-center text-white text-lg font-bold shrink-0 transition-transform duration-300 group-hover:scale-105">
                       {acc.username[0]?.toUpperCase()}
@@ -417,8 +496,14 @@ export default function TabSuggestedAccounts() {
                     <ScoreGauge score={acc.score} />
                   </div>
 
-                  {/* ── Stats Badges ── */}
+                  {/* ── Category Badge + Stats Badges ── */}
                   <div className="flex gap-2 flex-wrap">
+                    <span
+                      className="text-[10px] px-2 py-0.5 rounded-full font-medium border"
+                      style={{ color: category.color, borderColor: category.color + '33', backgroundColor: category.color + '1a' }}
+                    >
+                      {category.label}
+                    </span>
                     {acc.followers > 0 && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] border border-[var(--accent-blue)]/20">
                         {formatFollowers(acc.followers)} takipci
@@ -431,6 +516,11 @@ export default function TabSuggestedAccounts() {
                       {acc.appearances}x goruldu
                     </span>
                   </div>
+
+                  {/* ── Score Breakdown ── */}
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                    {acc.appearances}x goruldu &bull; Ort. {Math.round(acc.avg_engagement)} etkilesim &bull; {acc.followers?.toLocaleString() || '?'} takipci
+                  </p>
 
                   {/* ── Sample Tweet ── */}
                   {acc.sample_tweet && (
