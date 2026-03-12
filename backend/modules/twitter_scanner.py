@@ -131,11 +131,14 @@ SPAM_PATTERNS = [
     r"(?i)(retweet if|like if|who else|raise your hand|tag someone)",
     r"(?i)(alpha leak|insider info|you won'?t believe|secret.{0,10}reveal)",
     # English greetings / casual / low-value content
-    r"(?i)^(good morning|good night|good evening|hello|hey|hi|gm|gn)[.!?\s]*$",
+    r"(?i)^(good morning|good night|good evening|hello|hey|hi|gm|gn)\b",  # GM with anything after
+    r"(?i)^(gm|gn)\s",  # "GM CT", "GM fam", "GN everyone" etc.
+    r"(?i)(how('?s| is) your (day|week|weekend|morning|evening))",  # engagement bait questions
+    r"(?i)^(hey|hello|hi|yo)\s+(fam|gang|ct|community|friends|everyone|team|folks)",
     r"(?i)(happy (monday|tuesday|wednesday|thursday|friday|saturday|sunday))",
     r"(?i)(happy new year|happy holidays|merry christmas|happy thanksgiving|happy easter)",
-    r"(?i)^(have a (great|good|nice|wonderful) (day|week|weekend|evening|night))[.!?\s]*$",
-    r"(?i)^(thank you all|thanks everyone|appreciate it|grateful for)[.!?\s]*$",
+    r"(?i)^(have a (great|good|nice|wonderful) (day|week|weekend|evening|night))\b",
+    r"(?i)^(thank you all|thanks everyone|appreciate it|grateful for)\b",
     r"(?i)^(what a (day|week|time|journey|ride))[.!?\s]*$",
     # Personal updates / non-informative
     r"(?i)^(feeling|just woke up|can'?t sleep|so tired|need coffee|coffee time)",
@@ -459,7 +462,7 @@ def is_low_quality_discovery(text: str) -> bool:
     if not text:
         return True
 
-    # Definite spam → reject
+    # Definite spam → reject (checks patterns regardless of length)
     if is_spam(text):
         return True
 
@@ -476,6 +479,21 @@ def is_low_quality_discovery(text: str) -> bool:
         if "github.com" in text_lower or "huggingface.co" in text_lower or "arxiv.org" in text_lower:
             return False
         return True
+
+    # Even for long tweets, check greeting/casual patterns specifically
+    # (is_spam already handles most, but this catches edge cases)
+    text_no_urls_lower = text_no_urls.lower().strip()
+    greeting_patterns = [
+        r"(?i)^(gm|gn)\s",
+        r"(?i)^(good morning|good night|good evening)\b",
+        r"(?i)(how('?s| is) your (day|week|weekend|morning))",
+    ]
+    for pat in greeting_patterns:
+        if re.search(pat, text_no_urls_lower):
+            # But allow if it also contains AI keywords
+            if any(kw in text_no_urls_lower for kw in _QUICK_AI_KEYWORDS):
+                return False
+            return True
 
     return False
 

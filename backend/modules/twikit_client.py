@@ -818,6 +818,25 @@ class TwikitSearchClient:
                         'type': 'image',
                     })
 
+        # URL entities — extract expanded URLs from t.co links
+        tweet_urls = []
+        try:
+            raw_urls = getattr(tweet, 'urls', None) or []
+            for u in raw_urls:
+                if isinstance(u, dict):
+                    expanded = u.get('expanded_url', '') or u.get('url', '')
+                    display = u.get('display_url', '')
+                else:
+                    expanded = getattr(u, 'expanded_url', '') or getattr(u, 'url', '')
+                    display = getattr(u, 'display_url', '')
+                if expanded and 'pic.twitter.com' not in expanded and 'twitter.com/i/' not in expanded:
+                    tweet_urls.append({
+                        'url': expanded,
+                        'display_url': display or expanded,
+                    })
+        except Exception:
+            pass
+
         # in_reply_to — needed by self-reply worker to filter out replies
         in_reply_to = (getattr(tweet, 'in_reply_to_tweet_id', None)
                        or getattr(tweet, 'in_reply_to_status_id', None)
@@ -840,6 +859,7 @@ class TwikitSearchClient:
             'impression_count': _safe_int(getattr(tweet, 'view_count', 0)),
             'media_urls': media_urls,
             'media_items': media_items,
+            'urls': tweet_urls,
         }
 
     def get_tweet_by_id(self, tweet_id: str) -> dict | None:

@@ -350,13 +350,14 @@ def _discover_new_accounts():
 
 
 def _auto_cluster_suggestions():
-    """Her 2 saatte akıllı önerileri otomatik kümele (trend + haber verileriyle)."""
+    """Her 30 dakikada akıllı önerileri otomatik kümele (trend verilerinden)."""
     try:
-        from backend.auto_content_suggester import suggest_content_from_trends
-        suggest_content_from_trends()
+        from backend.trend_analyzer import analyze_trends
+        # analyze_trends() internally calls _cluster_smart_suggestions()
+        analyze_trends()
         _track_run("auto_content_suggester")
     except Exception:
-        logger.exception("Auto content suggestion error")
+        logger.exception("Auto content suggestion/clustering error")
 
 
 def start_scheduler():

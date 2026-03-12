@@ -10,6 +10,9 @@ import {
   addDraft,
   schedulePost,
   findMedia,
+  extractTweet,
+  TweetMediaItem,
+  TweetUrl,
 } from "@/lib/api";
 
 /* ── Types ──────────────────────────────────────────── */
@@ -19,6 +22,7 @@ interface ClusterTweet {
   account: string;
   engagement: number;
   tweet_id?: string;
+  tweet_url?: string;
 }
 
 interface Suggestion {
@@ -89,6 +93,10 @@ function engagementBgClass(val: number): string {
   return "from-[var(--bg-secondary)] to-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)]";
 }
 
+function isGMTweet(text: string): boolean {
+  return /^(gm|gn|good morning|good night|good evening)\b/i.test(text.trim()) || /how('?s| is) your (day|week|weekend|morning)/i.test(text);
+}
+
 /* ── Component ──────────────────────────────────────── */
 
 export default function TabSmartSuggestions() {
@@ -128,6 +136,10 @@ export default function TabSmartSuggestions() {
   // Media
   const [mediaResults, setMediaResults] = useState<Record<number, Array<{ url: string; title?: string; thumbnail_url?: string; preview?: string; source?: string }>>>({});
   const [mediaLoading, setMediaLoading] = useState<number | null>(null);
+
+  // Extracted tweet media/URLs per suggestion
+  const [suggestionMedia, setSuggestionMedia] = useState<Record<number, TweetMediaItem[]>>({});
+  const [suggestionUrls, setSuggestionUrls] = useState<Record<number, TweetUrl[]>>({});
 
   // Refs for scroll
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({});
@@ -208,12 +220,36 @@ export default function TabSmartSuggestions() {
     }));
 
     try {
+      const firstTweet = suggestion.tweets?.[0] || suggestion.top_tweets?.[0];
       let researchTopic = suggestion.topic;
+
+      // Use extractTweet to get full tweet content + media + urls
+      if (firstTweet?.tweet_url || (firstTweet?.account && firstTweet?.tweet_id)) {
+        const tweetUrl = (firstTweet as { tweet_url?: string }).tweet_url || `https://x.com/${firstTweet.account}/status/${firstTweet.tweet_id}`;
+        try {
+          const extracted = await extractTweet(tweetUrl);
+          if (extracted?.full_thread_text) {
+            researchTopic = extracted.full_thread_text;
+          } else if (extracted?.text) {
+            researchTopic = extracted.text;
+          }
+          // Store media and URLs
+          if (extracted?.media_items?.length) {
+            setSuggestionMedia(prev => ({...prev, [idx]: [...(extracted.media_items || []), ...(extracted.thread_media || [])]}));
+          }
+          const allUrls = [...(extracted?.urls || []), ...(extracted?.thread_urls || [])];
+          if (allUrls.length) {
+            setSuggestionUrls(prev => ({...prev, [idx]: allUrls}));
+          }
+        } catch (e) {
+          // extractTweet failed, continue with suggestion.topic
+        }
+      }
+
       if (suggestion.url) {
         researchTopic += `\n\nKaynak: ${suggestion.url}`;
       }
 
-      const firstTweet = suggestion.tweets?.[0] || suggestion.top_tweets?.[0];
       const result = await researchTopicStream(
         {
           topic: researchTopic,
@@ -694,10 +730,10 @@ export default function TabSmartSuggestions() {
                     )}
 
                     {/* Trend tweets */}
-                    {tweets.length > 0 && (
+                    {tweets.filter(t => !isGMTweet(t.text)).length > 0 && (
                       <div className="space-y-2">
                         <h4 className="text-xs font-semibold text-[var(--text-secondary)] mb-1">Ilgili Tweetler</h4>
-                        {tweets.map((tw, i) => (
+                        {tweets.filter(t => !isGMTweet(t.text)).map((tw, i) => (
                           <div key={i} className="flex items-start gap-2.5 text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2.5 border border-[var(--border)] hover:border-[var(--accent-blue)]/30 transition-colors">
                             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--accent-blue)]/20 to-[var(--accent-purple)]/20 flex items-center justify-center text-[10px] font-bold text-[var(--accent-blue)] shrink-0">
                               {tw.account.charAt(0).toUpperCase()}
@@ -801,6 +837,55 @@ export default function TabSmartSuggestions() {
                             </div>
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* ── Tweet Media (from extractTweet) ── */}
+                    {suggestionMedia[idx]?.length > 0 && (
+                      <div className="mt-3 glass-card p-3 rounded-xl">
+                        <h4 className="text-sm font-semibold mb-2 text-[var(--text-secondary)]">Tweet Gorselleri</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {suggestionMedia[idx].map((m, mi) => (
+                            <div key={mi} className="relative group rounded-lg overflow-hidden border border-[var(--border-primary)]/30">
+                              {m.type === 'image' ? (
+                                <img src={m.url} alt="" className="w-full h-32 object-cover" />
+                              ) : (
+                                <div className="w-full h-32 bg-[var(--bg-tertiary)] flex items-center justify-center relative">
+                                  <span className="text-2xl">&#127916;</span>
+                                  {m.thumbnail && <img src={m.thumbnail} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60" />}
+                                </div>
+                              )}
+                              <a href={m.url} target="_blank" rel="noopener noreferrer"
+                                className="absolute bottom-1 right-1 px-2 py-1 rounded-md text-xs font-medium bg-[var(--accent-blue)] text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                {m.type === 'video' ? 'Video Indir' : 'Indir'}
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Tweet URLs (from extractTweet) ── */}
+                    {suggestionUrls[idx]?.length > 0 && (
+                      <div className="mt-3 glass-card p-3 rounded-xl">
+                        <h4 className="text-sm font-semibold mb-2 text-[var(--text-secondary)]">Baglantilar</h4>
+                        <div className="space-y-1.5">
+                          {suggestionUrls[idx].map((u, ui) => (
+                            <div key={ui} className="flex items-center gap-2 text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2 border border-[var(--border)]">
+                              <a href={u.url} target="_blank" rel="noopener noreferrer"
+                                className="flex-1 text-[var(--accent-blue)] hover:underline truncate">
+                                {u.display_url || u.url}
+                              </a>
+                              <button
+                                onClick={() => { navigator.clipboard.writeText(u.url); }}
+                                className="shrink-0 px-2 py-0.5 rounded text-[10px] font-medium bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                                title="Kopyala"
+                              >
+                                Kopyala
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
 

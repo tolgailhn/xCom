@@ -749,6 +749,17 @@ export interface DiscoveryConfig {
   work_hour_end: number;
 }
 
+export interface TweetMediaItem {
+  url: string;
+  thumbnail?: string;
+  type: "image" | "video";
+}
+
+export interface TweetUrl {
+  url: string;
+  display_url: string;
+}
+
 export interface DiscoveryTweet {
   tweet_id: string;
   account: string;
@@ -762,11 +773,13 @@ export interface DiscoveryTweet {
   display_score: number;
   is_priority: boolean;
   importance: "yuksek" | "orta" | "dusuk";
-  thread_parts: { text: string; id: string }[];
+  thread_parts: { text: string; id: string; media_items?: TweetMediaItem[]; urls?: TweetUrl[] }[];
   is_thread: boolean;
   summary_tr: string;
   tweet_url: string;
   scanned_at: string;
+  media_items?: TweetMediaItem[];
+  urls?: TweetUrl[];
 }
 
 export interface DiscoveryStatus {

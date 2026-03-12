@@ -248,16 +248,25 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
     except ImportError:
         _is_spam_check = None
 
-    # Collect all top tweets from all trends (skip spam)
+    # Also import low-quality checker for broader filtering
+    try:
+        from backend.modules.twitter_scanner import is_low_quality_discovery as _is_lq_check
+    except ImportError:
+        _is_lq_check = None
+
+    # Collect all top tweets from all trends (skip spam/GM)
     all_tweets = []
     tweet_meta = []  # Keep track of source info
     skipped_spam = 0
     for trend in trends[:15]:  # Max 15 trends
         for tw in trend.get("top_tweets", [])[:5]:
-            text = (tw.get("text") or "")[:200].strip()
+            text = (tw.get("text") or "")[:500].strip()  # 500 chars for better semantic understanding
             if not text or text in [t["text"] for t in tweet_meta]:
                 continue
-            # Skip low-quality tweets from clustering input
+            # Skip low-quality/GM tweets from clustering input
+            if _is_lq_check and _is_lq_check(text):
+                skipped_spam += 1
+                continue
             if _is_spam_check and _is_spam_check(text):
                 skipped_spam += 1
                 continue
@@ -267,6 +276,7 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
                 "account": tw.get("account", ""),
                 "engagement": tw.get("engagement", 0),
                 "keyword": trend.get("keyword", ""),
+                "tweet_id": tw.get("tweet_id", ""),
             })
     if skipped_spam:
         logger.info("Clustering: skipped %d spam tweets from input", skipped_spam)
@@ -275,23 +285,26 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
         logger.info("Clustering: too few tweets (%d), skipping", len(all_tweets))
         return
 
-    # Build prompt for AI clustering
+    # Build prompt for AI clustering — include engagement data for context
     tweets_text = "\n".join(
-        f"[{i}] @{tweet_meta[i]['account']}: {tweet_meta[i]['text']}"
+        f"[{i}] @{tweet_meta[i]['account']} (❤️{tweet_meta[i].get('engagement', 0)}): {tweet_meta[i]['text']}"
         for i in range(len(all_tweets))
     )
 
     prompt = (
-        "Bu tweet'leri SPESİFİK konulara göre grupla.\n"
-        "Her grup TEK BİR olay/duyuru/tartışma hakkında olmalı.\n\n"
+        "Bu tweet'leri SEMANTIK BENZERLIGE göre grupla.\n"
+        "Her grup TEK BİR olay/duyuru/ürün/tartışma hakkında olmalı.\n"
+        "AYNI KONU hakkında farklı kişilerin yazdığı tweetleri AYNI GRUBA koy.\n\n"
         "KURALLAR:\n"
-        "1. GENELLEMELERDEN KAÇIN — 'AI gelişmeleri' değil, 'Google Gemini 2.5 Flash Çıkışı' gibi spesifik ol\n"
-        "2. Her konu başlığı EN AZ 3 kelime olmalı ve spesifik bir olay/ürün/duyuru içermeli\n"
-        "3. Birbiriyle ÇOK benzer konuları (aynı ürün, aynı şirket, aynı olay) MUTLAKA birleştir\n"
-        "4. Birbirine benzemeyen tweet'leri aynı gruba KOYMA\n"
-        "5. Tek başına kalan tweet'ler için de ayrı grup oluştur\n"
-        "6. topic_title_tr ZORUNLU — her konu için Türkçe başlık MUTLAKA yaz\n"
-        "7. description_tr ZORUNLU — her konu için 'Bu konu neden önemli?' 1-2 cümle Türkçe açıklama yaz\n\n"
+        "1. SEMANTIK ANALIZ YAP — sadece keyword eşleşmesine bakma, anlam benzerliğine bak\n"
+        "2. Aynı ürün/olay/duyuru hakkındaki tweetleri MUTLAKA birleştir (ör: 'GPT-5 launched', 'OpenAI releases GPT-5', 'New GPT model' → HEPSİ AYNI GRUP)\n"
+        "3. Her konu başlığı EN AZ 3 kelime olmalı ve spesifik bir olay/ürün/duyuru içermeli\n"
+        "4. GENELLEMELERDEN KAÇIN — 'AI gelişmeleri' değil, 'Google Gemini 2.5 Flash Çıkışı' gibi spesifik ol\n"
+        "5. Birbirine BENZEMEYEN tweet'leri aynı gruba KOYMA\n"
+        "6. TEK tweet grubu YAPMA — eğer bir tweet hiçbir gruba uymuyorsa, onu dahil ETME\n"
+        "7. topic_title_tr ZORUNLU — Türkçe başlık MUTLAKA yaz\n"
+        "8. description_tr ZORUNLU — 'Bu konu neden önemli?' 1-2 cümle Türkçe açıklama yaz\n"
+        "9. Engagement yüksek olan grupları (toplam ❤️) daha yüksek engagement_potential ver\n\n"
         f"Tweet'ler:\n{tweets_text}\n\n"
         "SADECE JSON array döndür, başka bir şey yazma:\n"
         '[{"topic_title": "specific English topic title (min 3 words)", '

@@ -926,9 +926,24 @@ async def extract_tweet_endpoint(request: ExtractTweetRequest):
                             "retweet_count": main.get("retweet_count", 0),
                             "reply_count": main.get("reply_count", 0),
                             "media_items": main.get("media_items", []),
+                            "urls": main.get("urls", []),
                         }
                         if len(thread_data) > 1:
                             thread_tweets = [t.get("text", "") for t in thread_data if t.get("text")]
+                            # Collect URLs from all thread tweets
+                            all_thread_urls = []
+                            for t in thread_data:
+                                for u in (t.get("urls") or []):
+                                    if u not in all_thread_urls:
+                                        all_thread_urls.append(u)
+                            tweet_data["thread_urls"] = all_thread_urls
+                            # Collect media from all thread tweets
+                            all_thread_media = []
+                            for t in thread_data:
+                                for m in (t.get("media_items") or []):
+                                    if m not in all_thread_media:
+                                        all_thread_media.append(m)
+                            tweet_data["thread_media"] = all_thread_media
                     else:
                         # Fallback to single tweet
                         result = await asyncio.to_thread(twikit.get_tweet_by_id, tweet_id)
@@ -941,6 +956,7 @@ async def extract_tweet_endpoint(request: ExtractTweetRequest):
                                 "retweet_count": result.get("retweet_count", 0),
                                 "reply_count": result.get("reply_count", 0),
                                 "media_items": result.get("media_items", []),
+                                "urls": result.get("urls", []),
                             }
             except Exception as e:
                 logger.warning(f"Twikit tweet fetch failed: {e}")
@@ -956,6 +972,7 @@ async def extract_tweet_endpoint(request: ExtractTweetRequest):
                 "retweet_count": tweet_data.get("retweet_count", 0),
                 "reply_count": tweet_data.get("reply_count", 0),
                 "media_items": tweet_data.get("media_items", []),
+                "urls": tweet_data.get("urls", []),
             }
             # Include thread data if available
             if thread_tweets and len(thread_tweets) > 1:
@@ -964,6 +981,9 @@ async def extract_tweet_endpoint(request: ExtractTweetRequest):
                 response["thread_count"] = len(thread_tweets)
                 # Combine all thread texts for display
                 response["full_thread_text"] = "\n\n".join(thread_tweets)
+                # Include thread URLs and media
+                response["thread_urls"] = tweet_data.get("thread_urls", [])
+                response["thread_media"] = tweet_data.get("thread_media", [])
             else:
                 response["is_thread"] = False
                 response["thread_tweets"] = []

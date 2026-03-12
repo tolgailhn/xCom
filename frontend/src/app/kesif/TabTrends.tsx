@@ -12,6 +12,8 @@ import {
   getStyles,
   addDraft,
   schedulePost,
+  TweetMediaItem,
+  TweetUrl,
 } from "@/lib/api";
 
 /* ── Types ──────────────────────────────────────────── */
@@ -103,6 +105,10 @@ function formatEngagement(n: number): string {
   return n.toFixed(0);
 }
 
+function isGMTweet(text: string): boolean {
+  return /^(gm|gn|good morning|good night|good evening)\b/i.test(text.trim()) || /how('?s| is) your (day|week|weekend|morning)/i.test(text);
+}
+
 /* ── Component ──────────────────────────────────────── */
 
 export default function TabTrends() {
@@ -139,6 +145,13 @@ export default function TabTrends() {
   const [tweetGeneratingKey, setTweetGeneratingKey] = useState<string | null>(null);
   const [tweetEditedTexts, setTweetEditedTexts] = useState<Record<string, string>>({});
   const [activeTweetKey, setActiveTweetKey] = useState<string | null>(null);
+
+  // Per-tweet media & URLs
+  const [tweetMedia, setTweetMedia] = useState<Record<string, TweetMediaItem[]>>({});
+  const [tweetUrls, setTweetUrls] = useState<Record<string, TweetUrl[]>>({});
+
+  // GM tweet filter
+  const [hideGM, setHideGM] = useState(true);
 
   // Style/format/provider
   const [styles, setStyles] = useState<StyleOption[]>([]);
@@ -279,6 +292,18 @@ export default function TabTrends() {
             } else if (extracted?.text) {
               topic = extracted.text;
             }
+            // Capture media and URLs
+            const tweetId = `${key}::0`;
+            if (extracted?.media_items?.length) {
+              setTweetMedia(prev => ({...prev, [tweetId]: extracted.media_items}));
+            }
+            const allUrls = [...(extracted?.urls || []), ...(extracted?.thread_urls || [])];
+            if (allUrls.length) {
+              setTweetUrls(prev => ({...prev, [tweetId]: allUrls}));
+            }
+            if (extracted?.thread_media?.length) {
+              setTweetMedia(prev => ({...prev, [tweetId]: [...(prev[tweetId] || []), ...extracted.thread_media]}));
+            }
           }
         } catch {
           // Fallback: use first tweet text + keyword
@@ -372,6 +397,17 @@ export default function TabTrends() {
           const extracted = await extractTweet(tweetUrl);
           if (extracted?.full_thread_text) fullText = extracted.full_thread_text;
           else if (extracted?.text) fullText = extracted.text;
+          // Capture media and URLs
+          if (extracted?.media_items?.length) {
+            setTweetMedia(prev => ({...prev, [compositeKey]: extracted.media_items}));
+          }
+          const allUrls = [...(extracted?.urls || []), ...(extracted?.thread_urls || [])];
+          if (allUrls.length) {
+            setTweetUrls(prev => ({...prev, [compositeKey]: allUrls}));
+          }
+          if (extracted?.thread_media?.length) {
+            setTweetMedia(prev => ({...prev, [compositeKey]: [...(prev[compositeKey] || []), ...extracted.thread_media]}));
+          }
         }
       } catch { /* use original text */ }
 
@@ -568,6 +604,16 @@ export default function TabTrends() {
           }`}
         >
           Guclu Trendler
+        </button>
+        <button
+          onClick={() => setHideGM(!hideGM)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+            hideGM
+              ? "bg-[var(--accent-red)]/20 text-[var(--accent-red)] border-[var(--accent-red)]/30"
+              : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--accent-red)]/50"
+          }`}
+        >
+          GM/GN Gizle
         </button>
         <select
           value={filterMinScore}
@@ -789,8 +835,9 @@ export default function TabTrends() {
                           Tweet&apos;ler ({trend.top_tweets.length})
                         </div>
                         <div className="space-y-3">
-                          {trend.top_tweets.map((tw, i) => {
-                            const compositeKey = `${key}::${i}`;
+                          {trend.top_tweets.filter(t => !hideGM || !isGMTweet(t.text)).map((tw, i) => {
+                            const origIdx = trend.top_tweets.indexOf(tw);
+                            const compositeKey = `${key}::${origIdx}`;
                             const twResearch = tweetResearchData[compositeKey];
                             const twGenerated = tweetGeneratedTexts[compositeKey];
                             const twEdited = tweetEditedTexts[compositeKey] || "";
@@ -854,7 +901,7 @@ export default function TabTrends() {
                                       </a>
                                     )}
                                     <button
-                                      onClick={() => handleTweetResearch(trend, i)}
+                                      onClick={() => handleTweetResearch(trend, origIdx)}
                                       disabled={isTwResearching}
                                       className="px-2.5 py-1.5 text-[11px] font-medium rounded-lg bg-[var(--accent-green)]/15 text-[var(--accent-green)] hover:bg-[var(--accent-green)]/25 border border-[var(--accent-green)]/20 transition-colors disabled:opacity-50"
                                     >
@@ -910,6 +957,30 @@ export default function TabTrends() {
                                         </div>
                                       )}
                                     </div>
+                                    {/* Tweet Gorselleri */}
+                                    {tweetMedia[compositeKey]?.length > 0 && (
+                                      <div className="mt-3 glass-card p-3 rounded-xl">
+                                        <h4 className="text-sm font-semibold mb-2 text-[var(--text-secondary)]">Tweet Gorselleri</h4>
+                                        <div className="grid grid-cols-2 gap-2">
+                                          {tweetMedia[compositeKey].map((m, mi) => (
+                                            <div key={mi} className="relative group rounded-lg overflow-hidden border border-[var(--border-primary)]/30">
+                                              {m.type === 'image' ? (
+                                                <img src={m.url} alt="" className="w-full h-32 object-cover" />
+                                              ) : (
+                                                <div className="w-full h-32 bg-[var(--bg-tertiary)] flex items-center justify-center">
+                                                  <span className="text-2xl">&#127916;</span>
+                                                  {m.thumbnail && <img src={m.thumbnail} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60" />}
+                                                </div>
+                                              )}
+                                              <a href={m.url} target="_blank" rel="noopener noreferrer" download
+                                                className="absolute bottom-1 right-1 px-2 py-1 rounded-md text-xs font-medium bg-[var(--accent-blue)] text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                                {m.type === 'video' ? 'Video Indir' : 'Indir'}
+                                              </a>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
                                     <div className="pt-2 border-t border-[var(--border)] space-y-2">
                                       <div className="text-[10px] font-medium text-[var(--text-secondary)]">Uretim Ayarlari</div>
                                       <div className="flex flex-wrap items-center gap-2">
@@ -942,7 +1013,7 @@ export default function TabTrends() {
                                           <option value="groq">Groq</option>
                                           <option value="gemini">Gemini</option>
                                         </select>
-                                        <button onClick={() => handleTweetGenerate(trend, i)} disabled={isTwGenerating} className="btn-primary text-xs">
+                                        <button onClick={() => handleTweetGenerate(trend, origIdx)} disabled={isTwGenerating} className="btn-primary text-xs">
                                           {isTwGenerating ? "Uretiliyor..." : twGenerated?.text ? "Tekrar Uret" : "Tweet Uret"}
                                         </button>
                                       </div>
@@ -974,7 +1045,7 @@ export default function TabTrends() {
                                           <button onClick={() => copyText(twEdited, compositeKey)} className="btn-secondary text-xs">Kopyala</button>
                                           <button onClick={() => handleSaveDraft(compositeKey, "tweet")} className="btn-secondary text-xs">Taslak</button>
                                           <button onClick={() => setShowSchedule(showSchedule === compositeKey ? null : compositeKey)} className="btn-secondary text-xs">Zamanla</button>
-                                          <button onClick={() => handleTweetGenerate(trend, i)} disabled={isTwGenerating} className="btn-secondary text-xs">{isTwGenerating ? "..." : "Tekrar Uret"}</button>
+                                          <button onClick={() => handleTweetGenerate(trend, origIdx)} disabled={isTwGenerating} className="btn-secondary text-xs">{isTwGenerating ? "..." : "Tekrar Uret"}</button>
                                         </div>
                                         {showSchedule === compositeKey && (
                                           <div className="flex items-center gap-2 p-2 rounded bg-[var(--bg-primary)]">
@@ -983,6 +1054,21 @@ export default function TabTrends() {
                                           </div>
                                         )}
                                         {actionMsg[compositeKey] && <div className="text-xs text-[var(--accent-green)]">{actionMsg[compositeKey]}</div>}
+                                        {/* Baglantilar */}
+                                        {tweetUrls[compositeKey]?.length > 0 && (
+                                          <div className="mt-3 glass-card p-3 rounded-xl" style={{borderLeft: '3px solid var(--accent-blue)'}}>
+                                            <h4 className="text-sm font-semibold mb-2 text-[var(--text-secondary)]">Baglantilar</h4>
+                                            <p className="text-xs text-[var(--text-muted)] mb-2">Bu linkleri 2. tweetinize ekleyebilirsiniz</p>
+                                            <div className="space-y-1.5">
+                                              {tweetUrls[compositeKey].map((u, ui) => (
+                                                <div key={ui} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-[var(--bg-tertiary)]/50 hover:bg-[var(--bg-tertiary)] transition-colors">
+                                                  <a href={u.url} target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--accent-blue)] hover:underline truncate flex-1">{u.display_url || u.url}</a>
+                                                  <button onClick={() => {navigator.clipboard.writeText(u.url)}} className="px-2 py-1 text-xs rounded-md bg-[var(--bg-secondary)] hover:bg-[var(--accent-blue)] hover:text-white transition-colors">Kopyala</button>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
                                       </div>
                                     )}
                                   </div>

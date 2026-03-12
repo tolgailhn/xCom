@@ -410,6 +410,8 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
                             {
                                 "text": t.get("text", ""),
                                 "id": t.get("id", ""),
+                                "media_items": t.get("media_items", []),
+                                "urls": t.get("urls", []),
                             }
                             for t in thread_data
                         ]
@@ -436,6 +438,8 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
                 "summary_tr": _make_preview(tweet_text),
                 "tweet_url": f"https://x.com/{account}/status/{tweet_id}",
                 "scanned_at": now.isoformat(),
+                "media_items": tweet.get("media_items", []),
+                "urls": tweet.get("urls", []),
             })
 
         # Rotasyon kaydı güncelle
