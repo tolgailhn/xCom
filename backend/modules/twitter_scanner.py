@@ -130,6 +130,15 @@ SPAM_PATTERNS = [
     r"(?i)^(agree|disagree|thoughts|this|wow|amazing|incredible|game.?changer)[.!?]?$",
     r"(?i)(retweet if|like if|who else|raise your hand|tag someone)",
     r"(?i)(alpha leak|insider info|you won'?t believe|secret.{0,10}reveal)",
+    # Turkish greetings and casual content
+    r"(?i)(günaydın|gunaydın|iyi geceler|iyi akşamlar|hayırlı sabahlar|hayirli sabahlar)",
+    r"(?i)(selamlar|selam herkese|herkese merhaba|nasılsınız|keyifli günler|keyifli gunler)",
+    r"(?i)(hayırlı cumalar|hayirli cumalar|iyi haftalar|iyi hafta sonları|mutlu yıllar|iyi bayramlar)",
+    r"(?i)^(merhaba|selam|hey|sa|as|slm|mrb)[.!?\s]*$",
+    r"(?i)(takip ediyorum|destek olun|rt yapın|rt yapin|beğenin|begenin|like atın|like atin)",
+    # Turkish promotional / low-value
+    r"(?i)(herkese iyi günler|herkese iyi geceler|güzel bir gün|guzel bir gun)",
+    r"(?i)^(teşekkürler|tesekkurler|sağ ?olun|sag ?olun)[.!?\s]*$",
 ]
 
 # Non-AI content patterns — these indicate the tweet is NOT about AI tech
@@ -428,6 +437,41 @@ def is_ai_relevant(text: str) -> bool:
         return False
 
     # No AI keywords found at all — not relevant
+    return False
+
+
+# Top AI keywords for quick relevance check (subset for performance)
+_QUICK_AI_KEYWORDS = frozenset(kw.lower() for kw in AI_RELEVANCE_KEYWORDS[:50])
+
+
+def is_low_quality_discovery(text: str) -> bool:
+    """Check if a tweet is too low-quality for the discovery feed.
+
+    Softer than is_spam()+is_ai_relevant() — designed for monitored accounts
+    which are semi-trusted. Catches obvious junk (greetings, casual chat)
+    while allowing short but AI-relevant tweets through.
+    """
+    if not text:
+        return True
+
+    # Definite spam → reject
+    if is_spam(text):
+        return True
+
+    # Strip URLs and check remaining text length
+    text_no_urls = re.sub(r"https?://\S+", "", text).strip()
+
+    # Very short tweet with no AI keyword → likely casual
+    if len(text_no_urls) < 60:
+        text_lower = text.lower()
+        # Allow if it contains an AI keyword
+        if any(kw in text_lower for kw in _QUICK_AI_KEYWORDS):
+            return False
+        # Allow if it has an AI-related URL
+        if "github.com" in text_lower or "huggingface.co" in text_lower or "arxiv.org" in text_lower:
+            return False
+        return True
+
     return False
 
 

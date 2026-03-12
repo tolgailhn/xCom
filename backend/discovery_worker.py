@@ -370,6 +370,13 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
                 seen.add(tweet_id)
                 continue
 
+            # İçerik kalite filtresi — spam, selamlaşma, düşük değerli tweetleri atla
+            from backend.modules.twitter_scanner import is_low_quality_discovery
+            if is_low_quality_discovery(tweet_text):
+                seen.add(tweet_id)
+                logger.debug("Discovery: skipping low-quality from @%s: %s", account, tweet_text[:80])
+                continue
+
             raw_created = tweet.get("created_at", "")
             created_at = str(raw_created) if not isinstance(raw_created, str) else raw_created
 

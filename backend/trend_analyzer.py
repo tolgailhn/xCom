@@ -80,6 +80,21 @@ def analyze_trends():
         logger.info("Trend analyzer: no recent tweets to analyze")
         return
 
+    # Filter out low-quality tweets before trend analysis
+    try:
+        from backend.modules.twitter_scanner import is_spam
+        pre_count = len(all_tweets)
+        all_tweets = [t for t in all_tweets if not is_spam(t.get("text", "") or "")]
+        filtered = pre_count - len(all_tweets)
+        if filtered > 0:
+            logger.info("Trend analyzer: filtered %d/%d low-quality tweets", filtered, pre_count)
+    except ImportError:
+        pass
+
+    if not all_tweets:
+        logger.info("Trend analyzer: no tweets left after quality filter")
+        return
+
     # Extract keywords and count per account
     keyword_accounts = defaultdict(set)  # keyword -> set of accounts
     keyword_tweets = defaultdict(list)   # keyword -> list of tweet dicts
@@ -223,20 +238,34 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
         load_news_cache,
     )
 
-    # Collect all top tweets from all trends
+    # Spam filter for clustering input
+    try:
+        from backend.modules.twitter_scanner import is_spam as _is_spam_check
+    except ImportError:
+        _is_spam_check = None
+
+    # Collect all top tweets from all trends (skip spam)
     all_tweets = []
     tweet_meta = []  # Keep track of source info
+    skipped_spam = 0
     for trend in trends[:15]:  # Max 15 trends
         for tw in trend.get("top_tweets", [])[:5]:
             text = (tw.get("text") or "")[:200].strip()
-            if text and text not in [t["text"] for t in tweet_meta]:
-                all_tweets.append(text)
-                tweet_meta.append({
-                    "text": text,
-                    "account": tw.get("account", ""),
-                    "engagement": tw.get("engagement", 0),
-                    "keyword": trend.get("keyword", ""),
-                })
+            if not text or text in [t["text"] for t in tweet_meta]:
+                continue
+            # Skip low-quality tweets from clustering input
+            if _is_spam_check and _is_spam_check(text):
+                skipped_spam += 1
+                continue
+            all_tweets.append(text)
+            tweet_meta.append({
+                "text": text,
+                "account": tw.get("account", ""),
+                "engagement": tw.get("engagement", 0),
+                "keyword": trend.get("keyword", ""),
+            })
+    if skipped_spam:
+        logger.info("Clustering: skipped %d spam tweets from input", skipped_spam)
 
     if len(all_tweets) < 3:
         logger.info("Clustering: too few tweets (%d), skipping", len(all_tweets))
