@@ -171,6 +171,38 @@ def analyze_trends():
         len(trends), len(strong_trends), len(all_tweets)
     )
 
+    # Save to trend history (gün bazlı arşiv)
+    try:
+        from backend.modules.style_manager import load_trend_history, save_trend_history
+        history = load_trend_history()
+        date_str = now.strftime("%Y-%m-%d")
+        # Update or add today's entry
+        today_entry = None
+        for h in history:
+            if h.get("date") == date_str:
+                today_entry = h
+                break
+        if today_entry:
+            today_entry["trends"] = trends[:30]
+            today_entry["analysis_date"] = now.isoformat()
+            today_entry["total_tweets_analyzed"] = len(all_tweets)
+        else:
+            history.insert(0, {
+                "date": date_str,
+                "analysis_date": now.isoformat(),
+                "trends": trends[:30],
+                "total_tweets_analyzed": len(all_tweets),
+            })
+        save_trend_history(history)
+    except Exception:
+        logger.exception("Trend history save error")
+
+    # Auto-cluster suggestions (konu bazlı kümeleme)
+    try:
+        _cluster_smart_suggestions(trends, now)
+    except Exception:
+        logger.exception("Auto clustering error")
+
     # Notify about strong trends + auto-suggest content (Faz 8)
     if strong_trends:
         _notify_trends(strong_trends)
@@ -179,6 +211,227 @@ def analyze_trends():
             suggest_content_from_trends()
         except Exception:
             logger.exception("Auto content suggestion error")
+
+
+def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
+    """Trend tweet'lerini AI ile konu bazlı kümele."""
+    import json as _json
+
+    from backend.modules.style_manager import (
+        load_clustered_suggestions,
+        save_clustered_suggestions,
+        load_news_cache,
+    )
+
+    # Collect all top tweets from all trends
+    all_tweets = []
+    tweet_meta = []  # Keep track of source info
+    for trend in trends[:15]:  # Max 15 trends
+        for tw in trend.get("top_tweets", [])[:5]:
+            text = (tw.get("text") or "")[:200].strip()
+            if text and text not in [t["text"] for t in tweet_meta]:
+                all_tweets.append(text)
+                tweet_meta.append({
+                    "text": text,
+                    "account": tw.get("account", ""),
+                    "engagement": tw.get("engagement", 0),
+                    "keyword": trend.get("keyword", ""),
+                })
+
+    if len(all_tweets) < 3:
+        logger.info("Clustering: too few tweets (%d), skipping", len(all_tweets))
+        return
+
+    # Build prompt for AI clustering
+    tweets_text = "\n".join(
+        f"[{i}] @{tweet_meta[i]['account']}: {tweet_meta[i]['text']}"
+        for i in range(len(all_tweets))
+    )
+
+    prompt = (
+        "Bu tweet'leri SPESİFİK konulara göre grupla.\n"
+        "Her grup TEK BİR olay/duyuru/tartışma hakkında olmalı.\n"
+        "GENELLEMELERDEN KAÇIN — 'AI gelişmeleri' değil, 'Google Gemini 2 Çıkışı' gibi spesifik ol.\n"
+        "Birbirine benzemeyen tweet'leri aynı gruba KOYMA.\n"
+        "Tek başına kalan tweet'ler için de ayrı grup oluştur.\n\n"
+        f"Tweet'ler:\n{tweets_text}\n\n"
+        "SADECE JSON array döndür, başka bir şey yazma:\n"
+        '[{"topic_title": "spesifik konu başlığı", "topic_title_tr": "Türkçe başlık", '
+        '"tweet_indices": [0, 3, 5], "engagement_potential": 8, '
+        '"suggested_style": "informative", "suggested_hour": "14:07", '
+        '"reasoning": "neden ilginç kısa açıklama"}]'
+    )
+
+    # Call AI
+    try:
+        from backend.api.helpers import get_ai_provider
+        provider, api_key, _ = get_ai_provider()
+        if not api_key:
+            logger.warning("Clustering: no AI key available")
+            return
+    except Exception:
+        logger.warning("Clustering: AI provider unavailable")
+        return
+
+    response_text = ""
+    try:
+        if provider in ("minimax", "groq", "openai"):
+            import ssl
+            import urllib.request
+            base_urls = {
+                "minimax": "https://api.minimax.io/v1",
+                "groq": "https://api.groq.com/openai/v1",
+                "openai": "https://api.openai.com/v1",
+            }
+            models = {
+                "minimax": "MiniMax-M2.5",
+                "groq": "llama-3.3-70b-versatile",
+                "openai": "gpt-4o-mini",
+            }
+            url = f"{base_urls[provider]}/chat/completions"
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            }
+            payload = {
+                "model": models[provider],
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 2000,
+                "temperature": 0.3,
+            }
+            data = _json.dumps(payload).encode("utf-8")
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            req = urllib.request.Request(url, data=data, headers=headers)
+            with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
+                result = _json.loads(resp.read().decode("utf-8"))
+                response_text = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+        elif provider == "anthropic":
+            import ssl
+            import urllib.request
+            url = "https://api.anthropic.com/v1/messages"
+            headers = {
+                "Content-Type": "application/json",
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+            }
+            payload = {
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 2000,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+            data = _json.dumps(payload).encode("utf-8")
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            req = urllib.request.Request(url, data=data, headers=headers)
+            with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
+                result = _json.loads(resp.read().decode("utf-8"))
+                response_text = result.get("content", [{}])[0].get("text", "")
+        else:
+            logger.warning("Clustering: unsupported provider %s", provider)
+            return
+    except Exception as e:
+        logger.warning("Clustering AI call failed: %s", e)
+        return
+
+    # Strip MiniMax tags if present
+    if provider == "minimax" and response_text:
+        response_text = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL).strip()
+        response_text = re.sub(r'<minimax:tool_call>.*?</minimax:tool_call>', '', response_text, flags=re.DOTALL).strip()
+        response_text = re.sub(r'<minimax:tool_call>.*', '', response_text, flags=re.DOTALL).strip()
+
+    # Parse clusters
+    try:
+        match = re.search(r'\[.*\]', response_text, re.DOTALL)
+        if not match:
+            logger.warning("Clustering: no JSON array found in response")
+            return
+        clusters = _json.loads(match.group())
+    except Exception as e:
+        logger.warning("Clustering: JSON parse error: %s", e)
+        return
+
+    # Build clustered suggestions
+    suggestions = []
+    for cluster in clusters:
+        indices = cluster.get("tweet_indices", [])
+        if not indices:
+            continue
+
+        # Gather tweets for this cluster
+        cluster_tweets = []
+        source_keywords = set()
+        for idx in indices:
+            if 0 <= idx < len(tweet_meta):
+                meta = tweet_meta[idx]
+                cluster_tweets.append({
+                    "text": meta["text"],
+                    "account": meta["account"],
+                    "engagement": meta["engagement"],
+                })
+                source_keywords.add(meta["keyword"])
+
+        if not cluster_tweets:
+            continue
+
+        # Calculate combined engagement
+        total_engagement = sum(t.get("engagement", 0) for t in cluster_tweets)
+
+        suggestions.append({
+            "type": "trend",
+            "topic": cluster.get("topic_title", ""),
+            "topic_tr": cluster.get("topic_title_tr", ""),
+            "reason": f"{len(cluster_tweets)} tweet, {len(set(t['account'] for t in cluster_tweets))} hesap",
+            "tweets": cluster_tweets,
+            "engagement_potential": min(10, max(1, cluster.get("engagement_potential", 5))),
+            "suggested_style": cluster.get("suggested_style", "informative"),
+            "suggested_hour": cluster.get("suggested_hour", "14:07"),
+            "reasoning": cluster.get("reasoning", ""),
+            "source_keywords": list(source_keywords),
+            "total_engagement": total_engagement,
+        })
+
+    # Add news-based suggestions (not clustered, each is its own topic)
+    news_cache = load_news_cache()
+    for article in (news_cache or [])[:5]:
+        title = article.get("title", "")
+        if not title:
+            continue
+        suggestions.append({
+            "type": "news",
+            "topic": title,
+            "topic_tr": "",
+            "reason": f"Kaynak: {article.get('source', '')}",
+            "tweets": [],
+            "engagement_potential": 6,
+            "suggested_style": "informative",
+            "suggested_hour": "10:22",
+            "reasoning": "",
+            "url": article.get("url", ""),
+            "source_keywords": [],
+            "total_engagement": 0,
+            "news_body": (article.get("body") or "")[:300],
+            "news_source": article.get("source", ""),
+            "news_date": article.get("date", ""),
+        })
+
+    # Save clustered results
+    save_clustered_suggestions({
+        "suggestions": suggestions,
+        "clustered_at": now.isoformat(),
+        "total": len(suggestions),
+        "tweet_count": len(all_tweets),
+        "source_hash": str(hash(tweets_text[:500])),  # For cache invalidation
+    })
+
+    logger.info(
+        "Clustering: %d clusters created from %d tweets, %d news added",
+        len([s for s in suggestions if s["type"] == "trend"]),
+        len(all_tweets),
+        len([s for s in suggestions if s["type"] == "news"]),
+    )
 
 
 def _notify_trends(trends: list[dict]):

@@ -162,19 +162,19 @@ export default function KesifPage() {
       {/* Status bar */}
       {status && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="card p-3 text-center">
+          <div className="glass-card p-3 text-center">
             <div className="text-xl font-bold">{status.total_tweets}</div>
             <div className="text-xs text-[var(--text-secondary)]">Tweet</div>
           </div>
-          <div className="card p-3 text-center">
+          <div className="glass-card p-3 text-center">
             <div className="text-xl font-bold">{status.priority_count + status.normal_count}</div>
             <div className="text-xs text-[var(--text-secondary)]">Hesap</div>
           </div>
-          <div className="card p-3 text-center">
+          <div className="glass-card p-3 text-center">
             <div className="text-xl font-bold text-[var(--accent-amber)]">{status.priority_count}</div>
             <div className="text-xs text-[var(--text-secondary)]">Oncelikli</div>
           </div>
-          <div className="card p-3 text-center">
+          <div className="glass-card p-3 text-center">
             <div className="text-xs font-medium">{status.last_scan ? timeAgo(status.last_scan) + " once" : "Henuz yok"}</div>
             <div className="text-xs text-[var(--text-secondary)]">Son Tarama</div>
             {nextScanSec != null && nextScanSec > 0 ? (
@@ -200,7 +200,7 @@ export default function KesifPage() {
         const relevantJobs = schedulerJobs.filter((j: { id: string }) => JOB_LABELS[j.id]);
         if (!relevantJobs.length) return null;
         return (
-          <div className="card p-3">
+          <div className="glass-card p-3">
             <div className="text-xs font-medium mb-2 text-[var(--text-secondary)]">
               Otomatik Tarama Durumlari
             </div>
@@ -230,7 +230,7 @@ export default function KesifPage() {
 
       {/* Rotation Info */}
       {status?.last_scanned_per_account && Object.keys(status.last_scanned_per_account).length > 0 && (
-        <div className="card p-3">
+        <div className="glass-card p-3">
           <div className="text-xs font-medium mb-2 text-[var(--text-secondary)]">
             Rotasyon &mdash; {status.scan_mode || "30dk batch"}
           </div>
@@ -251,19 +251,19 @@ export default function KesifPage() {
       {/* Tabs */}
       <div className="flex gap-2 border-b border-[var(--border)] pb-2 overflow-x-auto">
         {([
-          { key: "tweets", label: `Tweetler (${tweets.length})` },
-          { key: "trendler", label: "Trendler" },
-          { key: "haberler", label: "Haberler" },
-          { key: "oneriler", label: "Onerilen Hesaplar" },
-          { key: "akilli", label: "Akilli Oneriler" },
-          { key: "ayarlar", label: "Ayarlar" },
+          { key: "tweets", label: `Tweetler (${tweets.length})`, icon: "\uD83D\uDCDD" },
+          { key: "trendler", label: "Trendler", icon: "\uD83D\uDCC8" },
+          { key: "haberler", label: "Haberler", icon: "\uD83D\uDCF0" },
+          { key: "oneriler", label: "Hesaplar", icon: "\uD83D\uDC65" },
+          { key: "akilli", label: "Oneriler", icon: "\uD83D\uDCA1" },
+          { key: "ayarlar", label: "Ayarlar", icon: "\u2699\uFE0F" },
         ] as const).map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${tab === t.key ? "bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] border-b-2 border-[var(--accent-blue)]" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
           >
-            {t.label}
+            {t.icon} {t.label}
           </button>
         ))}
       </div>

@@ -469,11 +469,28 @@ def _call_ai_for_scores(provider: str, api_key: str, prompt: str) -> list[dict]:
     return []
 
 
-# ── Faz 7: Smart Suggestions ──────────────────────────
+# ── Faz 7: Smart Suggestions (Kümelenmiş) ──────────────────────────
 
 @router.get("/smart-suggestions")
 def get_smart_suggestions():
-    """Mevcut trend/haber verilerinden akıllı tweet önerileri döndür."""
+    """Konu bazlı kümelenmiş akıllı tweet önerileri döndür.
+    Worker tarafından otomatik kümelenen sonuçları cache'ten okur.
+    Cache boşsa fallback olarak eski yöntemle döndürür.
+    """
+    from backend.modules.style_manager import load_clustered_suggestions
+
+    cached = load_clustered_suggestions()
+
+    # Kümelenmiş cache varsa direkt döndür
+    if cached and cached.get("suggestions"):
+        return {
+            "suggestions": cached["suggestions"],
+            "total": cached.get("total", len(cached["suggestions"])),
+            "clustered_at": cached.get("clustered_at", ""),
+            "tweet_count": cached.get("tweet_count", 0),
+        }
+
+    # Fallback: cache yoksa eski yöntemle döndür (kümeleme henüz çalışmamış)
     from backend.modules.style_manager import load_trend_cache, load_news_cache
 
     trend_cache = load_trend_cache()
@@ -481,51 +498,78 @@ def get_smart_suggestions():
 
     suggestions = []
 
-    # Trend-based suggestions (strong trends first)
     for trend in (trend_cache.get("trends") or [])[:10]:
         if trend.get("is_strong_trend"):
             top_tweets = trend.get("top_tweets", [])[:5]
-            # Build a Turkish context description from top tweets
-            description_tr = ""
-            if top_tweets:
-                snippets = []
-                for tt in top_tweets[:3]:
-                    txt = (tt.get("text") or "")[:120].strip()
-                    if txt:
-                        snippets.append(txt)
-                if snippets:
-                    description_tr = " | ".join(snippets)
-
             suggestions.append({
                 "type": "trend",
                 "topic": trend["keyword"],
-                "reason": f"{trend['account_count']} hesap, {trend['tweet_count']} tweet, skor: {int(trend.get('trend_score', 0))}",
-                "description_tr": description_tr,
+                "topic_tr": "",
+                "reason": f"{trend['account_count']} hesap, {trend['tweet_count']} tweet",
+                "tweets": top_tweets,
                 "engagement_potential": min(10, max(1, int(trend.get("trend_score", 0) / 500) + 3)),
                 "suggested_style": "informative",
-                "suggested_format": "single",
                 "suggested_hour": "14:07",
-                "top_tweets": top_tweets,
-                "source_data": trend,
+                "reasoning": "",
+                "source_keywords": [trend["keyword"]],
+                "total_engagement": trend.get("total_engagement", 0),
             })
 
-    # News-based suggestions (latest first)
     for article in (news_cache or [])[:5]:
         suggestions.append({
             "type": "news",
             "topic": article.get("title", ""),
+            "topic_tr": "",
             "reason": f"Kaynak: {article.get('source', '')}",
-            "description_tr": article.get("summary", ""),
+            "tweets": [],
             "engagement_potential": 6,
             "suggested_style": "informative",
-            "suggested_format": "spark",
             "suggested_hour": "10:22",
+            "reasoning": "",
             "url": article.get("url", ""),
-            "top_tweets": [],
-            "source_data": article,
+            "source_keywords": [],
+            "total_engagement": 0,
+            "news_body": (article.get("body") or "")[:300],
+            "news_source": article.get("source", ""),
+            "news_date": article.get("date", ""),
         })
 
-    return {"suggestions": suggestions, "total": len(suggestions)}
+    return {"suggestions": suggestions, "total": len(suggestions), "clustered_at": "", "tweet_count": 0}
+
+
+@router.post("/cluster-suggestions")
+def trigger_clustering():
+    """Manuel kümeleme tetikle."""
+    try:
+        import datetime as _dt
+        from zoneinfo import ZoneInfo
+        from backend.trend_analyzer import _cluster_smart_suggestions
+        from backend.modules.style_manager import load_trend_cache, load_clustered_suggestions
+
+        trend_cache = load_trend_cache()
+        trends = trend_cache.get("trends", [])
+        now = _dt.datetime.now(ZoneInfo("Europe/Istanbul"))
+        _cluster_smart_suggestions(trends, now)
+
+        cached = load_clustered_suggestions()
+        return {
+            "success": True,
+            "total": cached.get("total", 0),
+            "clustered_at": cached.get("clustered_at", ""),
+        }
+    except Exception as e:
+        logger.exception("Manual clustering error")
+        raise HTTPException(500, f"Kümeleme hatası: {str(e)}")
+
+
+# ── Trends with History ──────────────────────────────
+
+@router.get("/trend-history")
+def get_trend_history():
+    """Gün bazlı trend geçmişini döndür (son 7 gün)."""
+    from backend.modules.style_manager import load_trend_history
+    history = load_trend_history()
+    return {"history": history, "total": len(history)}
 
 
 class GenerateSmartSuggestionRequest(BaseModel):

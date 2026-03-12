@@ -1032,9 +1032,13 @@ export function triggerAccountDiscovery() {
   return apiFetch("/api/discovery/suggested-accounts/discover", { method: "POST" });
 }
 
-// Faz 7: Smart Suggestions
+// Faz 7: Smart Suggestions (Clustered)
 export function getSmartSuggestions() {
   return apiFetch("/api/discovery/smart-suggestions");
+}
+
+export function triggerClustering() {
+  return apiFetch("/api/discovery/cluster-suggestions", { method: "POST" });
 }
 
 export function generateSmartSuggestion(params: {
@@ -1048,6 +1052,11 @@ export function generateSmartSuggestion(params: {
     method: "POST",
     body: JSON.stringify(params),
   });
+}
+
+// Trend History
+export function getTrendHistory() {
+  return apiFetch("/api/discovery/trend-history");
 }
 
 // Faz 6: News Value Scoring

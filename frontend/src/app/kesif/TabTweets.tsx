@@ -354,7 +354,7 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
   return (
     <div className="space-y-4">
       {/* Date Navigation Bar */}
-      <div className="card p-3">
+      <div className="glass-card p-3">
         <div className="flex items-center justify-between">
           <button
             onClick={() => goToDate(-1)}
@@ -451,7 +451,7 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
 
       {/* Tweet cards */}
       {filteredTweets.length === 0 ? (
-        <div className="card p-8 text-center">
+        <div className="glass-card p-8 text-center">
           <p className="text-[var(--text-secondary)]">
             {tweets.length === 0 ? "Henuz tweet taranmadi. \"Simdi Tara\" butonuna basin." : "Filtreye uygun tweet bulunamadi."}
           </p>
@@ -485,7 +485,7 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
               const startIdx = globalIdx;
               globalIdx += accountTweets.length;
               return (
-                <div key={account} className="card overflow-hidden">
+                <div key={account} className="glass-card overflow-hidden">
                   <button
                     onClick={() => {
                       setExpandedAccounts(prev => {
@@ -706,7 +706,7 @@ function TweetCard({
   }, [generatedResult?.text]);
 
   return (
-    <div className="card p-4 space-y-3">
+    <div className="glass-card p-4 space-y-3">
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
@@ -747,11 +747,11 @@ function TweetCard({
       </div>
 
       {/* Engagement stats */}
-      <div className="flex gap-4 text-xs text-[var(--text-secondary)]">
-        <span title="Begeni">{formatNumber(tweet.like_count)} begeni</span>
-        <span title="Repost">{formatNumber(tweet.retweet_count)} RT</span>
-        <span title="Yanit">{formatNumber(tweet.reply_count)} yanit</span>
-        <span title="Yer Isareti">{formatNumber(tweet.bookmark_count)} kayit</span>
+      <div className="flex flex-wrap gap-2 text-[11px]">
+        <span className="px-2 py-0.5 rounded-full bg-[var(--accent-red)]/10 text-[var(--accent-red)] border border-[var(--accent-red)]/20" title="Begeni">{formatNumber(tweet.like_count)} begeni</span>
+        <span className="px-2 py-0.5 rounded-full bg-[var(--accent-green)]/10 text-[var(--accent-green)] border border-[var(--accent-green)]/20" title="Repost">{formatNumber(tweet.retweet_count)} RT</span>
+        <span className="px-2 py-0.5 rounded-full bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] border border-[var(--accent-blue)]/20" title="Yanit">{formatNumber(tweet.reply_count)} yanit</span>
+        <span className="px-2 py-0.5 rounded-full bg-[var(--accent-amber)]/10 text-[var(--accent-amber)] border border-[var(--accent-amber)]/20" title="Yer Isareti">{formatNumber(tweet.bookmark_count)} kayit</span>
       </div>
 
       {/* Turkish summary as main text */}

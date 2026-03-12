@@ -893,3 +893,47 @@ def save_suggested_accounts(accounts: list[dict]):
     os.makedirs(DATA_DIR, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(accounts, f, ensure_ascii=False, indent=2, default=str)
+
+
+# --- Clustered Suggestions (Konu bazlı kümelenmiş öneriler) ---
+
+def load_clustered_suggestions() -> dict:
+    """Load AI-clustered smart suggestions cache"""
+    path = DATA_DIR / "clustered_suggestions.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
+def save_clustered_suggestions(data: dict):
+    """Save clustered suggestions cache"""
+    path = DATA_DIR / "clustered_suggestions.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2, default=str)
+
+
+# --- Trend History (Gün bazlı trend geçmişi) ---
+
+def load_trend_history() -> list[dict]:
+    """Load trend analysis history (son 7 gün)"""
+    path = DATA_DIR / "trend_history.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+
+def save_trend_history(history: list[dict]):
+    """Save trend history (max 7 days)"""
+    now = datetime.datetime.now(TZ_TR)
+    cutoff = (now - datetime.timedelta(days=7)).isoformat()
+    # Keep only last 7 days
+    fresh = [h for h in history if h.get("analysis_date", "") > cutoff]
+    # Max 50 entries
+    fresh = fresh[:50]
+    path = DATA_DIR / "trend_history.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(fresh, f, ensure_ascii=False, indent=2, default=str)
