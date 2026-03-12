@@ -19,8 +19,8 @@ import TabAyarlar from "./TabAyarlar";
 import TabTrends from "./TabTrends";
 
 import TabSuggestedAccounts from "./TabSuggestedAccounts";
-import TabSmartSuggestions from "./TabSmartSuggestions";
 import TabMyTweets from "./TabMyTweets";
+import TabAIOnerileri from "./TabAIOnerileri";
 
 /* ── Helpers ─────────────────────────────────────────── */
 
@@ -43,11 +43,11 @@ function timeAgo(isoStr: string): string {
 
 export default function KesifPage() {
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<"tweets" | "trendler" | "oneriler" | "akilli" | "mytweetler" | "ayarlar">("tweets");
+  const [tab, setTab] = useState<"ai-onerileri" | "tweets" | "trendler" | "oneriler" | "mytweetler" | "ayarlar">("ai-onerileri");
 
   useEffect(() => {
     const t = searchParams.get("tab");
-    if (t === "tweets" || t === "trendler" || t === "oneriler" || t === "akilli" || t === "mytweetler" || t === "ayarlar") setTab(t);
+    if (t === "ai-onerileri" || t === "tweets" || t === "trendler" || t === "oneriler" || t === "mytweetler" || t === "ayarlar") setTab(t);
   }, [searchParams]);
 
   const [config, setConfig] = useState<DiscoveryConfig | null>(null);
@@ -64,15 +64,15 @@ export default function KesifPage() {
 
   // Auto-refresh triggers per tab
   const [refreshTriggers, setRefreshTriggers] = useState<Record<string, number>>({
+    "ai-onerileri": 0,
     tweets: 0,
     trendler: 0,
-    akilli: 0,
     oneriler: 0,
   });
   const [lastRefreshTimes, setLastRefreshTimes] = useState<Record<string, number>>({
+    "ai-onerileri": Date.now(),
     tweets: Date.now(),
     trendler: Date.now(),
-    akilli: Date.now(),
     oneriler: Date.now(),
   });
   const [lastRefreshLabel, setLastRefreshLabel] = useState("Simdi");
@@ -131,9 +131,9 @@ export default function KesifPage() {
   // Auto-refresh intervals per tab
   useEffect(() => {
     const INTERVALS: Record<string, number> = {
+      "ai-onerileri": 600_000, // 10 min
       tweets: 300_000,    // 5 min
       trendler: 600_000,  // 10 min
-      akilli: 900_000,    // 15 min
       oneriler: 1_800_000, // 30 min
     };
 
@@ -321,10 +321,10 @@ export default function KesifPage() {
       {/* Tabs — Modern pill-style navigation */}
       <div className="flex gap-1.5 bg-[var(--bg-secondary)]/60 backdrop-blur-sm rounded-full p-1.5 border border-[var(--border)]/50 overflow-x-auto">
         {([
+          { key: "ai-onerileri", label: "AI Onerileri", icon: "\uD83E\uDD16" },
           { key: "tweets", label: `Tweetler (${tweets.length})`, icon: "\uD83D\uDCDD" },
           { key: "trendler", label: "Trendler", icon: "\uD83D\uDCC8" },
           { key: "oneriler", label: "Onerilen Hesaplar", icon: "\uD83D\uDC65" },
-          { key: "akilli", label: "Akilli Oneriler", icon: "\uD83D\uDCA1" },
           { key: "mytweetler", label: "Tolga Tweetler", icon: "\uD83D\uDC64" },
           { key: "ayarlar", label: "Ayarlar", icon: "\u2699\uFE0F" },
         ] as const).map((t) => (
@@ -366,8 +366,8 @@ export default function KesifPage() {
 
       {tab === "trendler" && <TabTrends refreshTrigger={refreshTriggers.trendler} />}
 
+      {tab === "ai-onerileri" && <TabAIOnerileri refreshTrigger={refreshTriggers["ai-onerileri"]} />}
       {tab === "oneriler" && <TabSuggestedAccounts refreshTrigger={refreshTriggers.oneriler} />}
-      {tab === "akilli" && <TabSmartSuggestions refreshTrigger={refreshTriggers.akilli} />}
       {tab === "mytweetler" && <TabMyTweets refreshTrigger={refreshTriggers.tweets} />}
     </div>
   );
