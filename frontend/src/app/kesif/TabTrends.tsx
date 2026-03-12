@@ -1116,6 +1116,54 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
                                     </div>
                                     {twGenerated && (
                                       <div className="space-y-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border)] p-4">
+                                        {twGenerated.thread_parts && twGenerated.thread_parts.length > 1 ? (
+                                          <>
+                                            {/* Thread preview */}
+                                            <div className="bg-[var(--bg-secondary)]/60 rounded-lg p-3 border border-[var(--accent-purple)]/30 space-y-2">
+                                              <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-purple)]/20 text-[var(--accent-purple)] font-medium">
+                                                  Thread ({twGenerated.thread_parts.length} tweet)
+                                                </span>
+                                                {twGenerated.score > 0 && (
+                                                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${twGenerated.score >= 80 ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)]" : twGenerated.score >= 60 ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]" : "bg-[var(--accent-red)]/20 text-[var(--accent-red)]"}`}>
+                                                    {twGenerated.score}/100
+                                                  </span>
+                                                )}
+                                              </div>
+                                              {twGenerated.thread_parts.map((part, i) => (
+                                                <div key={i} className="flex gap-2 items-start">
+                                                  <span className="text-[10px] text-[var(--accent-purple)] font-bold mt-0.5 shrink-0">{i + 1}/{twGenerated.thread_parts!.length}</span>
+                                                  <p className="text-xs text-[var(--text-primary)] leading-relaxed">{part.replace(/^\d+\/\s*/, "")}</p>
+                                                </div>
+                                              ))}
+                                            </div>
+                                            {/* Thread action buttons */}
+                                            <div className="flex flex-wrap gap-2">
+                                              <button
+                                                onClick={async () => {
+                                                  try {
+                                                    await publishTweet({ text: twGenerated.thread_parts![0], thread_parts: twGenerated.thread_parts });
+                                                  } catch {}
+                                                }}
+                                                className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
+                                                style={{ background: "linear-gradient(135deg, var(--accent-purple), var(--accent-blue))" }}
+                                              >
+                                                Thread Paylas
+                                              </button>
+                                              <button
+                                                onClick={() => openInX(twGenerated.thread_parts![0].replace(/^\d+\/\s*/, ""))}
+                                                className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
+                                                style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}
+                                              >
+                                                X&apos;te Ac (ilk tweet)
+                                              </button>
+                                              <button onClick={() => copyText(twGenerated.thread_parts!.join("\n\n"), compositeKey)} className="btn-secondary text-xs">Kopyala</button>
+                                              <button onClick={() => handleTweetGenerate(trend, origIdx)} disabled={isTwGenerating} className="btn-secondary text-xs">{isTwGenerating ? "..." : "Yeniden Uret"}</button>
+                                              <button onClick={() => handleSaveDraft(compositeKey, "tweet")} className="btn-secondary text-xs">Taslak Kaydet</button>
+                                            </div>
+                                          </>
+                                        ) : (
+                                          <>
                                         {/* Tweet card preview */}
                                         <div className="flex items-start gap-3">
                                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--accent-blue)] to-[var(--accent-purple)] flex items-center justify-center text-white text-sm font-bold shrink-0">X</div>
@@ -1145,6 +1193,8 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
                                           <button onClick={() => handleTweetGenerate(trend, origIdx)} disabled={isTwGenerating} className="btn-secondary text-xs">{isTwGenerating ? "..." : "Yeniden Uret"}</button>
                                           <button onClick={() => handleSaveDraft(compositeKey, "tweet")} className="btn-secondary text-xs">Taslak Kaydet</button>
                                         </div>
+                                          </>
+                                        )}
                                         <div className="flex flex-wrap gap-2 pl-[52px] mt-1">
                                           <button onClick={() => handleFindMedia(compositeKey, twEdited)} disabled={mediaLoading === compositeKey} className="btn-secondary text-xs">
                                             {mediaLoading === compositeKey ? "Araniyor..." : "Gorsel/Video Bul"}

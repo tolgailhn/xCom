@@ -344,7 +344,7 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
       const text = result.text || "";
       setGeneratedTweets(prev => ({
         ...prev,
-        [idx]: { text, score: result.score?.overall || 0 },
+        [idx]: { text, score: result.score?.overall || 0, thread_parts: result.thread_parts },
       }));
       setEditedTexts(prev => ({ ...prev, [idx]: text }));
     } catch (e) {
@@ -1013,59 +1013,106 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
                         </div>
 
                         {/* Action buttons - gradient primary, outline secondary */}
-                        <div className="flex flex-wrap gap-2">
-                          <button onClick={() => openInX(edited)} className="btn-primary text-xs inline-flex items-center gap-1"
-                            style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}>
-                            X&apos;te Paylas
-                          </button>
-                          {suggestion.suggested_hour && (
-                            <button onClick={() => handleScheduleBestTime(idx)} className="btn-primary text-xs"
-                              style={{ background: "linear-gradient(135deg, var(--accent-purple), var(--accent-amber))" }}>
-                              {suggestion.suggested_hour}&apos;de Zamanla
-                            </button>
-                          )}
-                          <button onClick={() => handleSaveDraft(idx)} className="btn-secondary text-xs">
-                            Taslak
-                          </button>
-                          <button onClick={() => copyText(edited, idx)} className="btn-secondary text-xs">
-                            Kopyala
-                          </button>
-                          <button
-                            onClick={() => setShowSchedule(showSchedule === idx ? null : idx)}
-                            className="btn-secondary text-xs"
-                          >
-                            Ozel Saat
-                          </button>
-                          {(() => {
-                            const tweets = suggestion.tweets || suggestion.top_tweets || [];
-                            const tweetUrl = tweets.find(t => t.tweet_url)?.tweet_url;
-                            return tweetUrl ? (
+                        {gen.thread_parts && gen.thread_parts.length > 1 ? (
+                          <>
+                            <div className="bg-[var(--bg-secondary)]/60 rounded-lg p-3 border border-[var(--accent-purple)]/30 space-y-2">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-purple)]/20 text-[var(--accent-purple)] font-medium">
+                                Thread ({gen.thread_parts.length} tweet)
+                              </span>
+                              {gen.thread_parts.map((part, i) => (
+                                <div key={i} className="flex gap-2 items-start">
+                                  <span className="text-[10px] text-[var(--accent-purple)] font-bold mt-0.5 shrink-0">{i + 1}/{gen.thread_parts!.length}</span>
+                                  <p className="text-xs text-[var(--text-primary)] leading-relaxed">{part.replace(/^\d+\/\s*/, "")}</p>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
                               <button
-                                onClick={() => window.open(`https://x.com/intent/tweet?url=${encodeURIComponent(tweetUrl)}`, "_blank")}
-                                className="btn-secondary text-xs"
-                              >
-                                X Quote Ac
+                                onClick={async () => { await publishTweet({ text: gen.thread_parts![0], thread_parts: gen.thread_parts! }); showAction(idx, "Thread paylasildi!"); }}
+                                className="px-3 py-1.5 rounded-lg text-xs font-medium text-white"
+                                style={{ background: "linear-gradient(135deg, var(--accent-purple), var(--accent-blue))" }}>
+                                Thread Paylas
                               </button>
-                            ) : null;
-                          })()}
-                          <button
-                            onClick={() => handleGenerate(suggestion, idx)}
-                            disabled={generatingIdx === idx}
-                            className="btn-secondary text-xs"
-                          >
-                            {generatingIdx === idx ? "Uretiliyor..." : "Tekrar Uret"}
-                          </button>
-                          <button
-                            onClick={() => {
-                              const research = researchData[idx];
-                              handleInfographic(idx, edited, research?.key_points || []);
-                            }}
-                            disabled={infographicLoading === idx}
-                            className="btn-secondary text-xs"
-                          >
-                            {infographicLoading === idx ? "Olusturuluyor..." : "Gemini Infografik"}
-                          </button>
-                        </div>
+                              <button
+                                onClick={() => openInX(gen.thread_parts![0].replace(/^\d+\/\s*/, ""))}
+                                className="px-3 py-1.5 rounded-lg text-xs font-medium text-white"
+                                style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}>
+                                X&apos;te Ac (ilk tweet)
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const fullText = gen.thread_parts!.map((p, i) => `${i + 1}/${gen.thread_parts!.length} ${p.replace(/^\d+\/\s*/, "")}`).join("\n\n");
+                                  copyText(fullText, idx);
+                                }}
+                                className="btn-secondary text-xs">
+                                Kopyala
+                              </button>
+                              <button
+                                onClick={() => handleGenerate(suggestion, idx)}
+                                disabled={generatingIdx === idx}
+                                className="btn-secondary text-xs">
+                                {generatingIdx === idx ? "Uretiliyor..." : "Tekrar Uret"}
+                              </button>
+                              <button onClick={() => handleSaveDraft(idx)} className="btn-secondary text-xs">
+                                Taslak Kaydet
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            <button onClick={() => openInX(edited)} className="btn-primary text-xs inline-flex items-center gap-1"
+                              style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}>
+                              X&apos;te Paylas
+                            </button>
+                            {suggestion.suggested_hour && (
+                              <button onClick={() => handleScheduleBestTime(idx)} className="btn-primary text-xs"
+                                style={{ background: "linear-gradient(135deg, var(--accent-purple), var(--accent-amber))" }}>
+                                {suggestion.suggested_hour}&apos;de Zamanla
+                              </button>
+                            )}
+                            <button onClick={() => handleSaveDraft(idx)} className="btn-secondary text-xs">
+                              Taslak
+                            </button>
+                            <button onClick={() => copyText(edited, idx)} className="btn-secondary text-xs">
+                              Kopyala
+                            </button>
+                            <button
+                              onClick={() => setShowSchedule(showSchedule === idx ? null : idx)}
+                              className="btn-secondary text-xs"
+                            >
+                              Ozel Saat
+                            </button>
+                            {(() => {
+                              const tweets = suggestion.tweets || suggestion.top_tweets || [];
+                              const tweetUrl = tweets.find(t => t.tweet_url)?.tweet_url;
+                              return tweetUrl ? (
+                                <button
+                                  onClick={() => window.open(`https://x.com/intent/tweet?url=${encodeURIComponent(tweetUrl)}`, "_blank")}
+                                  className="btn-secondary text-xs"
+                                >
+                                  X Quote Ac
+                                </button>
+                              ) : null;
+                            })()}
+                            <button
+                              onClick={() => handleGenerate(suggestion, idx)}
+                              disabled={generatingIdx === idx}
+                              className="btn-secondary text-xs"
+                            >
+                              {generatingIdx === idx ? "Uretiliyor..." : "Tekrar Uret"}
+                            </button>
+                            <button
+                              onClick={() => {
+                                const research = researchData[idx];
+                                handleInfographic(idx, edited, research?.key_points || []);
+                              }}
+                              disabled={infographicLoading === idx}
+                              className="btn-secondary text-xs"
+                            >
+                              {infographicLoading === idx ? "Olusturuluyor..." : "Gemini Infografik"}
+                            </button>
+                          </div>
+                        )}
 
                         {/* Custom schedule picker */}
                         {showSchedule === idx && (
