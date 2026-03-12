@@ -511,6 +511,39 @@ def _fetch_my_tweets():
         logger.exception("My tweets fetch error")
 
 
+def _auto_score_all():
+    """Her 1 saatte tüm keşif verilerini kullanıcı profiline göre AI ile skorla."""
+    import asyncio
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        from backend.api.discovery import ai_score_tweets, ai_score_trends, ai_score_suggestions
+
+        try:
+            result = loop.run_until_complete(ai_score_tweets())
+            logger.info(f"Auto-score tweets: {result}")
+        except Exception:
+            logger.exception("Auto-score tweets failed")
+
+        try:
+            result = loop.run_until_complete(ai_score_trends())
+            logger.info(f"Auto-score trends: {result}")
+        except Exception:
+            logger.exception("Auto-score trends failed")
+
+        try:
+            result = loop.run_until_complete(ai_score_suggestions())
+            logger.info(f"Auto-score suggestions: {result}")
+        except Exception:
+            logger.exception("Auto-score suggestions failed")
+
+        loop.close()
+        _track_run("ai_scorer")
+    except Exception:
+        logger.exception("Auto-score all error")
+
+
 def start_scheduler():
     """Scheduler'i baslat — FastAPI startup'ta cagirilir."""
     if not scheduler.running:
@@ -603,11 +636,20 @@ def start_scheduler():
             id="my_tweet_fetcher",
             replace_existing=True,
         )
+        # AI skorlama — her 1 saatte keşif verilerini kullanıcı profiline göre skorla
+        scheduler.add_job(
+            _auto_score_all,
+            "interval",
+            hours=1,
+            id="ai_scorer",
+            replace_existing=True,
+        )
         scheduler.start()
         logger.info(
             "Scheduler started — publish 1m, metrics 30m, auto-reply scanner 10m, "
             "auto-reply generator 5m, self-reply 3m, discovery 30m, telegram 5s, "
-            "auto-scan 2h, trends 1h, account-discovery 6h, suggestions 30m, my-tweets 2h"
+            "auto-scan 2h, trends 1h, account-discovery 6h, suggestions 30m, "
+            "my-tweets 2h, ai-scorer 1h"
         )
 
 

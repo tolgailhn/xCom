@@ -264,6 +264,7 @@ export default function KesifPage() {
           account_discoverer: "Hesap Kesfi",
           auto_content_suggester: "Akilli Oneriler",
           discovery_checker: "Hesap Rotasyon",
+          ai_scorer: "AI Skorlama",
         };
         const relevantJobs = schedulerJobs.filter((j: { id: string }) => JOB_LABELS[j.id]);
         if (!relevantJobs.length) return null;
