@@ -785,6 +785,12 @@ async def research_stream(request: ResearchRequest):
                 }
             elif hasattr(result, "summary"):
                 summary = result.synthesized_brief or result.summary or ""
+                # Safety: strip any remaining AI tags (MiniMax tool_call, think)
+                if summary:
+                    import re as _re
+                    summary = _re.sub(r'<think>.*?</think>', '', summary, flags=_re.DOTALL).strip()
+                    summary = _re.sub(r'<minimax:tool_call>.*?</minimax:tool_call>', '', summary, flags=_re.DOTALL).strip()
+                    summary = _re.sub(r'<minimax:tool_call>.*', '', summary, flags=_re.DOTALL).strip()
                 key_points = []
                 for wr in getattr(result, "web_results", [])[:5]:
                     title = wr.get("title", "")

@@ -1065,3 +1065,23 @@ export function searchAccounts(query: string, maxResults: number = 10) {
     body: JSON.stringify({ query, max_results: maxResults }),
   });
 }
+
+// ── Shared Discovery Tweets ──────────────────────────
+
+export function markTweetShared(tweetId: string): Promise<{ success: boolean; shared_tweets: string[] }> {
+  return apiFetch("/api/discovery/mark-shared", {
+    method: "POST",
+    body: JSON.stringify({ tweet_id: tweetId }),
+  });
+}
+
+export function unmarkTweetShared(tweetId: string): Promise<{ success: boolean; shared_tweets: string[] }> {
+  return apiFetch("/api/discovery/unmark-shared", {
+    method: "POST",
+    body: JSON.stringify({ tweet_id: tweetId }),
+  });
+}
+
+export function getSharedTweets(): Promise<{ tweet_ids: string[] }> {
+  return apiFetch("/api/discovery/shared-tweets");
+}

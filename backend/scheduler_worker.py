@@ -435,11 +435,11 @@ def start_scheduler():
             id="account_discoverer",
             replace_existing=True,
         )
-        # Akıllı öneriler — her 2 saatte otomatik kümele
+        # Akıllı öneriler — her 30 dakikada otomatik kümele
         scheduler.add_job(
             _auto_cluster_suggestions,
             "interval",
-            hours=2,
+            minutes=30,
             id="auto_content_suggester",
             replace_existing=True,
         )
@@ -447,7 +447,7 @@ def start_scheduler():
         logger.info(
             "Scheduler started — publish 1m, metrics 30m, auto-reply scanner 10m, "
             "auto-reply generator 5m, self-reply 3m, discovery 30m, telegram 5s, "
-            "auto-scan 2h, trends 1h, account-discovery 6h, suggestions 2h"
+            "auto-scan 2h, trends 1h, account-discovery 6h, suggestions 30m"
         )
 
 

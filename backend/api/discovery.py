@@ -504,7 +504,8 @@ def get_smart_suggestions():
             suggestions.append({
                 "type": "trend",
                 "topic": trend["keyword"],
-                "topic_tr": "",
+                "topic_tr": trend["keyword"],
+                "description_tr": "",
                 "reason": f"{trend['account_count']} hesap, {trend['tweet_count']} tweet",
                 "tweets": top_tweets,
                 "engagement_potential": min(10, max(1, int(trend.get("trend_score", 0) / 500) + 3)),
@@ -519,7 +520,8 @@ def get_smart_suggestions():
         suggestions.append({
             "type": "news",
             "topic": article.get("title", ""),
-            "topic_tr": "",
+            "topic_tr": article.get("title", ""),
+            "description_tr": "",
             "reason": f"Kaynak: {article.get('source', '')}",
             "tweets": [],
             "engagement_potential": 6,
@@ -750,3 +752,35 @@ def search_accounts(req: SearchAccountsRequest):
     except Exception as e:
         logger.exception("Account search error")
         raise HTTPException(500, f"Hesap arama hatası: {str(e)}")
+
+
+# ── Shared Discovery Tweets ──────────────────────────
+
+@router.post("/mark-shared")
+def mark_tweet_shared(body: dict):
+    """Mark a discovery tweet as shared."""
+    from backend.modules.style_manager import mark_discovery_tweet_shared
+    tweet_id = body.get("tweet_id", "")
+    if not tweet_id:
+        raise HTTPException(400, "tweet_id gerekli")
+    data = mark_discovery_tweet_shared(tweet_id)
+    return {"success": True, "shared_tweets": [d["tweet_id"] for d in data]}
+
+
+@router.post("/unmark-shared")
+def unmark_tweet_shared(body: dict):
+    """Unmark a discovery tweet as shared."""
+    from backend.modules.style_manager import unmark_discovery_tweet_shared
+    tweet_id = body.get("tweet_id", "")
+    if not tweet_id:
+        raise HTTPException(400, "tweet_id gerekli")
+    data = unmark_discovery_tweet_shared(tweet_id)
+    return {"success": True, "shared_tweets": [d["tweet_id"] for d in data]}
+
+
+@router.get("/shared-tweets")
+def get_shared_tweets():
+    """Get list of shared discovery tweet IDs."""
+    from backend.modules.style_manager import load_shared_discovery_tweets
+    data = load_shared_discovery_tweets()
+    return {"tweet_ids": [d["tweet_id"] for d in data]}

@@ -18,6 +18,7 @@ interface ClusterTweet {
   text: string;
   account: string;
   engagement: number;
+  tweet_id?: string;
 }
 
 interface Suggestion {
@@ -212,8 +213,14 @@ export default function TabSmartSuggestions() {
         researchTopic += `\n\nKaynak: ${suggestion.url}`;
       }
 
+      const firstTweet = suggestion.tweets?.[0] || suggestion.top_tweets?.[0];
       const result = await researchTopicStream(
-        { topic: researchTopic, engine: "default" },
+        {
+          topic: researchTopic,
+          engine: "default",
+          tweet_id: firstTweet?.tweet_id || "",
+          tweet_author: firstTweet?.account || "",
+        },
         (progress) => {
           setResearchData(prev => ({
             ...prev,
@@ -257,7 +264,7 @@ export default function TabSmartSuggestions() {
 
       const result = await generateQuoteTweet({
         original_tweet: suggestion.topic + (topTweetsContext ? `\n\n${topTweetsContext}` : ""),
-        original_author: suggestion.type === "trend" ? "trend" : "news",
+        original_author: (suggestion.tweets?.[0]?.account || suggestion.top_tweets?.[0]?.account || suggestion.topic.slice(0, 50)),
         style: tweetStyle,
         research_summary: researchSummary,
         length_preference: tweetLength,
@@ -349,7 +356,12 @@ export default function TabSmartSuggestions() {
 
   /* ── Render ─────────────────────────────────────────── */
 
-  if (loading) return <div className="text-center py-8 text-[var(--text-secondary)]">Yukleniyor...</div>;
+  if (loading) return (
+    <div className="text-center py-12">
+      <div className="w-10 h-10 mx-auto mb-3 rounded-full border-2 border-[var(--accent-blue)]/30 border-t-[var(--accent-blue)] animate-spin" />
+      <div className="text-sm text-[var(--text-secondary)]">Yukleniyor...</div>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -362,8 +374,11 @@ export default function TabSmartSuggestions() {
         <button
           onClick={handleRecluster}
           disabled={clustering}
-          className="btn-primary text-xs"
+          className={`btn-primary text-xs inline-flex items-center gap-1.5 ${clustering ? "animate-pulse" : ""}`}
         >
+          {clustering && (
+            <div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+          )}
           {clustering ? "Kumeleniyor..." : "Yeniden Kumele"}
         </button>
       </div>
@@ -408,7 +423,7 @@ export default function TabSmartSuggestions() {
                   onClick={() => scrollToCard(idx)}
                   className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 hover:scale-105 ${
                     suggestion.engagement_potential >= 7
-                      ? `bg-gradient-to-r ${engagementBgClass(suggestion.engagement_potential)} hover:shadow-[0_0_12px_var(--accent-green)/20]`
+                      ? `bg-gradient-to-r ${engagementBgClass(suggestion.engagement_potential)} hover:shadow-[0_0_16px_var(--accent-green)/25]`
                       : expandedIdx === idx
                         ? "bg-[var(--accent-blue)]/15 text-[var(--accent-blue)] border-[var(--accent-blue)]/40"
                         : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/40"
@@ -493,8 +508,15 @@ export default function TabSmartSuggestions() {
 
       {/* ════ Suggestion Cards ════ */}
       {filteredWithIdx.length === 0 ? (
-        <div className="glass-card p-8 text-center text-[var(--text-secondary)]">
-          Henuz oneri yok. Trend analizi ve haber taramasi verileri biriktikce oneriler burada gorunecek.
+        <div className="glass-card p-12 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[var(--accent-blue)]/10 to-[var(--accent-purple)]/10 flex items-center justify-center">
+            <span className="text-2xl">💡</span>
+          </div>
+          <p className="text-sm font-medium text-[var(--text-primary)]">Henuz oneri yok</p>
+          <p className="text-xs text-[var(--text-secondary)] mt-1">Trend analizi ve haber taramasi verileri biriktikce oneriler burada gorunecek.</p>
+          <button onClick={handleRecluster} disabled={clustering} className={`mt-4 btn-primary text-xs ${clustering ? "animate-pulse" : ""}`}>
+            {clustering ? "Kumeleniyor..." : "Yeniden Kumele"}
+          </button>
         </div>
       ) : (
         <div className="space-y-3">
@@ -515,10 +537,15 @@ export default function TabSmartSuggestions() {
                 className={`glass-card overflow-hidden transition-all duration-300 ${
                   isExpanded ? "ring-1 ring-[var(--accent-blue)]/40" : ""
                 }`}
-                style={{
-                  borderLeft: `3px solid ${isTrend ? "var(--accent-amber)" : "var(--accent-cyan)"}`,
-                }}
               >
+                {/* Top accent gradient */}
+                <div className="h-1 rounded-t-xl" style={{
+                  background: suggestion.engagement_potential >= 7
+                    ? "linear-gradient(90deg, var(--accent-green), var(--accent-green)/30)"
+                    : suggestion.engagement_potential >= 4
+                      ? "linear-gradient(90deg, var(--accent-amber), var(--accent-amber)/30)"
+                      : "linear-gradient(90deg, var(--bg-secondary), transparent)"
+                }} />
                 {/* ── Card Header (clickable to expand) ── */}
                 <div
                   className="p-4 cursor-pointer hover:bg-[var(--bg-secondary)]/30 transition-colors"
@@ -527,7 +554,7 @@ export default function TabSmartSuggestions() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       {/* Type badge + Engagement + Topic */}
-                      <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold tracking-wide shrink-0 ${
                           isTrend
                             ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30"
@@ -540,33 +567,52 @@ export default function TabSmartSuggestions() {
                         </h3>
                       </div>
 
-                      {/* Reason */}
+                      {/* English topic as subtitle when Turkish is available */}
+                      {suggestion.topic_tr && suggestion.topic_tr !== suggestion.topic && (
+                        <p className="text-[11px] text-[var(--text-secondary)]/60 mb-0.5 italic">{suggestion.topic}</p>
+                      )}
+
+                      {/* Turkish description - prominent with cyan accent */}
+                      {suggestion.description_tr && (
+                        <p className="text-xs text-[var(--accent-cyan)] mt-0.5 mb-1 leading-relaxed line-clamp-2 font-medium">
+                          {suggestion.description_tr}
+                        </p>
+                      )}
+
+                      {/* Reason + Reasoning */}
                       <p className="text-[11px] text-[var(--text-secondary)] line-clamp-1">
                         {suggestion.reason}
-                        {suggestion.reasoning && ` — ${suggestion.reasoning}`}
                       </p>
+                      {suggestion.reasoning && (
+                        <p className="text-[11px] text-[var(--accent-amber)]/80 mt-0.5 line-clamp-2">
+                          {suggestion.reasoning}
+                        </p>
+                      )}
                     </div>
 
                     {/* Right side: engagement gauge + expand arrow */}
                     <div className="flex items-center gap-3 shrink-0">
                       {/* Engagement gauge (circular style) */}
-                      <div className="relative w-12 h-12 flex items-center justify-center">
-                        <svg className="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
-                          <circle cx="18" cy="18" r="14" fill="none" stroke="var(--bg-secondary)" strokeWidth="3" />
-                          <circle
-                            cx="18" cy="18" r="14" fill="none"
-                            stroke={engagementColor(suggestion.engagement_potential)}
-                            strokeWidth="3"
-                            strokeDasharray={`${suggestion.engagement_potential * 8.8} 88`}
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                        <span
-                          className="absolute text-sm font-black"
-                          style={{ color: engagementColor(suggestion.engagement_potential) }}
-                        >
-                          {suggestion.engagement_potential}
-                        </span>
+                      <div className="flex flex-col items-center">
+                        <div className="relative w-14 h-14 flex items-center justify-center">
+                          <svg className="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
+                            <circle cx="18" cy="18" r="14" fill="none" stroke="var(--bg-secondary)" strokeWidth="3" />
+                            <circle
+                              cx="18" cy="18" r="14" fill="none"
+                              stroke={engagementColor(suggestion.engagement_potential)}
+                              strokeWidth="3"
+                              strokeDasharray={`${suggestion.engagement_potential * 8.8} 88`}
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                          <span
+                            className="absolute text-base font-black"
+                            style={{ color: engagementColor(suggestion.engagement_potential) }}
+                          >
+                            {suggestion.engagement_potential}
+                          </span>
+                        </div>
+                        <span className="text-[8px] text-[var(--text-secondary)] mt-0.5">potansiyel</span>
                       </div>
 
                       {/* Dismiss + Expand */}
@@ -628,6 +674,13 @@ export default function TabSmartSuggestions() {
                 {/* ── Expanded Content ── */}
                 {isExpanded && (
                   <div className="border-t border-[var(--border)] p-4 space-y-4 bg-[var(--bg-secondary)]/20">
+                    {/* Description in Turkish (full, not truncated) */}
+                    {suggestion.description_tr && (
+                      <p className="text-xs text-[var(--accent-cyan)] leading-relaxed">
+                        {suggestion.description_tr}
+                      </p>
+                    )}
+
                     {/* News body preview */}
                     {suggestion.type === "news" && suggestion.news_body && (
                       <div className="text-xs text-[var(--text-secondary)] leading-relaxed bg-[var(--bg-primary)] rounded-lg px-3 py-2">
@@ -642,21 +695,28 @@ export default function TabSmartSuggestions() {
 
                     {/* Trend tweets */}
                     {tweets.length > 0 && (
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         <h4 className="text-xs font-semibold text-[var(--text-secondary)] mb-1">Ilgili Tweetler</h4>
                         {tweets.map((tw, i) => (
-                          <div key={i} className="flex gap-2 text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2">
-                            <a
-                              href={`https://x.com/${tw.account}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="font-semibold text-[var(--accent-blue)] hover:underline shrink-0"
-                            >
-                              @{tw.account}
-                            </a>
-                            <span className="text-[var(--text-primary)] line-clamp-2 flex-1">{tw.text}</span>
+                          <div key={i} className="flex items-start gap-2.5 text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2.5 border border-[var(--border)] hover:border-[var(--accent-blue)]/30 transition-colors">
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--accent-blue)]/20 to-[var(--accent-purple)]/20 flex items-center justify-center text-[10px] font-bold text-[var(--accent-blue)] shrink-0">
+                              {tw.account.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <a
+                                href={`https://x.com/${tw.account}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-semibold text-[var(--accent-blue)] hover:underline text-[11px]"
+                              >
+                                @{tw.account}
+                              </a>
+                              <p className="text-[var(--text-primary)] line-clamp-2 mt-0.5 leading-relaxed">{tw.text}</p>
+                            </div>
                             {tw.engagement > 0 && (
-                              <span className="text-[10px] text-[var(--text-secondary)] shrink-0">{tw.engagement.toFixed(0)}</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--accent-amber)]/10 text-[var(--accent-amber)] font-medium shrink-0">
+                                {tw.engagement.toFixed(0)}
+                              </span>
                             )}
                           </div>
                         ))}
@@ -668,15 +728,19 @@ export default function TabSmartSuggestions() {
                       <button
                         onClick={() => handleResearch(suggestion, idx)}
                         disabled={isResearching}
-                        className="btn-primary text-xs"
+                        className="btn-primary text-xs inline-flex items-center gap-1.5"
+                        style={!isResearching ? { background: "linear-gradient(135deg, var(--accent-blue), var(--accent-cyan))" } : undefined}
                       >
+                        {isResearching && <div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />}
                         {isResearching ? "Arastiriliyor..." : research?.summary ? "Tekrar Arastir" : "Arastir"}
                       </button>
                       <button
                         onClick={() => handleGenerate(suggestion, idx)}
                         disabled={isGenerating}
-                        className="btn-primary text-xs"
+                        className="btn-primary text-xs inline-flex items-center gap-1.5"
+                        style={!isGenerating ? { background: "linear-gradient(135deg, var(--accent-amber), var(--accent-purple))" } : undefined}
                       >
+                        {isGenerating && <div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />}
                         {isGenerating ? "Uretiliyor..." : gen ? "Tekrar Uret" : "Tweet Uret"}
                       </button>
                       {suggestion.url && (
@@ -700,84 +764,100 @@ export default function TabSmartSuggestions() {
 
                     {/* ── Research Results ── */}
                     {research && research.summary && (
-                      <div className="space-y-3 bg-[var(--bg-primary)] rounded-lg p-4">
-                        <h4 className="text-xs font-semibold text-[var(--accent-green)]">Arastirma Sonuclari</h4>
+                      <div className="rounded-xl bg-gradient-to-br from-[var(--accent-blue)]/5 to-transparent border border-[var(--accent-blue)]/20 p-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-green)] animate-pulse" />
+                          <h4 className="text-xs font-semibold text-[var(--accent-green)]">Arastirma Sonuclari</h4>
+                        </div>
                         <p className="text-xs leading-relaxed text-[var(--text-primary)]">
                           {research.summary.replace(/<think>[\s\S]*?<\/think>/g, "").trim()}
                         </p>
                         {research.key_points.length > 0 && (
-                          <ul className="text-xs space-y-1 list-disc pl-4 text-[var(--text-secondary)]">
+                          <div className="space-y-1.5">
                             {research.key_points.map((kp, i) => (
-                              <li key={i}>{kp}</li>
+                              <div key={i} className="flex items-start gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-blue)] mt-1.5 shrink-0" />
+                                <span className="text-xs text-[var(--text-primary)] leading-relaxed">{kp}</span>
+                              </div>
                             ))}
-                          </ul>
+                          </div>
                         )}
                         {research.sources.length > 0 && (
-                          <details className="text-[10px]">
-                            <summary className="cursor-pointer text-[var(--text-secondary)]">
-                              Kaynaklar ({research.sources.length})
-                            </summary>
-                            <div className="mt-1 space-y-0.5">
+                          <div className="space-y-1.5 pt-2 border-t border-[var(--accent-blue)]/10">
+                            <h5 className="text-[10px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Kaynaklar</h5>
+                            <div className="space-y-1">
                               {research.sources.slice(0, 5).map((s, i) => (
-                                <div key={i}>
-                                  {s.url ? (
-                                    <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-[var(--accent-blue)] hover:underline">{s.title}</a>
-                                  ) : (
-                                    <span>{s.title}</span>
-                                  )}
-                                </div>
+                                s.url ? (
+                                  <a key={i} href={s.url} target="_blank" rel="noopener noreferrer"
+                                    className="block px-3 py-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border)] hover:border-[var(--accent-blue)]/40 transition-colors">
+                                    <div className="text-xs font-medium text-[var(--accent-blue)]">{s.title}</div>
+                                  </a>
+                                ) : (
+                                  <div key={i} className="px-3 py-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border)]">
+                                    <div className="text-xs text-[var(--text-secondary)]">{s.title}</div>
+                                  </div>
+                                )
                               ))}
                             </div>
-                          </details>
+                          </div>
                         )}
                       </div>
                     )}
 
                     {/* ── Generated Tweet ── */}
                     {gen && (
-                      <div className="space-y-3 bg-[var(--bg-primary)] rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-xs font-semibold text-[var(--accent-amber)]">Uretilen Tweet</h4>
-                          {gen.score > 0 && (
-                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                              gen.score >= 80 ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)]" :
-                              gen.score >= 60 ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]" :
-                              "bg-[var(--accent-red)]/20 text-[var(--accent-red)]"
-                            }`}>
-                              {gen.score}/100
-                            </span>
-                          )}
+                      <div className="space-y-3">
+                        {/* Tweet preview card (X-style) */}
+                        <div className="rounded-xl bg-[var(--bg-primary)] border border-[var(--border)] p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--accent-blue)] to-[var(--accent-purple)] flex items-center justify-center text-white text-sm font-bold shrink-0">X</div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-[11px] text-[var(--text-secondary)]">Olusturulan Tweet</span>
+                                {gen.score > 0 && (
+                                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                                    gen.score >= 80 ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)]" :
+                                    gen.score >= 60 ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]" :
+                                    "bg-[var(--accent-red)]/20 text-[var(--accent-red)]"
+                                  }`}>
+                                    {gen.score}/100
+                                  </span>
+                                )}
+                              </div>
+                              <textarea
+                                value={edited}
+                                onChange={e => setEditedTexts(prev => ({ ...prev, [idx]: e.target.value }))}
+                                className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm w-full min-h-[80px] resize-y focus:border-[var(--accent-blue)] focus:outline-none"
+                                rows={Math.min(6, Math.max(3, edited.split("\n").length + 1))}
+                              />
+                              <div className="text-[10px] text-[var(--text-secondary)] text-right mt-1">
+                                {edited.length} karakter
+                                {edited.length > 280 && (
+                                  <span className="text-[var(--accent-amber)] ml-2">Thread olarak paylasmayi dusunun</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
                         </div>
 
-                        <textarea
-                          value={edited}
-                          onChange={e => setEditedTexts(prev => ({ ...prev, [idx]: e.target.value }))}
-                          className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm w-full min-h-[80px] resize-y focus:border-[var(--accent-blue)] focus:outline-none"
-                          rows={Math.min(6, Math.max(3, edited.split("\n").length + 1))}
-                        />
-                        <div className="text-[10px] text-[var(--text-secondary)] text-right">
-                          {edited.length} karakter
-                          {edited.length > 280 && (
-                            <span className="text-[var(--accent-amber)] ml-2">Thread olarak paylasmayi dusunun</span>
-                          )}
-                        </div>
-
-                        {/* Action buttons */}
+                        {/* Action buttons - gradient primary, outline secondary */}
                         <div className="flex flex-wrap gap-2">
-                          <button onClick={() => openInX(edited)} className="btn-primary text-xs">
-                            X&apos;te Ac
+                          <button onClick={() => openInX(edited)} className="btn-primary text-xs inline-flex items-center gap-1"
+                            style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}>
+                            X&apos;te Paylas
+                          </button>
+                          {suggestion.suggested_hour && (
+                            <button onClick={() => handleScheduleBestTime(idx)} className="btn-primary text-xs"
+                              style={{ background: "linear-gradient(135deg, var(--accent-purple), var(--accent-amber))" }}>
+                              {suggestion.suggested_hour}&apos;de Zamanla
+                            </button>
+                          )}
+                          <button onClick={() => handleSaveDraft(idx)} className="btn-secondary text-xs">
+                            Taslak
                           </button>
                           <button onClick={() => copyText(edited, idx)} className="btn-secondary text-xs">
                             Kopyala
                           </button>
-                          <button onClick={() => handleSaveDraft(idx)} className="btn-secondary text-xs">
-                            Taslak
-                          </button>
-                          {suggestion.suggested_hour && (
-                            <button onClick={() => handleScheduleBestTime(idx)} className="btn-primary text-xs">
-                              {suggestion.suggested_hour}&apos;de Zamanla
-                            </button>
-                          )}
                           <button
                             onClick={() => setShowSchedule(showSchedule === idx ? null : idx)}
                             className="btn-secondary text-xs"

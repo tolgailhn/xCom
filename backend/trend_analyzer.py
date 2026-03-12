@@ -283,13 +283,20 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
 
     prompt = (
         "Bu tweet'leri SPESİFİK konulara göre grupla.\n"
-        "Her grup TEK BİR olay/duyuru/tartışma hakkında olmalı.\n"
-        "GENELLEMELERDEN KAÇIN — 'AI gelişmeleri' değil, 'Google Gemini 2 Çıkışı' gibi spesifik ol.\n"
-        "Birbirine benzemeyen tweet'leri aynı gruba KOYMA.\n"
-        "Tek başına kalan tweet'ler için de ayrı grup oluştur.\n\n"
+        "Her grup TEK BİR olay/duyuru/tartışma hakkında olmalı.\n\n"
+        "KURALLAR:\n"
+        "1. GENELLEMELERDEN KAÇIN — 'AI gelişmeleri' değil, 'Google Gemini 2.5 Flash Çıkışı' gibi spesifik ol\n"
+        "2. Her konu başlığı EN AZ 3 kelime olmalı ve spesifik bir olay/ürün/duyuru içermeli\n"
+        "3. Birbiriyle ÇOK benzer konuları (aynı ürün, aynı şirket, aynı olay) MUTLAKA birleştir\n"
+        "4. Birbirine benzemeyen tweet'leri aynı gruba KOYMA\n"
+        "5. Tek başına kalan tweet'ler için de ayrı grup oluştur\n"
+        "6. topic_title_tr ZORUNLU — her konu için Türkçe başlık MUTLAKA yaz\n"
+        "7. description_tr ZORUNLU — her konu için 'Bu konu neden önemli?' 1-2 cümle Türkçe açıklama yaz\n\n"
         f"Tweet'ler:\n{tweets_text}\n\n"
         "SADECE JSON array döndür, başka bir şey yazma:\n"
-        '[{"topic_title": "spesifik konu başlığı", "topic_title_tr": "Türkçe başlık", '
+        '[{"topic_title": "specific English topic title (min 3 words)", '
+        '"topic_title_tr": "Türkçe başlık (ZORUNLU)", '
+        '"description_tr": "Bu konu neden önemli? Türkçe açıklama (ZORUNLU)", '
         '"tweet_indices": [0, 3, 5], "engagement_potential": 8, '
         '"suggested_style": "informative", "suggested_hour": "14:07", '
         '"reasoning": "neden ilginç kısa açıklama"}]'
@@ -416,6 +423,7 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
             "type": "trend",
             "topic": cluster.get("topic_title", ""),
             "topic_tr": cluster.get("topic_title_tr", ""),
+            "description_tr": cluster.get("description_tr", ""),
             "reason": f"{len(cluster_tweets)} tweet, {len(set(t['account'] for t in cluster_tweets))} hesap",
             "tweets": cluster_tweets,
             "engagement_potential": min(10, max(1, cluster.get("engagement_potential", 5))),

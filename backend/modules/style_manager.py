@@ -937,3 +937,45 @@ def save_trend_history(history: list[dict]):
     os.makedirs(DATA_DIR, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(fresh, f, ensure_ascii=False, indent=2, default=str)
+
+
+# ── Shared Discovery Tweets ────────────────────────────
+
+def load_shared_discovery_tweets() -> list:
+    """Load list of shared discovery tweet IDs."""
+    path = DATA_DIR / "shared_discovery_tweets.json"
+    if not path.exists():
+        return []
+    try:
+        return json.loads(path.read_text("utf-8"))
+    except Exception:
+        return []
+
+
+def save_shared_discovery_tweets(data: list):
+    """Save shared discovery tweets"""
+    path = DATA_DIR / "shared_discovery_tweets.json"
+    os.makedirs(DATA_DIR, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), "utf-8")
+
+
+def mark_discovery_tweet_shared(tweet_id: str) -> list:
+    """Mark a discovery tweet as shared. Returns updated list."""
+    data = load_shared_discovery_tweets()
+    # Check if already shared
+    if any(d.get("tweet_id") == tweet_id for d in data):
+        return data
+    data.append({
+        "tweet_id": tweet_id,
+        "shared_at": datetime.datetime.now().isoformat(),
+    })
+    save_shared_discovery_tweets(data)
+    return data
+
+
+def unmark_discovery_tweet_shared(tweet_id: str) -> list:
+    """Unmark a discovery tweet as shared. Returns updated list."""
+    data = load_shared_discovery_tweets()
+    data = [d for d in data if d.get("tweet_id") != tweet_id]
+    save_shared_discovery_tweets(data)
+    return data

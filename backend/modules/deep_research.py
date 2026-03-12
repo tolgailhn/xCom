@@ -233,6 +233,19 @@ def _parallel_fetch_articles(urls: list[str], max_articles: int = 5,
 # AI-POWERED TOPIC EXTRACTION — understands what the tweet is ACTUALLY about
 # ========================================================================
 
+def _clean_ai_tags(text: str) -> str:
+    """Strip unwanted AI tags from any provider response.
+    MiniMax: <minimax:tool_call>, <think>
+    Reasoning models (Groq, etc.): <think>
+    """
+    if not text:
+        return text
+    text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+    text = re.sub(r'<minimax:tool_call>.*?</minimax:tool_call>', '', text, flags=re.DOTALL).strip()
+    text = re.sub(r'<minimax:tool_call>.*', '', text, flags=re.DOTALL).strip()
+    return text
+
+
 def _call_ai(ai_client, provider: str, ai_model: str | None, prompt: str,
              max_tokens: int = 1000, temperature: float = 0.3, system: str = "") -> str | None:
     """Unified AI call helper — supports anthropic, gemini, openai/minimax/groq."""
@@ -274,12 +287,9 @@ def _call_ai(ai_client, provider: str, ai_model: str | None, prompt: str,
                 temperature=temperature,
             )
             text = response.choices[0].message.content.strip()
-            # Strip unwanted MiniMax tags (tool_call, think)
-            if provider == "minimax" and text:
-                import re as _re
-                text = _re.sub(r'<think>.*?</think>', '', text, flags=_re.DOTALL).strip()
-                text = _re.sub(r'<minimax:tool_call>.*?</minimax:tool_call>', '', text, flags=_re.DOTALL).strip()
-                text = _re.sub(r'<minimax:tool_call>.*', '', text, flags=_re.DOTALL).strip()
+            # Strip unwanted AI tags (MiniMax tool_call, think from any reasoning model)
+            if text:
+                text = _clean_ai_tags(text)
             return text
     except Exception as e:
         print(f"AI call error ({provider}): {e}")
@@ -359,8 +369,8 @@ KURALLAR:
         if not raw:
             return None
 
-        # Strip <think> tags from reasoning models
-        raw = re.sub(r'<think>.*?</think>', '', raw, flags=re.DOTALL).strip()
+        # Strip unwanted AI tags (think, minimax tool_call)
+        raw = _clean_ai_tags(raw)
 
         # Extract JSON from response
         json_match = re.search(r'\{.*\}', raw, re.DOTALL)
@@ -2156,8 +2166,7 @@ KURALLAR:
     try:
         result = _call_ai(ai_client, provider, ai_model, prompt, max_tokens=4000, temperature=0.1)
         if result:
-            # Strip <think> tags from reasoning models
-            result = re.sub(r'<think>.*?</think>', '', result, flags=re.DOTALL).strip()
+            result = _clean_ai_tags(result)
         return result
     except Exception as e:
         print(f"AI research synthesis error: {e}")
@@ -2330,7 +2339,7 @@ KURALLAR:
         if not raw:
             return []
 
-        raw = re.sub(r'<think>.*?</think>', '', raw, flags=re.DOTALL).strip()
+        raw = _clean_ai_tags(raw)
         json_match = re.search(r'\{.*\}', raw, re.DOTALL)
         if not json_match:
             return []
@@ -2463,7 +2472,7 @@ KURALLAR:
         if not raw:
             return None
 
-        raw = re.sub(r'<think>.*?</think>', '', raw, flags=re.DOTALL).strip()
+        raw = _clean_ai_tags(raw)
         json_match = re.search(r'\{.*\}', raw, re.DOTALL)
         if not json_match:
             return None
@@ -3027,7 +3036,7 @@ SADECE şu JSON formatında yanıt ver:
         if not raw:
             return None
 
-        raw = re.sub(r'<think>.*?</think>', '', raw, flags=re.DOTALL).strip()
+        raw = _clean_ai_tags(raw)
         json_match = re.search(r'\{.*\}', raw, re.DOTALL)
         if not json_match:
             return None
@@ -3296,7 +3305,7 @@ SADECE JSON ver, başka bir şey yazma."""
             text = response.choices[0].message.content
 
         # Parse JSON
-        text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+        text = _clean_ai_tags(text)
         json_match = re.search(r'\[.*\]', text, re.DOTALL)
         if json_match:
             topics = json.loads(json_match.group())

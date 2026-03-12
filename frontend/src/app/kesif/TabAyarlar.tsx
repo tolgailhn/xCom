@@ -140,7 +140,7 @@ export default function TabAyarlar({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-[var(--text-secondary)]">Baslangic Saati</label>
+            <label className="text-xs text-[var(--text-secondary)]">Baslangic Saati (Tarama bu saatten itibaren calisir)</label>
             <input
               type="number"
               min={0}
@@ -151,7 +151,7 @@ export default function TabAyarlar({
             />
           </div>
           <div>
-            <label className="text-xs text-[var(--text-secondary)]">Bitis Saati</label>
+            <label className="text-xs text-[var(--text-secondary)]">Bitis Saati (Bu saatten sonra tarama duraklar)</label>
             <input
               type="number"
               min={0}
@@ -176,7 +176,7 @@ export default function TabAyarlar({
       {/* Rotation Status + Manual Scan */}
       <div className="card p-4 space-y-4">
         <div>
-          <h3 className="font-semibold">Tarama Durumu &amp; Manuel Tarama</h3>
+          <h3 className="font-semibold">Tarama Durumu ve Manuel Tarama</h3>
           <p className="text-xs text-[var(--text-secondary)] mt-1">
             Hesaplara tiklayarak sec, &quot;Secilenleri Tara&quot; ile sadece onlari tara
           </p>

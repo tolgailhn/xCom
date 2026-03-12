@@ -11,6 +11,9 @@ import {
   getStyles,
   summarizeDiscoveryTweets,
   getDiscoveryTweets,
+  markTweetShared,
+  unmarkTweetShared,
+  getSharedTweets,
   type DiscoveryTweet,
   type DiscoveryStatus,
 } from "@/lib/api";
@@ -118,6 +121,10 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
   const [groupByAccount, setGroupByAccount] = useState(true);
 
+  // Shared tweet tracking
+  const [sharedTweetIds, setSharedTweetIds] = useState<Set<string>>(new Set());
+  const [hideShared, setHideShared] = useState(false);
+
   // TR Ceviri
   const [summarizing, setSummarizing] = useState(false);
   const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
@@ -154,6 +161,13 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
         setStyles(r.styles);
         setFormats(r.formats);
       })
+      .catch(() => {});
+  }, []);
+
+  // Load shared tweets on mount
+  useEffect(() => {
+    getSharedTweets()
+      .then(data => setSharedTweetIds(new Set(data.tweet_ids || [])))
       .catch(() => {});
   }, []);
 
@@ -307,6 +321,19 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
     });
   };
 
+  const handleToggleShared = async (tweetId: string) => {
+    const isShared = sharedTweetIds.has(tweetId);
+    try {
+      if (isShared) {
+        const result = await unmarkTweetShared(tweetId);
+        setSharedTweetIds(new Set(result.shared_tweets || []));
+      } else {
+        const result = await markTweetShared(tweetId);
+        setSharedTweetIds(new Set(result.shared_tweets || []));
+      }
+    } catch { /* ignore */ }
+  };
+
   /* ── Computed ──────────────────────────────────────── */
 
   const todayStr = formatDateStr(new Date());
@@ -337,6 +364,7 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
   const filteredTweets = tweets.filter(t => {
     if (filterAccount && t.account.toLowerCase() !== filterAccount.toLowerCase()) return false;
     if (filterImportance && t.importance !== filterImportance) return false;
+    if (hideShared && sharedTweetIds.has(t.tweet_id)) return false;
     if (selectedDate !== "all") {
       try {
         const tweetDate = new Date(t.created_at);
@@ -440,6 +468,17 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
           className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30 hover:bg-[var(--accent-amber)]/30 transition-colors disabled:opacity-50"
         >
           {translatingAll ? "Cevriliyor..." : `Tumunu Cevir (${filteredTweets.length})`}
+        </button>
+        <button
+          onClick={() => setHideShared(!hideShared)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+            hideShared
+              ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)] border-[var(--accent-green)]/30"
+              : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--accent-green)]/50"
+          }`}
+        >
+          {hideShared ? "Paylasilanlari Gizle \u2713" : "Paylasilanlari Gizle"}
+          {sharedTweetIds.size > 0 && ` (${sharedTweetIds.size})`}
         </button>
         {(summarizing || translatingAll) && (
           <span className="text-[10px] text-[var(--accent-amber)] animate-pulse">TR ceviri uretiliyor...</span>
@@ -565,6 +604,8 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
                           onSetActiveGenerate={() => setActiveGenerate(activeGenerate === tweet.tweet_id ? null : tweet.tweet_id)}
                           onTranslate={() => handleTranslate(tweet)}
                           isTranslating={translatingIds.has(tweet.tweet_id)}
+                          isShared={sharedTweetIds.has(tweet.tweet_id)}
+                          onToggleShared={() => handleToggleShared(tweet.tweet_id)}
                         />
                       ))}
                     </div>
@@ -616,6 +657,8 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
               onSetActiveGenerate={() => setActiveGenerate(activeGenerate === tweet.tweet_id ? null : tweet.tweet_id)}
               onTranslate={() => handleTranslate(tweet)}
               isTranslating={translatingIds.has(tweet.tweet_id)}
+              isShared={sharedTweetIds.has(tweet.tweet_id)}
+              onToggleShared={() => handleToggleShared(tweet.tweet_id)}
             />
           ))}
         </div>
@@ -661,6 +704,8 @@ function TweetCard({
   onSetActiveGenerate,
   onTranslate,
   isTranslating,
+  isShared,
+  onToggleShared,
 }: {
   tweet: DiscoveryTweet;
   index: number;
@@ -696,6 +741,8 @@ function TweetCard({
   onSetActiveGenerate: () => void;
   onTranslate: () => void;
   isTranslating: boolean;
+  isShared?: boolean;
+  onToggleShared?: () => void;
 }) {
   const badge = importanceBadge[tweet.importance] || importanceBadge.dusuk;
   const [draftSaved, setDraftSaved] = useState(false);
@@ -706,7 +753,7 @@ function TweetCard({
   }, [generatedResult?.text]);
 
   return (
-    <div className="glass-card p-4 space-y-3">
+    <div className={`glass-card p-4 space-y-3${isShared ? " opacity-50" : ""}`}>
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
@@ -819,6 +866,18 @@ function TweetCard({
         >
           {isTranslating ? "Cevriliyor..." : "&#127481;&#127479; Cevir"}
         </button>
+        {onToggleShared && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleShared(); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+              isShared
+                ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)] border-[var(--accent-green)]/30"
+                : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--accent-green)]/50"
+            }`}
+          >
+            {isShared ? "\u2713 Paylasild" : "Paylasild"}
+          </button>
+        )}
       </div>
 
       {/* Research progress */}
