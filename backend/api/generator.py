@@ -1018,33 +1018,84 @@ async def score_tweet_endpoint(request: ScoreRequest):
 @router.post("/find-media")
 async def find_media_endpoint(request: MediaRequest):
     """Konuyla ilgili gorsel/video bul"""
+    import logging
+    logger = logging.getLogger("find-media")
+
+    # Validate query length
+    topic_clean = (request.topic or "").strip()
+    if len(topic_clean) < 3:
+        logger.warning("find-media: query too short: %r", topic_clean)
+        return {"media": [], "total": 0, "error": "Arama metni cok kisa (en az 3 karakter)."}
+
+    warnings: list[str] = []
+
     try:
         from backend.modules.media_finder import find_media as do_find_media
 
         # Get twikit client for X search (with credentials from config)
         twikit_client = None
+        twikit_auth_failed = False
         if request.source in ("x", "both"):
             try:
                 from backend.modules.twikit_client import TwikitSearchClient
                 from backend.config import get_settings
                 s = get_settings()
-                twikit_client = TwikitSearchClient(
-                    username=s.twikit_username or "",
-                    password=s.twikit_password or "",
-                    email=s.twikit_email or "",
-                )
-                if not twikit_client.authenticate():
-                    twikit_client = None
-            except Exception:
-                pass
+                if not s.twikit_username and not s.twikit_password:
+                    logger.warning("find-media: twikit credentials not configured, skipping X search")
+                    twikit_auth_failed = True
+                    warnings.append("X (Twitter) kimlik bilgileri ayarlanmamis.")
+                else:
+                    twikit_client = TwikitSearchClient(
+                        username=s.twikit_username or "",
+                        password=s.twikit_password or "",
+                        email=s.twikit_email or "",
+                    )
+                    if not twikit_client.authenticate():
+                        logger.warning("find-media: twikit authenticate() returned False")
+                        twikit_client = None
+                        twikit_auth_failed = True
+                        warnings.append("X (Twitter) oturumu acilamadi.")
+            except Exception as auth_err:
+                logger.warning("find-media: twikit auth exception: %s", auth_err, exc_info=True)
+                twikit_client = None
+                twikit_auth_failed = True
+                warnings.append(f"X (Twitter) baglanti hatasi: {str(auth_err)[:120]}")
+
+        # If twikit failed, always fall back to web search so we still return results
+        effective_source = request.source
+        if twikit_auth_failed:
+            if request.source in ("x", "both"):
+                logger.info("find-media: twikit auth failed, falling back from %r to 'web'", request.source)
+                effective_source = "web"
 
         source_map = {"both": "all", "x": "x", "web": "web"}
+        mapped_source = source_map.get(effective_source, effective_source)
+        logger.info(
+            "find-media: searching topic=%r source=%s (original=%s, twikit_ok=%s)",
+            topic_clean[:80], mapped_source, request.source, twikit_client is not None,
+        )
+
         search_result = await asyncio.to_thread(
             do_find_media,
-            topic_text=request.topic,
-            source=source_map.get(request.source, request.source),
+            topic_text=topic_clean,
+            source=mapped_source,
             twikit_client=twikit_client,
         )
+
+        # Check for errors from find_media itself
+        if search_result.error:
+            logger.warning("find-media: media_finder returned error: %s", search_result.error)
+
+        # If source was "all" (twikit worked) but got no results, retry web-only as fallback
+        if not search_result.has_results and mapped_source == "all":
+            logger.info("find-media: no results with source 'all', retrying with 'web' only")
+            warnings.append("X aramasinda sonuc bulunamadi, web aramasi deneniyor.")
+            search_result = await asyncio.to_thread(
+                do_find_media,
+                topic_text=topic_clean,
+                source="web",
+                twikit_client=None,
+            )
 
         # Convert MediaItem dataclasses to dicts
         results = []
@@ -1059,10 +1110,24 @@ async def find_media_endpoint(request: MediaRequest):
                 "author": item.author,
             })
 
-        return {"media": results[:12], "total": len(results)}
+        logger.info(
+            "find-media: found %d results (images=%d, videos=%d, source=%s)",
+            len(results), len(search_result.images), len(search_result.videos), mapped_source,
+        )
+
+        response: dict = {"media": results[:12], "total": len(results)}
+        if warnings:
+            response["warning"] = " ".join(warnings) + " Sadece web sonuclari gosteriliyor."
+        if search_result.error:
+            response["error"] = search_result.error
+        if not results:
+            response["error"] = response.get("error", "") or "Sonuc bulunamadi. Farkli bir arama metni deneyin veya arama kaynagini degistirin."
+            logger.warning("find-media: no results for topic=%r source=%s", topic_clean[:80], mapped_source)
+        return response
 
     except Exception as e:
-        return {"media": [], "total": 0, "error": str(e)}
+        logger.error("find-media: unexpected error: %s", e, exc_info=True)
+        return {"media": [], "total": 0, "error": f"Medya arama hatasi: {str(e)}"}
 
 
 # ── Media Download (proxy) ─────────────────────────────

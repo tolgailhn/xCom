@@ -1098,3 +1098,28 @@ export function unmarkTweetShared(tweetId: string): Promise<{ success: boolean; 
 export function getSharedTweets(): Promise<{ tweet_ids: string[] }> {
   return apiFetch("/api/discovery/shared-tweets");
 }
+
+// ── My Tweets (Kullanıcının kendi tweetleri) ──────────
+
+export function getMyTweets(): Promise<{ tweets: any[]; last_fetch: string; username: string }> {
+  return apiFetch("/api/discovery/my-tweets");
+}
+
+export function fetchMyTweets(username?: string): Promise<{ success: boolean; total: number; username: string }> {
+  return apiFetch("/api/discovery/my-tweets/fetch", {
+    method: "POST",
+    body: JSON.stringify({ username: username || "" }),
+  });
+}
+
+export function getMyTweetsAnalysis(): Promise<{ analysis: any; last_analyzed: string }> {
+  return apiFetch("/api/discovery/my-tweets/analysis");
+}
+
+export function analyzeMyTweets(): Promise<{ analysis: any; last_analyzed: string }> {
+  return apiFetch("/api/discovery/my-tweets/analyze", { method: "POST" });
+}
+
+export function aiScoreDiscoveryTweets(): Promise<{ scored: number; message?: string }> {
+  return apiFetch("/api/discovery/ai-score-tweets", { method: "POST" });
+}

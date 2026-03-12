@@ -360,6 +360,77 @@ def _auto_cluster_suggestions():
         logger.exception("Auto content suggestion/clustering error")
 
 
+def _fetch_my_tweets():
+    """Her 2 saatte kullanıcının kendi tweetlerini çek ve analiz et."""
+    try:
+        import asyncio
+        from backend.modules.style_manager import load_self_reply_config
+        sr_config = load_self_reply_config()
+        username = sr_config.get("username", "")
+        if not username:
+            logger.debug("My tweets fetch skipped — no username configured")
+            return
+
+        from backend.modules.twikit_client import TwikitSearchClient
+        from backend.config import get_settings
+        s = get_settings()
+        client = TwikitSearchClient(
+            username=s.twikit_username or "",
+            password=s.twikit_password or "",
+            email=s.twikit_email or "",
+        )
+        if not client.authenticate():
+            logger.warning("My tweets fetch — twikit auth failed")
+            return
+
+        from backend.modules.tweet_analyzer import pull_user_tweets
+        raw_tweets = pull_user_tweets(username, count=100, twikit_client=client)
+
+        tweets = []
+        for tw in raw_tweets:
+            eng = (
+                tw.get("like_count", 0) * 1
+                + tw.get("retweet_count", 0) * 20
+                + tw.get("reply_count", 0) * 13.5
+                + tw.get("bookmark_count", 0) * 10
+            )
+            tweets.append({
+                "tweet_id": tw.get("id", ""),
+                "text": tw.get("text", ""),
+                "created_at": tw.get("created_at", ""),
+                "like_count": tw.get("like_count", 0),
+                "retweet_count": tw.get("retweet_count", 0),
+                "reply_count": tw.get("reply_count", 0),
+                "bookmark_count": tw.get("bookmark_count", 0),
+                "view_count": tw.get("view_count", 0),
+                "engagement_score": eng,
+                "media_items": tw.get("media", []),
+                "urls": tw.get("urls", []),
+                "is_retweet": tw.get("is_retweet", False),
+            })
+
+        tweets.sort(key=lambda x: x["engagement_score"], reverse=True)
+
+        import json
+        from pathlib import Path
+        from datetime import datetime
+        cache_path = Path(__file__).parent.parent / "data" / "my_tweets_cache.json"
+        import os
+        os.makedirs(cache_path.parent, exist_ok=True)
+        with open(cache_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "username": username,
+                "tweets": tweets,
+                "last_fetch": datetime.now().isoformat(),
+                "total": len(tweets),
+            }, f, ensure_ascii=False, indent=2)
+
+        _track_run("my_tweet_fetcher")
+        logger.info(f"My tweets fetched: {len(tweets)} tweets for @{username}")
+    except Exception:
+        logger.exception("My tweets fetch error")
+
+
 def start_scheduler():
     """Scheduler'i baslat — FastAPI startup'ta cagirilir."""
     if not scheduler.running:
@@ -444,11 +515,19 @@ def start_scheduler():
             id="auto_content_suggester",
             replace_existing=True,
         )
+        # Kullanıcının kendi tweetlerini çek — her 2 saatte
+        scheduler.add_job(
+            _fetch_my_tweets,
+            "interval",
+            hours=2,
+            id="my_tweet_fetcher",
+            replace_existing=True,
+        )
         scheduler.start()
         logger.info(
             "Scheduler started — publish 1m, metrics 30m, auto-reply scanner 10m, "
             "auto-reply generator 5m, self-reply 3m, discovery 30m, telegram 5s, "
-            "auto-scan 2h, trends 1h, account-discovery 6h, suggestions 30m"
+            "auto-scan 2h, trends 1h, account-discovery 6h, suggestions 30m, my-tweets 2h"
         )
 
 

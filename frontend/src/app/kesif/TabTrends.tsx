@@ -12,6 +12,8 @@ import {
   getStyles,
   addDraft,
   schedulePost,
+  findMedia,
+  generateInfographic,
   TweetMediaItem,
   TweetUrl,
 } from "@/lib/api";
@@ -111,7 +113,7 @@ function isGMTweet(text: string): boolean {
 
 /* ── Component ──────────────────────────────────────── */
 
-export default function TabTrends() {
+export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number }) {
   const [trends, setTrends] = useState<Trend[]>([]);
   const [trendHistory, setTrendHistory] = useState<TrendHistoryEntry[]>([]);
   const [lastUpdated, setLastUpdated] = useState("");
@@ -165,6 +167,12 @@ export default function TabTrends() {
   const [showSchedule, setShowSchedule] = useState<string | null>(null);
   const [scheduleTime, setScheduleTime] = useState("");
 
+  // Media & Infographic
+  const [mediaResults, setMediaResults] = useState<Record<string, any[]>>({});
+  const [mediaLoading, setMediaLoading] = useState<string | null>(null);
+  const [infographicResults, setInfographicResults] = useState<Record<string, string>>({});
+  const [infographicLoading, setInfographicLoading] = useState<string | null>(null);
+
   // Refs for scroll-to-trend
   const trendRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -184,7 +192,7 @@ export default function TabTrends() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { loadTrends(); }, []);
+  useEffect(() => { loadTrends(); }, [refreshTrigger]);
 
   useEffect(() => {
     getStyles()
@@ -492,6 +500,33 @@ export default function TabTrends() {
     navigator.clipboard.writeText(text);
     setActionMsg(prev => ({ ...prev, [key]: "Kopyalandi!" }));
     setTimeout(() => setActionMsg(prev => ({ ...prev, [key]: "" })), 2000);
+  };
+
+  const handleFindMedia = async (key: string, query: string) => {
+    setMediaLoading(key);
+    try {
+      const result = await findMedia(query.slice(0, 200), "both");
+      setMediaResults(prev => ({ ...prev, [key]: result.results || [] }));
+    } catch (e) {
+      console.error("Media search failed:", e);
+      setMediaResults(prev => ({ ...prev, [key]: [] }));
+    } finally {
+      setMediaLoading(null);
+    }
+  };
+
+  const handleInfographic = async (key: string, topic: string, keyPoints: string[]) => {
+    setInfographicLoading(key);
+    try {
+      const result = await generateInfographic({ topic, key_points: keyPoints });
+      if (result.image_base64) {
+        setInfographicResults(prev => ({ ...prev, [key]: result.image_base64 }));
+      }
+    } catch (e) {
+      console.error("Infographic failed:", e);
+    } finally {
+      setInfographicLoading(null);
+    }
   };
 
   /* ── Render ─────────────────────────────────────────── */
@@ -1041,11 +1076,21 @@ export default function TabTrends() {
                                         </div>
                                         {/* Action buttons with primary/secondary distinction */}
                                         <div className="flex flex-wrap gap-2 pl-[52px]">
-                                          <button onClick={() => openInX(twEdited)} className="btn-primary text-xs px-4">X&apos;te Paylas</button>
+                                          <button onClick={() => openInX(twEdited)} className="btn-primary text-xs px-4">X&apos;te Ac</button>
+                                          {tw.tweet_url && (
+                                            <button onClick={() => window.open(`https://x.com/intent/tweet?url=${encodeURIComponent(tw.tweet_url!)}`, "_blank")} className="btn-secondary text-xs">X Quote Ac</button>
+                                          )}
                                           <button onClick={() => copyText(twEdited, compositeKey)} className="btn-secondary text-xs">Kopyala</button>
-                                          <button onClick={() => handleSaveDraft(compositeKey, "tweet")} className="btn-secondary text-xs">Taslak</button>
-                                          <button onClick={() => setShowSchedule(showSchedule === compositeKey ? null : compositeKey)} className="btn-secondary text-xs">Zamanla</button>
-                                          <button onClick={() => handleTweetGenerate(trend, origIdx)} disabled={isTwGenerating} className="btn-secondary text-xs">{isTwGenerating ? "..." : "Tekrar Uret"}</button>
+                                          <button onClick={() => handleTweetGenerate(trend, origIdx)} disabled={isTwGenerating} className="btn-secondary text-xs">{isTwGenerating ? "..." : "Yeniden Uret"}</button>
+                                          <button onClick={() => handleSaveDraft(compositeKey, "tweet")} className="btn-secondary text-xs">Taslak Kaydet</button>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 pl-[52px] mt-1">
+                                          <button onClick={() => handleFindMedia(compositeKey, twEdited)} disabled={mediaLoading === compositeKey} className="btn-secondary text-xs">
+                                            {mediaLoading === compositeKey ? "Araniyor..." : "Gorsel/Video Bul"}
+                                          </button>
+                                          <button onClick={() => handleInfographic(compositeKey, twEdited, [])} disabled={infographicLoading === compositeKey} className="btn-secondary text-xs">
+                                            {infographicLoading === compositeKey ? "Olusturuluyor..." : "Gemini Infografik"}
+                                          </button>
                                         </div>
                                         {showSchedule === compositeKey && (
                                           <div className="flex items-center gap-2 p-2 rounded bg-[var(--bg-primary)]">
@@ -1054,6 +1099,32 @@ export default function TabTrends() {
                                           </div>
                                         )}
                                         {actionMsg[compositeKey] && <div className="text-xs text-[var(--accent-green)]">{actionMsg[compositeKey]}</div>}
+                                        {/* Media results */}
+                                        {mediaResults[compositeKey]?.length > 0 && (
+                                          <div className="mt-2 pl-[52px]">
+                                            <h4 className="text-xs font-medium text-[var(--text-secondary)] mb-2">Bulunan Gorseller</h4>
+                                            <div className="grid grid-cols-3 gap-2">
+                                              {mediaResults[compositeKey].map((m: any, mi: number) => (
+                                                <div key={mi} className="relative group rounded-lg overflow-hidden border border-[var(--border)] aspect-video bg-[var(--bg-secondary)]">
+                                                  <img src={m.thumbnail_url || m.url} alt={m.title || ""} className="w-full h-full object-cover" loading="lazy" />
+                                                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                                    <a href={m.url} target="_blank" rel="noopener noreferrer" className="px-2 py-1 text-[10px] bg-white/20 rounded text-white hover:bg-white/30">Ac</a>
+                                                    {m.media_type === 'video' && <a href={m.url} download className="px-2 py-1 text-[10px] bg-[var(--accent-green)]/40 rounded text-white hover:bg-[var(--accent-green)]/60">Indir</a>}
+                                                  </div>
+                                                  <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-1 py-0.5 text-[9px] text-white/80 truncate">{m.source}</div>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                        {/* Infographic result */}
+                                        {infographicResults[compositeKey] && (
+                                          <div className="mt-2 pl-[52px]">
+                                            <h4 className="text-xs font-medium text-[var(--text-secondary)] mb-2">Infografik</h4>
+                                            <img src={`data:image/png;base64,${infographicResults[compositeKey]}`} alt="Infografik" className="max-w-full rounded-lg border border-[var(--border)]" />
+                                            <a href={`data:image/png;base64,${infographicResults[compositeKey]}`} download="infographic.png" className="inline-block mt-1 text-xs text-[var(--accent-blue)] hover:underline">Gorseli Indir</a>
+                                          </div>
+                                        )}
                                         {/* Baglantilar */}
                                         {tweetUrls[compositeKey]?.length > 0 && (
                                           <div className="mt-3 glass-card p-3 rounded-xl" style={{borderLeft: '3px solid var(--accent-blue)'}}>
@@ -1193,10 +1264,19 @@ export default function TabTrends() {
                         </div>
                         {/* Action buttons with primary/secondary distinction */}
                         <div className="flex flex-wrap gap-2 pl-[52px]">
-                          <button onClick={() => openInX(generated.text)} className="btn-primary text-xs px-4">X&apos;te Paylas</button>
+                          <button onClick={() => openInX(generated.text)} className="btn-primary text-xs px-4">X&apos;te Ac</button>
                           <button onClick={() => copyText(generated.text, key)} className="btn-secondary text-xs">Kopyala</button>
-                          <button onClick={() => handleSaveDraft(key)} className="btn-secondary text-xs">Taslak</button>
+                          <button onClick={() => handleGenerate(trend)} disabled={isGenerating} className="btn-secondary text-xs">{isGenerating ? "..." : "Yeniden Uret"}</button>
+                          <button onClick={() => handleSaveDraft(key)} className="btn-secondary text-xs">Taslak Kaydet</button>
                           <button onClick={() => setShowSchedule(showSchedule === key ? null : key)} className="btn-secondary text-xs">Zamanla</button>
+                        </div>
+                        <div className="flex flex-wrap gap-2 pl-[52px] mt-1">
+                          <button onClick={() => handleFindMedia(key, generated.text)} disabled={mediaLoading === key} className="btn-secondary text-xs">
+                            {mediaLoading === key ? "Araniyor..." : "Gorsel/Video Bul"}
+                          </button>
+                          <button onClick={() => handleInfographic(key, generated.text, research?.key_points || [])} disabled={infographicLoading === key} className="btn-secondary text-xs">
+                            {infographicLoading === key ? "Olusturuluyor..." : "Gemini Infografik"}
+                          </button>
                         </div>
                         {showSchedule === key && (
                           <div className="flex items-center gap-2 p-2 rounded bg-[var(--bg-primary)]">
@@ -1205,6 +1285,32 @@ export default function TabTrends() {
                           </div>
                         )}
                         {actionMsg[key] && <div className="text-xs text-[var(--accent-green)]">{actionMsg[key]}</div>}
+                        {/* Media results */}
+                        {mediaResults[key]?.length > 0 && (
+                          <div className="mt-2 pl-[52px]">
+                            <h4 className="text-xs font-medium text-[var(--text-secondary)] mb-2">Bulunan Gorseller</h4>
+                            <div className="grid grid-cols-3 gap-2">
+                              {mediaResults[key].map((m: any, mi: number) => (
+                                <div key={mi} className="relative group rounded-lg overflow-hidden border border-[var(--border)] aspect-video bg-[var(--bg-secondary)]">
+                                  <img src={m.thumbnail_url || m.url} alt={m.title || ""} className="w-full h-full object-cover" loading="lazy" />
+                                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                    <a href={m.url} target="_blank" rel="noopener noreferrer" className="px-2 py-1 text-[10px] bg-white/20 rounded text-white hover:bg-white/30">Ac</a>
+                                    {m.media_type === 'video' && <a href={m.url} download className="px-2 py-1 text-[10px] bg-[var(--accent-green)]/40 rounded text-white hover:bg-[var(--accent-green)]/60">Indir</a>}
+                                  </div>
+                                  <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-1 py-0.5 text-[9px] text-white/80 truncate">{m.source}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {/* Infographic result */}
+                        {infographicResults[key] && (
+                          <div className="mt-2 pl-[52px]">
+                            <h4 className="text-xs font-medium text-[var(--text-secondary)] mb-2">Infografik</h4>
+                            <img src={`data:image/png;base64,${infographicResults[key]}`} alt="Infografik" className="max-w-full rounded-lg border border-[var(--border)]" />
+                            <a href={`data:image/png;base64,${infographicResults[key]}`} download="infographic.png" className="inline-block mt-1 text-xs text-[var(--accent-blue)] hover:underline">Gorseli Indir</a>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

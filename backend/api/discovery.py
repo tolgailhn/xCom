@@ -784,3 +784,313 @@ def get_shared_tweets():
     from backend.modules.style_manager import load_shared_discovery_tweets
     data = load_shared_discovery_tweets()
     return {"tweet_ids": [d["tweet_id"] for d in data]}
+
+
+# ── My Tweets (Kullanıcının kendi tweetleri) ────────────
+
+@router.get("/my-tweets")
+def get_my_tweets():
+    """Kullanıcının kendi tweetlerini cache'den döndür."""
+    from pathlib import Path
+    import json
+    cache_path = Path(__file__).parent.parent.parent / "data" / "my_tweets_cache.json"
+    if cache_path.exists():
+        with open(cache_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return {"tweets": data.get("tweets", []), "last_fetch": data.get("last_fetch", ""), "username": data.get("username", "")}
+    return {"tweets": [], "last_fetch": "", "username": ""}
+
+
+@router.post("/my-tweets/fetch")
+async def fetch_my_tweets(body: dict = None):
+    """Twikit ile kullanıcının tweetlerini çek ve cache'e kaydet."""
+    import asyncio
+    import json
+    from pathlib import Path
+    from datetime import datetime
+
+    body = body or {}
+    username = body.get("username", "")
+
+    # Username yoksa self-reply config'den al
+    if not username:
+        from backend.modules.style_manager import load_self_reply_config
+        sr_config = load_self_reply_config()
+        username = sr_config.get("username", "")
+
+    if not username:
+        raise HTTPException(400, "Username gerekli. Ayarlardan veya self-reply config'den alınamadı.")
+
+    try:
+        from backend.modules.twikit_client import TwikitSearchClient
+        from backend.config import get_settings
+        s = get_settings()
+        client = TwikitSearchClient(
+            username=s.twikit_username or "",
+            password=s.twikit_password or "",
+            email=s.twikit_email or "",
+        )
+        auth_ok = await asyncio.to_thread(client.authenticate)
+        if not auth_ok:
+            raise HTTPException(500, "Twikit auth başarısız")
+
+        from backend.modules.tweet_analyzer import pull_user_tweets
+        raw_tweets = await asyncio.to_thread(pull_user_tweets, username, count=100, twikit_client=client)
+
+        tweets = []
+        for tw in raw_tweets:
+            tweets.append({
+                "tweet_id": tw.get("id", ""),
+                "text": tw.get("text", ""),
+                "created_at": tw.get("created_at", ""),
+                "like_count": tw.get("like_count", 0),
+                "retweet_count": tw.get("retweet_count", 0),
+                "reply_count": tw.get("reply_count", 0),
+                "bookmark_count": tw.get("bookmark_count", 0),
+                "view_count": tw.get("view_count", 0),
+                "media_items": tw.get("media", []),
+                "urls": tw.get("urls", []),
+                "is_retweet": tw.get("is_retweet", False),
+            })
+
+        # Engagement score hesapla
+        for tw in tweets:
+            tw["engagement_score"] = (
+                tw["like_count"] * 1
+                + tw["retweet_count"] * 20
+                + tw["reply_count"] * 13.5
+                + tw["bookmark_count"] * 10
+            )
+
+        # Sırala (en yüksek engagement üstte)
+        tweets.sort(key=lambda x: x["engagement_score"], reverse=True)
+
+        cache_path = Path(__file__).parent.parent.parent / "data" / "my_tweets_cache.json"
+        import os
+        os.makedirs(cache_path.parent, exist_ok=True)
+        with open(cache_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "username": username,
+                "tweets": tweets,
+                "last_fetch": datetime.now().isoformat(),
+                "total": len(tweets),
+            }, f, ensure_ascii=False, indent=2)
+
+        return {"success": True, "total": len(tweets), "username": username}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("My tweets fetch error")
+        raise HTTPException(500, f"Tweet çekme hatası: {str(e)}")
+
+
+@router.get("/my-tweets/analysis")
+def get_my_tweets_analysis():
+    """MiniMax analiz sonuçlarını döndür."""
+    from pathlib import Path
+    import json
+    path = Path(__file__).parent.parent.parent / "data" / "my_tweets_analysis.json"
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"analysis": None, "last_analyzed": ""}
+
+
+@router.post("/my-tweets/analyze")
+async def analyze_my_tweets():
+    """MiniMax ile kullanıcının tweetlerini analiz et."""
+    import asyncio
+    import json
+    from pathlib import Path
+    from datetime import datetime
+
+    cache_path = Path(__file__).parent.parent.parent / "data" / "my_tweets_cache.json"
+    if not cache_path.exists():
+        raise HTTPException(400, "Önce tweetleri çekin (fetch)")
+
+    with open(cache_path, "r", encoding="utf-8") as f:
+        cache = json.load(f)
+
+    tweets = cache.get("tweets", [])
+    if not tweets:
+        raise HTTPException(400, "Analiz edilecek tweet yok")
+
+    # Top 50 tweet'i al
+    top_tweets = tweets[:50]
+    tweet_texts = "\n---\n".join([
+        f"[{tw.get('like_count', 0)} like, {tw.get('retweet_count', 0)} RT] {tw['text'][:300]}"
+        for tw in top_tweets
+    ])
+
+    try:
+        from backend.api.helpers import get_ai_client
+        client, model = get_ai_client()
+
+        prompt = f"""Aşağıda bir X (Twitter) kullanıcısının son 50 tweet'i var. Bunları analiz et ve şu bilgileri JSON olarak döndür:
+
+1. "topics": Kullanıcının en çok paylaşım yaptığı konular (liste, max 10)
+2. "style": Yazım tarzı özeti (2-3 cümle)
+3. "engagement_patterns": Hangi tür içerikler daha çok etkileşim alıyor (2-3 cümle)
+4. "best_performing_topics": En yüksek etkileşim alan konu başlıkları (liste, max 5)
+5. "avoid_topics": Kullanıcının paylaşmadığı/ilgilenmediği konular (liste, max 5)
+6. "posting_frequency": Günde ortalama kaç tweet
+7. "content_type_distribution": {{"haber_analizi": %, "kisisel_yorum": %, "teknik": %, "diger": %}}
+8. "recommended_topics": Bu kullanıcıya önerilecek konu önerileri (liste, max 5)
+
+Tweetler:
+{tweet_texts}
+
+Sadece JSON döndür, başka bir şey yazma."""
+
+        response = await asyncio.to_thread(
+            lambda: client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,
+            )
+        )
+
+        text = response.choices[0].message.content.strip()
+        # JSON parse
+        import re as re_mod
+        json_match = re_mod.search(r'\{[\s\S]*\}', text)
+        if json_match:
+            analysis = json.loads(json_match.group())
+        else:
+            analysis = {"raw_response": text}
+
+        result = {
+            "analysis": analysis,
+            "last_analyzed": datetime.now().isoformat(),
+            "tweet_count": len(top_tweets),
+            "username": cache.get("username", ""),
+        }
+
+        analysis_path = Path(__file__).parent.parent.parent / "data" / "my_tweets_analysis.json"
+        with open(analysis_path, "w", encoding="utf-8") as f:
+            json.dump(result, f, ensure_ascii=False, indent=2)
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("My tweets analysis error")
+        raise HTTPException(500, f"Analiz hatası: {str(e)}")
+
+
+# ── AI Relevance Scoring ────────────────────────────
+
+@router.post("/ai-score-tweets")
+async def ai_score_tweets():
+    """Discovery cache'teki tweetleri kullanıcı profiline göre AI ile skorla."""
+    import asyncio
+    import json
+    from pathlib import Path
+    from datetime import datetime
+
+    data_dir = Path(__file__).parent.parent.parent / "data"
+    analysis_path = data_dir / "my_tweets_analysis.json"
+    cache_path = data_dir / "discovery_cache.json"
+
+    if not analysis_path.exists():
+        raise HTTPException(400, "Önce kendi tweetlerinizi analiz edin")
+
+    with open(analysis_path, "r", encoding="utf-8") as f:
+        analysis_data = json.load(f)
+
+    analysis = analysis_data.get("analysis", {})
+    if not analysis:
+        raise HTTPException(400, "Analiz verisi boş")
+
+    if not cache_path.exists():
+        return {"scored": 0}
+
+    with open(cache_path, "r", encoding="utf-8") as f:
+        cache = json.load(f)
+
+    tweets = cache if isinstance(cache, list) else cache.get("tweets", cache)
+    if not tweets:
+        return {"scored": 0}
+
+    # Skorlanmamış veya 1 saatten eski skorlu tweetleri seç
+    now = datetime.now()
+    to_score = []
+    for tw in tweets[:100]:  # Max 100 tweet skorla
+        last_scored = tw.get("ai_scored_at", "")
+        if last_scored:
+            try:
+                scored_time = datetime.fromisoformat(last_scored)
+                if (now - scored_time).total_seconds() < 3600:
+                    continue  # 1 saatten yeni, atla
+            except Exception:
+                pass
+        to_score.append(tw)
+
+    if not to_score:
+        return {"scored": 0, "message": "Tüm tweetler zaten skorlanmış"}
+
+    # Batch olarak AI'ya gönder (max 20 tweet)
+    batch = to_score[:20]
+    topics = analysis.get("topics", [])
+    avoid = analysis.get("avoid_topics", [])
+    best = analysis.get("best_performing_topics", [])
+
+    tweet_list = "\n".join([
+        f"{i+1}. [{tw.get('account', '')}] {(tw.get('summary_tr') or tw.get('text', ''))[:200]}"
+        for i, tw in enumerate(batch)
+    ])
+
+    try:
+        from backend.api.helpers import get_ai_client
+        client, model = get_ai_client()
+
+        prompt = f"""Kullanıcı profili:
+- İlgilendiği konular: {', '.join(topics)}
+- En iyi performans: {', '.join(best)}
+- İlgilenmediği konular: {', '.join(avoid)}
+
+Aşağıdaki {len(batch)} tweet'i bu kullanıcıya uygunluk açısından 1-10 arası skorla.
+10 = çok uygun (kesinlikle paylaşmalı), 1 = hiç uygun değil.
+
+Tweetler:
+{tweet_list}
+
+Yanıtı sadece JSON array olarak döndür: [{{"idx": 1, "score": 8, "reason": "kısa neden"}}, ...]"""
+
+        response = await asyncio.to_thread(
+            lambda: client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2,
+            )
+        )
+
+        text = response.choices[0].message.content.strip()
+        import re as re_mod
+        json_match = re_mod.search(r'\[[\s\S]*\]', text)
+        if json_match:
+            scores = json.loads(json_match.group())
+        else:
+            return {"scored": 0, "error": "AI yanıt parse edilemedi"}
+
+        # Skorları tweet'lere uygula
+        score_map = {s["idx"]: s for s in scores if "idx" in s}
+        for i, tw in enumerate(batch):
+            score_data = score_map.get(i + 1, {})
+            tw["ai_relevance_score"] = score_data.get("score", 5)
+            tw["ai_relevance_reason"] = score_data.get("reason", "")
+            tw["ai_scored_at"] = now.isoformat()
+
+        # Cache'i güncelle
+        with open(cache_path, "w", encoding="utf-8") as f:
+            json.dump(cache, f, ensure_ascii=False, indent=2)
+
+        return {"scored": len(batch), "message": f"{len(batch)} tweet skorlandı"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("AI scoring error")
+        raise HTTPException(500, f"AI skorlama hatası: {str(e)}")

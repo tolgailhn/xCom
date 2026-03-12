@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   getDiscoveryConfig,
@@ -20,6 +20,7 @@ import TabTrends from "./TabTrends";
 
 import TabSuggestedAccounts from "./TabSuggestedAccounts";
 import TabSmartSuggestions from "./TabSmartSuggestions";
+import TabMyTweets from "./TabMyTweets";
 
 /* ── Helpers ─────────────────────────────────────────── */
 
@@ -42,11 +43,11 @@ function timeAgo(isoStr: string): string {
 
 export default function KesifPage() {
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<"tweets" | "trendler" | "oneriler" | "akilli" | "ayarlar">("tweets");
+  const [tab, setTab] = useState<"tweets" | "trendler" | "oneriler" | "akilli" | "mytweetler" | "ayarlar">("tweets");
 
   useEffect(() => {
     const t = searchParams.get("tab");
-    if (t === "tweets" || t === "trendler" || t === "oneriler" || t === "akilli" || t === "ayarlar") setTab(t);
+    if (t === "tweets" || t === "trendler" || t === "oneriler" || t === "akilli" || t === "mytweetler" || t === "ayarlar") setTab(t);
   }, [searchParams]);
 
   const [config, setConfig] = useState<DiscoveryConfig | null>(null);
@@ -60,6 +61,22 @@ export default function KesifPage() {
   const [newAccountPriority, setNewAccountPriority] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [schedulerJobs, setSchedulerJobs] = useState<any[]>([]);
+
+  // Auto-refresh triggers per tab
+  const [refreshTriggers, setRefreshTriggers] = useState<Record<string, number>>({
+    tweets: 0,
+    trendler: 0,
+    akilli: 0,
+    oneriler: 0,
+  });
+  const [lastRefreshTimes, setLastRefreshTimes] = useState<Record<string, number>>({
+    tweets: Date.now(),
+    trendler: Date.now(),
+    akilli: Date.now(),
+    oneriler: Date.now(),
+  });
+  const [lastRefreshLabel, setLastRefreshLabel] = useState("Simdi");
+  const labelIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -111,6 +128,52 @@ export default function KesifPage() {
     return () => clearInterval(interval);
   }, [nextScanSec, loadData]);
 
+  // Auto-refresh intervals per tab
+  useEffect(() => {
+    const INTERVALS: Record<string, number> = {
+      tweets: 300_000,    // 5 min
+      trendler: 600_000,  // 10 min
+      akilli: 900_000,    // 15 min
+      oneriler: 1_800_000, // 30 min
+    };
+
+    const timers = Object.entries(INTERVALS).map(([key, ms]) =>
+      setInterval(() => {
+        setRefreshTriggers(prev => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
+        setLastRefreshTimes(prev => ({ ...prev, [key]: Date.now() }));
+      }, ms),
+    );
+
+    return () => timers.forEach(clearInterval);
+  }, []);
+
+  // When tweets refreshTrigger changes, reload main data (tweets come from parent)
+  useEffect(() => {
+    if (refreshTriggers.tweets > 0) {
+      loadData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshTriggers.tweets]);
+
+  // Update "Son guncelleme" label every 30s
+  useEffect(() => {
+    const updateLabel = () => {
+      // Find the most recent refresh across all tabs
+      const times = Object.values(lastRefreshTimes);
+      const mostRecent = Math.max(...times);
+      const diffMs = Date.now() - mostRecent;
+      const diffMin = Math.floor(diffMs / 60_000);
+      if (diffMin < 1) setLastRefreshLabel("Simdi");
+      else if (diffMin < 60) setLastRefreshLabel(`${diffMin}dk once`);
+      else setLastRefreshLabel(`${Math.floor(diffMin / 60)}sa once`);
+    };
+    updateLabel();
+    labelIntervalRef.current = setInterval(updateLabel, 30_000);
+    return () => {
+      if (labelIntervalRef.current) clearInterval(labelIntervalRef.current);
+    };
+  }, [lastRefreshTimes]);
+
   const handleScan = async () => {
     setScanning(true);
     setScanMsg("");
@@ -144,13 +207,18 @@ export default function KesifPage() {
             Takip edilen hesaplarin en iyi tweetleri &middot; Trend analiz &middot; Akilli oneriler
           </p>
         </div>
-        <button
-          onClick={handleScan}
-          disabled={scanning}
-          className={`btn-primary text-sm ${scanning ? "animate-pulse" : ""}`}
-        >
-          {scanning ? "Taraniyor..." : "Simdi Tara"}
-        </button>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-medium text-[var(--text-secondary)] bg-[var(--bg-secondary)] px-2.5 py-1 rounded-full">
+            Son guncelleme: {lastRefreshLabel}
+          </span>
+          <button
+            onClick={handleScan}
+            disabled={scanning}
+            className={`btn-primary text-sm ${scanning ? "animate-pulse" : ""}`}
+          >
+            {scanning ? "Taraniyor..." : "Simdi Tara"}
+          </button>
+        </div>
       </div>
 
       {scanMsg && (
@@ -256,6 +324,7 @@ export default function KesifPage() {
           { key: "trendler", label: "Trendler", icon: "\uD83D\uDCC8" },
           { key: "oneriler", label: "Onerilen Hesaplar", icon: "\uD83D\uDC65" },
           { key: "akilli", label: "Akilli Oneriler", icon: "\uD83D\uDCA1" },
+          { key: "mytweetler", label: "Tolga Tweetler", icon: "\uD83D\uDC64" },
           { key: "ayarlar", label: "Ayarlar", icon: "\u2699\uFE0F" },
         ] as const).map((t) => (
           <button
@@ -294,10 +363,11 @@ export default function KesifPage() {
         />
       )}
 
-      {tab === "trendler" && <TabTrends />}
+      {tab === "trendler" && <TabTrends refreshTrigger={refreshTriggers.trendler} />}
 
-      {tab === "oneriler" && <TabSuggestedAccounts />}
-      {tab === "akilli" && <TabSmartSuggestions />}
+      {tab === "oneriler" && <TabSuggestedAccounts refreshTrigger={refreshTriggers.oneriler} />}
+      {tab === "akilli" && <TabSmartSuggestions refreshTrigger={refreshTriggers.akilli} />}
+      {tab === "mytweetler" && <TabMyTweets refreshTrigger={refreshTriggers.tweets} />}
     </div>
   );
 }

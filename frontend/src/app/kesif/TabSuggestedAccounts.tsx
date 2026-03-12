@@ -105,7 +105,7 @@ function getAccountCategory(account: SuggestedAccount): { label: string; color: 
 
 /* ── Component ──────────────────────────────────────── */
 
-export default function TabSuggestedAccounts() {
+export default function TabSuggestedAccounts({ refreshTrigger }: { refreshTrigger?: number }) {
   const [accounts, setAccounts] = useState<SuggestedAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [discovering, setDiscovering] = useState(false);
@@ -132,7 +132,7 @@ export default function TabSuggestedAccounts() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { loadAccounts(); }, []);
+  useEffect(() => { loadAccounts(); }, [refreshTrigger]);
 
   const handleDiscover = async () => {
     setDiscovering(true);

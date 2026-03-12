@@ -11,6 +11,7 @@ import {
   schedulePost,
   findMedia,
   extractTweet,
+  generateInfographic,
   TweetMediaItem,
   TweetUrl,
 } from "@/lib/api";
@@ -99,7 +100,7 @@ function isGMTweet(text: string): boolean {
 
 /* ── Component ──────────────────────────────────────── */
 
-export default function TabSmartSuggestions() {
+export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger?: number }) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [clusteredAt, setClusteredAt] = useState("");
   const [tweetCount, setTweetCount] = useState(0);
@@ -137,6 +138,10 @@ export default function TabSmartSuggestions() {
   const [mediaResults, setMediaResults] = useState<Record<number, Array<{ url: string; title?: string; thumbnail_url?: string; preview?: string; source?: string }>>>({});
   const [mediaLoading, setMediaLoading] = useState<number | null>(null);
 
+  // Infographic
+  const [infographicResults, setInfographicResults] = useState<Record<number, string>>({});
+  const [infographicLoading, setInfographicLoading] = useState<number | null>(null);
+
   // Extracted tweet media/URLs per suggestion
   const [suggestionMedia, setSuggestionMedia] = useState<Record<number, TweetMediaItem[]>>({});
   const [suggestionUrls, setSuggestionUrls] = useState<Record<number, TweetUrl[]>>({});
@@ -160,6 +165,10 @@ export default function TabSmartSuggestions() {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshTrigger]);
+
+  useEffect(() => {
     getStyles()
       .then((data: { styles?: StyleOption[]; formats?: FormatOption[] }) => {
         if (data.styles) setStyles(data.styles);
@@ -322,6 +331,21 @@ export default function TabSmartSuggestions() {
       setEditedTexts(prev => ({ ...prev, [idx]: errText }));
     } finally {
       setGeneratingIdx(null);
+    }
+  };
+
+  const handleInfographic = async (idx: number, topic: string, keyPoints: string[]) => {
+    setInfographicLoading(idx);
+    try {
+      const result = await generateInfographic({ topic, key_points: keyPoints });
+      if (result.image_base64) {
+        setInfographicResults(prev => ({ ...prev, [idx]: result.image_base64 }));
+      }
+    } catch (e) {
+      console.error("Infographic failed:", e);
+      setActionMsg(prev => ({ ...prev, [idx]: `Infografik hatasi: ${e instanceof Error ? e.message : "Bilinmeyen"}` }));
+    } finally {
+      setInfographicLoading(null);
     }
   };
 
@@ -949,6 +973,35 @@ export default function TabSmartSuggestions() {
                           >
                             Ozel Saat
                           </button>
+                          {(() => {
+                            const tweets = suggestion.tweets || suggestion.top_tweets || [];
+                            const tweetUrl = tweets.find(t => t.tweet_url)?.tweet_url;
+                            return tweetUrl ? (
+                              <button
+                                onClick={() => window.open(`https://x.com/intent/tweet?url=${encodeURIComponent(tweetUrl)}`, "_blank")}
+                                className="btn-secondary text-xs"
+                              >
+                                X Quote Ac
+                              </button>
+                            ) : null;
+                          })()}
+                          <button
+                            onClick={() => handleGenerate(suggestion, idx)}
+                            disabled={generatingIdx === idx}
+                            className="btn-secondary text-xs"
+                          >
+                            {generatingIdx === idx ? "Uretiliyor..." : "Tekrar Uret"}
+                          </button>
+                          <button
+                            onClick={() => {
+                              const research = researchData[idx];
+                              handleInfographic(idx, edited, research?.key_points || []);
+                            }}
+                            disabled={infographicLoading === idx}
+                            className="btn-secondary text-xs"
+                          >
+                            {infographicLoading === idx ? "Olusturuluyor..." : "Gemini Infografik"}
+                          </button>
                         </div>
 
                         {/* Custom schedule picker */}
@@ -1002,6 +1055,15 @@ export default function TabSmartSuggestions() {
                                 );
                               })}
                             </div>
+                          </div>
+                        )}
+
+                        {/* Infographic result */}
+                        {infographicResults[idx] && (
+                          <div className="mt-2">
+                            <h4 className="text-xs font-medium text-[var(--text-secondary)] mb-2">Infografik</h4>
+                            <img src={`data:image/png;base64,${infographicResults[idx]}`} alt="Infografik" className="max-w-full rounded-lg border border-[var(--border)]" />
+                            <a href={`data:image/png;base64,${infographicResults[idx]}`} download="infographic.png" className="inline-block mt-1 text-xs text-[var(--accent-blue)] hover:underline">Gorseli Indir</a>
                           </div>
                         )}
 
