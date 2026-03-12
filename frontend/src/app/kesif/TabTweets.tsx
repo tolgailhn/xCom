@@ -14,6 +14,7 @@ import {
   markTweetShared,
   unmarkTweetShared,
   getSharedTweets,
+  aiScoreDiscoveryTweets,
   type DiscoveryTweet,
   type DiscoveryStatus,
   type TweetMediaItem,
@@ -160,6 +161,11 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
   const [sharedTweetIds, setSharedTweetIds] = useState<Set<string>>(new Set());
   const [hideShared, setHideShared] = useState(false);
 
+  // AI Scoring
+  const [aiScoring, setAiScoring] = useState(false);
+  const [aiScoredCount, setAiScoredCount] = useState(0);
+  const [sortBy, setSortBy] = useState<"default" | "ai">("default");
+
   // TR Ceviri
   const [summarizing, setSummarizing] = useState(false);
   const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
@@ -204,6 +210,14 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
     getSharedTweets()
       .then(data => setSharedTweetIds(new Set(data.tweet_ids || [])))
       .catch(() => {});
+  }, []);
+
+  // Trigger AI scoring in background (non-blocking)
+  useEffect(() => {
+    aiScoreDiscoveryTweets()
+      .then(res => setAiScoredCount(res.scored || 0))
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ── Handlers ──────────────────────────────────────── */
@@ -419,6 +433,11 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
     return true;
   });
 
+  // Apply sorting
+  if (sortBy === "ai") {
+    filteredTweets.sort((a, b) => (b.ai_relevance_score || 0) - (a.ai_relevance_score || 0));
+  }
+
   const uniqueAccounts = [...new Set(tweets.map(t => t.account))].sort();
 
   /* ── Render ────────────────────────────────────────── */
@@ -533,6 +552,33 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
           }`}
         >
           {hideGM ? "GM/GN Gizle \u2713" : "GM/GN Goster"}
+        </button>
+        <button
+          onClick={async () => {
+            setAiScoring(true);
+            try {
+              const res = await aiScoreDiscoveryTweets();
+              setAiScoredCount(res.scored || 0);
+              // Reload tweets to get updated scores
+              const r = await getDiscoveryTweets();
+              setTweets(r.tweets);
+            } catch { /* ignore */ }
+            setAiScoring(false);
+          }}
+          disabled={aiScoring}
+          className="px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] border-[var(--accent-blue)]/30 hover:bg-[var(--accent-blue)]/30 disabled:opacity-50"
+        >
+          {aiScoring ? "Skorlaniyor..." : `AI Skorla${aiScoredCount > 0 ? ` (${aiScoredCount})` : ""}`}
+        </button>
+        <button
+          onClick={() => setSortBy(sortBy === "ai" ? "default" : "ai")}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 ${
+            sortBy === "ai"
+              ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)] border-[var(--accent-green)]/30 shadow-sm shadow-[var(--accent-green)]/10"
+              : "bg-[var(--bg-primary)]/60 text-[var(--text-secondary)] border-[var(--border-primary)]/50 hover:border-[var(--accent-green)]/50"
+          }`}
+        >
+          {sortBy === "ai" ? "AI Onerisi \u2713" : "AI Onerisi"}
         </button>
         {(summarizing || translatingAll) && (
           <span className="text-[10px] text-[var(--accent-amber)] animate-pulse">TR ceviri uretiliyor...</span>
@@ -885,7 +931,7 @@ function TweetCard({
   return (
     <div
       className={`backdrop-blur-sm bg-[var(--bg-secondary)]/80 border border-[var(--border-primary)]/50 rounded-xl p-4 space-y-3 transition-all duration-300 hover:shadow-lg hover:shadow-[var(--accent-blue)]/10${isShared ? " opacity-50" : ""}`}
-      style={{ borderLeft: `3px solid ${importanceColor}` }}
+      style={{ borderLeft: tweet.ai_relevance_score != null && tweet.ai_relevance_score >= 8 ? '3px solid var(--accent-green)' : `3px solid ${importanceColor}` }}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
@@ -924,7 +970,20 @@ function TweetCard({
             </div>
           </div>
         </div>
-        <div className="shrink-0">
+        <div className="shrink-0 flex items-center gap-2">
+          {/* AI relevance score badge */}
+          {tweet.ai_relevance_score != null && tweet.ai_relevance_score > 0 && (
+            <div
+              className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                tweet.ai_relevance_score >= 8 ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)]" :
+                tweet.ai_relevance_score >= 5 ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]" :
+                "bg-[var(--text-secondary)]/20 text-[var(--text-secondary)]"
+              }`}
+              title={tweet.ai_relevance_reason || "AI relevance score"}
+            >
+              AI: {tweet.ai_relevance_score}/10
+            </div>
+          )}
           {/* Circular engagement gauge */}
           <svg width="40" height="40" viewBox="0 0 44 44">
             <circle cx="22" cy="22" r="18" fill="none" stroke="var(--border-primary)" strokeWidth="3" opacity="0.2" />

@@ -780,6 +780,8 @@ export interface DiscoveryTweet {
   scanned_at: string;
   media_items?: TweetMediaItem[];
   urls?: TweetUrl[];
+  ai_relevance_score?: number;
+  ai_relevance_reason?: string;
 }
 
 export interface DiscoveryStatus {

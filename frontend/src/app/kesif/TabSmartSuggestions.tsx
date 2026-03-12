@@ -12,6 +12,7 @@ import {
   findMedia,
   extractTweet,
   generateInfographic,
+  getMyTweetsAnalysis,
   TweetMediaItem,
   TweetUrl,
 } from "@/lib/api";
@@ -110,6 +111,11 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
   // Filters
   const [filterType, setFilterType] = useState<"all" | "trend" | "news">("all");
   const [filterMinEngagement, setFilterMinEngagement] = useState(0);
+  const [sortBy, setSortBy] = useState<"engagement" | "ai">("engagement");
+
+  // AI topic matching
+  const [userTopics, setUserTopics] = useState<string[]>([]);
+  const [avoidTopics, setAvoidTopics] = useState<string[]>([]);
 
   // Style/format options
   const [styles, setStyles] = useState<StyleOption[]>([]);
@@ -177,6 +183,32 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
       .catch(() => {});
   }, [loadData]);
 
+  useEffect(() => {
+    getMyTweetsAnalysis()
+      .then(res => {
+        if (res.analysis) {
+          setUserTopics([...(res.analysis.topics || []), ...(res.analysis.best_performing_topics || [])]);
+          setAvoidTopics(res.analysis.avoid_topics || []);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  /* ── AI topic match scoring ────────────────────────── */
+
+  const getTopicMatch = useCallback((text: string): number => {
+    if (!userTopics.length) return 0;
+    const lowerText = text.toLowerCase();
+    let score = 0;
+    for (const topic of userTopics) {
+      if (lowerText.includes(topic.toLowerCase())) score += 2;
+    }
+    for (const topic of avoidTopics) {
+      if (lowerText.includes(topic.toLowerCase())) score -= 3;
+    }
+    return score;
+  }, [userTopics, avoidTopics]);
+
   /* ── Filtered ──────────────────────────────────────── */
 
   const filtered = useMemo(() => {
@@ -189,11 +221,19 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
   }, [suggestions, dismissed, filterType, filterMinEngagement]);
 
   const filteredWithIdx = useMemo(() => {
-    return filtered.map(s => ({
+    const mapped = filtered.map(s => ({
       suggestion: s,
       originalIdx: suggestions.indexOf(s),
     }));
-  }, [filtered, suggestions]);
+    if (sortBy === "ai" && userTopics.length > 0) {
+      mapped.sort((a, b) => {
+        const textA = a.suggestion.topic + " " + (a.suggestion.topic_tr || "") + " " + (a.suggestion.reason || "") + " " + (a.suggestion.tweets?.map(t => t.text).join(" ") || "") + " " + (a.suggestion.top_tweets?.map(t => t.text).join(" ") || "");
+        const textB = b.suggestion.topic + " " + (b.suggestion.topic_tr || "") + " " + (b.suggestion.reason || "") + " " + (b.suggestion.tweets?.map(t => t.text).join(" ") || "") + " " + (b.suggestion.top_tweets?.map(t => t.text).join(" ") || "");
+        return getTopicMatch(textB) - getTopicMatch(textA);
+      });
+    }
+    return mapped;
+  }, [filtered, suggestions, sortBy, userTopics, getTopicMatch]);
 
   const trendCount = useMemo(() => filtered.filter(s => s.type === "trend").length, [filtered]);
   const newsCount = useMemo(() => filtered.filter(s => s.type === "news").length, [filtered]);
@@ -529,6 +569,14 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
           <option value={4}>4+ Engagement</option>
           <option value={7}>7+ Engagement</option>
         </select>
+        <select
+          value={sortBy}
+          onChange={e => setSortBy(e.target.value as "engagement" | "ai")}
+          className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1 text-xs text-[var(--text-primary)]"
+        >
+          <option value="engagement">Siralama: Engagement</option>
+          <option value="ai" disabled={!userTopics.length}>Siralama: AI Onerisi</option>
+        </select>
 
         {/* Global style/format/provider */}
         <div className="flex gap-2 ml-auto">
@@ -622,6 +670,12 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
                         }`}>
                           {isTrend ? "TREND" : "HABER"}
                         </span>
+                        {userTopics.length > 0 && getTopicMatch(suggestion.topic + " " + (suggestion.topic_tr || "")) > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent-green)]/15 text-[var(--accent-green)] font-medium">Senin icin</span>
+                        )}
+                        {avoidTopics.length > 0 && getTopicMatch(suggestion.topic + " " + (suggestion.topic_tr || "")) < 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent-red)]/15 text-[var(--accent-red)] font-medium">Ilgi disi</span>
+                        )}
                         <h3 className="text-sm font-bold text-[var(--text-primary)]">
                           {suggestion.topic_tr || suggestion.topic}
                         </h3>

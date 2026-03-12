@@ -14,6 +14,7 @@ import {
   schedulePost,
   findMedia,
   generateInfographic,
+  getMyTweetsAnalysis,
   TweetMediaItem,
   TweetUrl,
 } from "@/lib/api";
@@ -128,6 +129,11 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
   const [filterStrong, setFilterStrong] = useState(false);
   const [filterMinScore, setFilterMinScore] = useState(0);
   const [filterAccount, setFilterAccount] = useState("");
+  const [sortBy, setSortBy] = useState<"score" | "ai">("score");
+
+  // AI topic matching
+  const [userTopics, setUserTopics] = useState<string[]>([]);
+  const [avoidTopics, setAvoidTopics] = useState<string[]>([]);
 
   // Expanded panels
   const [expandedTrend, setExpandedTrend] = useState<string | null>(null);
@@ -203,6 +209,32 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    getMyTweetsAnalysis()
+      .then(res => {
+        if (res.analysis) {
+          setUserTopics([...(res.analysis.topics || []), ...(res.analysis.best_performing_topics || [])]);
+          setAvoidTopics(res.analysis.avoid_topics || []);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  /* ── Topic match scoring ──────────────────────────── */
+
+  const getTopicMatch = useCallback((text: string): number => {
+    if (!userTopics.length) return 0;
+    const lowerText = text.toLowerCase();
+    let score = 0;
+    for (const topic of userTopics) {
+      if (lowerText.includes(topic.toLowerCase())) score += 2;
+    }
+    for (const topic of avoidTopics) {
+      if (lowerText.includes(topic.toLowerCase())) score -= 3;
+    }
+    return score;
+  }, [userTopics, avoidTopics]);
+
   /* ── Date navigation ────────────────────────────────── */
 
   const availableDates = useMemo(() => {
@@ -240,8 +272,15 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
     if (filterStrong) result = result.filter(t => t.is_strong_trend);
     if (filterMinScore > 0) result = result.filter(t => t.trend_score >= filterMinScore);
     if (filterAccount) result = result.filter(t => t.accounts.some(a => a.toLowerCase().includes(filterAccount.toLowerCase())));
+    if (sortBy === "ai" && userTopics.length > 0) {
+      result = [...result].sort((a, b) => {
+        const textA = a.keyword + " " + (a.top_tweets || []).map(t => t.text).join(" ");
+        const textB = b.keyword + " " + (b.top_tweets || []).map(t => t.text).join(" ");
+        return getTopicMatch(textB) - getTopicMatch(textA);
+      });
+    }
     return result;
-  }, [displayTrends, filterStrong, filterMinScore, filterAccount]);
+  }, [displayTrends, filterStrong, filterMinScore, filterAccount, sortBy, userTopics, getTopicMatch]);
 
   const maxScore = useMemo(() => Math.max(...(filteredTrends.map(t => t.trend_score) || [1])), [filteredTrends]);
 
@@ -672,6 +711,14 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
             ))}
           </select>
         )}
+        <select
+          value={sortBy}
+          onChange={e => setSortBy(e.target.value as "score" | "ai")}
+          className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]"
+        >
+          <option value="score">Siralama: Skor</option>
+          <option value="ai" disabled={!userTopics.length}>Siralama: AI Onerisi</option>
+        </select>
       </div>
 
       {/* Style/Format/Provider bar */}
@@ -770,6 +817,12 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-[var(--accent-amber)]/25 to-[var(--accent-amber)]/10 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30">
                             &#9650; GUCLU TREND
                           </span>
+                        )}
+                        {userTopics.length > 0 && getTopicMatch(key) > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent-green)]/15 text-[var(--accent-green)] font-medium">Senin icin</span>
+                        )}
+                        {avoidTopics.length > 0 && getTopicMatch(key) < 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent-red)]/15 text-[var(--accent-red)] font-medium">Ilgi disi</span>
                         )}
                         <span className="text-[10px] text-[var(--text-secondary)]">
                           {isExpanded ? "&#9650;" : "&#9660;"}
