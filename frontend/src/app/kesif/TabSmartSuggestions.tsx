@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   getSmartSuggestions,
   triggerClustering,
@@ -36,7 +36,6 @@ interface Suggestion {
   news_body?: string;
   news_source?: string;
   news_date?: string;
-  // Legacy fields for fallback
   description_tr?: string;
   top_tweets?: ClusterTweet[];
   suggested_format?: string;
@@ -83,6 +82,12 @@ function engagementColor(val: number): string {
   return "var(--text-secondary)";
 }
 
+function engagementBgClass(val: number): string {
+  if (val >= 7) return "from-[var(--accent-green)]/20 to-[var(--accent-green)]/5 text-[var(--accent-green)] border-[var(--accent-green)]/30";
+  if (val >= 4) return "from-[var(--accent-amber)]/20 to-[var(--accent-amber)]/5 text-[var(--accent-amber)] border-[var(--accent-amber)]/30";
+  return "from-[var(--bg-secondary)] to-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)]";
+}
+
 /* ── Component ──────────────────────────────────────── */
 
 export default function TabSmartSuggestions() {
@@ -111,8 +116,7 @@ export default function TabSmartSuggestions() {
   const [editedTexts, setEditedTexts] = useState<Record<number, string>>({});
 
   // Expanded panels
-  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
-  const [expandedResearch, setExpandedResearch] = useState<Set<number>>(new Set());
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
 
   // Actions
   const [actionMsg, setActionMsg] = useState<Record<number, string>>({});
@@ -124,9 +128,12 @@ export default function TabSmartSuggestions() {
   const [mediaResults, setMediaResults] = useState<Record<number, Array<{ url: string; title?: string; thumbnail_url?: string; preview?: string; source?: string }>>>({});
   const [mediaLoading, setMediaLoading] = useState<number | null>(null);
 
+  // Refs for scroll
+  const cardRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
   /* ── Load ───────────────────────────────────────────── */
 
-  const loadData = () => {
+  const loadData = useCallback(() => {
     setLoading(true);
     getSmartSuggestions()
       .then(data => {
@@ -136,7 +143,7 @@ export default function TabSmartSuggestions() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  };
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -146,6 +153,38 @@ export default function TabSmartSuggestions() {
         if (data.formats) setFormats(data.formats);
       })
       .catch(() => {});
+  }, [loadData]);
+
+  /* ── Filtered ──────────────────────────────────────── */
+
+  const filtered = useMemo(() => {
+    return suggestions.filter((s, i) => {
+      if (dismissed.has(i)) return false;
+      if (filterType !== "all" && s.type !== filterType) return false;
+      if (s.engagement_potential < filterMinEngagement) return false;
+      return true;
+    });
+  }, [suggestions, dismissed, filterType, filterMinEngagement]);
+
+  const filteredWithIdx = useMemo(() => {
+    return filtered.map(s => ({
+      suggestion: s,
+      originalIdx: suggestions.indexOf(s),
+    }));
+  }, [filtered, suggestions]);
+
+  const trendCount = useMemo(() => filtered.filter(s => s.type === "trend").length, [filtered]);
+  const newsCount = useMemo(() => filtered.filter(s => s.type === "news").length, [filtered]);
+  const highEngCount = useMemo(() => filtered.filter(s => s.engagement_potential >= 7).length, [filtered]);
+
+  /* ── Scroll ────────────────────────────────────────── */
+
+  const scrollToCard = useCallback((idx: number) => {
+    setExpandedIdx(idx);
+    setTimeout(() => {
+      const el = cardRefs.current[idx];
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
   }, []);
 
   /* ── Handlers ───────────────────────────────────────── */
@@ -161,14 +200,13 @@ export default function TabSmartSuggestions() {
 
   const handleResearch = async (suggestion: Suggestion, idx: number) => {
     setResearchingIdx(idx);
+    setExpandedIdx(idx);
     setResearchData(prev => ({
       ...prev,
       [idx]: { summary: "", key_points: [], sources: [], progress: "Arastirma baslatiliyor..." },
     }));
-    setExpandedResearch(prev => new Set(prev).add(idx));
 
     try {
-      // Research ONLY the specific topic (not all tweets)
       let researchTopic = suggestion.topic;
       if (suggestion.url) {
         researchTopic += `\n\nKaynak: ${suggestion.url}`;
@@ -309,61 +347,88 @@ export default function TabSmartSuggestions() {
     showAction(idx, "Kopyalandi!");
   };
 
-  const toggleSet = (set: Set<number>, val: number): Set<number> => {
-    const next = new Set(set);
-    if (next.has(val)) next.delete(val); else next.add(val);
-    return next;
-  };
-
-  /* ── Filter ──────────────────────────────────────────── */
-
-  const filtered = suggestions.filter((s, i) => {
-    if (dismissed.has(i)) return false;
-    if (filterType !== "all" && s.type !== filterType) return false;
-    if (s.engagement_potential < filterMinEngagement) return false;
-    return true;
-  });
-
-  // Map filtered indices back to original
-  const filteredWithIdx = filtered.map(s => ({
-    suggestion: s,
-    originalIdx: suggestions.indexOf(s),
-  }));
-
   /* ── Render ─────────────────────────────────────────── */
 
   if (loading) return <div className="text-center py-8 text-[var(--text-secondary)]">Yukleniyor...</div>;
 
   return (
     <div className="space-y-4">
-      {/* Header bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <h3 className="text-sm font-semibold">
-            {filtered.length} oneri
-            {dismissed.size > 0 && <span className="text-[var(--text-secondary)] font-normal"> ({dismissed.size} gizlendi)</span>}
-          </h3>
-          {clusteredAt && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-green)]/10 text-[var(--accent-green)] border border-[var(--accent-green)]/20">
-              Kume: {timeAgo(clusteredAt)} once
-            </span>
-          )}
-          {tweetCount > 0 && (
-            <span className="text-[10px] text-[var(--text-secondary)]">
-              ({tweetCount} tweet analiz edildi)
-            </span>
-          )}
+      {/* ════ Header ════ */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="text-sm text-[var(--text-secondary)]">
+          {tweetCount > 0 && `${tweetCount} tweet analiz edildi`}
+          {clusteredAt && ` · Son kume: ${timeAgo(clusteredAt)} once`}
         </div>
         <button
           onClick={handleRecluster}
           disabled={clustering}
-          className="btn-secondary text-xs"
+          className="btn-primary text-xs"
         >
           {clustering ? "Kumeleniyor..." : "Yeniden Kumele"}
         </button>
       </div>
 
-      {/* Filters */}
+      {/* ════ Overview Panel (Trend-style pills) ════ */}
+      {filteredWithIdx.length > 0 && (
+        <div className="glass-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-[var(--text-primary)]">Oneri Ozeti</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent-blue)]/15 text-[var(--accent-blue)] font-medium">
+                {filtered.length} oneri
+              </span>
+              {highEngCount > 0 && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent-green)]/15 text-[var(--accent-green)] font-medium">
+                  {highEngCount} yuksek potansiyel
+                </span>
+              )}
+              {trendCount > 0 && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent-amber)]/15 text-[var(--accent-amber)] font-medium">
+                  {trendCount} trend
+                </span>
+              )}
+              {newsCount > 0 && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent-cyan)]/15 text-[var(--accent-cyan)] font-medium">
+                  {newsCount} haber
+                </span>
+              )}
+              {dismissed.size > 0 && (
+                <span className="text-[10px] text-[var(--text-secondary)]">
+                  ({dismissed.size} gizlendi)
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {filteredWithIdx.map(({ suggestion, originalIdx: idx }) => {
+              const isTrend = suggestion.type === "trend";
+              return (
+                <button
+                  key={idx}
+                  onClick={() => scrollToCard(idx)}
+                  className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 hover:scale-105 ${
+                    suggestion.engagement_potential >= 7
+                      ? `bg-gradient-to-r ${engagementBgClass(suggestion.engagement_potential)} hover:shadow-[0_0_12px_var(--accent-green)/20]`
+                      : expandedIdx === idx
+                        ? "bg-[var(--accent-blue)]/15 text-[var(--accent-blue)] border-[var(--accent-blue)]/40"
+                        : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/40"
+                  }`}
+                >
+                  <span className="text-[10px]">{isTrend ? "\u{1F4C8}" : "\u{1F4F0}"}</span>
+                  <span className="max-w-[120px] truncate">{suggestion.topic_tr || suggestion.topic}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold`}
+                    style={{ color: engagementColor(suggestion.engagement_potential) }}
+                  >
+                    {suggestion.engagement_potential}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ════ Filters + Style Bar ════ */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-1 bg-[var(--bg-secondary)] rounded-lg p-0.5">
           {(["all", "trend", "news"] as const).map(t => (
@@ -389,9 +454,44 @@ export default function TabSmartSuggestions() {
           <option value={4}>4+ Engagement</option>
           <option value={7}>7+ Engagement</option>
         </select>
+
+        {/* Global style/format/provider */}
+        <div className="flex gap-2 ml-auto">
+          <select
+            value={tweetStyle}
+            onChange={e => setTweetStyle(e.target.value)}
+            className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1 text-xs"
+          >
+            {styles.length > 0 ? styles.map(s => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            )) : (
+              <option value="quote_tweet">Quote Tweet</option>
+            )}
+          </select>
+          <select
+            value={tweetLength}
+            onChange={e => setTweetLength(e.target.value)}
+            className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1 text-xs"
+          >
+            {formats.length > 0 ? formats.map(f => (
+              <option key={f.id} value={f.id}>{f.name}</option>
+            )) : (
+              <option value="spark">Spark</option>
+            )}
+          </select>
+          <select
+            value={provider}
+            onChange={e => setProvider(e.target.value)}
+            className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1 text-xs"
+          >
+            {PROVIDER_OPTIONS.map(p => (
+              <option key={p.value} value={p.value}>{p.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {/* Suggestions */}
+      {/* ════ Suggestion Cards ════ */}
       {filteredWithIdx.length === 0 ? (
         <div className="glass-card p-8 text-center text-[var(--text-secondary)]">
           Henuz oneri yok. Trend analizi ve haber taramasi verileri biriktikce oneriler burada gorunecek.
@@ -403,24 +503,30 @@ export default function TabSmartSuggestions() {
             const gen = generatedTweets[idx];
             const isResearching = researchingIdx === idx;
             const isGenerating = generatingIdx === idx;
-            const isExpanded = expandedCards.has(idx);
-            const isResearchExpanded = expandedResearch.has(idx);
+            const isExpanded = expandedIdx === idx;
             const edited = editedTexts[idx] || "";
             const tweets = suggestion.tweets || suggestion.top_tweets || [];
             const isTrend = suggestion.type === "trend";
-            const borderColor = isTrend ? "var(--accent-amber)" : "var(--accent-cyan)";
 
             return (
               <div
                 key={idx}
-                className="glass-card overflow-hidden"
-                style={{ borderLeft: `3px solid ${borderColor}` }}
+                ref={el => { cardRefs.current[idx] = el; }}
+                className={`glass-card overflow-hidden transition-all duration-300 ${
+                  isExpanded ? "ring-1 ring-[var(--accent-blue)]/40" : ""
+                }`}
+                style={{
+                  borderLeft: `3px solid ${isTrend ? "var(--accent-amber)" : "var(--accent-cyan)"}`,
+                }}
               >
-                {/* Card Header */}
-                <div className="p-4 space-y-3">
+                {/* ── Card Header (clickable to expand) ── */}
+                <div
+                  className="p-4 cursor-pointer hover:bg-[var(--bg-secondary)]/30 transition-colors"
+                  onClick={() => setExpandedIdx(isExpanded ? null : idx)}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      {/* Type badge + Topic */}
+                      {/* Type badge + Engagement + Topic */}
                       <div className="flex items-center gap-2 flex-wrap mb-1.5">
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold tracking-wide shrink-0 ${
                           isTrend
@@ -434,53 +540,58 @@ export default function TabSmartSuggestions() {
                         </h3>
                       </div>
 
-                      {/* Reason / metadata */}
-                      <div className="flex items-center gap-3 text-[11px] text-[var(--text-secondary)]">
-                        <span>{suggestion.reason}</span>
-                        {suggestion.reasoning && (
-                          <span className="italic">{suggestion.reasoning}</span>
-                        )}
-                      </div>
+                      {/* Reason */}
+                      <p className="text-[11px] text-[var(--text-secondary)] line-clamp-1">
+                        {suggestion.reason}
+                        {suggestion.reasoning && ` — ${suggestion.reasoning}`}
+                      </p>
                     </div>
 
-                    {/* Right side: engagement + dismiss */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      {/* Engagement gauge */}
-                      <div className="flex flex-col items-center">
-                        <div
-                          className="text-lg font-black"
+                    {/* Right side: engagement gauge + expand arrow */}
+                    <div className="flex items-center gap-3 shrink-0">
+                      {/* Engagement gauge (circular style) */}
+                      <div className="relative w-12 h-12 flex items-center justify-center">
+                        <svg className="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
+                          <circle cx="18" cy="18" r="14" fill="none" stroke="var(--bg-secondary)" strokeWidth="3" />
+                          <circle
+                            cx="18" cy="18" r="14" fill="none"
+                            stroke={engagementColor(suggestion.engagement_potential)}
+                            strokeWidth="3"
+                            strokeDasharray={`${suggestion.engagement_potential * 8.8} 88`}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <span
+                          className="absolute text-sm font-black"
                           style={{ color: engagementColor(suggestion.engagement_potential) }}
                         >
                           {suggestion.engagement_potential}
-                        </div>
-                        <div className="text-[9px] text-[var(--text-secondary)]">/10</div>
+                        </span>
                       </div>
-                      <button
-                        onClick={() => handleDismiss(idx)}
-                        className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent-red)] p-1 rounded hover:bg-[var(--accent-red)]/10 transition-colors"
-                        title="Gec"
-                      >
-                        ✕
-                      </button>
+
+                      {/* Dismiss + Expand */}
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDismiss(idx); }}
+                          className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent-red)] p-1 rounded hover:bg-[var(--accent-red)]/10 transition-colors"
+                          title="Gec"
+                        >
+                          ✕
+                        </button>
+                        <span className={`text-xs text-[var(--text-secondary)] transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}>
+                          ▼
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Engagement bar + metadata row */}
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <div className="flex items-center gap-2 flex-1 min-w-[150px]">
-                      <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-primary)] overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${suggestion.engagement_potential * 10}%`,
-                            backgroundColor: engagementColor(suggestion.engagement_potential),
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--bg-primary)] text-[var(--text-secondary)]">
-                      {suggestion.suggested_hour}
-                    </span>
+                  {/* Metadata row */}
+                  <div className="flex items-center gap-3 mt-2 flex-wrap">
+                    {suggestion.suggested_hour && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-purple)]/10 text-[var(--accent-purple)] border border-[var(--accent-purple)]/20">
+                        Onerilen saat: {suggestion.suggested_hour}
+                      </span>
+                    )}
                     {tweets.length > 0 && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--bg-primary)] text-[var(--text-secondary)]">
                         {tweets.length} tweet
@@ -489,323 +600,254 @@ export default function TabSmartSuggestions() {
                     {suggestion.source_keywords && suggestion.source_keywords.length > 0 && (
                       <div className="flex gap-1 flex-wrap">
                         {suggestion.source_keywords.slice(0, 3).map((kw, i) => (
-                          <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--accent-purple)]/10 text-[var(--accent-purple)]">
+                          <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--accent-blue)]/10 text-[var(--accent-blue)]">
                             {kw}
                           </span>
                         ))}
                       </div>
                     )}
+                    {suggestion.news_source && (
+                      <span className="text-[10px] text-[var(--text-secondary)]">
+                        Kaynak: {suggestion.news_source}
+                      </span>
+                    )}
+                    {/* Quick research badge */}
+                    {research?.summary && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-green)]/10 text-[var(--accent-green)]">
+                        Arastirildi
+                      </span>
+                    )}
+                    {gen && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-amber)]/10 text-[var(--accent-amber)]">
+                        Tweet uretildi
+                      </span>
+                    )}
                   </div>
+                </div>
 
-                  {/* News body preview */}
-                  {suggestion.type === "news" && suggestion.news_body && (
-                    <div className="text-xs text-[var(--text-secondary)] leading-relaxed bg-[var(--bg-primary)] rounded-lg px-3 py-2">
-                      {suggestion.news_body.length > 200 ? suggestion.news_body.slice(0, 200) + "..." : suggestion.news_body}
+                {/* ── Expanded Content ── */}
+                {isExpanded && (
+                  <div className="border-t border-[var(--border)] p-4 space-y-4 bg-[var(--bg-secondary)]/20">
+                    {/* News body preview */}
+                    {suggestion.type === "news" && suggestion.news_body && (
+                      <div className="text-xs text-[var(--text-secondary)] leading-relaxed bg-[var(--bg-primary)] rounded-lg px-3 py-2">
+                        {suggestion.news_body.length > 300 ? suggestion.news_body.slice(0, 300) + "..." : suggestion.news_body}
+                        {suggestion.url && (
+                          <a href={suggestion.url} target="_blank" rel="noopener noreferrer" className="ml-2 text-[var(--accent-cyan)] hover:underline">
+                            Kaynak
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Trend tweets */}
+                    {tweets.length > 0 && (
+                      <div className="space-y-1.5">
+                        <h4 className="text-xs font-semibold text-[var(--text-secondary)] mb-1">Ilgili Tweetler</h4>
+                        {tweets.map((tw, i) => (
+                          <div key={i} className="flex gap-2 text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2">
+                            <a
+                              href={`https://x.com/${tw.account}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-semibold text-[var(--accent-blue)] hover:underline shrink-0"
+                            >
+                              @{tw.account}
+                            </a>
+                            <span className="text-[var(--text-primary)] line-clamp-2 flex-1">{tw.text}</span>
+                            {tw.engagement > 0 && (
+                              <span className="text-[10px] text-[var(--text-secondary)] shrink-0">{tw.engagement.toFixed(0)}</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* ── Action Buttons ── */}
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleResearch(suggestion, idx)}
+                        disabled={isResearching}
+                        className="btn-primary text-xs"
+                      >
+                        {isResearching ? "Arastiriliyor..." : research?.summary ? "Tekrar Arastir" : "Arastir"}
+                      </button>
+                      <button
+                        onClick={() => handleGenerate(suggestion, idx)}
+                        disabled={isGenerating}
+                        className="btn-primary text-xs"
+                      >
+                        {isGenerating ? "Uretiliyor..." : gen ? "Tekrar Uret" : "Tweet Uret"}
+                      </button>
                       {suggestion.url && (
-                        <a href={suggestion.url} target="_blank" rel="noopener noreferrer" className="ml-2 text-[var(--accent-cyan)] hover:underline">
-                          Kaynak
+                        <a
+                          href={suggestion.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-secondary text-xs inline-flex items-center"
+                        >
+                          Kaynagi Gor
                         </a>
                       )}
                     </div>
-                  )}
 
-                  {/* Trend tweets preview (first 2, always visible) */}
-                  {isTrend && tweets.length > 0 && !isExpanded && (
-                    <div className="space-y-1.5">
-                      {tweets.slice(0, 2).map((tw, i) => (
-                        <div key={i} className="flex gap-2 text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2">
-                          <a
-                            href={`https://x.com/${tw.account}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-semibold text-[var(--accent-blue)] hover:underline shrink-0"
-                          >
-                            @{tw.account}
-                          </a>
-                          <span className="text-[var(--text-primary)] line-clamp-2">{tw.text}</span>
-                          {tw.engagement > 0 && (
-                            <span className="text-[10px] text-[var(--text-secondary)] shrink-0">{tw.engagement.toFixed(0)}</span>
-                          )}
-                        </div>
-                      ))}
-                      {tweets.length > 2 && (
-                        <button
-                          onClick={() => setExpandedCards(prev => toggleSet(prev, idx))}
-                          className="text-[11px] text-[var(--accent-blue)] hover:underline pl-3"
-                        >
-                          +{tweets.length - 2} tweet daha goster
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Expanded tweets */}
-                  {isTrend && isExpanded && tweets.length > 0 && (
-                    <div className="space-y-1.5">
-                      {tweets.map((tw, i) => (
-                        <div key={i} className="flex gap-2 text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2">
-                          <a
-                            href={`https://x.com/${tw.account}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-semibold text-[var(--accent-blue)] hover:underline shrink-0"
-                          >
-                            @{tw.account}
-                          </a>
-                          <span className="text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">{tw.text}</span>
-                          {tw.engagement > 0 && (
-                            <span className="text-[10px] text-[var(--text-secondary)] shrink-0">{tw.engagement.toFixed(0)}</span>
-                          )}
-                        </div>
-                      ))}
-                      <button
-                        onClick={() => setExpandedCards(prev => toggleSet(prev, idx))}
-                        className="text-[11px] text-[var(--accent-blue)] hover:underline pl-3"
-                      >
-                        Tweet&apos;leri gizle
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Action buttons */}
-                  <div className="flex flex-wrap gap-2 pt-2 border-t border-[var(--border)]">
-                    <button
-                      onClick={() => handleResearch(suggestion, idx)}
-                      disabled={isResearching}
-                      className="btn-primary text-xs"
-                    >
-                      {isResearching ? "Arastiriliyor..." : research?.summary ? "Tekrar Arastir" : "Arastir"}
-                    </button>
-                    {suggestion.url && (
-                      <a
-                        href={suggestion.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn-secondary text-xs inline-flex items-center"
-                      >
-                        Kaynagi Gor
-                      </a>
+                    {/* Research progress */}
+                    {research?.progress && (
+                      <div className="text-xs text-[var(--accent-blue)] animate-pulse px-1">
+                        {research.progress}
+                      </div>
                     )}
-                  </div>
 
-                  {/* Research progress */}
-                  {research?.progress && (
-                    <div className="text-xs text-[var(--accent-blue)] animate-pulse px-1">
-                      {research.progress}
-                    </div>
-                  )}
-
-                  {/* Research results */}
-                  {research && research.summary && (
-                    <div className="space-y-3 bg-[var(--bg-primary)] rounded-lg p-4">
-                      <div className="flex items-center justify-between">
+                    {/* ── Research Results ── */}
+                    {research && research.summary && (
+                      <div className="space-y-3 bg-[var(--bg-primary)] rounded-lg p-4">
                         <h4 className="text-xs font-semibold text-[var(--accent-green)]">Arastirma Sonuclari</h4>
-                        <button
-                          onClick={() => setExpandedResearch(prev => toggleSet(prev, idx))}
-                          className="text-[10px] text-[var(--text-secondary)] hover:underline"
-                        >
-                          {isResearchExpanded ? "Gizle" : "Goster"}
-                        </button>
-                      </div>
-
-                      {isResearchExpanded && (
-                        <>
-                          <p className="text-xs leading-relaxed text-[var(--text-primary)]">
-                            {research.summary.replace(/<think>[\s\S]*?<\/think>/g, "").trim()}
-                          </p>
-                          {research.key_points.length > 0 && (
-                            <ul className="text-xs space-y-1 list-disc pl-4 text-[var(--text-secondary)]">
-                              {research.key_points.map((kp, i) => (
-                                <li key={i}>{kp}</li>
-                              ))}
-                            </ul>
-                          )}
-                          {research.sources.length > 0 && (
-                            <details className="text-[10px]">
-                              <summary className="cursor-pointer text-[var(--text-secondary)]">
-                                Kaynaklar ({research.sources.length})
-                              </summary>
-                              <div className="mt-1 space-y-0.5">
-                                {research.sources.slice(0, 5).map((s, i) => (
-                                  <div key={i}>
-                                    {s.url ? (
-                                      <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-[var(--accent-blue)] hover:underline">{s.title}</a>
-                                    ) : (
-                                      <span>{s.title}</span>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </details>
-                          )}
-                        </>
-                      )}
-
-                      {/* Tweet generation section */}
-                      <div className="pt-3 border-t border-[var(--border)] space-y-3">
-                        <div className="flex flex-wrap gap-2 items-center">
-                          <select
-                            value={tweetStyle}
-                            onChange={e => setTweetStyle(e.target.value)}
-                            className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
-                          >
-                            {styles.length > 0 ? styles.map(s => (
-                              <option key={s.id} value={s.id}>{s.name}</option>
-                            )) : (
-                              <option value="quote_tweet">Quote Tweet</option>
-                            )}
-                          </select>
-                          <select
-                            value={tweetLength}
-                            onChange={e => setTweetLength(e.target.value)}
-                            className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
-                          >
-                            {formats.length > 0 ? formats.map(f => (
-                              <option key={f.id} value={f.id}>{f.name}</option>
-                            )) : (
-                              <option value="spark">Spark</option>
-                            )}
-                          </select>
-                          <select
-                            value={provider}
-                            onChange={e => setProvider(e.target.value)}
-                            className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs"
-                          >
-                            {PROVIDER_OPTIONS.map(p => (
-                              <option key={p.value} value={p.value}>{p.label}</option>
+                        <p className="text-xs leading-relaxed text-[var(--text-primary)]">
+                          {research.summary.replace(/<think>[\s\S]*?<\/think>/g, "").trim()}
+                        </p>
+                        {research.key_points.length > 0 && (
+                          <ul className="text-xs space-y-1 list-disc pl-4 text-[var(--text-secondary)]">
+                            {research.key_points.map((kp, i) => (
+                              <li key={i}>{kp}</li>
                             ))}
-                          </select>
-                          <button
-                            onClick={() => handleGenerate(suggestion, idx)}
-                            disabled={isGenerating}
-                            className="btn-primary text-xs"
-                          >
-                            {isGenerating ? "Uretiliyor..." : "Tweet Uret"}
-                          </button>
-                        </div>
+                          </ul>
+                        )}
+                        {research.sources.length > 0 && (
+                          <details className="text-[10px]">
+                            <summary className="cursor-pointer text-[var(--text-secondary)]">
+                              Kaynaklar ({research.sources.length})
+                            </summary>
+                            <div className="mt-1 space-y-0.5">
+                              {research.sources.slice(0, 5).map((s, i) => (
+                                <div key={i}>
+                                  {s.url ? (
+                                    <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-[var(--accent-blue)] hover:underline">{s.title}</a>
+                                  ) : (
+                                    <span>{s.title}</span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </details>
+                        )}
                       </div>
+                    )}
 
-                      {/* Generated tweet */}
-                      {gen && (
-                        <div className="space-y-3 bg-[var(--bg-secondary)] rounded-lg p-3">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-xs font-semibold text-[var(--accent-amber)]">Uretilen Tweet</h4>
-                            {gen.score > 0 && (
-                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                                gen.score >= 80 ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)]" :
-                                gen.score >= 60 ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]" :
-                                "bg-[var(--accent-red)]/20 text-[var(--accent-red)]"
-                              }`}>
-                                {gen.score}/100
-                              </span>
-                            )}
-                          </div>
+                    {/* ── Generated Tweet ── */}
+                    {gen && (
+                      <div className="space-y-3 bg-[var(--bg-primary)] rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-semibold text-[var(--accent-amber)]">Uretilen Tweet</h4>
+                          {gen.score > 0 && (
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                              gen.score >= 80 ? "bg-[var(--accent-green)]/20 text-[var(--accent-green)]" :
+                              gen.score >= 60 ? "bg-[var(--accent-amber)]/20 text-[var(--accent-amber)]" :
+                              "bg-[var(--accent-red)]/20 text-[var(--accent-red)]"
+                            }`}>
+                              {gen.score}/100
+                            </span>
+                          )}
+                        </div>
 
-                          <textarea
-                            value={edited}
-                            onChange={e => setEditedTexts(prev => ({ ...prev, [idx]: e.target.value }))}
-                            className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm w-full min-h-[80px] resize-y focus:border-[var(--accent-blue)] focus:outline-none"
-                            rows={Math.min(6, Math.max(3, edited.split("\n").length + 1))}
-                          />
-                          <div className="text-[10px] text-[var(--text-secondary)] text-right">
-                            {edited.length} karakter
-                            {edited.length > 280 && (
-                              <span className="text-[var(--accent-amber)] ml-2">Thread olarak paylasmayi dusunun</span>
-                            )}
-                          </div>
+                        <textarea
+                          value={edited}
+                          onChange={e => setEditedTexts(prev => ({ ...prev, [idx]: e.target.value }))}
+                          className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm w-full min-h-[80px] resize-y focus:border-[var(--accent-blue)] focus:outline-none"
+                          rows={Math.min(6, Math.max(3, edited.split("\n").length + 1))}
+                        />
+                        <div className="text-[10px] text-[var(--text-secondary)] text-right">
+                          {edited.length} karakter
+                          {edited.length > 280 && (
+                            <span className="text-[var(--accent-amber)] ml-2">Thread olarak paylasmayi dusunun</span>
+                          )}
+                        </div>
 
-                          {/* Action buttons */}
-                          <div className="flex flex-wrap gap-2">
-                            <button onClick={() => openInX(edited)} className="btn-primary text-xs">
-                              X&apos;te Ac
-                            </button>
-                            <button onClick={() => copyText(edited, idx)} className="btn-secondary text-xs">
-                              Kopyala
-                            </button>
-                            <button onClick={() => handleSaveDraft(idx)} className="btn-secondary text-xs">
-                              Taslak
-                            </button>
+                        {/* Action buttons */}
+                        <div className="flex flex-wrap gap-2">
+                          <button onClick={() => openInX(edited)} className="btn-primary text-xs">
+                            X&apos;te Ac
+                          </button>
+                          <button onClick={() => copyText(edited, idx)} className="btn-secondary text-xs">
+                            Kopyala
+                          </button>
+                          <button onClick={() => handleSaveDraft(idx)} className="btn-secondary text-xs">
+                            Taslak
+                          </button>
+                          {suggestion.suggested_hour && (
                             <button onClick={() => handleScheduleBestTime(idx)} className="btn-primary text-xs">
                               {suggestion.suggested_hour}&apos;de Zamanla
                             </button>
-                            <button
-                              onClick={() => setShowSchedule(showSchedule === idx ? null : idx)}
-                              className="btn-secondary text-xs"
-                            >
-                              Ozel Saat
-                            </button>
-                            <button
-                              onClick={() => handleGenerate(suggestion, idx)}
-                              disabled={isGenerating}
-                              className="btn-secondary text-xs"
-                            >
-                              {isGenerating ? "..." : "Tekrar Uret"}
-                            </button>
-                          </div>
-
-                          {/* Custom schedule picker */}
-                          {showSchedule === idx && (
-                            <div className="flex items-center gap-2 p-2 rounded bg-[var(--bg-primary)]">
-                              <input
-                                type="datetime-local"
-                                value={scheduleTime}
-                                onChange={e => setScheduleTime(e.target.value)}
-                                className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)] focus:border-[var(--accent-blue)] focus:outline-none"
-                              />
-                              <button
-                                onClick={() => handleScheduleCustom(idx)}
-                                disabled={!scheduleTime}
-                                className="btn-primary text-xs"
-                              >
-                                Onayla
-                              </button>
-                            </div>
                           )}
-
-                          {/* Media finder */}
-                          <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-[var(--border)]">
-                            <button
-                              onClick={() => handleFindMedia(suggestion, idx)}
-                              disabled={mediaLoading === idx}
-                              className="btn-secondary text-xs"
-                            >
-                              {mediaLoading === idx ? "Araniyor..." : "Gorsel/Video Bul"}
-                            </button>
-                          </div>
-
-                          {/* Media results */}
-                          {mediaResults[idx] && mediaResults[idx].length > 0 && (
-                            <div className="space-y-2">
-                              <h5 className="text-xs font-semibold text-[var(--accent-cyan)]">
-                                Bulunan Medya ({mediaResults[idx].length})
-                              </h5>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                {mediaResults[idx].slice(0, 6).map((m, i) => {
-                                  const thumb = m.thumbnail_url || m.preview || m.url;
-                                  return (
-                                    <a key={i} href={m.url} target="_blank" rel="noopener noreferrer" className="block bg-[var(--bg-primary)] rounded-lg p-1.5 hover:ring-2 ring-[var(--accent-blue)] transition-all">
-                                      {thumb ? (
-                                        <img src={thumb} alt={m.title || ""} className="w-full h-24 object-cover rounded" loading="lazy" />
-                                      ) : (
-                                        <div className="w-full h-24 flex items-center justify-center text-xs text-[var(--text-secondary)] bg-[var(--bg-secondary)] rounded">Gorsel</div>
-                                      )}
-                                      <div className="text-[9px] text-[var(--text-secondary)] mt-1 truncate">{m.title || m.source || ""}</div>
-                                    </a>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Action message */}
-                          {actionMsg[idx] && (
-                            <div className="text-xs text-[var(--accent-green)] font-medium">{actionMsg[idx]}</div>
-                          )}
+                          <button
+                            onClick={() => setShowSchedule(showSchedule === idx ? null : idx)}
+                            className="btn-secondary text-xs"
+                          >
+                            Ozel Saat
+                          </button>
                         </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+
+                        {/* Custom schedule picker */}
+                        {showSchedule === idx && (
+                          <div className="flex items-center gap-2 p-2 rounded bg-[var(--bg-secondary)]">
+                            <input
+                              type="datetime-local"
+                              value={scheduleTime}
+                              onChange={e => setScheduleTime(e.target.value)}
+                              className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)] focus:border-[var(--accent-blue)] focus:outline-none"
+                            />
+                            <button
+                              onClick={() => handleScheduleCustom(idx)}
+                              disabled={!scheduleTime}
+                              className="btn-primary text-xs"
+                            >
+                              Onayla
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Media finder */}
+                        <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-[var(--border)]">
+                          <button
+                            onClick={() => handleFindMedia(suggestion, idx)}
+                            disabled={mediaLoading === idx}
+                            className="btn-secondary text-xs"
+                          >
+                            {mediaLoading === idx ? "Araniyor..." : "Gorsel/Video Bul"}
+                          </button>
+                        </div>
+
+                        {/* Media results */}
+                        {mediaResults[idx] && mediaResults[idx].length > 0 && (
+                          <div className="space-y-2">
+                            <h5 className="text-xs font-semibold text-[var(--accent-cyan)]">
+                              Bulunan Medya ({mediaResults[idx].length})
+                            </h5>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {mediaResults[idx].slice(0, 6).map((m, i) => {
+                                const thumb = m.thumbnail_url || m.preview || m.url;
+                                return (
+                                  <a key={i} href={m.url} target="_blank" rel="noopener noreferrer" className="block bg-[var(--bg-secondary)] rounded-lg p-1.5 hover:ring-2 ring-[var(--accent-blue)] transition-all">
+                                    {thumb ? (
+                                      <img src={thumb} alt={m.title || ""} className="w-full h-24 object-cover rounded" loading="lazy" />
+                                    ) : (
+                                      <div className="w-full h-24 flex items-center justify-center text-xs text-[var(--text-secondary)] bg-[var(--bg-primary)] rounded">Gorsel</div>
+                                    )}
+                                    <div className="text-[9px] text-[var(--text-secondary)] mt-1 truncate">{m.title || m.source || ""}</div>
+                                  </a>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Action message */}
+                        {actionMsg[idx] && (
+                          <div className="text-xs text-[var(--accent-green)] font-medium">{actionMsg[idx]}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

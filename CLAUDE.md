@@ -49,10 +49,9 @@ frontend/src/app/
     TabSelfReply.tsx          → Self-reply ayarları
     TabAnalytics.tsx          → Analitik (ısı haritası, performans)
   kesif/                      → Keşif & tarama
-    page.tsx                  → Ana sayfa (6 tab) + scheduler durum paneli
+    page.tsx                  → Ana sayfa (5 tab) + scheduler durum paneli
     TabTweets.tsx             → Tweet listesi + araştırma + quote tweet
     TabTrends.tsx             → Trend analizi + araştırma + tweet üretimi
-    TabNews.tsx               → Haber tarama + araştırma + tweet üretimi + AI skor
     TabSuggestedAccounts.tsx  → Hesap önerileri + aktif X araması
     TabSmartSuggestions.tsx   → Akıllı öneriler (trend/haber tabanlı)
     TabAyarlar.tsx            → Keşif ayarları
@@ -383,6 +382,22 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 ---
 
 ## Değişiklik Günlüğü
+
+### 2026-03-12 (Keşif Sayfası Temizlik + Öneriler İyileştirme)
+- **remove**: `TabNews.tsx` — Haberler tab'ı tamamen kaldırıldı (kullanıcı talebi)
+- **remove**: `scheduler_worker.py` — `news_scanner` job kaldırıldı (4 saatlik haber taraması iptal)
+- **remove**: `api.ts` — `getNews()`, `triggerNewsScan()` fonksiyonları kaldırıldı
+- **remove**: `page.tsx` — Haberler tab'ı ve scheduler status'tan "Haber Tarama" kaldırıldı (6→5 tab)
+- **feat**: `scheduler_worker.py` — `auto_content_suggester` scheduler'a eklendi (2 saatte bir otomatik kümele)
+- **feat**: `page.tsx` — Scheduler status'a "Akıllı Öneriler" worker durumu eklendi
+- **feat**: `TabSmartSuggestions.tsx` — TAM UI YENİDEN YAZIM: Trendler tabı gibi zengin UI
+  - Öneri özeti paneli (tıklanabilir pill'ler, engagement skoru renkli)
+  - Dairesel engagement gauge (SVG)
+  - Tıkla-genişlet kart pattern'ı (accordion)
+  - Stil/format/provider bar üst seviyeye taşındı
+  - Scroll-to-card özelliği
+  - Daha iyi görsel hiyerarşi ve hover animasyonları
+- **verify**: Hesap keşfi Telegram bildirimi aktif ve çalışıyor (account_discoverer.py + discovery_worker.py)
 
 ### 2026-03-11 (Keşif Sayfası 10 Faz Güncelleme)
 - **feat**: `scheduler_worker.py` — Worker last_run tracking + `get_scheduler_status()` fonksiyonu

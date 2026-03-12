@@ -338,15 +338,6 @@ def _analyze_trends():
         logger.exception("Trend analysis error")
 
 
-def _scan_news_sources():
-    """Faz 7: Her 4 saatte haber kaynağı taraması — web news."""
-    try:
-        from backend.news_scanner import scan_news
-        scan_news()
-        _track_run("news_scanner")
-    except Exception:
-        logger.exception("News scan error")
-
 
 def _discover_new_accounts():
     """Faz 9: Her 6 saatte yeni hesap keşfi — dynamic account discovery."""
@@ -356,6 +347,16 @@ def _discover_new_accounts():
         _track_run("account_discoverer")
     except Exception:
         logger.exception("Account discovery error")
+
+
+def _auto_cluster_suggestions():
+    """Her 2 saatte akıllı önerileri otomatik kümele (trend + haber verileriyle)."""
+    try:
+        from backend.auto_content_suggester import suggest_content_from_trends
+        suggest_content_from_trends()
+        _track_run("auto_content_suggester")
+    except Exception:
+        logger.exception("Auto content suggestion error")
 
 
 def start_scheduler():
@@ -426,14 +427,6 @@ def start_scheduler():
             id="trend_analyzer",
             replace_existing=True,
         )
-        # Faz 7: Haber kaynağı taraması — her 4 saatte
-        scheduler.add_job(
-            _scan_news_sources,
-            "interval",
-            hours=4,
-            id="news_scanner",
-            replace_existing=True,
-        )
         # Faz 9: Dinamik hesap keşfi — her 6 saatte
         scheduler.add_job(
             _discover_new_accounts,
@@ -442,11 +435,19 @@ def start_scheduler():
             id="account_discoverer",
             replace_existing=True,
         )
+        # Akıllı öneriler — her 2 saatte otomatik kümele
+        scheduler.add_job(
+            _auto_cluster_suggestions,
+            "interval",
+            hours=2,
+            id="auto_content_suggester",
+            replace_existing=True,
+        )
         scheduler.start()
         logger.info(
             "Scheduler started — publish 1m, metrics 30m, auto-reply scanner 10m, "
             "auto-reply generator 5m, self-reply 3m, discovery 30m, telegram 5s, "
-            "auto-scan 2h, trends 1h, news 4h, account-discovery 6h"
+            "auto-scan 2h, trends 1h, account-discovery 6h, suggestions 2h"
         )
 
 

@@ -17,7 +17,7 @@ import {
 import TabTweets from "./TabTweets";
 import TabAyarlar from "./TabAyarlar";
 import TabTrends from "./TabTrends";
-import TabNews from "./TabNews";
+
 import TabSuggestedAccounts from "./TabSuggestedAccounts";
 import TabSmartSuggestions from "./TabSmartSuggestions";
 
@@ -42,11 +42,11 @@ function timeAgo(isoStr: string): string {
 
 export default function KesifPage() {
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<"tweets" | "trendler" | "haberler" | "oneriler" | "akilli" | "ayarlar">("tweets");
+  const [tab, setTab] = useState<"tweets" | "trendler" | "oneriler" | "akilli" | "ayarlar">("tweets");
 
   useEffect(() => {
     const t = searchParams.get("tab");
-    if (t === "tweets" || t === "trendler" || t === "haberler" || t === "oneriler" || t === "akilli" || t === "ayarlar") setTab(t);
+    if (t === "tweets" || t === "trendler" || t === "oneriler" || t === "akilli" || t === "ayarlar") setTab(t);
   }, [searchParams]);
 
   const [config, setConfig] = useState<DiscoveryConfig | null>(null);
@@ -193,8 +193,8 @@ export default function KesifPage() {
         const JOB_LABELS: Record<string, string> = {
           auto_topic_scanner: "Konu Tarama",
           trend_analyzer: "Trend Analiz",
-          news_scanner: "Haber Tarama",
           account_discoverer: "Hesap Kesfi",
+          auto_content_suggester: "Akilli Oneriler",
           discovery_checker: "Hesap Rotasyon",
         };
         const relevantJobs = schedulerJobs.filter((j: { id: string }) => JOB_LABELS[j.id]);
@@ -253,7 +253,6 @@ export default function KesifPage() {
         {([
           { key: "tweets", label: `Tweetler (${tweets.length})`, icon: "\uD83D\uDCDD" },
           { key: "trendler", label: "Trendler", icon: "\uD83D\uDCC8" },
-          { key: "haberler", label: "Haberler", icon: "\uD83D\uDCF0" },
           { key: "oneriler", label: "Hesaplar", icon: "\uD83D\uDC65" },
           { key: "akilli", label: "Oneriler", icon: "\uD83D\uDCA1" },
           { key: "ayarlar", label: "Ayarlar", icon: "\u2699\uFE0F" },
@@ -291,7 +290,7 @@ export default function KesifPage() {
       )}
 
       {tab === "trendler" && <TabTrends />}
-      {tab === "haberler" && <TabNews />}
+
       {tab === "oneriler" && <TabSuggestedAccounts />}
       {tab === "akilli" && <TabSmartSuggestions />}
     </div>

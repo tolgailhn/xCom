@@ -1000,15 +1000,6 @@ export function triggerTrendAnalysis() {
   return apiFetch("/api/discovery/trends/analyze", { method: "POST" });
 }
 
-// News (Faz 7)
-export function getNews() {
-  return apiFetch("/api/discovery/news");
-}
-
-export function triggerNewsScan() {
-  return apiFetch("/api/discovery/news/scan", { method: "POST" });
-}
-
 // Suggested Accounts (Faz 9)
 export function getSuggestedAccounts() {
   return apiFetch("/api/discovery/suggested-accounts");
