@@ -351,7 +351,7 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
         "Bu tweet'leri SEMANTIK BENZERLIGE göre grupla.\n"
         "Her grup TEK BİR olay/duyuru/ürün/tartışma hakkında olmalı.\n"
         "AYNI KONU hakkında farklı kişilerin yazdığı tweetleri AYNI GRUBA koy.\n\n"
-        "HEDEF: 10-15 FARKLI KÜME oluştur. Mümkün olduğunca FAZLA farklı konu bul.\n"
+        "HEDEF: Mümkün olduğunca FAZLA farklı konu bul. Küme sayısını SINIRLANDIRMA.\n"
         "Tek tweet'lik konuları bile dahil et — her konu değerli.\n\n"
         "KURALLAR:\n"
         "1. SEMANTIK ANALIZ YAP — sadece keyword eşleşmesine bakma, anlam benzerliğine bak\n"
@@ -362,7 +362,7 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
         "6. topic_title_tr ZORUNLU — Türkçe başlık MUTLAKA yaz\n"
         "7. description_tr ZORUNLU — 'Bu konu neden önemli?' 1-2 cümle Türkçe açıklama yaz\n"
         "8. Engagement yüksek olan grupları (toplam ❤️) daha yüksek engagement_potential ver\n"
-        "9. MINIMUM 10 küme üret — az üretme, her farklı konuyu ayrı küme yap\n\n"
+        "9. Küme sayısını SINIRLANDIRMA — kaç farklı konu varsa hepsini ayrı küme yap\n\n"
         f"Tweet'ler:\n{tweets_text}\n\n"
         "SADECE JSON array döndür, başka bir şey yazma:\n"
         '[{"topic_title": "specific English topic title (min 3 words)", '
