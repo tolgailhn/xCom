@@ -55,6 +55,9 @@ interface SuggestedAccount {
   profile?: AccountProfile;
   topics?: string[];
   grok_reason?: string;
+  seed_account?: string;
+  search_query?: string;
+  reference_accounts?: string[];
 }
 
 interface SearchResult {
@@ -73,12 +76,16 @@ type CategoryFilter = "all" | "Arastirmaci" | "Gelistirici" | "Gazeteci" | "Kuru
 /* ── Strategy Labels ──────────────────────────────── */
 
 const STRATEGY_LABELS: Record<string, { label: string; icon: string }> = {
+  follower_mining: { label: "Takipci", icon: "👥" },
+  semantic_search: { label: "Arama", icon: "🔍" },
+  grok_similar: { label: "Grok", icon: "🤖" },
+  manual_analysis: { label: "Manuel", icon: "🎯" },
+  batch_analysis: { label: "Toplu", icon: "📋" },
+  // Legacy labels for backward compatibility
   cache_based: { label: "Cache", icon: "📊" },
   grok_search: { label: "Grok", icon: "🔍" },
   trend_based: { label: "Trend", icon: "📈" },
   interaction_based: { label: "Etkilesim", icon: "🔗" },
-  manual_analysis: { label: "Manuel", icon: "🎯" },
-  batch_analysis: { label: "Toplu", icon: "📋" },
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -135,11 +142,6 @@ export default function TabSuggestedAccounts({ refreshTrigger }: { refreshTrigge
   const [expandedAccount, setExpandedAccount] = useState<string | null>(null);
   const [searchAnalysis, setSearchAnalysis] = useState<Record<string, AccountAnalysis>>({});
 
-  // Smart discover strategies
-  const [selectedStrategies, setSelectedStrategies] = useState<Set<string>>(
-    new Set(["cache_based", "grok_search", "trend_based", "interaction_based"])
-  );
-
   const loadAccounts = async () => {
     try {
       const data = await getSuggestedAccounts();
@@ -155,10 +157,10 @@ export default function TabSuggestedAccounts({ refreshTrigger }: { refreshTrigge
   const handleSmartDiscover = async () => {
     setDiscovering(true);
     try {
-      const data = await smartDiscover(Array.from(selectedStrategies));
+      const data = await smartDiscover();
       setAccounts(data.accounts || []);
       const stats = data.discovery_stats || {};
-      setActionMsg(`Kesfedildi: ${stats.total_found || 0} hesap (${stats.total_saved || 0} yeni)`);
+      setActionMsg(`Kesfedildi: ${stats.total_found || 0} hesap (${stats.total_saved || 0} yeni, ${stats.total_analyzed || 0} analiz edildi)`);
       setTimeout(() => setActionMsg(""), 5000);
     } catch (e: unknown) {
       setActionMsg("Kesif hatasi: " + (e instanceof Error ? e.message : "bilinmeyen hata"));
@@ -268,15 +270,6 @@ export default function TabSuggestedAccounts({ refreshTrigger }: { refreshTrigge
     }
   };
 
-  const toggleStrategy = (s: string) => {
-    setSelectedStrategies(prev => {
-      const next = new Set(prev);
-      if (next.has(s)) { if (next.size > 1) next.delete(s); }
-      else next.add(s);
-      return next;
-    });
-  };
-
   // ── Sorted + filtered accounts ──────────────────
 
   const displayAccounts = useMemo(() => {
@@ -364,29 +357,17 @@ export default function TabSuggestedAccounts({ refreshTrigger }: { refreshTrigge
       {/* ── Smart Discovery Panel ── */}
       <div className="glass-card p-4 space-y-3">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-semibold text-[var(--text-primary)] uppercase tracking-wider">Akilli Kesif Stratejileri</span>
+          <span className="text-xs font-semibold text-[var(--text-primary)] uppercase tracking-wider">Benzer Hesap Kesfet</span>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(STRATEGY_LABELS).filter(([k]) => ["cache_based", "grok_search", "trend_based", "interaction_based"].includes(k)).map(([key, { label, icon }]) => (
-            <button
-              key={key}
-              onClick={() => toggleStrategy(key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
-                selectedStrategies.has(key)
-                  ? "bg-[var(--accent-blue)]/15 text-[var(--accent-blue)] border-[var(--accent-blue)]/40"
-                  : "text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--accent-blue)]/30"
-              }`}
-            >
-              {icon} {label}
-            </button>
-          ))}
-        </div>
+        <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+          Izlediginiz hesaplarin takipcilerini, konu bazli arama ve AI benzesim analizi ile sistemde olmayan yeni AI/tech hesaplari bulur.
+        </p>
         <button
           onClick={handleSmartDiscover}
           disabled={discovering}
           className="w-full px-4 py-2.5 rounded-lg text-sm font-medium bg-gradient-to-r from-[var(--accent-blue)] to-[var(--accent-purple)] text-white hover:opacity-90 disabled:opacity-50 transition-all duration-200"
         >
-          {discovering ? "Kesfediliyor..." : `Akilli Kesfet (${selectedStrategies.size} strateji)`}
+          {discovering ? "Kesfediliyor..." : "Benzer Hesap Bul"}
         </button>
       </div>
 
@@ -629,7 +610,7 @@ export default function TabSuggestedAccounts({ refreshTrigger }: { refreshTrigge
               : "Filtreye uyan hesap bulunamadi."}
           </p>
           <p className="text-xs text-[var(--text-secondary)] mt-1">
-            Yukaridaki &quot;Akilli Kesfet&quot; butonuyla AI hesaplari bulun.
+            Yukaridaki &quot;Benzer Hesap Bul&quot; butonuyla AI hesaplari bulun.
           </p>
         </div>
       ) : (
@@ -692,9 +673,14 @@ export default function TabSuggestedAccounts({ refreshTrigger }: { refreshTrigge
                         {formatNumber(profile?.followers_count || acc.followers)} takipci
                       </span>
                     )}
-                    {acc.appearances > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-green)]/10 text-[var(--accent-green)] border border-[var(--accent-green)]/20">
-                        {acc.appearances}x goruldu
+                    {acc.seed_account && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-purple)]/10 text-[var(--accent-purple)] border border-[var(--accent-purple)]/20">
+                        via @{acc.seed_account}
+                      </span>
+                    )}
+                    {acc.search_query && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-amber)]/10 text-[var(--accent-amber)] border border-[var(--accent-amber)]/20">
+                        &quot;{acc.search_query}&quot;
                       </span>
                     )}
                     {analysis?.topics?.slice(0, 3).map(t => (

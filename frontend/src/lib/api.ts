@@ -1089,10 +1089,10 @@ export function analyzeDiscoveryAccount(username: string, tweetCount: number = 2
   });
 }
 
-export function smartDiscover(strategies: string[] = ["cache_based", "grok_search", "trend_based", "interaction_based"], maxPerStrategy: number = 5) {
+export function smartDiscover() {
   return apiFetch("/api/discovery/smart-discover", {
     method: "POST",
-    body: JSON.stringify({ strategies, max_per_strategy: maxPerStrategy }),
+    body: JSON.stringify({}),
   });
 }
 

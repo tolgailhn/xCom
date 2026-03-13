@@ -260,6 +260,7 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 | 2026-03-13 | Kapsamlı hesap keşfi sistemi | 4 strateji (cache/grok/trend/interaction) + AI analiz + zengin UI |
 | 2026-03-13 | `search-accounts` bug fix | `get_twikit_client` import hatası düzeltildi (fonksiyon yoktu) |
 | 2026-03-13 | Otomatik AI analiz (keşif sonrası) | Hesap keşfi sonrası bulunan hesaplar otomatik AI ile analiz ediliyor — maliyet önemli değil |
+| 2026-03-13 | Hesap keşfi yeniden tasarım | 4 eski strateji → 3 yeni (follower_mining, semantic_search, grok_similar). Bio keyword filtresi + auto-dismiss düşük kalite |
 | 2026-03-13 | Hesap listeleri birleştirildi | `DEFAULT_AI_ACCOUNTS` (38) + `discovery_config` (13) tek rotasyona alındı |
 | 2026-03-13 | BATCH_SIZE 3→5 | Daha fazla hesap kapsamak için batch boyutu artırıldı |
 | 2026-03-13 | TabTweets tüm hesaplar dropdown | API'den gelen tam hesap listesi, tweet'i olmayan hesaplar da görünür |
@@ -486,6 +487,16 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 - **fix**: `discovery_worker.py` — Mevcut cache'deki eksik/preview-only özetler her taramada otomatik yeniden deneniyor (max 20 batch)
 - **fix**: `auto_topic_scanner.py` — Aynı pattern: boş başlangıç → AI çeviri → fallback preview + cache retry
 - **fix**: `trend_analyzer.py` — Backfill artık sadece boş değil, preview-only özetleri de yakalar ve yeniden çevirmeye çalışır
+
+### 2026-03-13 (Hesap Keşfi Yeniden Tasarım — Benzer Hesap Bulma)
+- **refactor**: `account_discoverer.py` — 4 eski strateji (cache_based, grok_search, trend_based, interaction_based) kaldırıldı
+- **feat**: `account_discoverer.py` — 3 yeni strateji: `follower_mining` (izlenen hesap takipçileri + AI bio filtre), `semantic_search` (konu bazlı X kullanıcı araması), `grok_similar` (kişiselleştirilmiş Grok benzer hesap önerisi)
+- **feat**: `account_discoverer.py` — `_bio_matches_ai()` helper: 30+ AI/tech keyword ile bio filtresi
+- **feat**: `account_discoverer.py` — `_get_seed_accounts()` helper: izlenen hesaplardan priority ağırlıklı rastgele seed seçimi
+- **feat**: `account_discoverer.py` — Auto-dismiss: AI analiz sonrası `content_relevance < 5` veya `bot_probability > 40` olan hesaplar otomatik reddedilir
+- **fix**: `TabSuggestedAccounts.tsx` — 4 strateji toggle butonu kaldırıldı, tek "Benzer Hesap Bul" butonu eklendi
+- **feat**: `TabSuggestedAccounts.tsx` — Seed hesap (`via @username`), arama sorgusu badge'ları eklendi
+- **fix**: `api.ts` — `smartDiscover()` parametre kaldırıldı (backend varsayılanları kullanır)
 
 ### 2026-03-13 (Otomatik AI Analiz + Hesap Rotasyonu Birleştirme)
 - **feat**: `account_discoverer.py` — Keşif sonrası otomatik AI analiz: `_auto_analyze_new_accounts()` fonksiyonu

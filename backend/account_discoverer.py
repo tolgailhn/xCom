@@ -1,42 +1,55 @@
 """
-Kapsamlı Hesap Keşfi Sistemi
-Çoklu strateji ile AI/teknoloji alanında kaliteli X hesapları bulur ve AI ile analiz eder.
+Hesap Keşfi Sistemi — Benzer Hesap Bulma
+İzlenen AI/tech hesaplarından yola çıkarak yeni, benzer hesaplar keşfeder.
 
 Stratejiler:
-1. cache_based — Mevcut tarama cache'inden yüksek engagement'lı yazarlar
-2. grok_search — Grok xAI ile X'te aktif hesap araması
-3. trend_based — Trend cache'deki konularda en aktif yazarlar
-4. interaction_based — İzlenen hesapların etkileşimde olduğu kişiler
+1. follower_mining — İzlenen hesapların takipçilerinden AI bio filtresi ile aday bulma
+2. semantic_search — Konu bazlı X kullanıcı araması
+3. grok_similar — Grok AI ile benzer hesap önerisi (kişiselleştirilmiş)
 """
 import datetime
 import json
 import logging
+import random
 import re
 import time
-from collections import Counter
 from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 TZ_TR = ZoneInfo("Europe/Istanbul")
 
-# Minimum criteria for suggesting an account
-MIN_APPEARANCES = 2
-MIN_AVG_ENGAGEMENT = 50
-MIN_FOLLOWERS = 1000
-
-# Grok search queries for finding AI accounts
-GROK_ACCOUNT_QUERIES = [
-    "AI researcher sharing latest LLM findings",
-    "machine learning engineer building open source",
-    "artificial intelligence startup founder",
-    "AI journalist covering tech news",
-    "deep learning developer sharing tutorials",
-    "computer vision researcher publishing papers",
-    "AI safety researcher working on alignment",
-    "robotics engineer building autonomous systems",
-    "data scientist sharing insights about AI models",
-    "tech founder building AI products",
+# Bio keyword filter for AI/tech accounts
+AI_BIO_KEYWORDS = [
+    "ai", "artificial intelligence", "machine learning", "deep learning",
+    "ml", "llm", "gpt", "nlp", "neural", "transformer", "computer vision",
+    "robotics", "data scien", "yapay zeka", "makine ogren",
+    "reinforcement learning", "generative", "diffusion", "rag",
+    "langchain", "autonomous", "foundational model", "fine-tun",
+    "large language model", "multimodal", "ai safety", "alignment",
+    "agent", "openai", "anthropic", "hugging face", "pytorch", "tensorflow",
 ]
+
+# Semantic search queries for finding AI accounts
+SEMANTIC_SEARCH_QUERIES = [
+    "AI researcher LLM",
+    "machine learning engineer",
+    "artificial intelligence developer",
+    "deep learning researcher",
+    "AI startup founder",
+    "computer vision researcher",
+    "NLP researcher",
+    "AI safety alignment",
+    "robotics AI engineer",
+    "data scientist AI",
+    "yapay zeka geliştirici",
+    "AI journalist tech",
+]
+
+
+def _bio_matches_ai(bio: str) -> bool:
+    """Check if bio contains AI/tech related keywords."""
+    bio_lower = (bio or "").lower()
+    return any(kw in bio_lower for kw in AI_BIO_KEYWORDS)
 
 
 # ── Helper: Get twikit client ─────────────────────────────
@@ -87,286 +100,301 @@ def _get_monitored_and_dismissed():
     return monitored, dismissed, existing
 
 
-# ═══════════════════════════════════════════════════════════
-# STRATEGY 1: Cache-based (mevcut mantık)
-# ═══════════════════════════════════════════════════════════
-
-def _strategy_cache_based(monitored: set, dismissed: set) -> list[dict]:
-    """Tarama cache'inden yüksek engagement'lı yazarları bul."""
+def _get_seed_accounts(count: int = 3) -> list[str]:
+    """İzlenen hesaplardan rastgele seed hesap seç (priority ağırlıklı)."""
     try:
-        from backend.modules.style_manager import load_discovery_cache, load_auto_scan_cache
+        from backend.modules.style_manager import load_discovery_config
+        from backend.modules.twitter_scanner import DEFAULT_AI_ACCOUNTS
     except ImportError:
         return []
 
-    now = datetime.datetime.now(TZ_TR)
-    cutoff = (now - datetime.timedelta(hours=48)).isoformat()
+    config = load_discovery_config()
+    priority = config.get("priority_accounts", [])
+    normal = config.get("normal_accounts", [])
+    defaults = list(DEFAULT_AI_ACCOUNTS)
 
-    discovery_tweets = load_discovery_cache()
-    auto_scan_tweets = load_auto_scan_cache()
+    # Priority 2x ağırlık
+    pool = list(set(priority * 2 + normal + defaults))
+    if not pool:
+        return []
 
-    author_appearances: Counter = Counter()
-    author_engagement: Counter = Counter()
-    author_followers: dict[str, int] = {}
-    author_sample_tweets: dict[str, list[str]] = {}
+    return random.sample(pool, min(count, len(pool)))
 
-    for tweets in [discovery_tweets, auto_scan_tweets]:
-        for t in tweets:
-            if t.get("scanned_at", "") < cutoff and t.get("created_at", "") < cutoff:
-                continue
 
-            author = (t.get("account", "") or t.get("author", "") or "").lower()
-            if not author or author in monitored or author in dismissed:
-                continue
+def _get_all_monitored_usernames() -> set[str]:
+    """Tüm izlenen hesapları (lowercase) döndür."""
+    try:
+        from backend.modules.style_manager import load_discovery_config
+        from backend.modules.twitter_scanner import DEFAULT_AI_ACCOUNTS
+    except ImportError:
+        return set()
 
-            engagement = t.get("engagement_score", 0) or t.get("like_count", 0)
-            followers = t.get("author_followers", 0)
+    config = load_discovery_config()
+    result = set()
+    for acc in config.get("priority_accounts", []):
+        result.add(acc.lower())
+    for acc in config.get("normal_accounts", []):
+        result.add(acc.lower())
+    for acc in DEFAULT_AI_ACCOUNTS:
+        result.add(acc.lower())
+    return result
 
-            author_appearances[author] += 1
-            author_engagement[author] += engagement
-            if followers > author_followers.get(author, 0):
-                author_followers[author] = followers
 
-            text = (t.get("text", "") or "")[:200]
-            if text:
-                author_sample_tweets.setdefault(author, [])
-                if len(author_sample_tweets[author]) < 3:
-                    author_sample_tweets[author].append(text)
+# ═══════════════════════════════════════════════════════════
+# STRATEGY 1: Follower Mining
+# ═══════════════════════════════════════════════════════════
 
-    candidates = []
-    for author, count in author_appearances.items():
-        if count < MIN_APPEARANCES:
-            continue
-        avg_engagement = author_engagement[author] / count
-        if avg_engagement < MIN_AVG_ENGAGEMENT:
-            continue
+def _strategy_follower_mining(
+    monitored: set, dismissed: set, max_results: int = 15
+) -> list[dict]:
+    """İzlenen hesapların takipçilerinden AI/tech hesapları bul."""
+    twikit = _get_twikit_client()
+    if not twikit:
+        logger.info("follower_mining: Twikit not available")
+        return []
 
-        followers = author_followers.get(author, 0)
-        score = count * 50 + avg_engagement + (followers / 1000)
+    seeds = _get_seed_accounts(3)
+    if not seeds:
+        logger.info("follower_mining: No seed accounts")
+        return []
 
-        candidates.append({
-            "username": author,
-            "appearances": count,
-            "avg_engagement": round(avg_engagement, 1),
-            "total_engagement": author_engagement[author],
-            "followers": followers,
-            "score": round(score, 1),
-            "sample_tweets": author_sample_tweets.get(author, []),
-            "sample_tweet": (author_sample_tweets.get(author, [""]))[0],
-            "discovery_strategy": "cache_based",
-        })
+    logger.info("follower_mining: Seeds: %s", ", ".join(f"@{s}" for s in seeds))
 
+    all_candidates: dict[str, dict] = {}
+
+    for seed in seeds:
+        try:
+            followers = twikit.get_user_followers(
+                seed, limit=100, verified_only=False
+            )
+
+            matched = 0
+            for f in followers:
+                username = (f.get("username", "") or "").lower()
+                if not username or username in monitored or username in dismissed:
+                    continue
+                if username in all_candidates:
+                    continue
+
+                bio = f.get("bio", "") or ""
+                followers_count = f.get("followers_count", 0) or 0
+
+                # Bio AI keyword filtresi + minimum takipçi
+                if not _bio_matches_ai(bio) or followers_count < 500:
+                    continue
+
+                all_candidates[username] = {
+                    "username": username,
+                    "appearances": 1,
+                    "avg_engagement": 0,
+                    "total_engagement": 0,
+                    "followers": followers_count,
+                    "score": followers_count / 100,
+                    "sample_tweets": [],
+                    "sample_tweet": "",
+                    "discovery_strategy": "follower_mining",
+                    "seed_account": seed,
+                    "profile": {
+                        "display_name": f.get("name", ""),
+                        "bio": bio,
+                        "verified": f.get("is_blue_verified", False),
+                        "profile_image_url": f.get("profile_image_url", ""),
+                    },
+                }
+                matched += 1
+                if matched >= 5:
+                    break
+
+            logger.info(
+                "follower_mining: @%s → %d matched from %d followers",
+                seed, matched, len(followers),
+            )
+            time.sleep(2)  # Rate limit
+
+        except Exception as e:
+            logger.warning("follower_mining error for @%s: %s", seed, e)
+
+    candidates = list(all_candidates.values())[:max_results]
     return candidates
 
 
 # ═══════════════════════════════════════════════════════════
-# STRATEGY 2: Grok X Search
+# STRATEGY 2: Semantic Search
 # ═══════════════════════════════════════════════════════════
 
-def _strategy_grok_search(monitored: set, dismissed: set, max_results: int = 5) -> list[dict]:
-    """Grok ile X'te AI hesaplarını ara."""
+def _strategy_semantic_search(
+    monitored: set, dismissed: set, max_results: int = 15
+) -> list[dict]:
+    """Konu bazlı X'te hesap araması."""
+    twikit = _get_twikit_client()
+    if not twikit:
+        logger.info("semantic_search: Twikit not available")
+        return []
+
+    # 3 rastgele sorgu seç
+    queries = random.sample(SEMANTIC_SEARCH_QUERIES, min(3, len(SEMANTIC_SEARCH_QUERIES)))
+    logger.info("semantic_search: Queries: %s", queries)
+
+    all_candidates: dict[str, dict] = {}
+
+    for query in queries:
+        try:
+            # search_user is on the underlying twikit client
+            users = twikit._run(
+                twikit._get_client_sync().search_user(query, count=10)
+            )
+
+            matched = 0
+            for u in (users or []):
+                username = (
+                    getattr(u, "screen_name", "") or getattr(u, "username", "") or ""
+                ).lower()
+                if not username or username in monitored or username in dismissed:
+                    continue
+                if username in all_candidates:
+                    continue
+
+                bio = getattr(u, "description", "") or ""
+                followers_count = getattr(u, "followers_count", 0) or 0
+
+                if not _bio_matches_ai(bio) or followers_count < 500:
+                    continue
+
+                all_candidates[username] = {
+                    "username": username,
+                    "appearances": 1,
+                    "avg_engagement": 0,
+                    "total_engagement": 0,
+                    "followers": followers_count,
+                    "score": followers_count / 100,
+                    "sample_tweets": [],
+                    "sample_tweet": "",
+                    "discovery_strategy": "semantic_search",
+                    "search_query": query,
+                    "profile": {
+                        "display_name": getattr(u, "name", ""),
+                        "bio": bio,
+                        "verified": getattr(u, "is_blue_verified", False),
+                        "profile_image_url": getattr(u, "profile_image_url_https", "") or "",
+                    },
+                }
+                matched += 1
+                if matched >= 5:
+                    break
+
+            logger.info("semantic_search: '%s' → %d matched", query, matched)
+            time.sleep(2)
+
+        except Exception as e:
+            logger.warning("semantic_search error for '%s': %s", query, e)
+
+    candidates = list(all_candidates.values())[:max_results]
+    return candidates
+
+
+# ═══════════════════════════════════════════════════════════
+# STRATEGY 3: Grok Similar Accounts
+# ═══════════════════════════════════════════════════════════
+
+def _strategy_grok_similar(
+    monitored: set, dismissed: set, max_results: int = 10
+) -> list[dict]:
+    """Grok AI ile izlenen hesaplara benzer hesap bul (kişiselleştirilmiş)."""
     try:
         from backend.config import get_settings
         from backend.modules.grok_client import _grok_responses_api, _parse_json_array, _track_cost
     except ImportError as e:
-        logger.warning("Grok search import error: %s", e)
+        logger.warning("grok_similar import error: %s", e)
         return []
 
     settings = get_settings()
     api_key = getattr(settings, "grok_api_key", "") or ""
     if not api_key:
-        logger.info("Grok API key not configured, skipping grok_search strategy")
+        logger.info("grok_similar: Grok API key not configured")
         return []
 
-    import random
-    queries = random.sample(GROK_ACCOUNT_QUERIES, min(2, len(GROK_ACCOUNT_QUERIES)))
+    # 5 referans hesap seç
+    reference_accounts = _get_seed_accounts(5)
+    if not reference_accounts:
+        logger.info("grok_similar: No reference accounts")
+        return []
 
-    all_accounts: dict[str, dict] = {}
+    refs_str = ", ".join(f"@{a}" for a in reference_accounts)
+    logger.info("grok_similar: Reference accounts: %s", refs_str)
 
-    for query in queries:
-        try:
-            result = _grok_responses_api(
-                messages=[
-                    {"role": "system", "content": (
-                        "You are a research assistant. Search X for accounts matching the query. "
-                        "Return a JSON array of account objects. Return ONLY the JSON array."
-                    )},
-                    {"role": "user", "content": f"""Search X for: "{query}"
+    try:
+        result = _grok_responses_api(
+            messages=[
+                {"role": "system", "content": (
+                    "You are a research assistant. Search X for accounts similar to "
+                    "the given reference accounts. These accounts post about AI, machine learning, "
+                    "deep learning, LLMs, and related tech topics. "
+                    "Find accounts that are NOT in the reference list but share similar content. "
+                    "Return ONLY a JSON array."
+                )},
+                {"role": "user", "content": f"""Find X/Twitter accounts similar to these AI/tech accounts: {refs_str}
 
-Find the top {max_results} most relevant X/Twitter accounts. For each account, provide:
+I want accounts that:
+- Post about AI, ML, LLM, deep learning, computer vision, robotics, or related tech
+- Share original insights, research, or analysis (not just news retweets)
+- Have at least 500 followers
+- Are NOT any of these accounts: {refs_str}
+
+Find {max_results} accounts. For each, return:
 - "username": the username (without @)
 - "display_name": their display name
 - "bio": their bio/description
 - "followers": approximate follower count (number)
 - "sample_tweet": one of their recent relevant tweets
-- "relevance_reason": why this account is relevant (1 sentence)
+- "relevance_reason": why this account is similar to the references (1 sentence)
 
 Return ONLY the JSON array, no other text."""},
-                ],
-                tools=[{"type": "x_search"}],
-                max_tokens=2000,
-                temperature=0.1,
-                api_key=api_key,
-            )
+            ],
+            tools=[{"type": "x_search"}],
+            max_tokens=2000,
+            temperature=0.1,
+            api_key=api_key,
+        )
 
-            if not result or not result.get("text"):
+        if not result or not result.get("text"):
+            return []
+
+        _track_cost(result.get("input_tokens", 0), result.get("output_tokens", 0))
+
+        raw = re.sub(r'<think>.*?</think>', '', result["text"], flags=re.DOTALL).strip()
+        parsed = _parse_json_array(raw)
+
+        candidates = []
+        for acc in (parsed or []):
+            username = (acc.get("username", "") or "").lower().lstrip("@")
+            if not username or username in monitored or username in dismissed:
                 continue
 
-            _track_cost(result.get("input_tokens", 0), result.get("output_tokens", 0))
+            candidates.append({
+                "username": username,
+                "appearances": 1,
+                "avg_engagement": 0,
+                "total_engagement": 0,
+                "followers": acc.get("followers", 0) or 0,
+                "score": (acc.get("followers", 0) or 0) / 100,
+                "sample_tweets": [acc.get("sample_tweet", "")][:1],
+                "sample_tweet": acc.get("sample_tweet", ""),
+                "discovery_strategy": "grok_similar",
+                "reference_accounts": reference_accounts,
+                "profile": {
+                    "display_name": acc.get("display_name", ""),
+                    "bio": acc.get("bio", ""),
+                    "verified": False,
+                },
+                "grok_reason": acc.get("relevance_reason", ""),
+            })
 
-            import re as _re
-            raw = _re.sub(r'<think>.*?</think>', '', result["text"], flags=_re.DOTALL).strip()
-            parsed = _parse_json_array(raw)
+        logger.info("grok_similar: found %d candidates", len(candidates))
+        return candidates[:max_results]
 
-            for acc in (parsed or []):
-                username = (acc.get("username", "") or "").lower().lstrip("@")
-                if not username or username in monitored or username in dismissed:
-                    continue
-                if username in all_accounts:
-                    continue
-
-                all_accounts[username] = {
-                    "username": username,
-                    "appearances": 1,
-                    "avg_engagement": 0,
-                    "total_engagement": 0,
-                    "followers": acc.get("followers", 0) or 0,
-                    "score": 0,
-                    "sample_tweets": [acc.get("sample_tweet", "")][:1],
-                    "sample_tweet": acc.get("sample_tweet", ""),
-                    "discovery_strategy": "grok_search",
-                    "profile": {
-                        "display_name": acc.get("display_name", ""),
-                        "bio": acc.get("bio", ""),
-                        "verified": False,
-                    },
-                    "grok_reason": acc.get("relevance_reason", ""),
-                }
-
-            time.sleep(1)  # Rate limit
-        except Exception as e:
-            logger.warning("Grok account search error for '%s': %s", query, e)
-
-    candidates = list(all_accounts.values())[:max_results]
-    return candidates
-
-
-# ═══════════════════════════════════════════════════════════
-# STRATEGY 3: Trend-based
-# ═══════════════════════════════════════════════════════════
-
-def _strategy_trend_based(monitored: set, dismissed: set, max_results: int = 5) -> list[dict]:
-    """Trend cache'deki konularda en aktif yazarları bul."""
-    try:
-        from backend.modules.style_manager import load_trend_cache
-    except ImportError:
+    except Exception as e:
+        logger.warning("grok_similar error: %s", e)
         return []
-
-    trend_data = load_trend_cache()
-    trends = trend_data.get("trends", []) if isinstance(trend_data, dict) else trend_data
-    if not trends:
-        return []
-
-    author_topics: dict[str, list[str]] = {}
-    author_engagement: Counter = Counter()
-    author_count: Counter = Counter()
-    author_sample: dict[str, str] = {}
-
-    for trend in trends:
-        keyword = trend.get("keyword", "")
-        for tw in trend.get("top_tweets", []):
-            author = (tw.get("author", "") or tw.get("account", "") or "").lower()
-            if not author or author in monitored or author in dismissed:
-                continue
-
-            author_topics.setdefault(author, [])
-            if keyword and keyword not in author_topics[author]:
-                author_topics[author].append(keyword)
-
-            eng = tw.get("engagement_score", 0) or tw.get("like_count", 0)
-            author_engagement[author] += eng
-            author_count[author] += 1
-
-            text = (tw.get("text", "") or "")[:200]
-            if text and author not in author_sample:
-                author_sample[author] = text
-
-    candidates = []
-    for author, topics in author_topics.items():
-        if len(topics) < 1:
-            continue
-        count = author_count[author]
-        avg_eng = author_engagement[author] / max(count, 1)
-
-        candidates.append({
-            "username": author,
-            "appearances": count,
-            "avg_engagement": round(avg_eng, 1),
-            "total_engagement": author_engagement[author],
-            "followers": 0,
-            "score": len(topics) * 30 + avg_eng,
-            "sample_tweets": [author_sample.get(author, "")],
-            "sample_tweet": author_sample.get(author, ""),
-            "discovery_strategy": "trend_based",
-            "topics": topics[:5],
-        })
-
-    candidates.sort(key=lambda x: x["score"], reverse=True)
-    return candidates[:max_results]
-
-
-# ═══════════════════════════════════════════════════════════
-# STRATEGY 4: Interaction-based
-# ═══════════════════════════════════════════════════════════
-
-def _strategy_interaction_based(monitored: set, dismissed: set, max_results: int = 5) -> list[dict]:
-    """İzlenen hesapların etkileşimde olduğu (reply/quote) kişileri bul."""
-    try:
-        from backend.modules.style_manager import load_discovery_cache
-    except ImportError:
-        return []
-
-    discovery_tweets = load_discovery_cache()
-    mention_count: Counter = Counter()
-    mention_context: dict[str, str] = {}
-
-    for t in discovery_tweets:
-        text = t.get("text", "") or ""
-
-        # Extract mentions from tweet text
-        mentions = re.findall(r'@(\w+)', text)
-        for m in mentions:
-            m_lower = m.lower()
-            if m_lower in monitored or m_lower in dismissed:
-                continue
-            mention_count[m_lower] += 1
-            if m_lower not in mention_context:
-                mention_context[m_lower] = text[:200]
-
-        # Check reply_to / quote_of fields
-        for field in ["reply_to_user", "quoted_user"]:
-            user = (t.get(field, "") or "").lower()
-            if user and user not in monitored and user not in dismissed:
-                mention_count[user] += 1
-                if user not in mention_context:
-                    mention_context[user] = f"Etkileşim: {text[:150]}"
-
-    candidates = []
-    for author, count in mention_count.most_common(max_results * 2):
-        if count < 2:
-            break
-        candidates.append({
-            "username": author,
-            "appearances": count,
-            "avg_engagement": 0,
-            "total_engagement": 0,
-            "followers": 0,
-            "score": count * 40,
-            "sample_tweets": [mention_context.get(author, "")],
-            "sample_tweet": mention_context.get(author, ""),
-            "discovery_strategy": "interaction_based",
-        })
-
-    return candidates[:max_results]
 
 
 # ═══════════════════════════════════════════════════════════
@@ -506,14 +534,8 @@ def discover_accounts():
     if now.hour < 8 or now.hour >= 23:
         return
 
-    monitored, dismissed, existing = _get_monitored_and_dismissed()
-    candidates = _strategy_cache_based(monitored, dismissed)
-
-    if not candidates:
-        logger.info("Account discoverer: no new accounts to suggest")
-        return
-
-    _merge_and_save(candidates, existing)
+    result = discover_accounts_smart(max_per_strategy=5)
+    logger.info("Scheduled discover_accounts: %s", result)
 
 
 def discover_accounts_smart(
@@ -522,7 +544,7 @@ def discover_accounts_smart(
 ) -> dict:
     """Çoklu strateji ile akıllı hesap keşfi."""
     if strategies is None:
-        strategies = ["cache_based", "grok_search", "trend_based", "interaction_based"]
+        strategies = ["follower_mining", "semantic_search", "grok_similar"]
 
     monitored, dismissed, existing = _get_monitored_and_dismissed()
 
@@ -531,14 +553,12 @@ def discover_accounts_smart(
 
     for strategy in strategies:
         try:
-            if strategy == "cache_based":
-                found = _strategy_cache_based(monitored, dismissed)
-            elif strategy == "grok_search":
-                found = _strategy_grok_search(monitored, dismissed, max_per_strategy)
-            elif strategy == "trend_based":
-                found = _strategy_trend_based(monitored, dismissed, max_per_strategy)
-            elif strategy == "interaction_based":
-                found = _strategy_interaction_based(monitored, dismissed, max_per_strategy)
+            if strategy == "follower_mining":
+                found = _strategy_follower_mining(monitored, dismissed, max_per_strategy)
+            elif strategy == "semantic_search":
+                found = _strategy_semantic_search(monitored, dismissed, max_per_strategy)
+            elif strategy == "grok_similar":
+                found = _strategy_grok_similar(monitored, dismissed, max_per_strategy)
             else:
                 found = []
 
@@ -598,6 +618,7 @@ def analyze_single_account(username: str, tweet_count: int = 20) -> dict | None:
 def _auto_analyze_new_accounts(candidates: list[dict], existing: list[dict]) -> int:
     """Yeni keşfedilen hesapları otomatik AI ile analiz et.
     Maliyet önemli değil — her zaman en iyi sonuç için çalış.
+    Auto-dismiss: content_relevance < 5 veya bot_probability > 40 → otomatik reddet.
     """
     try:
         from backend.modules.style_manager import load_suggested_accounts, save_suggested_accounts
@@ -630,18 +651,31 @@ def _auto_analyze_new_accounts(candidates: list[dict], existing: list[dict]) -> 
         try:
             result = analyze_single_account(username, tweet_count=20)
             if result and result.get("analysis"):
+                analysis = result["analysis"]
+
                 # Mevcut kayda analiz ekle
                 accounts = load_suggested_accounts()
                 for acc in accounts:
                     if acc.get("username", "").lower() == username:
-                        acc["analysis"] = result["analysis"]
+                        acc["analysis"] = analysis
                         if result.get("profile"):
                             acc["profile"] = result["profile"]
+
+                        # Auto-dismiss: düşük kalite veya bot riski
+                        relevance = analysis.get("content_relevance", 0)
+                        bot_prob = analysis.get("bot_probability", 100)
+                        if relevance < 5 or bot_prob > 40:
+                            acc["dismissed"] = True
+                            acc["auto_dismissed"] = True
+                            logger.info(
+                                "Auto-dismiss: @%s (relevance=%s, bot=%s%%)",
+                                username, relevance, bot_prob,
+                            )
                         break
                 save_suggested_accounts(accounts)
                 analyzed += 1
                 logger.info("Auto-analyze: @%s analiz edildi (skor: %s)",
-                            username, result["analysis"].get("overall_score", "?"))
+                            username, analysis.get("overall_score", "?"))
             time.sleep(1)  # Rate limit koruması
         except Exception as e:
             logger.warning("Auto-analyze error for @%s: %s", username, e)
@@ -681,10 +715,12 @@ def _merge_and_save(candidates: list[dict], existing: list[dict] | None = None) 
     save_suggested_accounts(existing)
     logger.info("Account discoverer: %d new, %d total", new_count, len(existing))
 
-    # Telegram notification for high-score accounts
-    high_score = [c for c in candidates if c.get("score", 0) >= 300 and c["username"].lower() not in existing_map]
-    if high_score:
-        _notify_new_accounts(high_score)
+    # Telegram notification for new accounts
+    new_accounts = [c for c in candidates if c["username"].lower() not in {
+        a.get("username", "").lower() for a in existing if a.get("discovered_at", "") < now.isoformat()
+    }]
+    if new_accounts and new_count > 0:
+        _notify_new_accounts(new_accounts[:5])
 
     return new_count
 
@@ -701,9 +737,9 @@ def _notify_new_accounts(accounts: list[dict]):
         lines = ["👤 Yeni Hesap Önerileri:\n"]
         for a in accounts[:5]:
             username = a["username"]
-            score = a.get("score", 0)
             strategy = a.get("discovery_strategy", "?")
-            lines.append(f"• @{username} (skor: {score:.0f}, strateji: {strategy})")
+            followers = a.get("followers", 0)
+            lines.append(f"• @{username} ({followers:,} takipçi, {strategy})")
         lines.append("\n/kesif sayfasından izleme listesine ekleyebilirsin!")
         send_telegram_message("\n".join(lines), settings.telegram_bot_token, settings.telegram_chat_id)
     except Exception:
