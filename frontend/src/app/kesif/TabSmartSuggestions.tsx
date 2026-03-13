@@ -45,6 +45,22 @@ interface ClusterTweet {
   engagement: number;
   tweet_id?: string;
   tweet_url?: string;
+  created_at?: string;
+}
+
+function relativeTime(dateStr: string): string {
+  if (!dateStr) return "";
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  if (isNaN(then)) return "";
+  const diff = now - then;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "az once";
+  if (mins < 60) return `${mins}dk`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}s`;
+  const days = Math.floor(hours / 24);
+  return `${days}g`;
 }
 
 interface Suggestion {
@@ -522,8 +538,17 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
                           <div key={i} className="flex items-start gap-2.5 text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2.5 border border-[var(--border)]">
                             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--accent-blue)]/20 to-[var(--accent-purple)]/20 flex items-center justify-center text-[10px] font-bold text-[var(--accent-blue)] shrink-0">{tw.account.charAt(0).toUpperCase()}</div>
                             <div className="flex-1 min-w-0">
-                              <a href={`https://x.com/${tw.account}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--accent-blue)] hover:underline text-[11px]">@{tw.account}</a>
-                              <p className="text-[var(--text-primary)] line-clamp-2 mt-0.5 leading-relaxed">{tw.text}</p>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <a href={`https://x.com/${tw.account}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--accent-blue)] hover:underline text-[11px]">@{tw.account}</a>
+                                {tw.created_at && relativeTime(tw.created_at) && (
+                                  <span className="text-[10px] text-[var(--text-tertiary)]">{relativeTime(tw.created_at)}</span>
+                                )}
+                              </div>
+                              {tw.tweet_url ? (
+                                <a href={tw.tweet_url} target="_blank" rel="noopener noreferrer" className="text-[var(--text-primary)] line-clamp-2 mt-0.5 leading-relaxed hover:text-[var(--accent-blue)] transition-colors block">{tw.text}</a>
+                              ) : (
+                                <p className="text-[var(--text-primary)] line-clamp-2 mt-0.5 leading-relaxed">{tw.text}</p>
+                              )}
                             </div>
                             {tw.engagement > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--accent-amber)]/10 text-[var(--accent-amber)] font-medium shrink-0">{tw.engagement.toFixed(0)}</span>}
                           </div>
