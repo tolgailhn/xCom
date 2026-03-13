@@ -298,10 +298,54 @@ def clear_cache():
 
 @router.get("/scheduler-status")
 def get_scheduler_status():
-    """Tüm scheduler job'larının durumunu döndür (son/sonraki çalışma zamanı)."""
+    """Tüm scheduler job'larının durumunu döndür + rotasyon detayları."""
     try:
         from backend.scheduler_worker import get_scheduler_status as _get_status
-        return _get_status()
+        from backend.modules.style_manager import (
+            load_discovery_rotation,
+            load_discovery_config,
+        )
+        from backend.modules.twitter_scanner import DEFAULT_AI_ACCOUNTS
+
+        status = _get_status()
+
+        # Rotasyon detayları
+        try:
+            config = load_discovery_config()
+            rotation = load_discovery_rotation()
+            last_scanned = rotation.get("last_scanned", {})
+
+            # Tüm hesapları topla
+            all_accounts = set()
+            for a in config.get("priority_accounts", []):
+                all_accounts.add(a.lower())
+            for a in config.get("normal_accounts", []):
+                all_accounts.add(a.lower())
+            for a in DEFAULT_AI_ACCOUNTS:
+                all_accounts.add(a.lower())
+
+            # Her hesabın son taranma zamanı
+            account_details = []
+            for acc in sorted(all_accounts):
+                last = last_scanned.get(acc)
+                account_details.append({
+                    "username": acc,
+                    "last_scanned": last,
+                    "is_priority": acc in [a.lower() for a in config.get("priority_accounts", [])],
+                })
+
+            status["rotation"] = {
+                "total_accounts": len(all_accounts),
+                "batch_size": 5,
+                "interval_minutes": 20,
+                "full_rotation_minutes": (len(all_accounts) // 5 + 1) * 20,
+                "accounts": account_details,
+            }
+        except Exception as e:
+            logger.warning("Rotation details error: %s", e)
+            status["rotation"] = None
+
+        return status
     except Exception as e:
         logger.exception("Scheduler status error")
         raise HTTPException(500, f"Scheduler durumu alınamadı: {str(e)}")

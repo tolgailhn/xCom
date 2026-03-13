@@ -44,6 +44,8 @@ export default function KesifPage() {
   const [newAccountPriority, setNewAccountPriority] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [schedulerJobs, setSchedulerJobs] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [rotationInfo, setRotationInfo] = useState<any>(null);
   const [allAccounts, setAllAccounts] = useState<string[]>([]);
 
   // Auto-refresh triggers per tab
@@ -75,6 +77,7 @@ export default function KesifPage() {
       if (tweetsRes.all_accounts) setAllAccounts(tweetsRes.all_accounts);
       setStatus(statusRes);
       setSchedulerJobs(schedRes.jobs || []);
+      if (schedRes.rotation) setRotationInfo(schedRes.rotation);
       if (statusRes.next_scan_seconds != null) {
         setNextScanSec(statusRes.next_scan_seconds);
       }
@@ -91,7 +94,10 @@ export default function KesifPage() {
   useEffect(() => {
     const interval = setInterval(() => {
       getSchedulerStatus()
-        .then(res => setSchedulerJobs(res.jobs || []))
+        .then(res => {
+          setSchedulerJobs(res.jobs || []);
+          if (res.rotation) setRotationInfo(res.rotation);
+        })
         .catch(() => {});
     }, 60_000);
     return () => clearInterval(interval);
@@ -244,12 +250,12 @@ export default function KesifPage() {
       {/* Scheduler Worker Status */}
       {schedulerJobs.length > 0 && (() => {
         const JOB_LABELS: Record<string, string> = {
-          auto_topic_scanner: "Konu Tarama",
-          trend_analyzer: "Trend Analiz",
-          account_discoverer: "Hesap Kesfi",
-          auto_content_suggester: "Akilli Oneriler",
-          discovery_checker: "Hesap Rotasyon",
-          ai_scorer: "AI Skorlama",
+          auto_topic_scanner: "Konu Tarama (45dk)",
+          trend_analyzer: "Trend Analiz (20dk)",
+          account_discoverer: "Hesap Kesfi (3sa)",
+          auto_content_suggester: "AI Kumeleme (15dk)",
+          discovery_checker: "Hesap Rotasyon (20dk)",
+          ai_scorer: "AI Skorlama (30dk)",
         };
         const relevantJobs = schedulerJobs.filter((j: { id: string }) => JOB_LABELS[j.id]);
         if (!relevantJobs.length) return null;
@@ -259,7 +265,7 @@ export default function KesifPage() {
               <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-green)] animate-pulse" />
               <span className="text-xs font-medium text-[var(--text-secondary)]">Otomatik Tarama Durumlari</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
               {relevantJobs.map((job: { id: string; last_run: string | null; next_run: string | null }) => (
                 <div key={job.id} className="flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-lg bg-[var(--bg-secondary)]/60 border border-[var(--border)]/50 hover:border-[var(--accent-blue)]/30 transition-colors">
                   <span className="text-[10px] font-semibold text-[var(--text-primary)]">{JOB_LABELS[job.id]}</span>
@@ -283,19 +289,41 @@ export default function KesifPage() {
         );
       })()}
 
-      {/* Rotation Info */}
-      {status?.last_scanned_per_account && Object.keys(status.last_scanned_per_account).length > 0 && (
+      {/* Rotation Info — Detaylı hesap tarama durumu */}
+      {rotationInfo && rotationInfo.accounts?.length > 0 && (
         <div className="glass-card p-3">
-          <div className="text-xs font-medium mb-2 text-[var(--text-secondary)]">
-            Rotasyon &mdash; {status.scan_mode || "30dk batch"}
+          <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-[var(--text-secondary)]">
+                Rotasyon &mdash; batch ({rotationInfo.interval_minutes}dk, {rotationInfo.batch_size} hesap/tur)
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-[10px] text-[var(--text-secondary)]">
+              <span>{rotationInfo.total_accounts} hesap</span>
+              <span>Tam tur: ~{rotationInfo.full_rotation_minutes}dk</span>
+            </div>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {Object.entries(status.last_scanned_per_account)
-              .sort(([, a], [, b]) => a.localeCompare(b))
-              .map(([account, lastScan]) => (
-                <span key={account} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[var(--bg-secondary)] text-[10px]">
-                  <span className="font-medium">@{account}</span>
-                  <span className="text-[var(--text-secondary)]">{timeAgo(lastScan)}</span>
+            {rotationInfo.accounts
+              .sort((a: { last_scanned: string | null }, b: { last_scanned: string | null }) => {
+                if (!a.last_scanned && !b.last_scanned) return 0;
+                if (!a.last_scanned) return 1;
+                if (!b.last_scanned) return -1;
+                return a.last_scanned.localeCompare(b.last_scanned);
+              })
+              .map((acc: { username: string; last_scanned: string | null; is_priority: boolean }) => (
+                <span
+                  key={acc.username}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] ${
+                    acc.is_priority
+                      ? "bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/30"
+                      : "bg-[var(--bg-secondary)]"
+                  }`}
+                >
+                  <span className="font-medium">@{acc.username}</span>
+                  <span className="text-[var(--text-secondary)]">
+                    {acc.last_scanned ? timeAgo(acc.last_scanned) : "bekliyor"}
+                  </span>
                 </span>
               ))
             }
