@@ -37,9 +37,9 @@ COOKIES_PATH = DATA_DIR / "twikit_cookies.json"
 
 # ---------- Global rate limiter for Twikit requests ----------
 # Prevents rapid-fire requests that cause Twitter to temporarily ban the account.
-TWIKIT_MIN_DELAY = 1.5  # minimum seconds between consecutive requests
+TWIKIT_MIN_DELAY = 2.5  # minimum seconds between consecutive requests
 TWIKIT_BACKOFF_MULTIPLIER = 1.5  # multiply delay on consecutive errors
-TWIKIT_MAX_DELAY = 8.0  # max backoff delay (was 30s — caused 2-3 min hangs)
+TWIKIT_MAX_DELAY = 12.0  # max backoff delay
 _twikit_last_request_time: float = 0.0
 _twikit_consecutive_errors: int = 0
 _twikit_rate_lock = threading.Lock()

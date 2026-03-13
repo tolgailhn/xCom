@@ -393,7 +393,7 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
             tweets = twikit.get_user_tweets(account, count=10)
         except Exception as e:
             logger.warning("Discovery: @%s tweet çekme hatası: %s", account, e)
-            time.sleep(2)
+            time.sleep(5)
             continue
 
         account_tweets: list[dict] = []  # Bu hesabın tweet'leri (inline çeviri için)
@@ -512,8 +512,8 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
         # Rotasyon kaydı güncelle
         rotation.setdefault("last_scanned", {})[account.lower()] = now.isoformat()
 
-        # Rate limit koruması
-        time.sleep(3)
+        # Rate limit koruması — hesaplar arası 5sn bekleme
+        time.sleep(5)
 
     # Mevcut cache'e ekle ve sırala
     existing_cache = load_discovery_cache()
