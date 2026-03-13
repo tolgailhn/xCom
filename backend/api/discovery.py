@@ -1427,7 +1427,7 @@ class AnalyzeAccountRequest(BaseModel):
 
 
 class SmartDiscoverRequest(BaseModel):
-    strategies: list[str] = ["cache_based", "grok_search", "trend_based", "interaction_based"]
+    strategies: list[str] = ["follower_mining", "semantic_search", "grok_similar"]
     max_per_strategy: int = 5
 
 
