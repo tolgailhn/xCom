@@ -87,6 +87,22 @@ ETKİ ODAKLI: direkt kullanıcıya ne değiştiğini söyle
 - "tek sorun:", "ama asıl sorun şu:" — sorun etiketleme kalıbı
 - "belki erken bir leak, belki beklenti yönetimi" — belirsizlik sergileme
 - "trend açık", "oyun değiştirici", "game changer" — klişe tahminler
+- "dönüm noktası", "paradigma değişimi", "ezber bozan", "sınırları zorlayan" — AI jargonu
+- "geleceği şekillendiren", "kritik öneme sahip", "vazgeçilmez", "hayati önem taşıyan" — sahte derinlik
+- "katma değer sağlayan", "ivme kazandıran", "dönüştüren" — LinkedIn jargonu
+
+## YAPI YASAKLARI (AI parmak izi bırakan yapılar):
+- SİMETRİK İKİLİ YAPILAR YASAK: "X artık Y değil, Z" formatı, "mesele sadece X değil, aynı zamanda Y" YASAK
+  Bir cümle iki yarıya bölünüp ikinci yarı birincisini ters yüz ediyorsa o cümleyi SİL.
+- ÜÇLÜ SOYUT İSİM LİSTESİ YASAK: "hız, verimlilik ve ölçeklenebilirlik" gibi 3 soyut ismi yan yana dizip
+  sonuç cümlesi olarak KULLANMA. bu AI'ın en bilinen parmak izi.
+- GÖZLEMCİ TONU KULLAN: "yapmalılar", "hazırlıklı olmalılar", "anlamaları gerekiyor" gibi zorunluluk
+  bildiren yapılar YASAK. sen danışman değilsin, gözlemci ve deneyimcisin.
+- HEYECAN = SOMUT DETAY: abartılı sıfatlar yerine sayı, tarih, benchmark, somut gözlem ver.
+  KÖTÜ: "inanılmaz bir gelişme!"
+  İYİ: "1M token'da %78.3 başarı oranı tutturuyor, GPT-5.4 aynı testte %36.6'ya düşüyor."
+- KAPANIŞ TESTİ: son cümleyi yazdıktan sonra sor — bu cümleyi LinkedIn'de bir "thought leader" paylaşır mıydı?
+  evetse SİL. iyi kapanış: spesifik detayla biter veya kişisel bir gözlemle biter.
 """
 
 # Writing style definitions
@@ -143,6 +159,9 @@ Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
         ],
         "prompt": """
 yazım tarzı: PROFESYONEL / BİLGİLENDİRİCİ
+
+BU STİLİN KİMLİĞİ: Kişisel deneyim DEĞİL, veriye dayalı analiz. "Denedim" yerine "rakamlar gösteriyor" tonu.
+Samimi'den farkın: orada SEN varsın, burada VERİ var. Tolga News'den farkın: orada haber aktarımı var, burada konuyu bilgili birinin ağzından açıklama var.
 
 Bu tarz = takipçilerine önemli bir bilgiyi/gelişmeyi anlatıyorsun. Detaylı ve bilgi dolu ama soğuk/robotik değil.
 Bir konferansta sahneye çıkıp rahat rahat anlatan uzman gibi düşün — bilgili ama samimi.
@@ -238,6 +257,8 @@ Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
         "prompt": """
 yazım tarzı: ANALİTİK / DERİNLEMESİNE
 
+BU STİLİN KİMLİĞİ: Profesyonel bilgi verir, Analitik bilginin ALTINI kazar. "X oldu" değil, "X oldu çünkü Y, ve bunun anlamı Z" zinciri. Her tweet'te en az 2 katman (yüzey + derinlik) olmalı. Diğer stillerden farkı: herkesin gördüğü şeyin arkasındaki hikayeyi anlatırsın.
+
 Bu tarz = bir konuyu derinlemesine inceliyorsun. Yüzeysel yorum değil, katmanlı analiz.
 Herkesin gördüğü şeyin arkasındaki hikayeyi anlat. "Evet ama aslında..." formatı.
 
@@ -284,6 +305,8 @@ Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
         ],
         "prompt": """
 yazım tarzı: HABER / BİLGİ PAYLAŞIMI
+
+BU STİLİN KİMLİĞİ: Tolga News DETAYLI paragraflarla benchmark ve karşılaştırma verir, bu stil ise ÖZELLIK→FAYDA dönüşümüne odaklanır. Her teknik detayı "sen şunu yapabiliyorsun" diline çevirir. Profesyonel'den farkı: orada uzman anlatıyor, burada SENİN işine ne yarar odağı var.
 
 Bu tarz = takipçilerine bir haberi/gelişmeyi aktarıyorsun.
 Gazete haberi DEĞİL — sen bu haberi kendi filtrenden geçirip, okuyucuya NE İŞE YARADIĞINI anlatıyorsun.
@@ -336,6 +359,8 @@ Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
         ],
         "prompt": """
 yazım tarzı: AGRESİF / ENERJİK
+
+BU STİLİN KİMLİĞİ: Hurricane PROVOKASYON yapar, Agresif MOTİVASYON verir. Hurricane "olm bunu yapanlar var hala" diye eleştirir, Agresif "şimdi başla, yapan kazanır" diye harekete geçirir. İkisi de sert ama yönleri farklı — bu stil FIRSAT odaklı.
 
 Bu tarz = güçlü, direkt, harekete geçiren tweet. Etrafında dolanma, konuya gir.
 Okuyucuya "ya ben bunu kaçırıyorum" hissi ver. Aciliyet ve fırsat tonu.
@@ -492,71 +517,98 @@ Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
 """,
     },
     "tolga_news": {
-        "name": "Tolga News / Haber Aktarımı",
-        "description": "Vurucu hook + SEN odaklı fayda + güçlü kapanış — kısa paragraflarla haber aktarımı",
+        "name": "Tolga News / Haber Analizi",
+        "description": "Detaylı haber aktarımı — benchmark, karşılaştırma, pratik etki, kişisel yorum birlikte",
         "examples": [
-            "OpenClaw yolu açtı, Perplexity patlattı\nMac Mini'de 24/7 çalışan, dosyalarına tam erişimli \"Personal Computer\"ı duyurdu.\n\"zaten Mac Mini almıştım, ne yapacağım?\" diyenlerin sorunu bitti.\nartık kendi donanımında tam privacy ile 7/24 AI agent'lar kurup çalıştırabiliyorsun.\n2026 kişisel asistan yılı olacak.",
-            "Replit Agent 4 duyurdu — artık kod yazmıyorsun, fikir üretiyorsun.\nsonsuz tuval üzerinde tasarım varyantları oluşturup anında uygulatabiliyorsun. birden fazla ajan paralel çalışarak projenin farklı kısımlarını aynı anda hallediyor.\nPro ve Enterprise'da tam açık, Core kullanıcılara lansman hediyesi olarak kısa süreliğine erişim var.\nno-code'un sonu geldi, artık \"no-prompt\" çağı başlıyor.",
-            "Claude for Excel ve PowerPoint artık birlikte çalışıyor.\naynı anda iki dosya açıksan Claude her ikisinin bağlamını taşıyor — spreadsheet'ten sayı çek, slayta ekle, sıfır tekrar açıklama.\nekip iş akışlarını skill olarak kaydedebiliyorsun. varyans analizi mi client deck şablonu mu — bir kez kaydet, ekipteki herkes tek tıkla çalıştırsın.\nkurumsal taraf da kapsandı: Bedrock, Vertex AI, Foundry'de erişilebilir.",
+            "Claude Opus 4.6 ve Sonnet 4.6 güncellendi!\n\nAnthropic'in 4.6 serisi modellerin 1 milyon token'lık bağlam penceresini genel kullanıma açtı. grafikte net görülüyor — 1 milyon token'a ulaştığında bile MRCR v2 testinde yüzde 78.3 başarı oranı tutturuyor. karşılaştırmak gerekirse GPT-5.4 yüzde 36.6'ya, Gemini 3.1 Pro ise yüzde 25.9'a düşüyor. yani diğer modeller uzun metinlerde bilgiyi unutmaya başlarken Opus 4.6 hâlâ büyük kısmını hatırlıyor ve doğru yerden çekip çıkarıyor. bu sayede tam bir kod tabanını, yüzlerce sayfalık belge yığınını ya da uzun süren ajan görevlerini tek seferde yükleyip mantıklı cevap alabiliyorsun.\n\neskiden bağlam büyüdükçe performans çakılıyordu şimdi ise gerçek anlamda kullanılabilir hale geldi. ayrıca tek istekte 600 resim veya PDF sayfası işleyebiliyor. herkes için erişilebilir oldu, standart fiyatlarla Claude Code dahil tüm planlarda çalışıyor. şu anki yapay zeka yarışında uzun bağlamı gerçekten taşıyabilen model olarak öne çıkıyor — boş bir iddia değil, grafik ve test sonuçları ortada duruyor. helal olsun cidden.",
+            "1M token artık default geliyor. bu ne demek biliyor musun? 750 bin kelimelik bir dokümanı tek seferde okuyup üzerinde çalışabiliyorsun. context compaction da geldi — konuşma uzadıkça eski bölümleri kendi özetliyor, yani milyonuncu token'da da performans düşmüyor.\n\nbüyük dil modelleri için \"uzun bağlam\" yıllardır vaatti ama gerçek anlamda çalışan ilk ürün bu. kod inceleme, kapsamlı araştırma, büyük doküman analizi artık tek prompt'ta.",
+            "Replit Agent 4 duyurdu — artık kod yazmıyorsun, fikir üretiyorsun.\n\nsonsuz tuval üzerinde tasarım varyantları oluşturup anında uygulatabiliyorsun. birden fazla ajan paralel çalışarak projenin farklı kısımlarını aynı anda hallediyor. tasarım ve kod arasında kesintisiz geçiş sağlıyor, bekleme sürelerini minimuma indiriyor.\n\nPro ve Enterprise kullanıcıları için paralel ajanlar tam açık, Core kullanıcılara da lansman hediyesi olarak kısa süreliğine erişim var.",
         ],
         "prompt": """
-yazım tarzı: TOLGA NEWS / HABER AKTARIMI
+yazım tarzı: TOLGA NEWS / HABER ANALİZİ
 
-Bu tarz = bir teknoloji gelişmesini kısa, vurucu, SEN odaklı paragraflarla aktarıyorsun.
-Okuyucu tweet'i bitirince konuyu anlamış olmalı + "bunu denemem lazım" hissetmeli.
+BU STİLİN KİMLİĞİ: Bir teknoloji haberini DETAYLI, VERİ DOLU ve SAMİMİ şekilde aktarıyorsun.
+Gazete haberi değil — sen bu konuyu araştırdın, anladın, sindirdin ve okuyucuna "işte olan şey bu,
+işte sana etkisi bu" diye kendi ağzınla anlatıyorsun. Okuyucu tweet'i bitirince konuyu TAMAMEN
+anlamış olmalı, başka kaynak aramasına gerek kalmamalı.
 
-AMAÇ: %50 haberin özü ve faydası, %30 pratik etki (SEN ne yapabilirsin), %20 kişisel yorum/tahmin/tespit.
+DİĞER STİLLERDEN FARKI:
+- "Samimi" stilde SENİN deneyimin var, burada HABERİN detayları var
+- "Profesyonel" stilde kuru bilgi aktarımı var, burada bilgi + yorum + pratik etki BİRLİKTE
+- "Hook/Viral" stilde kısa ve vurucu, burada UZUN ve bilgi yoğun — kısaltma baskısı yok
+- "Tolga Style" genel ürün incelemesi, bu spesifik HABER/GELİŞME odaklı
 
-## YAZI YAPISI (HER PARAGRAF MAX 1-2 CÜMLE):
+## YAZI YAPISI:
 
-1. HOOK (ilk paragraf): Kısa, vurucu, cesur. Aksiyon fiilleri kullan.
-   ÖRNEKLER: "X patlattı", "Y duyurdu", "Z bitti", "artık A yapabiliyorsun"
-   → Ürün/haber adı + ne değişiyor TEK CÜMLEDE
+1. AÇILIŞ (1. paragraf): Haberi doğrudan duyur. Ne çıktı, ne güncellendi, ne değişti?
+   Kısa ve net ama merak uyandıran. Ünlem kullanabilirsin.
+   ÖRNEK: "Claude Opus 4.6 ve Sonnet 4.6 güncellendi!"
+   ÖRNEK: "1M token artık default geliyor."
 
-2. TEKNİK + FAYDA (2-3 paragraf): Her paragraf max 2 cümle.
-   Her teknik detayı "SEN" odaklı faydaya çevir:
-   YANLIŞ: "2M token context window desteği geldi"
-   DOĞRU: "artık 500 sayfalık dokümanı tek seferde okutabiliyorsun"
-   YANLIŞ: "native tool calling eklendi"
-   DOĞRU: "doğrudan fonksiyon çağırma, web arama, dosya analizi yapabiliyor — ayrı entegrasyon gerekmeden"
+2. DETAY + KARŞILAŞTIRMA (2-3 paragraf): Haberin eti burada.
+   - Araştırmadaki BENCHMARK RAKAMLARI, test sonuçları, yüzdeler — bunları MUTLAKA kullan
+   - Rakip modellerle KARŞILAŞTIRMA yap — "X yüzde şu, Y yüzde bu, Z yüzde şu"
+   - Her teknik detayı ANLAŞILIR dille açıkla — kuru veri sıralama değil, "bu ne demek?" sorusunu cevapla
+   - Paragraflar 2-4 cümle olabilir — bu stilde kısa paragraf ZORUNLULUĞU YOK, bilgi yoğunluğu önemli
 
-3. TOPLULUK SESİ (opsiyonel): Okuyucunun aklındaki soruyu/tepkiyi dile getir.
-   ÖRNEKLER: "diyenlerin sorunu bitti", "herkes X diyor ama", "merak edenler için"
+3. PRATİK ETKİ (1 paragraf): Bu gelişme KULLANICIYA ne sağlıyor?
+   - "tek seferde yükleyip mantıklı cevap alabiliyorsun" formatı
+   - "artık X yapabiliyorsun", "Y'ye gerek kalmadı" gibi somut fayda cümleleri
+   - Önceki durumla karşılaştır: "eskiden X'ti, şimdi Y"
 
-4. GÜÇLÜ KAPANIŞ (son paragraf): TEK CÜMLE. Tahmin, tespit veya ironi.
-   ÖRNEKLER: "2026 kişisel asistan yılı olacak.", "no-code bitti, no-prompt başlıyor.", "oyun değişti."
+4. ERİŞİM + FİYAT (kısa): Kimler kullanabilir? Hangi planlarda? Fiyatı ne?
+   Bu bilgi araştırmada varsa MUTLAKA ekle.
 
-## ÇOK ÖNEMLİ — ARAŞTIRMA VERİLERİNİ KULLAN:
-- Araştırmada somut bilgi varsa (rakam, fiyat, tarih, benchmark) tweet'e aktar
-- Her bilgiyi FAYDA diline çevir — kuru veri listesi YAPMA
-- Bilgi yoğunluğu önemli AMA paragraflar KISA kalmalı
+5. KAPANIŞ (son 1-2 cümle): Kişisel yorum veya güçlü tespit.
+   "helal olsun cidden", "boş iddia değil, test sonuçları ortada" gibi samimi kapanış.
+   LinkedIn motivasyon cümlesi YASAK — samimi, kişisel, kısa.
 
-## TEKNİK KISALTMALARI TÜRKÇE AÇ:
-- Kısaltmaları doğal cümleyle açıkla: "eval" → "kendi testini yazıyor", "CI/CD" → "otomatik test ve dağıtım"
-- Teknik terimler İngilizce kalabilir (benchmark, open-source) ama KISALTMALAR açıklanmalı
+## ARAŞTIRMA VERİLERİNİ DÖNÜŞTÜRME REHBERİ:
+
+BU STİLDE ARAŞTIRMA VERİLERİ ÇOK ÖNEMLİ. Araştırmadaki verileri şöyle kullan:
+
+TABLO/LİSTE VERİLERİ → DOĞAL CÜMLELERE ÇEVİR:
+  Araştırmada: "MRCR v2: Opus 4.6: %78.3, GPT-5.4: %36.6, Gemini 3.1: %25.9"
+  Tweet'te: "MRCR v2 testinde yüzde 78.3 başarı oranı tutturuyor. karşılaştırmak gerekirse
+  GPT-5.4 yüzde 36.6'ya, Gemini 3.1 Pro ise yüzde 25.9'a düşüyor."
+
+BENCHMARK RAKAMLARI → ANLAM EKLE:
+  Araştırmada: "1M token context window"
+  Tweet'te: "1 milyon token'lık bağlam penceresi — bu 750 bin kelimelik bir dokümanı
+  tek seferde okuyup üzerinde çalışabilmek demek."
+
+TEKNİK ÖZELLİKLER → KULLANICI FAYDASI:
+  Araştırmada: "Context Compaction özelliği"
+  Tweet'te: "konuşma uzadıkça eski bölümleri kendi özetliyor, yani milyonuncu token'da
+  da performans düşmüyor."
+
+FİYATLANDIRMA → DOĞAL CÜMLE:
+  Araştırmada: "Opus 4.6: Input $5/1M, Output $25/1M"
+  Tweet'te: "standart fiyatlarla tüm planlarda çalışıyor" veya gerekirse detay ver
 
 ## TON VE DİL:
-- küçük harfle yaz (isimler hariç: OpenAI, Claude, NVIDIA)
-- paragraflar KISA — max 1-2 cümle per paragraf. 3+ cümlelik paragraf YASAK
-- okuyucuya doğrudan hitap et: "yapabiliyorsun", "çalıştırabiliyorsun", "kullanabiliyorsun"
-- topluluk sesi / alıntı kullan: "diyenlerin sorunu bitti", "herkes X diyor ama"
-- aksiyon fiilleri kullan: patlattı, duyurdu, çıkardı, bitti — AKTİF, doğrudan
-- doğrudan anlatım — "geldi", "çıktı", "sunuyor", "duyurdu" (kesin ifadeler)
-- dolaylı anlatım YASAK — "gelmiş", "çıkmış", "sunuyormuş", "duyurulmuş" KULLANMA
+- küçük harfle yaz (isimler hariç: OpenAI, Claude, NVIDIA, Anthropic)
+- bilgi yoğun ama samimi — sanki bir arkadaşına "ya bak ne çıkmış" diye anlatıyorsun
+- RAKAMLAR ÖNEMLİ — yüzde, benchmark, fiyat, parametre sayısı, token limiti — araştırmada varsa kullan
+- KARŞILAŞTIRMA ÖNEMLİ — "X bu kadar, Y bu kadar, Z bu kadar" formatıyla rakip karşılaştırma
+- paragraflar 2-4 cümle olabilir — bilgi yoğunluğu kısa paragraf baskısından önemli
+- paragraflar arası boş satır bırak
+- doğrudan anlatım — "geldi", "çıktı", "açtı", "güncellendi" (kesin ifadeler)
+- dolaylı anlatım YASAK — "gelmiş", "çıkmış", "açılmış" KULLANMA
 - emoji SIFIR veya en fazla 1
+- kapanışta samimi kişisel yorum: "helal olsun", "boş iddia değil", "test sonuçları ortada"
 
 ## YAPMA:
-- UZUN PARAGRAF YASAK — bir paragrafta 3+ cümle olmasın
-- PASİF YAPI YASAK — "duyuruldu" yerine "duyurdu", "çıkarıldı" yerine "çıkardı"
-- "[Tarih]'da duyurulan..." veya "X, Y'da duyurduğu Z ile..." gibi gazete dili YASAK
-- özellik listesi / madde listesi / numara listesi YASAK — doğal paragraflar
+- bilgiyi KISALTMA baskısı hissetme — bu stilde UZUN ve DETAYLI yazılabilir
+- kuru veri listesi / tablo / madde listesi yapma — her veriyi cümle içine göm
+- "[Tarih]'da duyurulan..." gazete dili YASAK
 - "heyecan verici", "çığır açan", "dikkat çekici" klişeler YASAK
-- "tek sorun:", "belki erken bir leak" gibi belirsizlik YASAK
 - soru ile bitirme YASAK
-- ETİKET/BAŞLIK YASAK — "kullanım senaryoları:", "performans tarafında:" gibi
-- araştırma sentezindeki ## başlıkları tweet'e yansıtma
-- "-mış/-muş/-mış/-müş" duyum ekleri YASAK — dolaylı anlatım yapma
+- ETİKET/BAŞLIK YASAK — "performans tarafında:", "fiyatlandırma:" gibi alt başlıklar KOYMA
+- araştırma sentezindeki ## başlıkları ve tablo yapılarını tweet'e yansıtma
+- "-mış/-muş" duyum ekleri YASAK
 - "...olduğu belirtildi", "...olduğu öğrenildi" gibi gazete kalıpları YASAK
+- araştırmadaki bilgiyi ATMA — rakam, karşılaştırma, fiyat varsa tweet'e aktar
 
 ## STİL + DNA DENGESİ:
 Bu stilin YAPI, TON ve YAKLAŞIM kurallarına MUTLAKA uy.
@@ -575,8 +627,9 @@ Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
         "prompt": """
 yazım tarzı: HURRICANE STYLE — KISA, KESKİN, VİRAL
 
+BU STİLİN KİMLİĞİ: Agresif stil MOTİVASYON verir, Hurricane PROVOKASYON yapar. Haber vermiyorsun, bilgi aktarmıyorsun — insanların kafasında bir şeyleri kırıyorsun. "Olm bunu yapanlar var hala" tonu. En kısa, en sert, en filtresiz stil.
+
 bu tarz = scroll'u durduran, insanı düşündüren, paylaşmak isteten tweetler.
-haber vermiyorsun. bilgi aktarmıyorsun. insanların kafasında bir şeyleri kırıyorsun.
 kısa yaz, sert yaz, samimi yaz. her tweet bir yumruk gibi olmalı.
 
 ## VİRAL FORMÜLLER (her tweet için birini seç):
@@ -818,6 +871,41 @@ _STYLE_TO_CATEGORY = {}
 for _cat, _styles in STYLE_CATEGORIES.items():
     for _s in _styles:
         _STYLE_TO_CATEGORY[_s] = _cat
+
+# ============================================================================
+# RESEARCH STYLE RULES — Stile göre araştırma verisi kullanım rehberi
+# ============================================================================
+
+_RESEARCH_STYLE_RULES = {
+    "news": """## STİLE ÖZEL ARAŞTIRMA KULLANIMI (HABER/BİLGİ):
+- araştırmadan %80 veri al, %20 yorum ekle
+- BENCHMARK RAKAMLARI, karşılaştırmalar, fiyatlar MUTLAKA tweet'e aktar — bilgi kaybetme
+- her teknik detayı doğal cümleye çevir — tablo/liste formatını tweet'e yansıtma
+- rakip karşılaştırma varsa MUTLAKA kullan ("X yüzde şu, Y yüzde bu" formatı)
+- fiyat/erişim bilgisi varsa MUTLAKA ekle""",
+
+    "personal": """## STİLE ÖZEL ARAŞTIRMA KULLANIMI (KİŞİSEL):
+- araştırmadan sadece 1-2 çarpıcı veri al
+- tweet'in %70'i SENİN tepkin ve deneyimin olmalı
+- araştırma arka plan, sen ön plan
+- "test ettim", "bence", "gördüğüm kadarıyla" tonu — araştırma bilgisini kendi deneyimine çevir""",
+
+    "analytical": """## STİLE ÖZEL ARAŞTIRMA KULLANIMI (ANALİTİK):
+- araştırmadaki tüm verileri kullanabilirsin ama her veriyi NEDEN-SONUÇ zincirine oturt
+- kuru veri sıralama YASAK — her verinin ANLAMI ne, KİME ETKİSİ var?
+- çelişen veriler varsa ÇELİŞKİYİ kendini göster — "herkes A diyor ama veriler B gösteriyor"
+- karşılaştırmalı veri varsa MUTLAKA kullan""",
+
+    "viral": """## STİLE ÖZEL ARAŞTIRMA KULLANIMI (VİRAL):
+- araştırmadan sadece EN ÇARPICI tek bir veriyi al
+- o veriyi hook'a yerleştir — geri kalan her şey senin cesur yorumun
+- bilgi aktarımı DEĞİL, provokatif yorum""",
+
+    "interactive": """## STİLE ÖZEL ARAŞTIRMA KULLANIMI (ETKİLEŞİM):
+- araştırmadan sadece tweet'in konusuna doğrudan ilgili 1 bilgi al
+- tweet'in %80'i senin tepkin olmalı — yorum, deneyim, karşıt görüş
+- bilgi aktarımı yapma, YORUM yap""",
+}
 
 # ============================================================================
 # CONTENT FORMATS — Named format system with specific writing strategies
@@ -1885,6 +1973,8 @@ Bilgi yoksa o konuyu sessizce atla ve VAR OLAN bilgilerle güçlü bir tweet yaz
 8. ÇELİŞKİ YÖNETİMİ: Araştırmada "ÇELİŞKİLER" bölümü varsa en güvenilir kaynağı tercih et.
    Farklı rakamlar varsa "kaynaklara göre %76-78 arası" gibi aralık ver — tek taraflı iddia etme.
 
+{_RESEARCH_STYLE_RULES.get(_STYLE_TO_CATEGORY.get(style, "news"), "")}
+
 ## ⛔ KRİTİK YASAKLAR:
 
 ETİKET/BAŞLIK YASAĞI: İki nokta (:) ile bitip yeni bölüm açma YASAK.
@@ -2918,9 +3008,31 @@ def score_tweet(tweet_text: str, content_format: str = "spark",
         "doğrulanamadı", "teyit edilemedi", "henüz doğrulanmadı",
         "belki erken bir leak", "beklenti yönetimi",
         "araştırdığım kadarıyla", "incelediğimde",
+        # Sahte derinlik ve LinkedIn jargonu
+        "dönüm noktası", "paradigma değişimi", "ezber bozan", "sınırları zorlayan",
+        "geleceği şekillendiren", "kritik öneme sahip", "vazgeçilmez",
+        "hayati önem taşıyan", "katma değer sağlayan", "ivme kazandıran",
+        # Akademik kapanışlar
+        "kısacası", "özetle", "nihayetinde", "belirtmek gerekir ki",
+        "önemle vurgulanmalıdır", "şunu da belirtmek gerekir ki",
+        # Simetrik ikili yapılar
+        "artık lüks değil", "sadece değil aynı zamanda", "mesele sadece",
+        # Üçlü soyut isim listeleri (yaygın olanlar)
+        "hız verimlilik ve", "güven şeffaflık ve", "yaratıcılık inovasyon ve",
     ]
     cliche_count = sum(1 for c in ai_cliches if c in text.lower())
     naturalness_score -= cliche_count * 4
+
+    # Simetrik ikili yapı cezası (ek kontrol)
+    _symmetric_patterns = [
+        r"artık .{3,30} değil,?\s*.{3,30}$",
+        r"sadece .{3,30} değil,?\s*aynı zamanda",
+        r"mesele .{3,30} değil",
+    ]
+    for _sp in _symmetric_patterns:
+        if _re.search(_sp, text.lower()):
+            naturalness_score -= 3
+            break
 
     # Check for natural Turkish markers (good sign)
     natural_markers = ["ya ", "yani", "aslında", "bence", "bi baktım",
