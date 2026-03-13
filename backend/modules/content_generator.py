@@ -617,97 +617,102 @@ Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
     },
     "tolga_news": {
         "name": "Tolga News / Haber Analizi",
-        "description": "Detaylı haber aktarımı — benchmark, karşılaştırma, pratik etki, kişisel yorum birlikte",
+        "description": "Hurricane tonu + detaylı veri — doğrudan konuşma dili, benchmark, karşılaştırma, pratik etki",
         "examples": [
-            "Claude Opus 4.6 ve Sonnet 4.6 güncellendi!\n\nAnthropic'in 4.6 serisi modellerin 1 milyon token'lık bağlam penceresini genel kullanıma açtı. grafikte net görülüyor — 1 milyon token'a ulaştığında bile MRCR v2 testinde yüzde 78.3 başarı oranı tutturuyor. karşılaştırmak gerekirse GPT-5.4 yüzde 36.6'ya, Gemini 3.1 Pro ise yüzde 25.9'a düşüyor. yani diğer modeller uzun metinlerde bilgiyi unutmaya başlarken Opus 4.6 hâlâ büyük kısmını hatırlıyor ve doğru yerden çekip çıkarıyor. bu sayede tam bir kod tabanını, yüzlerce sayfalık belge yığınını ya da uzun süren ajan görevlerini tek seferde yükleyip mantıklı cevap alabiliyorsun.\n\neskiden bağlam büyüdükçe performans çakılıyordu şimdi ise gerçek anlamda kullanılabilir hale geldi. ayrıca tek istekte 600 resim veya PDF sayfası işleyebiliyor. herkes için erişilebilir oldu, standart fiyatlarla Claude Code dahil tüm planlarda çalışıyor. şu anki yapay zeka yarışında uzun bağlamı gerçekten taşıyabilen model olarak öne çıkıyor — boş bir iddia değil, grafik ve test sonuçları ortada duruyor. helal olsun cidden.",
+            "artık 1 milyon token'lık bir belgeyi tek seferde Claude'a atıp \"bunun içindeki şunu bul\" diyebiliyorsun. evet, tek seferde. yüzlerce sayfa, tek prompt.\n\nve işin asıl kısmı şu, context compaction denilen bir özellik eklediler. yani bağlam büyüdükçe model önceki kısımları otomatik özetleyip sıkıştırıyor. eskiden \"context rot\" denilen şey oluyordu ya, uzun sohbetlerde model saçmalamaya başlıyordu, işte o sorunu çözmüşler.\n\nMRCR v2 testinde 1 milyon token'da yüzde 76-78 bandında başarı sağlıyor. önceki nesil Sonnet 4.5 aynı testte yüzde 18.5'te kalıyordu. bu dört kat iyileşme demek.\n\ntek istekte 600 resim veya PDF sayfası işleyebiliyor. 128 bin token output verebiliyor. yani bir romanı analiz edip özet çıkartabilir, kodu yazdırabilir ve test ettirebilirsin — hepsi aynı sohbette.\n\nuzun bağlamı gerçekten taşıyabilen model olarak Claude şu an açık ara öne geçti. bu sadece rakam değil, mimari bir sıçrama.",
             "1M token artık default geliyor. bu ne demek biliyor musun? 750 bin kelimelik bir dokümanı tek seferde okuyup üzerinde çalışabiliyorsun. context compaction da geldi — konuşma uzadıkça eski bölümleri kendi özetliyor, yani milyonuncu token'da da performans düşmüyor.\n\nbüyük dil modelleri için \"uzun bağlam\" yıllardır vaatti ama gerçek anlamda çalışan ilk ürün bu. kod inceleme, kapsamlı araştırma, büyük doküman analizi artık tek prompt'ta.",
-            "Replit Agent 4 duyurdu — artık kod yazmıyorsun, fikir üretiyorsun.\n\nsonsuz tuval üzerinde tasarım varyantları oluşturup anında uygulatabiliyorsun. birden fazla ajan paralel çalışarak projenin farklı kısımlarını aynı anda hallediyor. tasarım ve kod arasında kesintisiz geçiş sağlıyor, bekleme sürelerini minimuma indiriyor.\n\nPro ve Enterprise kullanıcıları için paralel ajanlar tam açık, Core kullanıcılara da lansman hediyesi olarak kısa süreliğine erişim var.",
+            "Replit Agent 4 duyurdu — artık kod yazmıyorsun, fikir üretiyorsun.\n\nsonsuz tuval üzerinde tasarım varyantları oluşturup anında uygulatabiliyorsun. birden fazla ajan paralel çalışarak projenin farklı kısımlarını aynı anda hallediyor.\n\nPro ve Enterprise kullanıcıları için paralel ajanlar tam açık, Core kullanıcılara da lansman hediyesi olarak kısa süreliğine erişim var.",
         ],
         "prompt": """
 yazım tarzı: TOLGA NEWS / HABER ANALİZİ
 
-BU STİLİN KİMLİĞİ: Bir teknoloji haberini DETAYLI, VERİ DOLU ve SAMİMİ şekilde aktarıyorsun.
-Gazete haberi değil — sen bu konuyu araştırdın, anladın, sindirdin ve okuyucuna "işte olan şey bu,
-işte sana etkisi bu" diye kendi ağzınla anlatıyorsun. Okuyucu tweet'i bitirince konuyu TAMAMEN
-anlamış olmalı, başka kaynak aramasına gerek kalmamalı.
+BU STİLİN KİMLİĞİ: Hurricane'in DOĞRUDAN KONUŞMA TONU + detaylı VERİ ve BENCHMARK.
+Gazete haberi değil, blog yazısı değil — bir arkadaşına "ya bak bunu duymuş muydun?" diye
+direkt anlatıyorsun. Ama sadece anlatmıyorsun, RAKAMLARI, KARŞILAŞTIRMALARI ve PRATİK ETKİYİ
+de veriyorsun. Okuyucu tweet'i bitirince konuyu TAMAMEN anlamış olmalı.
+
+TONE = HURRICANE (doğrudan, samimi, filtresiz, konuşma dili)
+İÇERİK = VERİ YOĞUN (benchmark, rakam, karşılaştırma, fiyat, pratik etki)
 
 DİĞER STİLLERDEN FARKI:
-- "Samimi" stilde SENİN deneyimin var, burada HABERİN detayları var
-- "Profesyonel" stilde kuru bilgi aktarımı var, burada bilgi + yorum + pratik etki BİRLİKTE
-- "Hook/Viral" stilde kısa ve vurucu, burada UZUN ve bilgi yoğun — kısaltma baskısı yok
-- "Tolga Style" genel ürün incelemesi, bu spesifik HABER/GELİŞME odaklı
+- Hurricane KISA ve PROVOKASYON odaklı, bu UZUN ve BİLGİ odaklı — ama aynı ton
+- Profesyonel KURU ve uzman tonu, bu KONUŞMA DİLİ — "biliyor musun?", "evet, tek seferde"
+- Tolga Style ÜRÜN İNCELEMESİ, bu HABER/GELİŞME aktarımı
 
 ## YAZI YAPISI:
 
-1. AÇILIŞ (1. paragraf): Haberi doğrudan duyur. Ne çıktı, ne güncellendi, ne değişti?
-   Kısa ve net ama merak uyandıran. Ünlem kullanabilirsin.
-   ÖRNEK: "Claude Opus 4.6 ve Sonnet 4.6 güncellendi!"
-   ÖRNEK: "1M token artık default geliyor."
+1. AÇILIŞ — Okuyucuya DOĞRUDAN KONUŞ. Haberin en çarpıcı kısmıyla başla.
+   Gazete duyurusu DEĞİL, arkadaşına söylüyorsun:
+   İYİ: "artık 1 milyon token'lık bir belgeyi tek seferde Claude'a atıp 'bunun içindeki şunu bul' diyebiliyorsun. evet, tek seferde."
+   İYİ: "bu ne demek biliyor musun? 750 bin kelimelik bir dokümanı tek seferde okuyup üzerinde çalışabiliyorsun."
+   KÖTÜ: "Anthropic, Claude 4.6 serisini güncelledi ve 1M token context window'u genel kullanıma açtı." — bu gazete, sohbet değil
 
-2. DETAY + KARŞILAŞTIRMA (2-3 paragraf): Haberin eti burada.
-   - Araştırmadaki BENCHMARK RAKAMLARI, test sonuçları, yüzdeler — bunları MUTLAKA kullan
-   - Rakip modellerle KARŞILAŞTIRMA yap — "X yüzde şu, Y yüzde bu, Z yüzde şu"
-   - Her teknik detayı ANLAŞILIR dille açıkla — kuru veri sıralama değil, "bu ne demek?" sorusunu cevapla
-   - Paragraflar 2-4 cümle olabilir — bu stilde kısa paragraf ZORUNLULUĞU YOK, bilgi yoğunluğu önemli
+2. TEKNİK DETAY AMA İNSAN DİLİNDE (2-3 paragraf):
+   Her teknik terimi AÇIKLA — okuyucu teknik değilmiş gibi düşün:
+   İYİ: "context compaction denilen bir özellik eklediler. yani bağlam büyüdükçe model önceki kısımları otomatik özetleyip sıkıştırıyor. eskiden 'context rot' denilen şey oluyordu ya, uzun sohbetlerde model saçmalamaya başlıyordu, işte o sorunu çözmüşler."
+   KÖTÜ: "Context Compaction özelliği eklendi, bu sayede context degradation problemi çözüldü."
+   Fark: ilkinde "ya şu oluyordu bilirsin" diye anlatıyorsun, ikincisinde RAPOR yazıyorsun.
 
-3. PRATİK ETKİ (1 paragraf): Bu gelişme KULLANICIYA ne sağlıyor?
-   - "tek seferde yükleyip mantıklı cevap alabiliyorsun" formatı
-   - "artık X yapabiliyorsun", "Y'ye gerek kalmadı" gibi somut fayda cümleleri
-   - Önceki durumla karşılaştır: "eskiden X'ti, şimdi Y"
+3. RAKAMLAR + KARŞILAŞTIRMA — Araştırmadaki veriler burada devreye giriyor:
+   İYİ: "MRCR v2 testinde 1 milyon token'da yüzde 76-78 bandında başarı sağlıyor. önceki nesil Sonnet 4.5 aynı testte yüzde 18.5'te kalıyordu. bu dört kat iyileşme demek."
+   Rakamı VER, sonra NE ANLAMA GELDİĞİNİ SÖYLE. "dört kat iyileşme demek" gibi.
+   Rakip karşılaştırma varsa MUTLAKA kullan — "GPT-5.4 %36.6'ya düşüyor" gibi.
 
-4. ERİŞİM + FİYAT (kısa): Kimler kullanabilir? Hangi planlarda? Fiyatı ne?
-   Bu bilgi araştırmada varsa MUTLAKA ekle.
+4. PRATİK ETKİ — "bu ne demek biliyor musun?" sorusunu cevapla:
+   İYİ: "yani bir romanı analiz edip özet çıkartabilir, kodu yazdırabilir ve test ettirebilirsin — hepsi aynı sohbette."
+   İYİ: "artık ajan görevlerinde model belgeleri tek tek okumak zorunda kalmıyor. tam bir kod tabanını yüklüyorsun ve o kendi başına geziniyor."
+   Somut kullanım senaryoları ver — soyut "verimlilik artacak" DEĞİL.
 
-5. KAPANIŞ (son 1-2 cümle): Kişisel yorum veya güçlü tespit.
-   "helal olsun cidden", "boş iddia değil, test sonuçları ortada" gibi samimi kapanış.
-   LinkedIn motivasyon cümlesi YASAK — samimi, kişisel, kısa.
+5. KAPANIŞ — Güçlü, samimi, kısa. Kişisel tespit veya gözlem:
+   İYİ: "bu sadece rakam değil, mimari bir sıçrama."
+   İYİ: "boş iddia değil, grafik ve test sonuçları ortada. helal olsun cidden."
+   İYİ: "uzun bağlamı gerçekten taşıyabilen model olarak Claude şu an açık ara öne geçti."
+   KÖTÜ: "bu gelişme sektörün geleceğini şekillendirecek" — LinkedIn motivasyon cümlesi YASAK
+
+## TON VE DİL — HURRICANE TONU:
+- okuyucuya DOĞRUDAN KONUŞ — "biliyor musun?", "evet, tek seferde", "işin asıl kısmı şu"
+- teknik terimleri AÇIKLA — "context rot denilen şey oluyordu ya" gibi, parantez içi veya yan cümleyle
+- küçük harfle yaz (isimler hariç: OpenAI, Claude, NVIDIA, Anthropic)
+- konuşma dili — "ya", "yani", "işte", "evet" gibi bağlaçlar kullan
+- paragraflar 2-4 cümle olabilir — bilgi yoğunluğu kısa paragraf baskısından önemli
+- paragraflar arası BOŞ SATIR
+- doğrudan anlatım — "geldi", "çıktı", "eklediler", "çözmüşler" (kesin ifadeler)
+- emoji SIFIR veya en fazla 1
+- "eskiden X'ti, şimdi Y" formatıyla ÖNCE-SONRA karşılaştırma yap
+- kapanışta samimi kişisel yorum
 
 ## ARAŞTIRMA VERİLERİNİ DÖNÜŞTÜRME REHBERİ:
 
-BU STİLDE ARAŞTIRMA VERİLERİ ÇOK ÖNEMLİ. Araştırmadaki verileri şöyle kullan:
+Araştırmadaki verileri KONUŞMA DİLİNE çevir — rapor dili YASAK:
 
-TABLO/LİSTE VERİLERİ → DOĞAL CÜMLELERE ÇEVİR:
-  Araştırmada: "MRCR v2: Opus 4.6: %78.3, GPT-5.4: %36.6, Gemini 3.1: %25.9"
-  Tweet'te: "MRCR v2 testinde yüzde 78.3 başarı oranı tutturuyor. karşılaştırmak gerekirse
-  GPT-5.4 yüzde 36.6'ya, Gemini 3.1 Pro ise yüzde 25.9'a düşüyor."
+TABLO VERİSİ → KONUŞMA:
+  Araştırma: "MRCR v2: Opus 4.6: %78.3, GPT-5.4: %36.6"
+  Tweet: "MRCR v2 testinde yüzde 76-78 bandında başarı sağlıyor. önceki nesil aynı testte yüzde 18.5'te kalıyordu. bu dört kat iyileşme demek."
 
-BENCHMARK RAKAMLARI → ANLAM EKLE:
-  Araştırmada: "1M token context window"
-  Tweet'te: "1 milyon token'lık bağlam penceresi — bu 750 bin kelimelik bir dokümanı
-  tek seferde okuyup üzerinde çalışabilmek demek."
+TEKNİK TERİM → AÇIKLAMA:
+  Araştırma: "Context Compaction"
+  Tweet: "context compaction denilen bir özellik eklediler. yani bağlam büyüdükçe model önceki kısımları otomatik özetleyip sıkıştırıyor."
 
-TEKNİK ÖZELLİKLER → KULLANICI FAYDASI:
-  Araştırmada: "Context Compaction özelliği"
-  Tweet'te: "konuşma uzadıkça eski bölümleri kendi özetliyor, yani milyonuncu token'da
-  da performans düşmüyor."
+ÖZELLİK → "BU NE DEMEK BİLİYOR MUSUN?" FORMATI:
+  Araştırma: "1M token context window, 128K output"
+  Tweet: "bu ne demek biliyor musun? 750 bin kelimelik bir dokümanı tek seferde okuyup üzerinde çalışabiliyorsun."
 
-FİYATLANDIRMA → DOĞAL CÜMLE:
-  Araştırmada: "Opus 4.6: Input $5/1M, Output $25/1M"
-  Tweet'te: "standart fiyatlarla tüm planlarda çalışıyor" veya gerekirse detay ver
-
-## TON VE DİL:
-- küçük harfle yaz (isimler hariç: OpenAI, Claude, NVIDIA, Anthropic)
-- bilgi yoğun ama samimi — sanki bir arkadaşına "ya bak ne çıkmış" diye anlatıyorsun
-- RAKAMLAR ÖNEMLİ — yüzde, benchmark, fiyat, parametre sayısı, token limiti — araştırmada varsa kullan
-- KARŞILAŞTIRMA ÖNEMLİ — "X bu kadar, Y bu kadar, Z bu kadar" formatıyla rakip karşılaştırma
-- paragraflar 2-4 cümle olabilir — bilgi yoğunluğu kısa paragraf baskısından önemli
-- paragraflar arası boş satır bırak
-- doğrudan anlatım — "geldi", "çıktı", "açtı", "güncellendi" (kesin ifadeler)
-- dolaylı anlatım YASAK — "gelmiş", "çıkmış", "açılmış" KULLANMA
-- emoji SIFIR veya en fazla 1
-- kapanışta samimi kişisel yorum: "helal olsun", "boş iddia değil", "test sonuçları ortada"
+KARŞILAŞTIRMA → SOMUT FARK:
+  Araştırma: "Opus 4.6 vs GPT-5.4 vs Gemini 3.1"
+  Tweet: "diğer modeller uzun metinlerde bilgiyi unutmaya başlarken Opus 4.6 hâlâ büyük kısmını hatırlıyor"
 
 ## YAPMA:
-- bilgiyi KISALTMA baskısı hissetme — bu stilde UZUN ve DETAYLI yazılabilir
-- kuru veri listesi / tablo / madde listesi yapma — her veriyi cümle içine göm
-- "[Tarih]'da duyurulan..." gazete dili YASAK
+- RAPOR DİLİ YASAK — "belirtilmiştir ki", "gözlemlenmektedir" gibi ifadeler ASLA
+- GAZETE DİLİ YASAK — "[Tarih]'da duyurulan...", "X şirketi Y'yi açıkladı" formatı YASAK
+- KURU VERİ SIRALAMA YASAK — rakamları ver ama HER ZAMAN "bu ne demek?" kısmını ekle
+- ETİKET/BAŞLIK YASAK — "performans:", "fiyatlandırma:" gibi alt başlıklar KOYMA
 - "heyecan verici", "çığır açan", "dikkat çekici" klişeler YASAK
-- soru ile bitirme YASAK
-- ETİKET/BAŞLIK YASAK — "performans tarafında:", "fiyatlandırma:" gibi alt başlıklar KOYMA
+- soru ile bitirme YASAK — "sizce?" YASAK
 - araştırma sentezindeki ## başlıkları ve tablo yapılarını tweet'e yansıtma
-- "-mış/-muş" duyum ekleri YASAK
-- "...olduğu belirtildi", "...olduğu öğrenildi" gibi gazete kalıpları YASAK
+- "-mış/-muş" duyum ekleri YASAK (ama "çözmüşler", "eklemişler" gibi 3. çoğul şahıs SERBEST)
+- "...olduğu belirtildi" gazete kalıpları YASAK
 - araştırmadaki bilgiyi ATMA — rakam, karşılaştırma, fiyat varsa tweet'e aktar
+- bilgiyi KISALTMA — bu stilde UZUN ve DETAYLI yazılabilir, kısa tutma baskısı yok
 
 ## STİL + DNA DENGESİ:
 Bu stilin YAPI, TON ve YAKLAŞIM kurallarına MUTLAKA uy.
