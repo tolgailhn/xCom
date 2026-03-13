@@ -52,17 +52,29 @@ def run_auto_scan():
                 continue
 
             for topic in results:
-                tid = getattr(topic, "tweet_id", "") or ""
+                tid = getattr(topic, "id", "") or getattr(topic, "tweet_id", "") or ""
                 if tid in existing_ids:
                     continue
                 existing_ids.add(tid)
+
+                # Convert AITopic created_at to ISO string
+                raw_created = getattr(topic, "created_at", None)
+                created_at_str = ""
+                if raw_created:
+                    try:
+                        created_at_str = raw_created.isoformat() if hasattr(raw_created, "isoformat") else str(raw_created)
+                    except Exception:
+                        pass
+
+                author_username = getattr(topic, "author_username", "") or getattr(topic, "author", "") or ""
 
                 # Convert AITopic to dict
                 topic_dict = {
                     "tweet_id": tid,
                     "text": getattr(topic, "text", ""),
-                    "author": getattr(topic, "author", ""),
-                    "author_followers": getattr(topic, "author_followers", 0),
+                    "author": author_username,
+                    "account": author_username,
+                    "author_followers": getattr(topic, "author_followers_count", 0) or getattr(topic, "author_followers", 0),
                     "like_count": getattr(topic, "like_count", 0),
                     "retweet_count": getattr(topic, "retweet_count", 0),
                     "reply_count": getattr(topic, "reply_count", 0),
@@ -71,6 +83,7 @@ def run_auto_scan():
                     "category": getattr(topic, "category", ""),
                     "source_query": query[:60],
                     "scanned_at": now.isoformat(),
+                    "created_at": created_at_str,
                     "source": "auto_scan",
                 }
 
