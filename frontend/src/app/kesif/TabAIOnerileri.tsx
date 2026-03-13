@@ -705,11 +705,17 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
                           <span className="text-[10px] text-[var(--text-secondary)]">{timeAgo(item._discoveryTweet.created_at)} once</span>
                         </div>
                         <p className="text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap">{item._discoveryTweet.text}</p>
-                        <div className="flex gap-3 mt-2 text-[10px] text-[var(--text-secondary)]">
+                        <div className="flex items-center gap-3 mt-2 text-[10px] text-[var(--text-secondary)]">
                           <span>{formatNumber(item._discoveryTweet.like_count)} begeni</span>
                           <span>{formatNumber(item._discoveryTweet.retweet_count)} RT</span>
                           <span>{formatNumber(item._discoveryTweet.reply_count)} yanit</span>
                           <span>{formatNumber(item._discoveryTweet.bookmark_count)} yer imi</span>
+                          {item._discoveryTweet.tweet_url && (
+                            <a href={item._discoveryTweet.tweet_url} target="_blank" rel="noopener noreferrer"
+                              className="ml-auto text-[11px] text-[var(--accent-blue)] hover:underline font-medium inline-flex items-center gap-1">
+                              X&apos;te Gor &rarr;
+                            </a>
+                          )}
                         </div>
                       </div>
                     )}
@@ -718,16 +724,30 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
                     {item.source !== "tweet" && tweets.length > 0 && (
                       <div className="space-y-2">
                         <h4 className="text-xs font-semibold text-[var(--text-secondary)]">Ilgili Tweetler</h4>
-                        {tweets.slice(0, 5).map((tw: ClusterTweet, i: number) => (
-                          <div key={i} className="flex items-start gap-2.5 text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2.5 border border-[var(--border)]">
+                        {tweets.slice(0, 5).map((tw: ClusterTweet, i: number) => {
+                          const twUrl = tw.tweet_url
+                            || (tw.tweet_id ? `https://x.com/${tw.account}/status/${tw.tweet_id}` : "")
+                            || (tw.account ? `https://x.com/${tw.account}` : "");
+                          return (
+                          <div key={i}
+                            className="group flex items-start gap-2.5 text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2.5 border border-[var(--border)] hover:border-[var(--accent-blue)]/60 hover:bg-[var(--accent-blue)]/5 transition-all duration-200 cursor-pointer"
+                            onClick={() => { if (twUrl) window.open(twUrl, "_blank"); }}>
                             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--accent-blue)]/20 to-[var(--accent-purple)]/20 flex items-center justify-center text-[10px] font-bold text-[var(--accent-blue)] shrink-0">{tw.account.charAt(0).toUpperCase()}</div>
                             <div className="flex-1 min-w-0">
-                              <a href={`https://x.com/${tw.account}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--accent-blue)] hover:underline text-[11px]">@{tw.account}</a>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <a href={`https://x.com/${tw.account}`} target="_blank" rel="noopener noreferrer" onClick={(e: React.MouseEvent) => e.stopPropagation()} className="font-semibold text-[var(--accent-blue)] hover:underline text-[11px]">@{tw.account}</a>
+                                {tw.engagement > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--accent-amber)]/10 text-[var(--accent-amber)] font-medium ml-auto shrink-0">{tw.engagement.toFixed(0)}</span>}
+                              </div>
                               <p className="text-[var(--text-primary)] line-clamp-2 mt-0.5 leading-relaxed">{tw.text}</p>
+                              {twUrl && (
+                                <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] text-[var(--accent-blue)] group-hover:underline font-medium opacity-70 group-hover:opacity-100 transition-opacity">
+                                  X&apos;te Gor &rarr;
+                                </span>
+                              )}
                             </div>
-                            {tw.engagement > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--accent-amber)]/10 text-[var(--accent-amber)] font-medium shrink-0">{tw.engagement.toFixed(0)}</span>}
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
 
@@ -741,10 +761,17 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
                       <button onClick={() => { setWorkflowIdx(isWorkflow ? null : idx); if (!researchData[key]?.summary) handleResearch(item); }}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
                         style={{ background: "linear-gradient(135deg, var(--accent-green), var(--accent-blue))" }}>Tweet Uret</button>
-                      {item.url && (
-                        <a href={item.url} target="_blank" rel="noopener noreferrer"
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all inline-flex items-center">Kaynagi Gor</a>
-                      )}
+                      {(() => {
+                        const firstTw = tweets[0] || item.tweets[0];
+                        const twUrl = firstTw?.tweet_url
+                          || (firstTw?.tweet_id ? `https://x.com/${firstTw.account}/status/${firstTw.tweet_id}` : "")
+                          || (item._discoveryTweet?.tweet_url)
+                          || (item.url);
+                        return twUrl ? (
+                          <a href={twUrl} target="_blank" rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--accent-blue)]/30 text-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/10 transition-all inline-flex items-center gap-1">X&apos;te Ac &rarr;</a>
+                        ) : null;
+                      })()}
                       {item.suggestedHour && generatedTweets[key] && (
                         <button onClick={() => handleScheduleBestTime(item)}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--accent-purple)]/30 text-[var(--accent-purple)] hover:bg-[var(--accent-purple)]/10 transition-all">
