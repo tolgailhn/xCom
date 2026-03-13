@@ -19,35 +19,18 @@ import TabAyarlar from "./TabAyarlar";
 import TabTrends from "./TabTrends";
 
 import TabSuggestedAccounts from "./TabSuggestedAccounts";
-import TabMyTweets from "./TabMyTweets";
 import TabAIOnerileri from "./TabAIOnerileri";
-
-/* ── Helpers ─────────────────────────────────────────── */
-
-function timeAgo(isoStr: string): string {
-  try {
-    const d = new Date(isoStr);
-    const now = new Date();
-    const diffSec = Math.floor((now.getTime() - d.getTime()) / 1000);
-    const absDiff = Math.abs(diffSec);
-    if (absDiff < 60) return `${absDiff}sn`;
-    if (absDiff < 3600) return `${Math.floor(absDiff / 60)}dk`;
-    if (absDiff < 86400) return `${Math.floor(absDiff / 3600)}sa`;
-    return `${Math.floor(absDiff / 86400)}g`;
-  } catch {
-    return "";
-  }
-}
+import { timeAgo } from "@/components/discovery";
 
 /* ── Main Component ──────────────────────────────────── */
 
 export default function KesifPage() {
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<"ai-onerileri" | "tweets" | "trendler" | "oneriler" | "mytweetler" | "ayarlar">("ai-onerileri");
+  const [tab, setTab] = useState<"ai-onerileri" | "tweets" | "trendler" | "oneriler" | "ayarlar">("ai-onerileri");
 
   useEffect(() => {
     const t = searchParams.get("tab");
-    if (t === "ai-onerileri" || t === "tweets" || t === "trendler" || t === "oneriler" || t === "mytweetler" || t === "ayarlar") setTab(t);
+    if (t === "ai-onerileri" || t === "tweets" || t === "trendler" || t === "oneriler" || t === "ayarlar") setTab(t);
   }, [searchParams]);
 
   const [config, setConfig] = useState<DiscoveryConfig | null>(null);
@@ -325,7 +308,6 @@ export default function KesifPage() {
           { key: "tweets", label: `Tweetler (${tweets.length})`, icon: "\uD83D\uDCDD" },
           { key: "trendler", label: "Trendler", icon: "\uD83D\uDCC8" },
           { key: "oneriler", label: "Onerilen Hesaplar", icon: "\uD83D\uDC65" },
-          { key: "mytweetler", label: "Tolga Tweetler", icon: "\uD83D\uDC64" },
           { key: "ayarlar", label: "Ayarlar", icon: "\u2699\uFE0F" },
         ] as const).map((t) => (
           <button
@@ -368,7 +350,6 @@ export default function KesifPage() {
 
       {tab === "ai-onerileri" && <TabAIOnerileri refreshTrigger={refreshTriggers["ai-onerileri"]} />}
       {tab === "oneriler" && <TabSuggestedAccounts refreshTrigger={refreshTriggers.oneriler} />}
-      {tab === "mytweetler" && <TabMyTweets refreshTrigger={refreshTriggers.tweets} />}
     </div>
   );
 }

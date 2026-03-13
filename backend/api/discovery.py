@@ -92,10 +92,28 @@ def remove_account(req: RemoveAccountRequest):
 
 
 @router.get("/tweets")
-def get_tweets():
-    """Son 24 saatteki keşfedilmiş tweetleri döndür (sıralı)."""
+def get_tweets(hours: int = 24):
+    """Keşfedilmiş tweetleri döndür. hours ile zaman aralığı belirlenebilir (varsayılan 24 saat)."""
+    import datetime
     from backend.modules.style_manager import load_discovery_cache
     cache = load_discovery_cache()
+    if hours and hours < 168:
+        cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=hours)
+        filtered = []
+        for t in cache:
+            created = t.get("created_at", "")
+            if created:
+                try:
+                    dt = datetime.datetime.fromisoformat(created)
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=datetime.timezone.utc)
+                    if dt >= cutoff:
+                        filtered.append(t)
+                except (ValueError, TypeError):
+                    filtered.append(t)
+            else:
+                filtered.append(t)
+        cache = filtered
     return {"tweets": cache, "total": len(cache)}
 
 

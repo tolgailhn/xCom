@@ -57,21 +57,20 @@ frontend/src/app/
     TabSelfReply.tsx          → Self-reply ayarları
     TabAnalytics.tsx          → Analitik (ısı haritası, performans)
   kesif/                      → Keşif & tarama
-    page.tsx                  → Ana sayfa (6 tab) + scheduler durum paneli
+    page.tsx                  → Ana sayfa (5 tab) + scheduler durum paneli
     TabTweets.tsx             → Tweet listesi + araştırma + quote tweet
-    TabTrends.tsx             → Trend analizi + araştırma + tweet üretimi
-    TabAIOnerileri.tsx        → AI Önerileri — birleşik feed (küme+trend+tweet) ← ANA TAB
+    TabTrends.tsx             → Trend analizi + araştırma + tweet üretimi + zamanlama
+    TabAIOnerileri.tsx        → AI Önerileri — birleşik feed (küme+trend+tweet) ← ANA TAB (dismiss localStorage kalıcı)
     TabSuggestedAccounts.tsx  → Hesap önerileri + aktif X araması
-    TabMyTweets.tsx           → Kullanıcı tweetleri (Tolga Tweetler)
     TabAyarlar.tsx            → Keşif ayarları
-    TabSmartSuggestions.tsx   → [KULLANILMIYOR — eski, TabAIOnerileri ile değiştirildi]
   analiz/                     → Hesap analizi
-    page.tsx                  → Ana sayfa (5 tab)
+    page.tsx                  → Ana sayfa (6 tab)
     TabNew.tsx                → Yeni analiz
     TabSaved.tsx              → Kayıtlı analizler
     TabFollowers.tsx          → Takipçi keşfi
     TabPool.tsx               → Tweet havuzu
     TabExport.tsx             → Export/Import
+    TabMyTweets.tsx           → Kullanıcı tweetleri (Tweetlerim) — keşif'ten taşındı
     AnalysisDisplay.tsx       → Analiz görüntüleme component
   ayarlar/                    → API anahtarları ve ayarlar
     page.tsx                  → Ana sayfa (5 tab)
@@ -166,7 +165,8 @@ icerik/ → shared.tsx (ortak fonksiyonlar)
 Tüm Tab*.tsx dosyaları → components/discovery/* (paylaşılan UI: GenerationPanel, ResearchPanel vb.)
 Tüm Tab*.tsx dosyaları → lib/api.ts (backend API çağrıları)
 kesif/TabAIOnerileri.tsx → suggestions + trends + discovery tweets (3 kaynak birleşik feed)
-kesif/page.tsx → TabTweets, TabTrends, TabAIOnerileri, TabSuggestedAccounts, TabMyTweets, TabAyarlar
+kesif/page.tsx → TabTweets, TabTrends, TabAIOnerileri, TabSuggestedAccounts, TabAyarlar
+analiz/page.tsx → TabNew, TabSaved, TabFollowers, TabPool, TabExport, TabMyTweets
 
 Backend API → modules (iş mantığı):
   scanner.py → twitter_scanner, twikit_client, grok_client
@@ -244,6 +244,11 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 | 2026-03-11 | Generator API provider eksikleri düzeltildi | icerik + yaz sayfalarında 4 tab'da provider dropdown eksikti |
 | 2026-03-11 | `min_faves` operatörü kaldırıldı | Twikit (ücretsiz arama) bu operatörü desteklemiyor → 400 Bad Request. Client-side filtreleme zaten mevcut |
 | 2026-03-11 | MiniMax `<tool_call>` ve `<think>` tag temizliği | MiniMax bazen tool_call/think tag'leri döndürüyor, 3 yerde regex ile temizleniyor |
+| 2026-03-13 | Discovery 24 saat zaman filtresi | 7 günlük tweet saklama → 24 saat (güncel AI haberleri kaçırılmasın) |
+| 2026-03-13 | TabSmartSuggestions silindi | TabAIOnerileri superset, duplicate tab gereksizdi |
+| 2026-03-13 | TabMyTweets → analiz sayfası | Semantik olarak keşif değil analiz; keşif 6→5 tab, analiz 5→6 tab |
+| 2026-03-13 | Dismiss localStorage kalıcılığı | Sayfa yenilenince dismiss edilen öğeler geri gelmez |
+| 2026-03-13 | Duplicate kod temizliği (5 dosya) | timeAgo, gauge, formatNumber → shared components/discovery |
 
 ---
 
@@ -424,6 +429,19 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 ---
 
 ## Değişiklik Günlüğü
+
+### 2026-03-13 (Keşif Sayfası Büyük Refaktör)
+- **remove**: `TabSmartSuggestions.tsx` — Silindi (TabAIOnerileri superset, duplicate)
+- **move**: `TabMyTweets.tsx` — kesif/ → analiz/ sayfasına taşındı (semantik doğruluk)
+- **fix**: `discovery_worker.py` — `MAX_TWEET_AGE_HOURS` 168→24 (sadece son 24 saat aktif analiz)
+- **feat**: `discovery.py` — `GET /tweets` endpoint'ine `hours` query param eklendi (varsayılan 24)
+- **feat**: `TabAIOnerileri.tsx` — Dismiss durumu localStorage'a kaydedilir (sayfa yenilenince kalıcı)
+- **feat**: `TabAIOnerileri.tsx` — Zaman badge'i: feed öğelerinde "X saat önce" gösterilir
+- **feat**: `TabTrends.tsx` — "Zamanla" butonu eklendi (schedulePost API)
+- **fix**: Duplicate kod temizliği (5 dosya): timeAgo, ScoreGauge, formatFollowers, scoreColor → shared components/discovery import
+- **fix**: `page.tsx` (kesif) — 6→5 tab (SmartSuggestions ve MyTweets kaldırıldı)
+- **fix**: `page.tsx` (analiz) — 5→6 tab (Tweetlerim eklendi)
+- **fix**: `TabSuggestedAccounts.tsx` — "Engagement" → "Etkilesim" Türkçe label
 
 ### 2026-03-12 (Keşif Sayfası Temizlik + Öneriler İyileştirme)
 - **remove**: `TabNews.tsx` — Haberler tab'ı tamamen kaldırıldı (kullanıcı talebi)

@@ -9,18 +9,7 @@ import {
   type DiscoveryConfig,
   type DiscoveryStatus,
 } from "@/lib/api";
-
-function timeAgo(isoStr: string): string {
-  try {
-    const d = new Date(isoStr);
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - d.getTime()) / 1000);
-    if (diff < 60) return `${diff}sn`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}dk`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}sa`;
-    return `${Math.floor(diff / 86400)}g`;
-  } catch { return ""; }
-}
+import { timeAgo } from "@/components/discovery";
 
 export interface TabAyarlarProps {
   config: DiscoveryConfig;

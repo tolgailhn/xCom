@@ -15,6 +15,7 @@ import {
   generateInfographic,
   aiScoreTrends,
   publishTweet,
+  schedulePost,
   type TweetMediaItem,
   type TweetUrl,
 } from "@/lib/api";
@@ -126,6 +127,12 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
   const [selectedStyle, setSelectedStyle] = useState("informative");
   const [selectedFormat, setSelectedFormat] = useState("spark");
   const [selectedProvider, setSelectedProvider] = useState("");
+
+  // Scheduling
+  const [scheduleKey, setScheduleKey] = useState<string | null>(null);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [scheduling, setScheduling] = useState(false);
 
   // Refs
   const trendRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -299,6 +306,22 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
     } catch { /* ignore */ }
     finally { setInfographicLoading(null); }
   }, []);
+
+  /* ── Schedule handler ────────────────────────────────── */
+
+  const handleSchedule = useCallback(async (key: string) => {
+    const text = editedTexts[key] || generatedTexts[key]?.text;
+    if (!text || !scheduleDate || !scheduleTime) return;
+    setScheduling(true);
+    try {
+      const scheduledAt = `${scheduleDate}T${scheduleTime}:00`;
+      await schedulePost({ text, scheduled_time: scheduledAt, thread_parts: generatedTexts[key]?.thread_parts || [] });
+      setScheduleKey(null);
+      setScheduleDate("");
+      setScheduleTime("");
+    } catch { /* ignore */ }
+    finally { setScheduling(false); }
+  }, [editedTexts, generatedTexts, scheduleDate, scheduleTime]);
 
   /* ── Score helpers ─────────────────────────────────── */
 
@@ -723,6 +746,26 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
                         onCopy={copyToClipboard}
                         onSaveDraft={async (text: string) => { await addDraft({ text, topic: key, style: selectedStyle }); }}
                       />
+
+                      {/* Schedule button */}
+                      {generatedTexts[key] && (
+                        <div className="mt-2">
+                          {scheduleKey === key ? (
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} className="input text-xs py-1" />
+                              <input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="input text-xs py-1" />
+                              <button onClick={() => handleSchedule(key)} disabled={scheduling || !scheduleDate || !scheduleTime} className="btn-primary text-xs py-1">
+                                {scheduling ? "Zamanlaniyor..." : "Onayla"}
+                              </button>
+                              <button onClick={() => setScheduleKey(null)} className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]">Iptal</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => { setScheduleKey(key); const now = new Date(); setScheduleDate(now.toISOString().slice(0, 10)); setScheduleTime(now.toTimeString().slice(0, 5)); }} className="text-xs text-[var(--accent-purple)] hover:underline">
+                              Zamanla
+                            </button>
+                          )}
+                        </div>
+                      )}
 
                       {generatedTexts[key] && <LinksBox links={tweetUrls[key] || []} />}
                       {generatedTexts[key] && (

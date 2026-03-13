@@ -8,6 +8,7 @@ import {
   triggerAccountDiscovery,
   searchAccounts,
 } from "@/lib/api";
+import { timeAgo, formatNumber, getScoreColor, CircularGauge } from "@/components/discovery";
 
 /* ── Types ──────────────────────────────────────────── */
 
@@ -35,62 +36,7 @@ interface SearchResult {
 type SortKey = "score" | "avg_engagement" | "followers" | "appearances" | "date";
 
 /* ── Helpers ────────────────────────────────────────── */
-
-function relativeTime(dateStr: string): string {
-  if (!dateStr) return "";
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diff = now - then;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}dk once`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}sa once`;
-  const days = Math.floor(hrs / 24);
-  return `${days} gun once`;
-}
-
-function formatFollowers(n: number): string {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
-  return String(n);
-}
-
-function scoreColor(score: number): string {
-  if (score >= 70) return "var(--accent-green)";
-  if (score >= 40) return "var(--accent-amber)";
-  return "var(--text-secondary)";
-}
-
-/* ── Circular Score Gauge ─────────────────────────── */
-
-function ScoreGauge({ score }: { score: number }) {
-  const color = scoreColor(score);
-  const dashArray = `${(Math.min(score, 100) / 100) * 88} 88`;
-  return (
-    <div
-      className="relative w-11 h-11 flex items-center justify-center shrink-0"
-      title={`Hesap skoru: aktiflik, engagement ve takipci kalitesine gore (${score.toFixed(0)}/100)`}
-    >
-      <svg className="w-11 h-11 -rotate-90" viewBox="0 0 36 36">
-        <circle cx="18" cy="18" r="14" fill="none" stroke="var(--bg-secondary)" strokeWidth="3" />
-        <circle
-          cx="18" cy="18" r="14" fill="none"
-          stroke={color}
-          strokeWidth="3"
-          strokeDasharray={dashArray}
-          strokeLinecap="round"
-          style={{ transition: "stroke-dasharray 0.6s ease" }}
-        />
-      </svg>
-      <span
-        className="absolute text-[10px] font-black"
-        style={{ color }}
-      >
-        {score.toFixed(0)}
-      </span>
-    </div>
-  );
-}
+// timeAgo, formatNumber, getScoreColor, CircularGauge → @/components/discovery
 
 /* ── Category Helper ───────────────────────────────── */
 
@@ -368,10 +314,10 @@ export default function TabSuggestedAccounts({ refreshTrigger }: { refreshTrigge
                       {/* Stats */}
                       <div className="flex gap-2 flex-wrap">
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] border border-[var(--accent-blue)]/20">
-                          {formatFollowers(user.followers)} takipci
+                          {formatNumber(user.followers)} takipci
                         </span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--bg-primary)] text-[var(--text-secondary)]">
-                          {formatFollowers(user.following)} takip
+                          {formatNumber(user.following)} takip
                         </span>
                       </div>
 
@@ -426,7 +372,7 @@ export default function TabSuggestedAccounts({ refreshTrigger }: { refreshTrigge
           >
             <option value="score">Skor</option>
             <option value="date">Yeniden Eskiye</option>
-            <option value="avg_engagement">Engagement</option>
+            <option value="avg_engagement">Etkilesim</option>
             <option value="followers">Takipci</option>
             <option value="appearances">Gorulme</option>
           </select>
@@ -458,7 +404,7 @@ export default function TabSuggestedAccounts({ refreshTrigger }: { refreshTrigge
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {displayAccounts.map((acc) => {
-            const color = scoreColor(acc.score);
+            const color = getScoreColor(acc.score);
             const category = getAccountCategory(acc);
             const isSelected = selectedAccounts.has(acc.username);
 
@@ -489,13 +435,13 @@ export default function TabSuggestedAccounts({ refreshTrigger }: { refreshTrigge
                       <span className="font-bold text-sm text-[var(--text-primary)] truncate block">@{acc.username}</span>
                       {acc.discovered_at && (
                         <span className="text-[10px] text-[var(--text-secondary)]" title={acc.discovered_at}>
-                          {relativeTime(acc.discovered_at)} kesfedildi
+                          {timeAgo(acc.discovered_at)} kesfedildi
                         </span>
                       )}
                     </div>
 
                     {/* Circular Score Gauge */}
-                    <ScoreGauge score={acc.score} />
+                    <CircularGauge value={acc.score} maxValue={100} size={44} colorFn={getScoreColor} />
                   </div>
 
                   {/* ── Category Badge + Stats Badges ── */}
@@ -508,7 +454,7 @@ export default function TabSuggestedAccounts({ refreshTrigger }: { refreshTrigge
                     </span>
                     {acc.followers > 0 && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] border border-[var(--accent-blue)]/20">
-                        {formatFollowers(acc.followers)} takipci
+                        {formatNumber(acc.followers)} takipci
                       </span>
                     )}
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-green)]/10 text-[var(--accent-green)] border border-[var(--accent-green)]/20">

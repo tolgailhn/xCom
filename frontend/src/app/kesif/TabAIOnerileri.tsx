@@ -164,8 +164,20 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
   const [itemMedia, setItemMedia] = useState<Record<string, TweetMediaItem[]>>({});
   const [itemUrls, setItemUrls] = useState<Record<string, TweetUrl[]>>({});
 
-  // Dismiss
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  // Dismiss (persisted in localStorage)
+  const [dismissed, setDismissed] = useState<Set<string>>(() => {
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem("kesif-dismissed") : null;
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch { return new Set(); }
+  });
+  const dismissItem = useCallback((key: string) => {
+    setDismissed(prev => {
+      const next = new Set(prev).add(key);
+      try { localStorage.setItem("kesif-dismissed", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }, []);
 
   // Refs
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -703,6 +715,16 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
 
                       {/* Metadata row */}
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                        {/* Time badge */}
+                        {item.timestamp && (
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                            (() => { try { return (Date.now() - new Date(item.timestamp).getTime()) > 86400000; } catch { return false; } })()
+                              ? "bg-[var(--text-secondary)]/10 text-[var(--text-secondary)]"
+                              : "bg-[var(--accent-green)]/10 text-[var(--accent-green)]"
+                          }`}>
+                            {timeAgo(item.timestamp)} once
+                          </span>
+                        )}
                         {item.suggestedHour && (
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-purple)]/10 text-[var(--accent-purple)] border border-[var(--accent-purple)]/20">Saat: {item.suggestedHour}</span>
                         )}
@@ -722,7 +744,7 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
                         <span className="text-[8px] text-[var(--text-secondary)] mt-0.5">potansiyel</span>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); setDismissed(prev => new Set(prev).add(key)); }}
+                        <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); dismissItem(key); }}
                           className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent-red)] p-1 rounded hover:bg-[var(--accent-red)]/10 transition-colors" title="Gec">&#10005;</button>
                         <span className={`text-xs text-[var(--text-secondary)] transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}>&#9660;</span>
                       </div>

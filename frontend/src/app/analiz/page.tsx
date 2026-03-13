@@ -7,9 +7,10 @@ import TabSaved from "./TabSaved";
 import TabFollowers from "./TabFollowers";
 import TabPool from "./TabPool";
 import TabExport from "./TabExport";
+import TabMyTweets from "./TabMyTweets";
 
 export default function AnalizPage() {
-  const [activeTab, setActiveTab] = useState<"new" | "saved" | "followers" | "pool" | "export">("new");
+  const [activeTab, setActiveTab] = useState<"new" | "saved" | "followers" | "pool" | "export" | "mytweetler">("new");
 
   const tabs = [
     { id: "new" as const, label: "Yeni Analiz" },
@@ -17,6 +18,7 @@ export default function AnalizPage() {
     { id: "followers" as const, label: "Takipci Kesfi" },
     { id: "pool" as const, label: "Tweet Havuzu" },
     { id: "export" as const, label: "Disa/Iceri Aktar" },
+    { id: "mytweetler" as const, label: "Tweetlerim" },
   ];
 
   return (
@@ -45,6 +47,7 @@ export default function AnalizPage() {
       {activeTab === "followers" && <TabFollowers />}
       {activeTab === "pool" && <TabPool />}
       {activeTab === "export" && <TabExport />}
+      {activeTab === "mytweetler" && <TabMyTweets refreshTrigger={0} />}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import {
   getMyTweetsAnalysis,
   analyzeMyTweets,
 } from "@/lib/api";
+import { timeAgo, formatNumber, CircularGauge } from "@/components/discovery";
 
 /* ── Types ──────────────────────────────────────────── */
 
@@ -38,21 +39,6 @@ interface MyTweetsAnalysis {
 
 /* ── Helpers ─────────────────────────────────────────── */
 
-function timeAgo(isoStr: string): string {
-  try {
-    const d = new Date(isoStr);
-    const now = new Date();
-    const diffSec = Math.floor((now.getTime() - d.getTime()) / 1000);
-    const abs = Math.abs(diffSec);
-    if (abs < 60) return `${abs}sn`;
-    if (abs < 3600) return `${Math.floor(abs / 60)}dk`;
-    if (abs < 86400) return `${Math.floor(abs / 3600)}sa`;
-    return `${Math.floor(abs / 86400)}g`;
-  } catch {
-    return "";
-  }
-}
-
 function formatDate(isoStr: string): string {
   try {
     return new Date(isoStr).toLocaleDateString("tr-TR", {
@@ -61,18 +47,6 @@ function formatDate(isoStr: string): string {
   } catch {
     return "";
   }
-}
-
-/* ── Score Gauge ─────────────────────────────────────── */
-
-function EngagementGauge({ score }: { score: number }) {
-  const display = Math.round(score);
-  const color = display >= 500 ? "var(--accent-green)" : display >= 100 ? "var(--accent-amber)" : "var(--accent-blue)";
-  return (
-    <div className="flex items-center justify-center w-12 h-12 rounded-full border-2 shrink-0" style={{ borderColor: color }}>
-      <span className="text-xs font-bold" style={{ color }}>{display >= 1000 ? `${(display / 1000).toFixed(1)}K` : display}</span>
-    </div>
-  );
 }
 
 /* ── Main Component ──────────────────────────────────── */
@@ -334,7 +308,14 @@ export default function TabMyTweets({ refreshTrigger }: Props) {
           <div key={tw.tweet_id || idx} className="glass-card p-4 hover:border-[var(--accent-blue)]/30 transition-colors">
             <div className="flex items-start gap-3">
               {/* Score */}
-              <EngagementGauge score={tw.engagement_score} />
+              <div className="shrink-0">
+                <CircularGauge
+                  value={Math.min(tw.engagement_score, 1000)}
+                  maxValue={1000}
+                  size={48}
+                  colorFn={(v) => v >= 500 ? "var(--accent-green)" : v >= 100 ? "var(--accent-amber)" : "var(--accent-blue)"}
+                />
+              </div>
 
               <div className="flex-1 min-w-0">
                 {/* Header */}
