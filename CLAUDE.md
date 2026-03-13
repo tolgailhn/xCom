@@ -22,6 +22,14 @@
    - Bu talimatları HER SEFERINDE ver, kullanıcı sormasını BEKLEME.
 7. **Bu dosyayı her önemli değişiklikten sonra güncelle.** Yeni kararlar, mimari değişiklikler, bilinen sorunlar buraya yazılmalı.
 10. **Her sayfa page.tsx + ayrı Tab dosyaları yapısında.** Yeni özellik eklerken ilgili Tab dosyasını düzenle, page.tsx'e büyük kod bloğu ekleme.
+11. **CLAUDE.md ZORUNLU GÜNCELLEME KURALI — Her push'tan ÖNCE bu dosyayı güncelle:**
+    - Yeni dosya eklendiyse → Dosya Yapısı bölümüne ekle (hangi dosya, ne işe yarar, nereye bağlı)
+    - Dosya silindiyse veya kullanılmaz hale geldiyse → `[KULLANILMIYOR]` işaretle veya kaldır
+    - Dosya adı/rolü değiştiyse → Açıklamasını güncelle
+    - Yeni bağımlılık eklendiyse → Modüller Arası Bağımlılıklar bölümüne ekle
+    - Mimari karar alındıysa → Önemli Kararlar tablosuna ekle
+    - Bilinen sorun çözüldüyse veya yeni sorun bulunduysa → Bilinen Sorunlar bölümünü güncelle
+    - **Amaç**: Bir sonraki session'da hangi dosyanın ne işe yaradığı, hangisinin aktif hangisinin eski olduğu HER ZAMAN bilinmeli. Yanlış dosyayı düzenlemek zaman kaybı.
 
 ---
 
@@ -81,6 +89,34 @@ frontend/src/app/
   taslaklarim/page.tsx        → Taslak yönetimi
   strateji/page.tsx           → Strateji rehberi
 
+frontend/src/components/      → Paylaşılan UI bileşenleri
+  AppShell.tsx                → Ana layout shell (sidebar + content)
+  Sidebar.tsx                 → Sol menü navigasyonu
+  ActionCard.tsx              → Aksiyon kartı component
+  StatBox.tsx                 → İstatistik kutusu component
+  ScheduleCard.tsx            → Zamanlama kartı component
+  ui/                         → Genel UI bileşenleri
+    ErrorMessage.tsx          → Hata mesajı gösterimi
+    LoadingButton.tsx         → Yükleniyor durumlu buton
+    ProviderSelector.tsx      → AI provider seçici (MiniMax/Claude/GPT)
+    ScoreBar.tsx              → Kalite skoru çubuğu
+    SelectInput.tsx           → Özel select input
+    ToggleSwitch.tsx          → Toggle switch component
+  discovery/                  → Keşif sayfası paylaşılan bileşenleri
+    index.ts                  → Barrel export (tüm discovery componentleri)
+    helpers.ts                → Yardımcı fonksiyonlar (openInX, timeAgo, formatNumber vb.)
+    AIScoreBadge.tsx          → AI skor rozeti
+    CircularGauge.tsx         → Dairesel gauge (engagement potansiyeli)
+    StyleFormatBar.tsx        → Stil/format/provider seçici bar
+    ResearchPanel.tsx         → Araştırma sonuçları paneli
+    GenerationPanel.tsx       → Tweet üretim paneli (düzenleme + X'te Aç + paylaş)
+    MediaSection.tsx          → Medya arama/infografik bölümü
+    LinksBox.tsx              → Bağlantılar kutusu
+
+frontend/src/lib/             → Paylaşılan kütüphaneler
+  api.ts                      → Tüm backend API çağrıları (tek dosya, ~tüm endpointler)
+  auth.tsx                    → Kimlik doğrulama context + hook
+
 backend/
   main.py                     → FastAPI app, startup/shutdown, router kaydı
   config.py                   → Konfigürasyon
@@ -127,6 +163,10 @@ backend/
 Frontend (Next.js) → Backend (FastAPI) HTTP API
 Her sayfa page.tsx → kendi Tab*.tsx dosyaları (tab-per-file pattern)
 icerik/ → shared.tsx (ortak fonksiyonlar)
+Tüm Tab*.tsx dosyaları → components/discovery/* (paylaşılan UI: GenerationPanel, ResearchPanel vb.)
+Tüm Tab*.tsx dosyaları → lib/api.ts (backend API çağrıları)
+kesif/TabAIOnerileri.tsx → suggestions + trends + discovery tweets (3 kaynak birleşik feed)
+kesif/page.tsx → TabTweets, TabTrends, TabAIOnerileri, TabSuggestedAccounts, TabMyTweets, TabAyarlar
 
 Backend API → modules (iş mantığı):
   scanner.py → twitter_scanner, twikit_client, grok_client
