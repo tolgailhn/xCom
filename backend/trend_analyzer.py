@@ -397,15 +397,47 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
         response_text = re.sub(r'<minimax:tool_call>.*?</minimax:tool_call>', '', response_text, flags=re.DOTALL).strip()
         response_text = re.sub(r'<minimax:tool_call>.*', '', response_text, flags=re.DOTALL).strip()
 
-    # Parse clusters
+    # Parse clusters — robust 3-layer JSON extraction
+    clusters = None
+
+    # Layer 1: Direct parse
     try:
-        match = re.search(r'\[.*\]', response_text, re.DOTALL)
-        if not match:
-            logger.warning("Clustering: no JSON array found in response")
-            return
-        clusters = _json.loads(match.group())
-    except Exception as e:
-        logger.warning("Clustering: JSON parse error: %s", e)
+        parsed = _json.loads(response_text)
+        if isinstance(parsed, list):
+            clusters = parsed
+    except Exception:
+        pass
+
+    # Layer 2: Balanced bracket extraction (greedy → non-greedy fallback)
+    if not clusters:
+        for pattern in [r'\[.*\]', r'\[.*?\]']:
+            try:
+                match = re.search(pattern, response_text, re.DOTALL)
+                if match:
+                    clusters = _json.loads(match.group())
+                    if isinstance(clusters, list):
+                        break
+                    clusters = None
+            except Exception:
+                clusters = None
+
+    # Layer 3: JSON repair (trailing commas, control chars, etc.)
+    if not clusters:
+        try:
+            match = re.search(r'\[.*\]', response_text, re.DOTALL)
+            if match:
+                cleaned = match.group()
+                cleaned = re.sub(r',\s*([}\]])', r'\1', cleaned)  # trailing commas
+                cleaned = re.sub(r'[\x00-\x1f\x7f]', ' ', cleaned)  # control chars
+                cleaned = cleaned.replace('\n', ' ').replace('\r', '')
+                clusters = _json.loads(cleaned)
+                if not isinstance(clusters, list):
+                    clusters = None
+        except Exception:
+            clusters = None
+
+    if not clusters:
+        logger.warning("Clustering: could not parse JSON from AI response (len=%d)", len(response_text))
         return
 
     # Build clustered suggestions
