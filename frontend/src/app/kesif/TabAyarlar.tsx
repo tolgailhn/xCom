@@ -135,7 +135,7 @@ export default function TabAyarlar({
               min={0}
               max={23}
               value={config.work_hour_start}
-              onChange={e => setConfig({ ...config, work_hour_start: parseInt(e.target.value) || 8 })}
+              onChange={e => { const v = parseInt(e.target.value); setConfig({ ...config, work_hour_start: isNaN(v) ? 0 : v }); }}
               className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm w-full mt-1"
             />
           </div>
@@ -144,9 +144,9 @@ export default function TabAyarlar({
             <input
               type="number"
               min={0}
-              max={23}
+              max={24}
               value={config.work_hour_end}
-              onChange={e => setConfig({ ...config, work_hour_end: parseInt(e.target.value) || 23 })}
+              onChange={e => { const v = parseInt(e.target.value); setConfig({ ...config, work_hour_end: isNaN(v) ? 24 : v }); }}
               className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm w-full mt-1"
             />
           </div>
