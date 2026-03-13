@@ -528,23 +528,30 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
                         {tweets.filter((t: ClusterTweet) => !isLowQualityTweet(t.text)).map((tw: ClusterTweet, i: number) => {
                           const tweetUrl = tw.tweet_url
                             || (tw.tweet_id ? `https://x.com/${tw.account}/status/${tw.tweet_id}` : "")
-                            || (tw.account ? `https://x.com/search?q=from:${tw.account} ${encodeURIComponent(tw.text.slice(0, 40))}` : "");
+                            || (tw.account ? `https://x.com/search?q=from:${tw.account} ${encodeURIComponent(tw.text.slice(0, 40))}` : "")
+                            || (tw.account ? `https://x.com/${tw.account}` : "");
                           return (
-                          <div key={i} className="flex items-start gap-2.5 text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2.5 border border-[var(--border)]">
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--accent-blue)]/20 to-[var(--accent-purple)]/20 flex items-center justify-center text-[10px] font-bold text-[var(--accent-blue)] shrink-0">{tw.account.charAt(0).toUpperCase()}</div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <a href={`https://x.com/${tw.account}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--accent-blue)] hover:underline text-[11px]">@{tw.account}</a>
-                                {tw.created_at && relativeTime(tw.created_at) && (
-                                  <span className="text-[10px] text-[var(--text-tertiary)]">&middot; {relativeTime(tw.created_at)}</span>
-                                )}
+                          <div key={i} className="text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2.5 border border-[var(--border)] hover:border-[var(--accent-blue)]/40 transition-colors cursor-pointer"
+                            onClick={() => tweetUrl && window.open(tweetUrl, '_blank')}>
+                            <div className="flex items-start gap-2.5">
+                              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--accent-blue)]/20 to-[var(--accent-purple)]/20 flex items-center justify-center text-[10px] font-bold text-[var(--accent-blue)] shrink-0">{tw.account.charAt(0).toUpperCase()}</div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <a href={`https://x.com/${tw.account}`} target="_blank" rel="noopener noreferrer" onClick={(e: React.MouseEvent) => e.stopPropagation()} className="font-semibold text-[var(--accent-blue)] hover:underline text-[11px]">@{tw.account}</a>
+                                  {tw.created_at && relativeTime(tw.created_at) && (
+                                    <span className="text-[10px] text-[var(--text-tertiary)]">&middot; {relativeTime(tw.created_at)}</span>
+                                  )}
+                                  {tw.engagement > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--accent-amber)]/10 text-[var(--accent-amber)] font-medium ml-auto shrink-0">{tw.engagement.toFixed(0)}</span>}
+                                </div>
+                                <p className="text-[var(--text-primary)] line-clamp-2 mt-0.5 leading-relaxed">{tw.text}</p>
                                 {tweetUrl && (
-                                  <a href={tweetUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[var(--accent-blue)] hover:underline ml-auto">X{"'"}te Gor &rarr;</a>
+                                  <a href={tweetUrl} target="_blank" rel="noopener noreferrer" onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                                    className="inline-flex items-center gap-1 mt-1.5 text-[11px] text-[var(--accent-blue)] hover:underline font-medium">
+                                    X{"'"}te Gor &rarr;
+                                  </a>
                                 )}
                               </div>
-                              <p className="text-[var(--text-primary)] line-clamp-2 mt-0.5 leading-relaxed">{tw.text}</p>
                             </div>
-                            {tw.engagement > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--accent-amber)]/10 text-[var(--accent-amber)] font-medium shrink-0">{tw.engagement.toFixed(0)}</span>}
                           </div>
                           );
                         })}
