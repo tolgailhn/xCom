@@ -439,6 +439,12 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 
 ## Değişiklik Günlüğü
 
+### 2026-03-13 (Türkçe Özet Tutarlılığı)
+- **fix**: `auto_topic_scanner.py` — Auto-scan tweetlerine de `summary_tr` (Türkçe özet) üretimi eklendi (daha önce hiç üretilmiyordu)
+- **fix**: `trend_analyzer.py` — Eksik `summary_tr` olan tweetler için toplu AI çeviri backfill eklendi + auto_scan cache'e geri yazma
+- **fix**: `api/discovery.py` — `/summarize` endpoint'i artık hem discovery hem auto_scan cache'ini kapsıyor
+- **fix**: `TabTrends.tsx` — Trendler yüklendiğinde eksik Türkçe özetli tweetler için otomatik çeviri tetikleniyor
+
 ### 2026-03-13 (Tweet Kalitesi + Yazım Stili + Keşif Sistemi İyileştirme)
 - **feat**: `content_generator.py` — `_enforce_lowercase()` post-processing: tüm üretimlerde küçük harf zorlaması (proper noun whitelist ile)
 - **fix**: `content_generator.py` — Reply/self-reply/long-content prompt'larına eksik "küçük harfle yaz" kuralı eklendi

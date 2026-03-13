@@ -16,6 +16,7 @@ import {
   aiScoreTrends,
   publishTweet,
   schedulePost,
+  summarizeDiscoveryTweets,
   type TweetMediaItem,
   type TweetUrl,
 } from "@/lib/api";
@@ -168,6 +169,22 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
       .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto Turkish summary for trend tweets missing summary_tr
+  useEffect(() => {
+    if (trends.length === 0) return;
+    const missingIds: string[] = [];
+    for (const trend of trends) {
+      for (const tw of trend.top_tweets || []) {
+        if (tw.tweet_id && !tw.summary_tr) missingIds.push(tw.tweet_id);
+      }
+    }
+    if (missingIds.length === 0) return;
+    summarizeDiscoveryTweets(missingIds, true)
+      .then(res => { if (res.updated > 0) loadTrends(); })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trends.length]);
 
   /* ── Computed ──────────────────────────────────────── */
 

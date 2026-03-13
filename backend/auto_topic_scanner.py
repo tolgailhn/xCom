@@ -112,6 +112,24 @@ def run_auto_scan():
             continue
 
     if new_topics:
+        # Türkçe özet üret (discovery_worker ile aynı mekanizma)
+        try:
+            from backend.discovery_worker import _generate_turkish_summary, _make_preview
+            # Önce preview ata
+            for t in new_topics:
+                t["summary_tr"] = _make_preview(t.get("text", ""))
+            # Toplu AI çevirisi
+            summaries = _generate_turkish_summary(new_topics)
+            if summaries:
+                for t in new_topics:
+                    tid = t.get("tweet_id", "")
+                    if tid in summaries:
+                        t["summary_tr"] = summaries[tid]
+                logger.info("Auto-scan: %d/%d tweet icin Turkce ozet uretildi",
+                            len(summaries), len(new_topics))
+        except Exception as e:
+            logger.warning("Auto-scan Turkish summary error: %s", e)
+
         cache.extend(new_topics)
         save_auto_scan_cache(cache)
         logger.info("Auto-scan: %d new topics found and cached", len(new_topics))

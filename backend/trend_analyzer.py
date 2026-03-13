@@ -95,6 +95,38 @@ def analyze_trends(force: bool = False):
         logger.info("Trend analyzer: no tweets left after quality filter")
         return
 
+    # Eksik Türkçe özetleri toplu üret
+    try:
+        from backend.discovery_worker import _generate_turkish_summary, _make_preview
+        missing_summary = [t for t in all_tweets if not t.get("summary_tr")]
+        if missing_summary:
+            # Önce preview ata
+            for t in missing_summary:
+                t["summary_tr"] = _make_preview(t.get("text", ""))
+            summaries = _generate_turkish_summary(missing_summary)
+            if summaries:
+                for t in missing_summary:
+                    tid = t.get("tweet_id", "")
+                    if tid in summaries:
+                        t["summary_tr"] = summaries[tid]
+                logger.info("Trend analyzer: %d/%d eksik Turkce ozet uretildi",
+                            len(summaries), len(missing_summary))
+                # Auto-scan cache'i de güncelle (kalıcılık)
+                try:
+                    auto_map = {t.get("tweet_id", ""): t for t in auto_scan_tweets}
+                    updated_auto = False
+                    for tid, s in summaries.items():
+                        if tid in auto_map:
+                            auto_map[tid]["summary_tr"] = s
+                            updated_auto = True
+                    if updated_auto:
+                        from backend.modules.style_manager import save_auto_scan_cache
+                        save_auto_scan_cache(auto_scan_tweets)
+                except Exception:
+                    pass
+    except Exception as e:
+        logger.warning("Trend analyzer Turkish summary backfill error: %s", e)
+
     # Extract keywords and count per account
     keyword_accounts = defaultdict(set)  # keyword -> set of accounts
     keyword_tweets = defaultdict(list)   # keyword -> list of tweet dicts

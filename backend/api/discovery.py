@@ -199,18 +199,25 @@ class SummarizeRequest(BaseModel):
 
 @router.post("/summarize")
 def summarize_tweets(req: SummarizeRequest):
-    """Tweet'ler için Türkçe çeviri üret."""
-    from backend.modules.style_manager import load_discovery_cache, save_discovery_cache
+    """Tweet'ler için Türkçe çeviri üret (discovery + auto_scan cache)."""
+    from backend.modules.style_manager import (
+        load_discovery_cache, save_discovery_cache,
+        load_auto_scan_cache, save_auto_scan_cache,
+    )
     from backend.discovery_worker import _generate_turkish_summary, _make_preview
 
-    cache = load_discovery_cache()
-    if not cache:
+    discovery_cache = load_discovery_cache()
+    auto_cache = load_auto_scan_cache()
+
+    all_tweets = discovery_cache + auto_cache
+    if not all_tweets:
         return {"success": True, "updated": 0}
 
     # Çevirisi eksik veya force=True olan tweet'leri bul
     needs_translation = []
-    for t in cache:
-        if req.tweet_ids and t["tweet_id"] not in req.tweet_ids:
+    for t in all_tweets:
+        tid = t.get("tweet_id", "")
+        if req.tweet_ids and tid not in req.tweet_ids:
             continue
         if req.force:
             needs_translation.append(t)
@@ -223,22 +230,32 @@ def summarize_tweets(req: SummarizeRequest):
     if not needs_translation:
         return {"success": True, "updated": 0}
 
-    # Batch'ler halinde çevir (max 10 tweet per batch — tam çeviri daha uzun)
+    # Batch'ler halinde çevir (max 10 tweet per batch)
     BATCH = 10
     total_updated = 0
+    discovery_map = {t.get("tweet_id", ""): t for t in discovery_cache}
+    auto_map = {t.get("tweet_id", ""): t for t in auto_cache}
+    discovery_changed = False
+    auto_changed = False
+
     for i in range(0, len(needs_translation), BATCH):
         batch = needs_translation[i:i + BATCH]
         summaries = _generate_turkish_summary(batch)
         if summaries:
-            # Cache'deki tweet'leri güncelle
-            cache_map = {t["tweet_id"]: t for t in cache}
             for tid, summary in summaries.items():
-                if tid in cache_map:
-                    cache_map[tid]["summary_tr"] = summary
+                if tid in discovery_map:
+                    discovery_map[tid]["summary_tr"] = summary
+                    discovery_changed = True
+                    total_updated += 1
+                elif tid in auto_map:
+                    auto_map[tid]["summary_tr"] = summary
+                    auto_changed = True
                     total_updated += 1
 
-    if total_updated > 0:
-        save_discovery_cache(cache)
+    if discovery_changed:
+        save_discovery_cache(discovery_cache)
+    if auto_changed:
+        save_auto_scan_cache(auto_cache)
 
     return {"success": True, "updated": total_updated}
 
