@@ -5,12 +5,36 @@ Manages writing style profiles, sample tweets, and custom personas
 import json
 import os
 import datetime
+import tempfile
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 # data/ is at project root (two levels up from backend/modules/)
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 TZ_TR = ZoneInfo("Europe/Istanbul")
+
+
+def _atomic_write(path: Path, data, *, is_text: bool = False, default=None):
+    """Atomik dosya yazma — geçici dosyaya yaz, sonra os.replace ile rename.
+
+    Race condition'ları önler: iki eşzamanlı yazma birbirini bozmaz.
+    """
+    os.makedirs(path.parent, exist_ok=True)
+    if is_text:
+        content = data
+    else:
+        content = json.dumps(data, ensure_ascii=False, indent=2, default=default)
+    fd, tmp_path = tempfile.mkstemp(dir=path.parent, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(content)
+        os.replace(tmp_path, path)
+    except BaseException:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def load_user_samples() -> list[str]:
@@ -24,10 +48,7 @@ def load_user_samples() -> list[str]:
 
 def save_user_samples(samples: list[str]):
     """Save user's sample tweets to file"""
-    path = DATA_DIR / "user_samples.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(samples, f, ensure_ascii=False, indent=2)
+    _atomic_write(DATA_DIR / "user_samples.json", samples)
 
 
 def load_custom_persona() -> str:
@@ -41,10 +62,7 @@ def load_custom_persona() -> str:
 
 def save_custom_persona(persona: str):
     """Save custom persona/style analysis"""
-    path = DATA_DIR / "custom_persona.txt"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(persona)
+    _atomic_write(DATA_DIR / "custom_persona.txt", persona, is_text=True)
 
 
 def load_monitored_accounts() -> list[str]:
@@ -58,10 +76,7 @@ def load_monitored_accounts() -> list[str]:
 
 def save_monitored_accounts(accounts: list[str]):
     """Save custom monitored accounts"""
-    path = DATA_DIR / "monitored_accounts.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(accounts, f, ensure_ascii=False, indent=2)
+    _atomic_write(DATA_DIR / "monitored_accounts.json", accounts)
 
 
 def load_reply_accounts() -> list[str]:
@@ -75,10 +90,7 @@ def load_reply_accounts() -> list[str]:
 
 def save_reply_accounts(accounts: list[str]):
     """Save accounts list for quick reply feature"""
-    path = DATA_DIR / "reply_accounts.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(accounts, f, ensure_ascii=False, indent=2)
+    _atomic_write(DATA_DIR / "reply_accounts.json", accounts)
 
 
 # Default AI/Tech accounts for quick reply scanning
@@ -107,10 +119,7 @@ def load_post_history() -> list[dict]:
 
 def save_post_history(history: list[dict]):
     """Save post history"""
-    path = DATA_DIR / "post_history.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(history, f, ensure_ascii=False, indent=2)
+    _atomic_write(DATA_DIR / "post_history.json", history)
 
 
 def add_to_post_history(entry: dict):
@@ -133,10 +142,7 @@ def load_draft_tweets() -> list[dict]:
 
 def save_draft_tweets(drafts: list[dict]):
     """Save draft tweets"""
-    path = DATA_DIR / "drafts.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(drafts, f, ensure_ascii=False, indent=2)
+    _atomic_write(DATA_DIR / "drafts.json", drafts)
 
 
 def add_draft(text: str, topic: str = "", style: str = ""):
@@ -171,8 +177,7 @@ def save_follower_suggestions(username: str, followers: list[dict]):
         "fetched_at": datetime.datetime.now().isoformat(),
         "followers": followers,
     }
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(existing, f, ensure_ascii=False, indent=2)
+    _atomic_write(path, existing)
 
 
 def load_all_follower_suggestions() -> dict:
@@ -189,9 +194,7 @@ def delete_follower_suggestions(username: str):
     data = load_all_follower_suggestions()
     if username.lower() in data:
         del data[username.lower()]
-        path = DATA_DIR / "follower_suggestions.json"
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        _atomic_write(DATA_DIR / "follower_suggestions.json", data)
 
 
 # --- Posting Schedule & Log ---
@@ -207,10 +210,7 @@ def load_posting_log() -> list[dict]:
 
 def save_posting_log(log: list[dict]):
     """Save posting schedule log"""
-    path = DATA_DIR / "posting_log.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(log, f, ensure_ascii=False, indent=2)
+    _atomic_write(DATA_DIR / "posting_log.json", log)
 
 
 def log_scheduled_post(slot_time: str, post_type: str, content: str = "",
@@ -263,10 +263,7 @@ def load_scheduled_posts() -> list[dict]:
 
 def save_scheduled_posts(posts: list[dict]):
     """Save scheduled posts"""
-    path = DATA_DIR / "scheduled_posts.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(posts, f, ensure_ascii=False, indent=2)
+    _atomic_write(DATA_DIR / "scheduled_posts.json", posts)
 
 
 def add_scheduled_post(post: dict) -> dict:
@@ -313,10 +310,7 @@ def load_tweet_metrics() -> list[dict]:
 
 def save_tweet_metrics(metrics: list[dict]):
     """Save tweet metrics"""
-    path = DATA_DIR / "tweet_metrics.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(metrics, f, ensure_ascii=False, indent=2)
+    _atomic_write(DATA_DIR / "tweet_metrics.json", metrics)
 
 
 def add_tweet_metric(entry: dict):
@@ -372,8 +366,7 @@ def save_daily_checklist(checklist: dict, date_str: str = ""):
         for old_date in sorted_dates[:-90]:
             del data[old_date]
 
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    _atomic_write(path, data)
 
 
 # ── Auto Reply ────────────────────────────────────────────
@@ -443,10 +436,7 @@ def load_auto_reply_config() -> dict:
 
 def save_auto_reply_config(config: dict):
     """Save auto-reply configuration"""
-    path = DATA_DIR / "auto_reply_config.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(config, f, ensure_ascii=False, indent=2)
+    _atomic_write(DATA_DIR / "auto_reply_config.json", config)
 
 
 def load_auto_reply_logs() -> list[dict]:
@@ -460,10 +450,7 @@ def load_auto_reply_logs() -> list[dict]:
 
 def save_auto_reply_logs(logs: list[dict]):
     """Save auto-reply logs"""
-    path = DATA_DIR / "auto_reply_logs.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(logs, f, ensure_ascii=False, indent=2)
+    _atomic_write(DATA_DIR / "auto_reply_logs.json", logs)
 
 
 def add_auto_reply_log(entry: dict):
@@ -500,12 +487,8 @@ def load_auto_reply_seen() -> set:
 
 def save_auto_reply_seen(seen: set):
     """Save set of already-replied tweet IDs (keep last 1000 — oldest pruned)"""
-    path = DATA_DIR / "auto_reply_seen.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    # Keep last 1000 (newest IDs are largest numerically)
     seen_list = sorted(seen, key=lambda x: int(x) if str(x).isdigit() else 0)[-1000:]
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(seen_list, f)
+    _atomic_write(DATA_DIR / "auto_reply_seen.json", seen_list)
 
 
 # ── Auto-Reply Queue (pipeline: scan → queue → generate) ──
@@ -520,10 +503,7 @@ def load_auto_reply_queue() -> list[dict]:
 
 def save_auto_reply_queue(queue: list[dict]):
     """Save auto-reply tweet queue"""
-    path = DATA_DIR / "auto_reply_queue.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(queue, f, ensure_ascii=False, indent=2)
+    _atomic_write(DATA_DIR / "auto_reply_queue.json", queue)
 
 
 def add_to_auto_reply_queue(entry: dict) -> dict:
@@ -598,10 +578,7 @@ def load_prompt_templates() -> list[dict]:
 
 def save_prompt_templates(templates: list[dict]):
     """Save prompt templates"""
-    path = DATA_DIR / "prompt_templates.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(templates, f, ensure_ascii=False, indent=2)
+    _atomic_write(DATA_DIR / "prompt_templates.json", templates)
 
 
 def add_prompt_template(template: dict) -> list[dict]:
@@ -648,10 +625,7 @@ def load_self_reply_config() -> dict:
 
 def save_self_reply_config(config: dict):
     """Save self-reply automation configuration"""
-    path = DATA_DIR / "self_reply_config.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(config, f, ensure_ascii=False, indent=2)
+    _atomic_write(DATA_DIR / "self_reply_config.json", config)
 
 
 def load_self_reply_seen() -> dict:
@@ -681,8 +655,7 @@ def save_self_reply_seen(seen: dict):
             reverse=True,
         )
         pruned = dict(sorted_items[:200])
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(pruned, f, ensure_ascii=False, indent=2)
+    _atomic_write(path, pruned)
 
 
 def load_self_reply_logs() -> list[dict]:
@@ -696,10 +669,7 @@ def load_self_reply_logs() -> list[dict]:
 
 def save_self_reply_logs(logs: list[dict]):
     """Save self-reply logs"""
-    path = DATA_DIR / "self_reply_logs.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(logs, f, ensure_ascii=False, indent=2)
+    _atomic_write(DATA_DIR / "self_reply_logs.json", logs)
 
 
 def add_self_reply_log(entry: dict):
@@ -743,10 +713,7 @@ def load_discovery_config() -> dict:
 
 def save_discovery_config(config: dict):
     """Save discovery configuration"""
-    path = DATA_DIR / "discovery_config.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(config, f, ensure_ascii=False, indent=2)
+    _atomic_write(DATA_DIR / "discovery_config.json", config)
 
 
 def load_discovery_cache() -> list[dict]:
@@ -766,10 +733,7 @@ def load_discovery_cache() -> list[dict]:
 
 def save_discovery_cache(cache: list[dict]):
     """Save discovery cache"""
-    path = DATA_DIR / "discovery_cache.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(cache, f, ensure_ascii=False, indent=2, default=str)
+    _atomic_write(DATA_DIR / "discovery_cache.json", cache, default=str)
 
 
 def load_discovery_seen() -> set:
@@ -783,11 +747,8 @@ def load_discovery_seen() -> set:
 
 def save_discovery_seen(seen: set):
     """Save set of already-seen discovery tweet IDs (keep last 5000)"""
-    path = DATA_DIR / "discovery_seen.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
     seen_list = list(seen)[-5000:]
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(seen_list, f)
+    _atomic_write(DATA_DIR / "discovery_seen.json", seen_list)
 
 
 def load_discovery_rotation() -> dict:
@@ -801,10 +762,7 @@ def load_discovery_rotation() -> dict:
 
 def save_discovery_rotation(rotation: dict):
     """Save discovery rotation state"""
-    path = DATA_DIR / "discovery_rotation.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(rotation, f, ensure_ascii=False, indent=2)
+    _atomic_write(DATA_DIR / "discovery_rotation.json", rotation)
 
 
 # --- Auto-Scan Cache (Faz 3: Otomatik konu taraması) ---
@@ -829,10 +787,7 @@ def save_auto_scan_cache(cache: list[dict]):
     ]
     # Keep max 200
     fresh = sorted(fresh, key=lambda x: x.get("engagement_score", 0), reverse=True)[:200]
-    path = DATA_DIR / "auto_scan_cache.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(fresh, f, ensure_ascii=False, indent=2, default=str)
+    _atomic_write(DATA_DIR / "auto_scan_cache.json", fresh, default=str)
 
 
 # --- Trend Cache (Faz 4: Trend tespiti) ---
@@ -848,10 +803,7 @@ def load_trend_cache() -> dict:
 
 def save_trend_cache(cache: dict):
     """Save trend analysis cache"""
-    path = DATA_DIR / "trend_cache.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(cache, f, ensure_ascii=False, indent=2, default=str)
+    _atomic_write(DATA_DIR / "trend_cache.json", cache, default=str)
 
 
 # --- News Cache (Faz 7: Haber kaynağı taraması) ---
@@ -871,10 +823,7 @@ def save_news_cache(cache: list[dict]):
     cutoff = now - datetime.timedelta(hours=72)
     fresh = [n for n in cache if n.get("found_at", "") > cutoff.isoformat()]
     fresh = sorted(fresh, key=lambda x: x.get("found_at", ""), reverse=True)[:100]
-    path = DATA_DIR / "news_cache.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(fresh, f, ensure_ascii=False, indent=2, default=str)
+    _atomic_write(DATA_DIR / "news_cache.json", fresh, default=str)
 
 
 # --- Suggested Accounts (Faz 9: Dinamik hesap keşfi) ---
@@ -892,10 +841,7 @@ def save_suggested_accounts(accounts: list[dict]):
     """Save suggested accounts (max 50)"""
     # Keep top 50 by score
     accounts = sorted(accounts, key=lambda x: x.get("score", 0), reverse=True)[:50]
-    path = DATA_DIR / "suggested_accounts.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(accounts, f, ensure_ascii=False, indent=2, default=str)
+    _atomic_write(DATA_DIR / "suggested_accounts.json", accounts, default=str)
 
 
 # --- Clustered Suggestions (Konu bazlı kümelenmiş öneriler) ---
@@ -911,10 +857,7 @@ def load_clustered_suggestions() -> dict:
 
 def save_clustered_suggestions(data: dict):
     """Save clustered suggestions cache"""
-    path = DATA_DIR / "clustered_suggestions.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2, default=str)
+    _atomic_write(DATA_DIR / "clustered_suggestions.json", data, default=str)
 
 
 # --- Trend History (Gün bazlı trend geçmişi) ---
@@ -936,10 +879,7 @@ def save_trend_history(history: list[dict]):
     fresh = [h for h in history if h.get("analysis_date", "") > cutoff]
     # Max 50 entries
     fresh = fresh[:50]
-    path = DATA_DIR / "trend_history.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(fresh, f, ensure_ascii=False, indent=2, default=str)
+    _atomic_write(DATA_DIR / "trend_history.json", fresh, default=str)
 
 
 # ── Shared Discovery Tweets ────────────────────────────
@@ -957,9 +897,7 @@ def load_shared_discovery_tweets() -> list:
 
 def save_shared_discovery_tweets(data: list):
     """Save shared discovery tweets"""
-    path = DATA_DIR / "shared_discovery_tweets.json"
-    os.makedirs(DATA_DIR, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), "utf-8")
+    _atomic_write(DATA_DIR / "shared_discovery_tweets.json", data)
 
 
 def mark_discovery_tweet_shared(tweet_id: str) -> list:

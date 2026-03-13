@@ -164,17 +164,43 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
   const [itemMedia, setItemMedia] = useState<Record<string, TweetMediaItem[]>>({});
   const [itemUrls, setItemUrls] = useState<Record<string, TweetUrl[]>>({});
 
-  // Dismiss (persisted in localStorage)
+  // Dismiss (persisted in localStorage with 30-day expiry)
+  const DISMISS_EXPIRY_MS = 30 * 86400_000; // 30 gün
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
     try {
       const saved = typeof window !== "undefined" ? localStorage.getItem("kesif-dismissed") : null;
-      return saved ? new Set(JSON.parse(saved)) : new Set();
+      if (!saved) return new Set();
+      const parsed = JSON.parse(saved);
+      // Eski format uyumluluğu (düz string array)
+      if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === "string") {
+        return new Set(parsed);
+      }
+      // Yeni format — 30 günden eskileri temizle
+      const cutoff = Date.now() - DISMISS_EXPIRY_MS;
+      const valid = (parsed as { id: string; ts: number }[]).filter(item => item.ts > cutoff);
+      if (valid.length < parsed.length) {
+        localStorage.setItem("kesif-dismissed", JSON.stringify(valid));
+      }
+      return new Set(valid.map(item => item.id));
     } catch { return new Set(); }
   });
   const dismissItem = useCallback((key: string) => {
     setDismissed(prev => {
       const next = new Set(prev).add(key);
-      try { localStorage.setItem("kesif-dismissed", JSON.stringify([...next])); } catch {}
+      try {
+        let list: { id: string; ts: number }[] = [];
+        const saved = localStorage.getItem("kesif-dismissed");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === "object") {
+            list = parsed;
+          }
+        }
+        if (!list.some(item => item.id === key)) {
+          list.push({ id: key, ts: Date.now() });
+        }
+        localStorage.setItem("kesif-dismissed", JSON.stringify(list));
+      } catch { /* localStorage dolu veya erişim yok */ }
       return next;
     });
   }, []);

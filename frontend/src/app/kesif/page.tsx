@@ -21,6 +21,7 @@ import TabTrends from "./TabTrends";
 import TabSuggestedAccounts from "./TabSuggestedAccounts";
 import TabAIOnerileri from "./TabAIOnerileri";
 import { timeAgo } from "@/components/discovery";
+import ErrorMessage from "@/components/ui/ErrorMessage";
 
 /* ── Main Component ──────────────────────────────────── */
 
@@ -39,6 +40,7 @@ export default function KesifPage() {
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [scanMsg, setScanMsg] = useState("");
+  const [pageError, setPageError] = useState<string | null>(null);
   const [nextScanSec, setNextScanSec] = useState<number | null>(null);
   const [newAccount, setNewAccount] = useState("");
   const [newAccountPriority, setNewAccountPriority] = useState(false);
@@ -81,8 +83,8 @@ export default function KesifPage() {
       if (statusRes.next_scan_seconds != null) {
         setNextScanSec(statusRes.next_scan_seconds);
       }
-    } catch {
-      // ignore
+    } catch (e) {
+      setPageError(e instanceof Error ? e.message : "Veriler yuklenemedi — backend calisiyor mu?");
     } finally {
       setLoading(false);
     }
@@ -211,6 +213,8 @@ export default function KesifPage() {
           </button>
         </div>
       </div>
+
+      <ErrorMessage message={pageError} />
 
       {scanMsg && (
         <div className="p-3 rounded-lg bg-[var(--accent-blue)]/10 border border-[var(--accent-blue)]/30 text-sm text-[var(--accent-blue)]">

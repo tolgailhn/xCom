@@ -282,8 +282,12 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 - [ ] **Kategori tanımları 2 yerde**: `twitter_scanner.py:CATEGORY_KEYWORDS` ve `telegram_notifier.py`. Tek kaynağa taşınabilir.
 - [ ] **Hardcoded config**: Account listesi, API limitleri, timeout'lar ayrı bir `config.py`'ye taşınabilir.
 - [ ] **Test eksikliği**: Hiçbir modülde unit test yok.
+- [x] **JSON race condition** → `_atomic_write()` ile atomik dosya yazma eklendi, tüm save_* fonksiyonları güncellendi (2026-03-13)
+- [x] **Scheduler last_run bellekte kayboluyordu** → `data/scheduler_state.json`'a kalıcı kayıt eklendi (2026-03-13)
+- [x] **Frontend sessiz hatalar** → kesif, yaz, icerik sayfalarına `ErrorMessage` component eklendi (2026-03-13)
+- [x] **localStorage dismissed set sınırsız büyüyordu** → 30 gün expiry + timestamp formatı eklendi (2026-03-13)
 - [ ] **Session state bellek**: Grok cost ve scan sonuçları sınırsız birikebilir (cost reset eklendi ama scan cache'i hâlâ sınırsız).
-- [ ] **content_generator.py** çok büyük (~1900+ satır): bölünebilir.
+- [ ] **content_generator.py** çok büyük (~3400+ satır): bölünebilir (tweet_scorer, post_processor, prompts).
 
 ### Çözülmüş Sorunlar (Referans)
 - [x] Page 6 `x_scanner` import hatası (2026-03-04)
@@ -452,6 +456,16 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 ---
 
 ## Değişiklik Günlüğü
+
+### 2026-03-13 (Kalite İyileştirmeleri — Atomik Yazma, Hata Gösterimi, State Kalıcılığı)
+- **feat**: `style_manager.py` — `_atomic_write()` helper: tempfile + os.replace ile atomik dosya yazma (race condition koruması)
+- **refactor**: `style_manager.py` — Tüm save_* fonksiyonları (25+) `_atomic_write` kullanacak şekilde güncellendi
+- **feat**: `scheduler_worker.py` — `_last_run_times` artık `data/scheduler_state.json`'a kalıcı kaydediliyor (restart sonrası korunur)
+- **feat**: `kesif/page.tsx` — `ErrorMessage` component eklendi, `loadData` hataları kullanıcıya gösteriliyor
+- **feat**: `yaz/page.tsx` — `ErrorMessage` component eklendi, stil yükleme hataları gösteriliyor
+- **feat**: `icerik/page.tsx` — `ErrorMessage` component eklendi, stil yükleme hataları gösteriliyor
+- **fix**: `TabAIOnerileri.tsx` — localStorage dismissed format `{id, ts}` objelerine güncellendi, 30 günden eski öğeler otomatik temizleniyor
+- **fix**: `TabAIOnerileri.tsx` — Eski format (string array) uyumluluğu korunuyor (migration)
 
 ### 2026-03-13 (Twikit ile Otomatik Reply Gönderimi)
 - **feat**: `twikit_client.py` — `create_reply(text, reply_to_tweet_id)` metodu eklendi: cookie-based auth ile tweet'e reply gönderme. Re-auth retry, rate limiting, hata yakalama dahil

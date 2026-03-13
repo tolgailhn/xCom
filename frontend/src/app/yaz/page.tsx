@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { getStyles, getProviders } from "@/lib/api";
+import ErrorMessage from "@/components/ui/ErrorMessage";
 
 import TabQuoteTweet from "./TabQuoteTweet";
 import TabQuickReply from "./TabQuickReply";
@@ -53,6 +54,7 @@ function YazContent() {
   const [styles, setStyles] = useState<StyleOption[]>([]);
   const [formats, setFormats] = useState<FormatOption[]>([]);
   const [providers, setProviders] = useState<ProviderOption[]>([]);
+  const [pageError, setPageError] = useState<string | null>(null);
 
   useEffect(() => {
     getStyles()
@@ -60,7 +62,7 @@ function YazContent() {
         setStyles(r.styles);
         setFormats(r.formats);
       })
-      .catch(() => {});
+      .catch((e) => setPageError(e instanceof Error ? e.message : "Stiller yuklenemedi — backend calisiyor mu?"));
     getProviders()
       .then((r: { providers: ProviderOption[] }) => setProviders(r.providers))
       .catch(() => {});
@@ -91,6 +93,8 @@ function YazContent() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <h2 className="text-2xl font-bold gradient-text">Tweet Yazici</h2>
+
+      <ErrorMessage message={pageError} />
 
       {/* Tab bar */}
       <div className="flex gap-1 bg-[var(--bg-secondary)] rounded-xl p-1">

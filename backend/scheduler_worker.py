@@ -3,7 +3,9 @@ Scheduler Worker - APScheduler ile zamanlanmis tweetleri otomatik paylas.
 FastAPI startup event'inde baslatilir.
 """
 import datetime
+import json
 import logging
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -12,6 +14,7 @@ from backend.modules.style_manager import (
     load_scheduled_posts,
     update_scheduled_post,
     add_to_post_history,
+    _atomic_write,
 )
 
 logger = logging.getLogger(__name__)
@@ -20,13 +23,31 @@ TZ_TR = ZoneInfo("Europe/Istanbul")
 
 scheduler = BackgroundScheduler(timezone=TZ_TR)
 
-# ── Last-run tracking (Faz 1) ────────────────────────
-_last_run_times: dict[str, str] = {}  # job_id → ISO timestamp
+# ── Last-run tracking (Faz 1) — kalıcı (disk'e yazılır) ────────────────
+_STATE_PATH = Path(__file__).parent.parent / "data" / "scheduler_state.json"
+
+
+def _load_last_run_times() -> dict[str, str]:
+    """Load persisted last_run_times from disk."""
+    try:
+        if _STATE_PATH.exists():
+            with open(_STATE_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+
+_last_run_times: dict[str, str] = _load_last_run_times()
 
 
 def _track_run(job_id: str):
-    """Record the last run time for a scheduler job."""
+    """Record the last run time for a scheduler job (memory + disk)."""
     _last_run_times[job_id] = datetime.datetime.now(TZ_TR).isoformat()
+    try:
+        _atomic_write(_STATE_PATH, _last_run_times)
+    except Exception:
+        pass  # disk hatası scheduler'ı durdurmamalı
 
 
 def get_scheduler_status() -> dict:
