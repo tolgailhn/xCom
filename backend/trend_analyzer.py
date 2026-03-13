@@ -43,12 +43,12 @@ STOP_WORDS = {
 }
 
 
-def analyze_trends():
-    """Trend analizi — scheduler tarafından çağrılır."""
+def analyze_trends(force: bool = False):
+    """Trend analizi — scheduler tarafından çağrılır. force=True ile saat kontrolü atlanır."""
     now = datetime.datetime.now(TZ_TR)
 
-    # Work hours check
-    if now.hour < 8 or now.hour >= 23:
+    # Work hours check — skip for manual triggers
+    if not force and (now.hour < 8 or now.hour >= 23):
         return
 
     try:
@@ -450,30 +450,6 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
             "reasoning": cluster.get("reasoning", ""),
             "source_keywords": list(source_keywords),
             "total_engagement": total_engagement,
-        })
-
-    # Add news-based suggestions (not clustered, each is its own topic)
-    news_cache = load_news_cache()
-    for article in (news_cache or [])[:5]:
-        title = article.get("title", "")
-        if not title:
-            continue
-        suggestions.append({
-            "type": "news",
-            "topic": title,
-            "topic_tr": "",
-            "reason": f"Kaynak: {article.get('source', '')}",
-            "tweets": [],
-            "engagement_potential": 6,
-            "suggested_style": "informative",
-            "suggested_hour": "10:22",
-            "reasoning": "",
-            "url": article.get("url", ""),
-            "source_keywords": [],
-            "total_engagement": 0,
-            "news_body": (article.get("body") or "")[:300],
-            "news_source": article.get("source", ""),
-            "news_date": article.get("date", ""),
         })
 
     # Save clustered results

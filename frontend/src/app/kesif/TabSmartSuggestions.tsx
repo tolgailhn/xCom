@@ -336,7 +336,6 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
             <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent-blue)]/15 text-[var(--accent-blue)] font-medium">{filtered.length} oneri</span>
             {highEngCount > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent-green)]/15 text-[var(--accent-green)] font-medium">{highEngCount} yuksek</span>}
             {trendCount > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent-amber)]/15 text-[var(--accent-amber)] font-medium">{trendCount} trend</span>}
-            {newsCount > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent-cyan)]/15 text-[var(--accent-cyan)] font-medium">{newsCount} haber</span>}
             {dismissed.size > 0 && <span className="text-[10px] text-[var(--text-secondary)]">({dismissed.size} gizlendi)</span>}
           </div>
           <div className="flex flex-wrap gap-2">
@@ -362,12 +361,12 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
       {/* ═══ Filter Bar (2-tier) ═══ */}
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          {/* Type filter */}
+          {/* Type filter — only trends (news removed) */}
           <div className="flex gap-1 bg-[var(--bg-secondary)] rounded-lg p-0.5">
-            {(["all", "trend", "news"] as const).map((t: "all" | "trend" | "news") => (
-              <button key={t} onClick={() => setFilterType(t)}
+            {(["all", "trend"] as const).map((t: "all" | "trend") => (
+              <button key={t} onClick={() => setFilterType(t as "all" | "trend" | "news")}
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${filterType === t ? "bg-[var(--accent-blue)] text-white" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}>
-                {t === "all" ? "Tumu" : t === "trend" ? "Trendler" : "Haberler"}
+                {t === "all" ? "Tumu" : "Trendler"}
               </button>
             ))}
           </div>
@@ -522,19 +521,13 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
                       <p className="text-[11px] text-[var(--accent-amber)]/80 leading-relaxed">{suggestion.reasoning}</p>
                     )}
 
-                    {/* News body */}
-                    {suggestion.type === "news" && suggestion.news_body && (
-                      <div className="text-xs text-[var(--text-secondary)] leading-relaxed bg-[var(--bg-primary)] rounded-lg px-3 py-2">
-                        {suggestion.news_body.length > 300 ? suggestion.news_body.slice(0, 300) + "..." : suggestion.news_body}
-                        {suggestion.url && <a href={suggestion.url} target="_blank" rel="noopener noreferrer" className="ml-2 text-[var(--accent-cyan)] hover:underline">Kaynak</a>}
-                      </div>
-                    )}
-
                     {/* Related tweets */}
                     {tweets.filter((t: ClusterTweet) => !isLowQualityTweet(t.text)).length > 0 && (
                       <div className="space-y-2">
                         <h4 className="text-xs font-semibold text-[var(--text-secondary)]">Ilgili Tweetler</h4>
-                        {tweets.filter((t: ClusterTweet) => !isLowQualityTweet(t.text)).map((tw: ClusterTweet, i: number) => (
+                        {tweets.filter((t: ClusterTweet) => !isLowQualityTweet(t.text)).map((tw: ClusterTweet, i: number) => {
+                          const tweetUrl = tw.tweet_url || (tw.tweet_id ? `https://x.com/${tw.account}/status/${tw.tweet_id}` : "");
+                          return (
                           <div key={i} className="flex items-start gap-2.5 text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2.5 border border-[var(--border)]">
                             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--accent-blue)]/20 to-[var(--accent-purple)]/20 flex items-center justify-center text-[10px] font-bold text-[var(--accent-blue)] shrink-0">{tw.account.charAt(0).toUpperCase()}</div>
                             <div className="flex-1 min-w-0">
@@ -543,15 +536,16 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
                                 {tw.created_at && relativeTime(tw.created_at) && (
                                   <span className="text-[10px] text-[var(--text-tertiary)]">&middot; {relativeTime(tw.created_at)}</span>
                                 )}
-                                {tw.tweet_url && (
-                                  <a href={tw.tweet_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[var(--accent-blue)] hover:underline ml-auto">X{"'"}te Gor &rarr;</a>
+                                {tweetUrl && (
+                                  <a href={tweetUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[var(--accent-blue)] hover:underline ml-auto">X{"'"}te Gor &rarr;</a>
                                 )}
                               </div>
                               <p className="text-[var(--text-primary)] line-clamp-2 mt-0.5 leading-relaxed">{tw.text}</p>
                             </div>
                             {tw.engagement > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--accent-amber)]/10 text-[var(--accent-amber)] font-medium shrink-0">{tw.engagement.toFixed(0)}</span>}
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
 
@@ -565,10 +559,6 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
                       <button onClick={() => { setWorkflowIdx(isWorkflow ? null : idx); if (!researchData[idx]?.summary) handleResearch(suggestion, idx); }}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
                         style={{ background: "linear-gradient(135deg, var(--accent-green), var(--accent-blue))" }}>Tweet Uret</button>
-                      {suggestion.url && (
-                        <a href={suggestion.url} target="_blank" rel="noopener noreferrer"
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all inline-flex items-center">Kaynagi Gor</a>
-                      )}
                       {suggestion.suggested_hour && generatedTweets[idx] && (
                         <button onClick={() => handleScheduleBestTime(idx)}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--accent-purple)]/30 text-[var(--accent-purple)] hover:bg-[var(--accent-purple)]/10 transition-all">

@@ -550,7 +550,7 @@ def trigger_clustering():
         # Step 1: Re-analyze trends from fresh scan data
         try:
             from backend.trend_analyzer import analyze_trends
-            analyze_trends()
+            analyze_trends(force=True)
             logger.info("Manual clustering: trends re-analyzed")
         except Exception as e:
             logger.warning("Manual clustering: trend re-analysis failed: %s", e)
