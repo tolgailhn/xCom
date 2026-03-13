@@ -189,6 +189,9 @@ Modules arası:
 ### AI Provider Sıralaması
 MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu sırayla kontrol eder.
 
+### Maliyet Politikası
+**MiniMax m2.5 maliyet sorun değil.** AI modeli her zaman en iyi sonucu üretmek için çalışmalı. Hesap analizi, tweet skorlama, özet üretimi gibi tüm AI işlemlerinde maliyet optimize etmek yerine kalite optimize et. Kullanıcı bu kararı açıkça vermiştir.
+
 ### Engagement Score Ağırlıkları (X 2026 Phoenix Algorithm)
 **Tek kaynak: `backend/modules/constants.py` → `ENGAGEMENT_WEIGHTS` dict**
 - Conversation (reply + yazar geri reply) = 75x (toplam 150x like!)  ← EN ÖNEMLİ
@@ -256,6 +259,10 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 | 2026-03-13 | Breaking news algılama | 2 saat içinde 3+ hesaptan aynı konu → Telegram breaking bildirimi |
 | 2026-03-13 | Kapsamlı hesap keşfi sistemi | 4 strateji (cache/grok/trend/interaction) + AI analiz + zengin UI |
 | 2026-03-13 | `search-accounts` bug fix | `get_twikit_client` import hatası düzeltildi (fonksiyon yoktu) |
+| 2026-03-13 | Otomatik AI analiz (keşif sonrası) | Hesap keşfi sonrası bulunan hesaplar otomatik AI ile analiz ediliyor — maliyet önemli değil |
+| 2026-03-13 | Hesap listeleri birleştirildi | `DEFAULT_AI_ACCOUNTS` (38) + `discovery_config` (13) tek rotasyona alındı |
+| 2026-03-13 | BATCH_SIZE 3→5 | Daha fazla hesap kapsamak için batch boyutu artırıldı |
+| 2026-03-13 | TabTweets tüm hesaplar dropdown | API'den gelen tam hesap listesi, tweet'i olmayan hesaplar da görünür |
 
 ---
 
@@ -440,6 +447,18 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 ---
 
 ## Değişiklik Günlüğü
+
+### 2026-03-13 (Otomatik AI Analiz + Hesap Rotasyonu Birleştirme)
+- **feat**: `account_discoverer.py` — Keşif sonrası otomatik AI analiz: `_auto_analyze_new_accounts()` fonksiyonu
+- **feat**: `discovery_worker.py` — `DEFAULT_AI_ACCOUNTS` (38) + `discovery_config` (13) tek rotasyona birleştirildi
+- **feat**: `discovery_worker.py` — BATCH_SIZE 3→5 (rate limit'e takılmadan daha geniş kapsam)
+- **feat**: `api/discovery.py` — `/tweets` endpoint'i artık `all_accounts` listesi döndürüyor (tüm yapılandırılmış hesaplar)
+- **feat**: `TabTweets.tsx` — "Tüm Hesaplar" dropdown'u API'den gelen tam hesap listesiyle dolduruluyor
+- **feat**: `TabTweets.tsx` — Her hesabın yanında tweet sayısı gösteriliyor (0 dahil)
+- **feat**: `page.tsx` (kesif) — `allAccounts` state'i eklendi, TabTweets'e geçiriliyor
+- **feat**: `api.ts` — `getDiscoveryTweets()` return tipine `all_accounts` eklendi
+- **docs**: `CLAUDE.md` — Maliyet politikası eklendi: "MiniMax m2.5 maliyet sorun değil"
+- **fix**: `account_discoverer.py` — `_strategy_trend_based()` dict iteration hatası düzeltildi
 
 ### 2026-03-13 (Kapsamlı Hesap Keşfi Sistemi)
 - **feat**: `account_discoverer.py` — TAM YENİDEN YAZIM: 4 keşif stratejisi (cache_based, grok_search, trend_based, interaction_based)

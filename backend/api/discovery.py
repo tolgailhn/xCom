@@ -93,9 +93,10 @@ def remove_account(req: RemoveAccountRequest):
 
 @router.get("/tweets")
 def get_tweets(hours: int = 24):
-    """Keşfedilmiş tweetleri döndür. hours ile zaman aralığı belirlenebilir (varsayılan 24 saat)."""
+    """Keşfedilmiş tweetleri döndür. hours ile zaman aralığı belirlenebilir (varsayılan 24 saat).
+    all_accounts: tüm yapılandırılmış hesap listesi (frontend dropdown için)."""
     import datetime
-    from backend.modules.style_manager import load_discovery_cache
+    from backend.modules.style_manager import load_discovery_cache, load_discovery_config
     cache = load_discovery_cache()
     if hours and hours < 168:
         cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=hours)
@@ -114,7 +115,31 @@ def get_tweets(hours: int = 24):
             else:
                 filtered.append(t)
         cache = filtered
-    return {"tweets": cache, "total": len(cache)}
+
+    # Tüm yapılandırılmış hesapları birleştir (discovery config + DEFAULT_AI_ACCOUNTS)
+    config = load_discovery_config()
+    all_accounts_set: set[str] = set()
+    for a in config.get("priority_accounts", []):
+        all_accounts_set.add(a.lower().lstrip("@"))
+    for a in config.get("normal_accounts", []):
+        all_accounts_set.add(a.lower().lstrip("@"))
+    try:
+        from backend.modules.twitter_scanner import DEFAULT_AI_ACCOUNTS
+        for a in DEFAULT_AI_ACCOUNTS:
+            all_accounts_set.add(a.lower().lstrip("@"))
+    except ImportError:
+        pass
+    # Cache'deki hesapları da ekle (dinamik keşif sonuçları)
+    for t in cache:
+        acc = t.get("account", "")
+        if acc:
+            all_accounts_set.add(acc.lower())
+
+    return {
+        "tweets": cache,
+        "total": len(cache),
+        "all_accounts": sorted(all_accounts_set),
+    }
 
 
 @router.post("/trigger")
@@ -188,7 +213,7 @@ def get_status():
         "current_time": now.isoformat(),
         "account_counts": account_counts,
         "last_scanned_per_account": last_scanned_per_account,
-        "scan_mode": "batch (30dk, 3 hesap/tur)",
+        "scan_mode": "batch (30dk, 5 hesap/tur)",
     }
 
 

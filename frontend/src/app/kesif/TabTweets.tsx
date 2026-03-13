@@ -60,11 +60,12 @@ interface TabTweetsProps {
   tweets: DiscoveryTweet[];
   setTweets: React.Dispatch<React.SetStateAction<DiscoveryTweet[]>>;
   status: DiscoveryStatus | null;
+  allAccounts?: string[];
 }
 
 /* ── Main Component ─────────────────────────────────── */
 
-export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
+export default function TabTweets({ tweets, setTweets, allAccounts = [] }: TabTweetsProps) {
   // Expansion: level 2 = card expanded, level 3 = workflow panel open
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [workflowCard, setWorkflowCard] = useState<string | null>(null);
@@ -268,7 +269,11 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
   if (sortBy === "ai") filteredTweets.sort((a, b) => (b.ai_relevance_score || 0) - (a.ai_relevance_score || 0));
   else if (sortBy === "newest") filteredTweets.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  const uniqueAccounts = [...new Set(tweets.map(t => t.account))].sort();
+  // Tüm hesapları birleştir: API'den gelen tam liste + tweet'lerdeki hesaplar
+  const uniqueAccounts = [...new Set([
+    ...allAccounts,
+    ...tweets.map(t => t.account.toLowerCase()),
+  ])].sort();
 
   // Active filter count for badge
   const activeFilterCount = [filterImportance, hideShared, hideGM].filter(Boolean).length;
@@ -545,8 +550,11 @@ export default function TabTweets({ tweets, setTweets }: TabTweetsProps) {
           </select>
           <select value={filterAccount} onChange={e => setFilterAccount(e.target.value)}
             className="bg-[var(--bg-primary)] text-[var(--text-primary)] border border-[var(--border-primary)]/50 rounded-full px-3 py-1.5 text-xs backdrop-blur-sm focus:ring-2 focus:ring-[var(--accent-blue)]/30 transition-all">
-            <option value="">Tum Hesaplar</option>
-            {uniqueAccounts.map(a => <option key={a} value={a}>@{a}</option>)}
+            <option value="">Tum Hesaplar ({uniqueAccounts.length})</option>
+            {uniqueAccounts.map(a => {
+              const count = tweets.filter(t => t.account.toLowerCase() === a.toLowerCase()).length;
+              return <option key={a} value={a}>@{a}{count > 0 ? ` (${count})` : " (0)"}</option>;
+            })}
           </select>
           <button onClick={() => setShowFilters(!showFilters)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-300 ${showFilters ? "bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] border-[var(--accent-blue)]/30" : "bg-[var(--bg-primary)]/60 text-[var(--text-secondary)] border-[var(--border-primary)]/50"}`}>

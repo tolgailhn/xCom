@@ -822,7 +822,7 @@ export function removeDiscoveryAccount(username: string) {
   });
 }
 
-export function getDiscoveryTweets(): Promise<{ tweets: DiscoveryTweet[]; total: number }> {
+export function getDiscoveryTweets(): Promise<{ tweets: DiscoveryTweet[]; total: number; all_accounts?: string[] }> {
   return apiFetch("/api/discovery/tweets");
 }
 

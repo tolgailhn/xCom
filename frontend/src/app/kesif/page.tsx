@@ -44,6 +44,7 @@ export default function KesifPage() {
   const [newAccountPriority, setNewAccountPriority] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [schedulerJobs, setSchedulerJobs] = useState<any[]>([]);
+  const [allAccounts, setAllAccounts] = useState<string[]>([]);
 
   // Auto-refresh triggers per tab
   const [refreshTriggers, setRefreshTriggers] = useState<Record<string, number>>({
@@ -71,6 +72,7 @@ export default function KesifPage() {
       ]);
       setConfig(configRes.config);
       setTweets(tweetsRes.tweets);
+      if (tweetsRes.all_accounts) setAllAccounts(tweetsRes.all_accounts);
       setStatus(statusRes);
       setSchedulerJobs(schedRes.jobs || []);
       if (statusRes.next_scan_seconds != null) {
@@ -343,6 +345,7 @@ export default function KesifPage() {
           tweets={tweets}
           setTweets={setTweets}
           status={status}
+          allAccounts={allAccounts}
         />
       )}
 

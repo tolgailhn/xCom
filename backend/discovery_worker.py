@@ -13,9 +13,9 @@ engagement sırasına göre listeleyen sistem.
 - Sonuçlar discovery_cache.json'a kaydedilir (kalıcı arşiv)
 
 BATCH SIZE HESABI:
-- 13 hesap, 30dk aralık, 15 saat/gün = 30 slot
-- Batch=3 → 30 slot × 3 = 90 tarama/gün → hesap başı ~7 tarama
-- Priority hesaplar ek slot alır → günde ~10 tarama
+- 38+ hesap (DEFAULT_AI_ACCOUNTS + discovery config birleşik), 30dk aralık, 15 saat/gün = 30 slot
+- Batch=5 → 30 slot × 5 = 150 tarama/gün → hesap başı ~4 tarama
+- Priority hesaplar ek slot alır → günde ~6 tarama
 
 ZAMANLAYICI ÇAKIŞMA:
 - Auto-reply: 5dk, Self-reply: 15dk, Metrics: 30dk
@@ -30,8 +30,8 @@ from zoneinfo import ZoneInfo
 logger = logging.getLogger(__name__)
 TZ_TR = ZoneInfo("Europe/Istanbul")
 
-# Batch başına kaç hesap taranacak
-BATCH_SIZE = 3
+# Batch başına kaç hesap taranacak (5 = rate limit'e takılmadan optimum)
+BATCH_SIZE = 5
 
 # Maksimum tweet yaşı (saat) — bundan eski tweet'ler cache'e alınmaz (24 saat)
 MAX_TWEET_AGE_HOURS = 24
@@ -309,6 +309,18 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
 
     priority_accounts = config.get("priority_accounts", [])
     normal_accounts = config.get("normal_accounts", [])
+
+    # DEFAULT_AI_ACCOUNTS'u normal listeye birleştir (eksik olanları ekle)
+    try:
+        from backend.modules.twitter_scanner import DEFAULT_AI_ACCOUNTS
+        priority_set_lower = {a.lower().lstrip("@") for a in priority_accounts}
+        normal_set_lower = {a.lower().lstrip("@") for a in normal_accounts}
+        for acc in DEFAULT_AI_ACCOUNTS:
+            acc_lower = acc.lower().lstrip("@")
+            if acc_lower not in priority_set_lower and acc_lower not in normal_set_lower:
+                normal_accounts.append(acc)
+    except ImportError:
+        pass
 
     if not priority_accounts and not normal_accounts:
         logger.info("Discovery: Hesap listesi boş")

@@ -551,9 +551,15 @@ def discover_accounts_smart(
 
     saved = _merge_and_save(all_candidates, existing)
 
+    # ── Otomatik AI analiz: yeni bulunan hesapları hemen analiz et ──
+    analyzed_count = 0
+    if saved > 0:
+        analyzed_count = _auto_analyze_new_accounts(all_candidates, existing)
+
     return {
         "total_found": len(all_candidates),
         "total_saved": saved,
+        "total_analyzed": analyzed_count,
         "strategy_results": {k: len(v) for k, v in strategy_results.items()},
     }
 
@@ -587,6 +593,61 @@ def analyze_single_account(username: str, tweet_count: int = 20) -> dict | None:
         "analysis": analysis,
         "tweet_count_fetched": len(tweets),
     }
+
+
+def _auto_analyze_new_accounts(candidates: list[dict], existing: list[dict]) -> int:
+    """Yeni keşfedilen hesapları otomatik AI ile analiz et.
+    Maliyet önemli değil — her zaman en iyi sonuç için çalış.
+    """
+    try:
+        from backend.modules.style_manager import load_suggested_accounts, save_suggested_accounts
+    except ImportError:
+        return 0
+
+    existing_map = {a.get("username", "").lower(): a for a in existing}
+    analyzed = 0
+
+    # Sadece henüz analiz edilmemiş hesapları analiz et
+    to_analyze = []
+    for c in candidates:
+        uname = c["username"].lower()
+        record = existing_map.get(uname)
+        if record and record.get("analysis"):
+            continue  # Zaten analiz edilmiş
+        to_analyze.append(uname)
+
+    # Duplicate'leri kaldır
+    to_analyze = list(dict.fromkeys(to_analyze))
+
+    if not to_analyze:
+        logger.info("Auto-analyze: tüm hesaplar zaten analiz edilmiş")
+        return 0
+
+    logger.info("Auto-analyze: %d yeni hesap analiz edilecek: %s",
+                len(to_analyze), ", ".join(f"@{a}" for a in to_analyze[:10]))
+
+    for username in to_analyze:
+        try:
+            result = analyze_single_account(username, tweet_count=20)
+            if result and result.get("analysis"):
+                # Mevcut kayda analiz ekle
+                accounts = load_suggested_accounts()
+                for acc in accounts:
+                    if acc.get("username", "").lower() == username:
+                        acc["analysis"] = result["analysis"]
+                        if result.get("profile"):
+                            acc["profile"] = result["profile"]
+                        break
+                save_suggested_accounts(accounts)
+                analyzed += 1
+                logger.info("Auto-analyze: @%s analiz edildi (skor: %s)",
+                            username, result["analysis"].get("overall_score", "?"))
+            time.sleep(1)  # Rate limit koruması
+        except Exception as e:
+            logger.warning("Auto-analyze error for @%s: %s", username, e)
+
+    logger.info("Auto-analyze: %d/%d hesap başarıyla analiz edildi", analyzed, len(to_analyze))
+    return analyzed
 
 
 def _merge_and_save(candidates: list[dict], existing: list[dict] | None = None) -> int:
