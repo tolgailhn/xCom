@@ -101,6 +101,7 @@ def run_auto_scan():
                     "scanned_at": now.isoformat(),
                     "created_at": created_at_str,
                     "source": "auto_scan",
+                    "summary_tr": "",  # AI çevirisi sonra gelecek
                 }
 
                 # Min engagement filter
@@ -115,9 +116,6 @@ def run_auto_scan():
         # Türkçe özet üret (discovery_worker ile aynı mekanizma)
         try:
             from backend.discovery_worker import _generate_turkish_summary, _make_preview
-            # Önce preview ata
-            for t in new_topics:
-                t["summary_tr"] = _make_preview(t.get("text", ""))
             # Toplu AI çevirisi
             summaries = _generate_turkish_summary(new_topics)
             if summaries:
@@ -127,8 +125,31 @@ def run_auto_scan():
                         t["summary_tr"] = summaries[tid]
                 logger.info("Auto-scan: %d/%d tweet icin Turkce ozet uretildi",
                             len(summaries), len(new_topics))
+            # AI başarısız olan tweet'lere İngilizce preview fallback
+            for t in new_topics:
+                if not t.get("summary_tr"):
+                    t["summary_tr"] = _make_preview(t.get("text", ""))
         except Exception as e:
             logger.warning("Auto-scan Turkish summary error: %s", e)
+
+        # Mevcut cache'deki eksik/preview-only özetleri yeniden dene
+        try:
+            from backend.discovery_worker import _generate_turkish_summary, _make_preview
+            needs_retry = [t for t in cache
+                           if not t.get("summary_tr")
+                           or t["summary_tr"] == _make_preview(t.get("text", ""))
+                           or t["summary_tr"] == t.get("text", "")[:200]]
+            if needs_retry:
+                logger.info("Auto-scan: %d eski tweet icin Turkce ozet yeniden deneniyor", len(needs_retry))
+                retry_summaries = _generate_turkish_summary(needs_retry[:20])
+                if retry_summaries:
+                    for t in cache:
+                        tid = t.get("tweet_id", "")
+                        if tid in retry_summaries:
+                            t["summary_tr"] = retry_summaries[tid]
+                    logger.info("Auto-scan: %d eski tweet icin Turkce ozet guncellendi", len(retry_summaries))
+        except Exception as e:
+            logger.warning("Auto-scan retry Turkish summary error: %s", e)
 
         cache.extend(new_topics)
         save_auto_scan_cache(cache)

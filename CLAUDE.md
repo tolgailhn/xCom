@@ -448,6 +448,13 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 
 ## Değişiklik Günlüğü
 
+### 2026-03-13 (Türkçe Özet Tutarsızlığı Fix)
+- **fix**: `discovery_worker.py` — `summary_tr` başlangıçta boş string atanıyor (preview değil), AI çevirisi sonra uygulanıyor
+- **fix**: `discovery_worker.py` — AI çevirisi başarısız olan tweet'lere İngilizce preview fallback eklendi
+- **fix**: `discovery_worker.py` — Mevcut cache'deki eksik/preview-only özetler her taramada otomatik yeniden deneniyor (max 20 batch)
+- **fix**: `auto_topic_scanner.py` — Aynı pattern: boş başlangıç → AI çeviri → fallback preview + cache retry
+- **fix**: `trend_analyzer.py` — Backfill artık sadece boş değil, preview-only özetleri de yakalar ve yeniden çevirmeye çalışır
+
 ### 2026-03-13 (Otomatik AI Analiz + Hesap Rotasyonu Birleştirme)
 - **feat**: `account_discoverer.py` — Keşif sonrası otomatik AI analiz: `_auto_analyze_new_accounts()` fonksiyonu
 - **feat**: `discovery_worker.py` — `DEFAULT_AI_ACCOUNTS` (38) + `discovery_config` (13) tek rotasyona birleştirildi

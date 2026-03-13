@@ -447,7 +447,7 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
                 "importance": _importance_level(display_score),
                 "thread_parts": thread_parts,
                 "is_thread": len(thread_parts) > 1,
-                "summary_tr": _make_preview(tweet_text),
+                "summary_tr": "",  # AI çevirisi sonra gelecek
                 "tweet_url": f"https://x.com/{account}/status/{tweet_id}",
                 "scanned_at": now.isoformat(),
                 "media_items": tweet.get("media_items", []),
@@ -471,8 +471,29 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
             logger.info("Discovery: %d/%d tweet icin Turkce ozet uretildi",
                         len(summaries), len(new_tweets))
 
+        # AI çevirisi başarısız olan tweet'lere İngilizce preview fallback
+        for tweet in new_tweets:
+            if not tweet["summary_tr"]:
+                tweet["summary_tr"] = _make_preview(tweet["text"])
+
     # Mevcut cache'e ekle ve sırala
     existing_cache = load_discovery_cache()
+
+    # Mevcut cache'deki eksik/preview-only Türkçe özetleri yeniden dene
+    needs_retry = [t for t in existing_cache
+                   if not t.get("summary_tr")
+                   or t["summary_tr"] == _make_preview(t.get("text", ""))
+                   or t["summary_tr"] == t.get("text", "")[:200]]
+    if needs_retry:
+        logger.info("Discovery: %d tweet icin Turkce ozet yeniden deneniyor", len(needs_retry))
+        retry_summaries = _generate_turkish_summary(needs_retry[:20])
+        if retry_summaries:
+            for t in existing_cache:
+                tid = t.get("tweet_id", "")
+                if tid in retry_summaries:
+                    t["summary_tr"] = retry_summaries[tid]
+            logger.info("Discovery: %d eski tweet icin Turkce ozet guncellendi",
+                        len(retry_summaries))
 
     # Eski tweet'leri cache'den temizle (MAX_TWEET_AGE_HOURS)
     cutoff = now - datetime.timedelta(hours=MAX_TWEET_AGE_HOURS)

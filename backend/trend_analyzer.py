@@ -98,12 +98,13 @@ def analyze_trends(force: bool = False):
     # Eksik Türkçe özetleri toplu üret
     try:
         from backend.discovery_worker import _generate_turkish_summary, _make_preview
-        missing_summary = [t for t in all_tweets if not t.get("summary_tr")]
+        # Boş veya preview-only (İngilizce kalmış) özetleri yakala
+        missing_summary = [t for t in all_tweets
+                           if not t.get("summary_tr")
+                           or t["summary_tr"] == _make_preview(t.get("text", ""))
+                           or t["summary_tr"] == t.get("text", "")[:200]]
         if missing_summary:
-            # Önce preview ata
-            for t in missing_summary:
-                t["summary_tr"] = _make_preview(t.get("text", ""))
-            summaries = _generate_turkish_summary(missing_summary)
+            summaries = _generate_turkish_summary(missing_summary[:20])
             if summaries:
                 for t in missing_summary:
                     tid = t.get("tweet_id", "")
@@ -124,6 +125,10 @@ def analyze_trends(force: bool = False):
                         save_auto_scan_cache(auto_scan_tweets)
                 except Exception:
                     pass
+            # AI başarısız olan tweet'lere İngilizce preview fallback
+            for t in missing_summary:
+                if not t.get("summary_tr"):
+                    t["summary_tr"] = _make_preview(t.get("text", ""))
     except Exception as e:
         logger.warning("Trend analyzer Turkish summary backfill error: %s", e)
 
