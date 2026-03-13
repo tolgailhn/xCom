@@ -396,6 +396,8 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
             time.sleep(2)
             continue
 
+        account_tweets: list[dict] = []  # Bu hesabın tweet'leri (inline çeviri için)
+
         for tweet in tweets:
             tweet_id = tweet.get("id", "")
             if not tweet_id or tweet_id in seen:
@@ -463,7 +465,7 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
 
             seen.add(tweet_id)
 
-            new_tweets.append({
+            account_tweets.append({
                 "tweet_id": tweet_id,
                 "account": account,
                 "text": tweet_text,
@@ -478,12 +480,34 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
                 "importance": _importance_level(display_score),
                 "thread_parts": thread_parts,
                 "is_thread": len(thread_parts) > 1,
-                "summary_tr": "",  # AI çevirisi sonra gelecek
+                "summary_tr": "",
                 "tweet_url": f"https://x.com/{account}/status/{tweet_id}",
                 "scanned_at": now.isoformat(),
                 "media_items": tweet.get("media_items", []),
                 "urls": tweet.get("urls", []),
             })
+
+        # Hesabın tweet'lerini ANINDA çevir (küçük batch — kümeleme yaklaşımı)
+        if account_tweets:
+            try:
+                summaries = _translate_batch(account_tweets)
+                translated = 0
+                for t in account_tweets:
+                    tid = t["tweet_id"]
+                    if tid in summaries and summaries[tid]:
+                        t["summary_tr"] = summaries[tid]
+                        translated += 1
+                    else:
+                        t["summary_tr"] = _make_preview(t["text"])
+                if translated:
+                    logger.info("Discovery: @%s — %d/%d tweet Turkce cevirildi",
+                                account, translated, len(account_tweets))
+            except Exception as e:
+                logger.warning("Discovery: @%s ceviri hatasi: %s", account, e)
+                for t in account_tweets:
+                    if not t["summary_tr"]:
+                        t["summary_tr"] = _make_preview(t["text"])
+            new_tweets.extend(account_tweets)
 
         # Rotasyon kaydı güncelle
         rotation.setdefault("last_scanned", {})[account.lower()] = now.isoformat()
@@ -491,33 +515,17 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
         # Rate limit koruması
         time.sleep(3)
 
-    # Toplu Türkçe özet üret (tek API çağrısı)
-    if new_tweets:
-        summaries = _generate_turkish_summary(new_tweets)
-        if summaries:
-            for tweet in new_tweets:
-                tid = tweet["tweet_id"]
-                if tid in summaries:
-                    tweet["summary_tr"] = summaries[tid]
-            logger.info("Discovery: %d/%d tweet icin Turkce ozet uretildi",
-                        len(summaries), len(new_tweets))
-
-        # AI çevirisi başarısız olan tweet'lere İngilizce preview fallback
-        for tweet in new_tweets:
-            if not tweet["summary_tr"]:
-                tweet["summary_tr"] = _make_preview(tweet["text"])
-
     # Mevcut cache'e ekle ve sırala
     existing_cache = load_discovery_cache()
 
-    # Mevcut cache'deki eksik/preview-only Türkçe özetleri yeniden dene
+    # Mevcut cache'deki eksik/preview-only Türkçe özetleri yeniden dene (küçük batch)
     needs_retry = [t for t in existing_cache
                    if not t.get("summary_tr")
                    or t["summary_tr"] == _make_preview(t.get("text", ""))
                    or t["summary_tr"] == t.get("text", "")[:200]]
     if needs_retry:
         logger.info("Discovery: %d tweet icin Turkce ozet yeniden deneniyor", len(needs_retry))
-        retry_summaries = _generate_turkish_summary(needs_retry[:15])
+        retry_summaries = _translate_batch(needs_retry[:5])
         if retry_summaries:
             for t in existing_cache:
                 tid = t.get("tweet_id", "")

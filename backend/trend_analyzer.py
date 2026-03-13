@@ -97,14 +97,14 @@ def analyze_trends(force: bool = False):
 
     # Eksik Türkçe özetleri toplu üret
     try:
-        from backend.discovery_worker import _generate_turkish_summary, _make_preview
+        from backend.discovery_worker import _translate_batch, _make_preview
         # Boş veya preview-only (İngilizce kalmış) özetleri yakala
         missing_summary = [t for t in all_tweets
                            if not t.get("summary_tr")
                            or t["summary_tr"] == _make_preview(t.get("text", ""))
                            or t["summary_tr"] == t.get("text", "")[:200]]
         if missing_summary:
-            summaries = _generate_turkish_summary(missing_summary[:15])
+            summaries = _translate_batch(missing_summary[:5])
             if summaries:
                 for t in missing_summary:
                     tid = t.get("tweet_id", "")

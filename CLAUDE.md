@@ -451,6 +451,14 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 
 ## Değişiklik Günlüğü
 
+### 2026-03-13 (Türkçe Çeviri Inline Refactor — Timeout Fix)
+- **refactor**: `discovery_worker.py` — Hesap bazlı inline çeviri: her hesabın tweet'leri çekildikten HEMEN SONRA çevriliyor (kümeleme yaklaşımı). Toplu çeviri bloğu kaldırıldı
+- **refactor**: `auto_topic_scanner.py` — Sorgu bazlı inline çeviri: her arama sorgusunun sonuçları ANINDA çevriliyor. Toplu çeviri bloğu kaldırıldı
+- **refactor**: `discovery_worker.py` — `_generate_turkish_summary()` → `_translate_batch()` olarak yeniden adlandırıldı ve küçük batch'ler için optimize edildi (max 5 tweet)
+- **fix**: Timeout 60→120 saniye, retry batch 20→5
+- **fix**: `api/discovery.py` — `/summarize` endpoint'i `_translate_batch()` kullanıyor, batch 10→5
+- **fix**: `trend_analyzer.py` — Backfill retry batch 15→5
+
 ### 2026-03-13 (OpenClaw Skills Entegrasyonu — AI Humanizer + Deep Research)
 - **feat**: `content_generator.py` — `_detect_ai_patterns()` yeni post-processing fonksiyonu: 35+ AI killer word tespiti ve temizliği (delve, tapestry, leverage, paradigm vb.) + 25+ AI phrase pattern temizliği (copula avoidance, filler phrases, significance inflation)
 - **feat**: `content_generator.py` — Post-processing zinciri güncellendi: `_humanize()` → `_detect_ai_patterns()` → `_enforce_lowercase()`

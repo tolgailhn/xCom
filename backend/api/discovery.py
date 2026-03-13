@@ -229,7 +229,7 @@ def summarize_tweets(req: SummarizeRequest):
         load_discovery_cache, save_discovery_cache,
         load_auto_scan_cache, save_auto_scan_cache,
     )
-    from backend.discovery_worker import _generate_turkish_summary, _make_preview
+    from backend.discovery_worker import _translate_batch, _make_preview
 
     discovery_cache = load_discovery_cache()
     auto_cache = load_auto_scan_cache()
@@ -255,8 +255,8 @@ def summarize_tweets(req: SummarizeRequest):
     if not needs_translation:
         return {"success": True, "updated": 0}
 
-    # Batch'ler halinde çevir (max 10 tweet per batch)
-    BATCH = 10
+    # Batch'ler halinde çevir (max 5 tweet per batch — inline yaklaşım)
+    BATCH = 5
     total_updated = 0
     discovery_map = {t.get("tweet_id", ""): t for t in discovery_cache}
     auto_map = {t.get("tweet_id", ""): t for t in auto_cache}
@@ -265,7 +265,7 @@ def summarize_tweets(req: SummarizeRequest):
 
     for i in range(0, len(needs_translation), BATCH):
         batch = needs_translation[i:i + BATCH]
-        summaries = _generate_turkish_summary(batch)
+        summaries = _translate_batch(batch)
         if summaries:
             for tid, summary in summaries.items():
                 if tid in discovery_map:

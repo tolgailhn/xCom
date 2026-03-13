@@ -67,6 +67,8 @@ def run_auto_scan():
             if not results:
                 continue
 
+            query_tweets: list[dict] = []  # Bu sorgunun tweet'leri (inline çeviri için)
+
             for topic in results:
                 tid = getattr(topic, "id", "") or getattr(topic, "tweet_id", "") or ""
                 if tid in existing_ids:
@@ -101,47 +103,52 @@ def run_auto_scan():
                     "scanned_at": now.isoformat(),
                     "created_at": created_at_str,
                     "source": "auto_scan",
-                    "summary_tr": "",  # AI çevirisi sonra gelecek
+                    "summary_tr": "",
                 }
 
                 # Min engagement filter
                 if topic_dict["engagement_score"] >= 50 or topic_dict["like_count"] >= 10:
-                    new_topics.append(topic_dict)
+                    query_tweets.append(topic_dict)
+
+            # Bu sorgunun tweet'lerini ANINDA çevir (küçük batch — kümeleme yaklaşımı)
+            if query_tweets:
+                try:
+                    from backend.discovery_worker import _translate_batch, _make_preview
+                    summaries = _translate_batch(query_tweets)
+                    translated = 0
+                    for t in query_tweets:
+                        tid = t["tweet_id"]
+                        if tid in summaries and summaries[tid]:
+                            t["summary_tr"] = summaries[tid]
+                            translated += 1
+                        else:
+                            t["summary_tr"] = _make_preview(t["text"])
+                    if translated:
+                        logger.info("Auto-scan: '%s' — %d/%d tweet Turkce cevirildi",
+                                    query[:30], translated, len(query_tweets))
+                except Exception as e:
+                    logger.warning("Auto-scan ceviri hatasi (%s): %s", query[:30], e)
+                    from backend.discovery_worker import _make_preview
+                    for t in query_tweets:
+                        if not t["summary_tr"]:
+                            t["summary_tr"] = _make_preview(t["text"])
+                new_topics.extend(query_tweets)
 
         except Exception as e:
             logger.warning("Auto-scan query error (%s): %s", query[:40], e)
             continue
 
     if new_topics:
-        # Türkçe özet üret (discovery_worker ile aynı mekanizma)
+        # Mevcut cache'deki eksik/preview-only özetleri yeniden dene (küçük batch)
         try:
-            from backend.discovery_worker import _generate_turkish_summary, _make_preview
-            # Toplu AI çevirisi
-            summaries = _generate_turkish_summary(new_topics)
-            if summaries:
-                for t in new_topics:
-                    tid = t.get("tweet_id", "")
-                    if tid in summaries:
-                        t["summary_tr"] = summaries[tid]
-                logger.info("Auto-scan: %d/%d tweet icin Turkce ozet uretildi",
-                            len(summaries), len(new_topics))
-            # AI başarısız olan tweet'lere İngilizce preview fallback
-            for t in new_topics:
-                if not t.get("summary_tr"):
-                    t["summary_tr"] = _make_preview(t.get("text", ""))
-        except Exception as e:
-            logger.warning("Auto-scan Turkish summary error: %s", e)
-
-        # Mevcut cache'deki eksik/preview-only özetleri yeniden dene
-        try:
-            from backend.discovery_worker import _generate_turkish_summary, _make_preview
+            from backend.discovery_worker import _translate_batch, _make_preview
             needs_retry = [t for t in cache
                            if not t.get("summary_tr")
                            or t["summary_tr"] == _make_preview(t.get("text", ""))
                            or t["summary_tr"] == t.get("text", "")[:200]]
             if needs_retry:
                 logger.info("Auto-scan: %d eski tweet icin Turkce ozet yeniden deneniyor", len(needs_retry))
-                retry_summaries = _generate_turkish_summary(needs_retry[:15])
+                retry_summaries = _translate_batch(needs_retry[:5])
                 if retry_summaries:
                     for t in cache:
                         tid = t.get("tweet_id", "")
