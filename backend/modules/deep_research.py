@@ -389,6 +389,14 @@ Görevin: Bu tweet'in gerçek konusunu anla ve HABER ANALİZİ yazmaya yetecek d
 
 DİKKAT: Tweet'te birçok marka/ürün adı geçebilir ama asıl konu farklı olabilir.
 Örnek: "Claude ve Codex built-in" diyen bir tweet Claude hakkında değil, o ürünleri entegre eden ARAÇ hakkındadır.
+
+ALT-SORU FRAMEWORK'Ü — Sorguları üretirken şu 5 boyutu MUTLAKA kapsa:
+1. TEKNİK DETAYLAR: Bu konunun temel teknik özellikleri/yenilikleri neler?
+2. KARŞILAŞTIRMA: Rakiplerle veya önceki versiyonla nasıl kıyaslanıyor?
+3. PRATİK ETKİ: Kime fayda sağlıyor, pratik kullanım senaryoları ne?
+4. TOPLULUK GÖRÜŞÜ: Uzmanlar/topluluk ne diyor, tartışmalar neler?
+5. RİSK/LİMİTASYON: Dezavantajları, sınırlamaları, riskleri var mı?
+Her boyut en az 1 sorgu ile temsil edilmeli.
 {short_tweet_extra}
 Yanıtını SADECE şu JSON formatında ver, başka hiçbir şey yazma:
 {{
@@ -2038,7 +2046,107 @@ def research_topic(tweet_text: str, tweet_author: str = "",
             if progress_callback:
                 progress_callback("Araştırma sentezi tamamlandı")
 
+            # === STEP 10: 2nd Research Cycle — fill gaps in synthesis ===
+            # Only runs in agentic mode (deep research) to avoid slowing standard mode
+            if use_agentic and brief:
+                try:
+                    gap_queries = _detect_synthesis_gaps(
+                        brief, ai_client=ai_client, ai_model=ai_model, provider=ai_provider
+                    )
+                    if gap_queries:
+                        if progress_callback:
+                            progress_callback(f"2. döngü: {len(gap_queries)} eksik alan için ek araştırma...")
+                        # Run gap-filling searches
+                        gap_urls = set()
+                        for gq in gap_queries[:3]:
+                            try:
+                                from duckduckgo_search import DDGS
+                                with DDGS() as ddgs:
+                                    for r in ddgs.text(gq, max_results=4):
+                                        url = r.get("href", "")
+                                        if url and url not in all_urls and url not in gap_urls:
+                                            gap_urls.add(url)
+                                            result.web_results.append({
+                                                "title": f"[2.DÖNGÜ] {r.get('title', '')}",
+                                                "url": url,
+                                                "body": r.get("body", ""),
+                                            })
+                            except Exception:
+                                pass
+
+                        if gap_urls:
+                            gap_articles = _parallel_fetch_articles(
+                                list(gap_urls)[:5], max_articles=5,
+                                progress_callback=progress_callback,
+                            )
+                            if gap_articles:
+                                result.deep_articles.extend(gap_articles)
+                                # Recompile and re-synthesize with enriched data
+                                result.summary = compile_research_summary(result)
+                                if progress_callback:
+                                    progress_callback("2. döngü sentezi yapılıyor...")
+                                brief2 = ai_synthesize_research(
+                                    raw_summary=result.summary,
+                                    original_tweet=result.full_thread_text or result.original_tweet_text,
+                                    ai_client=ai_client, ai_model=ai_model, provider=ai_provider,
+                                )
+                                if brief2:
+                                    result.synthesized_brief = brief2
+                                if progress_callback:
+                                    progress_callback(f"2. döngü tamamlandı (+{len(gap_articles)} kaynak)")
+                except Exception as e:
+                    print(f"2nd cycle research error: {e}")
+
     return result
+
+
+def _detect_synthesis_gaps(synthesis_text: str, ai_client=None,
+                           ai_model: str = None, provider: str = "minimax") -> list[str]:
+    """Detect weak/missing areas in research synthesis and generate follow-up queries.
+
+    Analyzes the synthesis text for:
+    - Empty or very short sections (KARŞILAŞTIRMALI VERİLER, ÇELİŞKİLER etc.)
+    - Phrases indicating insufficient data ("yetersiz veri", "doğrulanamadı")
+    - Missing comparative data or risk analysis
+
+    Returns up to 3 search queries to fill the gaps.
+    """
+    if not ai_client or not synthesis_text:
+        return []
+
+    prompt = f"""Aşağıdaki araştırma sentezini oku ve EKSİK/ZAYIF alanları tespit et.
+
+SENTEZ:
+{synthesis_text[:4000]}
+
+Görev: Bu sentezde hangi bilgiler eksik veya yetersiz? Eksik alanları doldurmak için
+2-3 adet İngilizce arama sorgusu üret.
+
+Özellikle kontrol et:
+- Karşılaştırmalı veri var mı? (benchmark, fiyat, performans karşılaştırması)
+- Risk/dezavantaj/limitasyon belirtilmiş mi?
+- Spesifik rakamlar/veriler yeterli mi yoksa genel ifadeler mi var?
+- Çelişkili bilgiler tespit edilmiş mi?
+
+SADECE JSON döndür:
+{{"gap_queries": ["sorgu 1", "sorgu 2", "sorgu 3"]}}
+
+Eğer sentez yeterince kapsamlıysa boş liste döndür:
+{{"gap_queries": []}}"""
+
+    try:
+        raw = _call_ai(ai_client, provider, ai_model, prompt, max_tokens=300, temperature=0.1)
+        if not raw:
+            return []
+        raw = _clean_ai_tags(raw)
+        json_match = re.search(r'\{.*\}', raw, re.DOTALL)
+        if not json_match:
+            return []
+        data = json.loads(json_match.group())
+        return data.get("gap_queries", [])[:3]
+    except Exception as e:
+        print(f"Gap detection error: {e}")
+        return []
 
 
 def _tweet_quality_score(tweet: dict) -> float:

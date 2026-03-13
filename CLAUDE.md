@@ -263,6 +263,9 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 | 2026-03-13 | Hesap listeleri birleştirildi | `DEFAULT_AI_ACCOUNTS` (38) + `discovery_config` (13) tek rotasyona alındı |
 | 2026-03-13 | BATCH_SIZE 3→5 | Daha fazla hesap kapsamak için batch boyutu artırıldı |
 | 2026-03-13 | TabTweets tüm hesaplar dropdown | API'den gelen tam hesap listesi, tweet'i olmayan hesaplar da görünür |
+| 2026-03-13 | AI humanizer post-processing | OpenClaw humanizer skill'den 35+ AI kelime + 25+ pattern temizliği — `_detect_ai_patterns()` |
+| 2026-03-13 | 2-döngülü araştırma (deep mode) | Sentez sonrası eksik alan tespiti → ek arama → zenginleştirilmiş final sentez |
+| 2026-03-13 | Copywriting hook formülleri | 4 yeni hook kategorisi (merak, değer, hikaye, karşıt) + score_tweet bonusları |
 
 ---
 
@@ -447,6 +450,17 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 ---
 
 ## Değişiklik Günlüğü
+
+### 2026-03-13 (OpenClaw Skills Entegrasyonu — AI Humanizer + Deep Research)
+- **feat**: `content_generator.py` — `_detect_ai_patterns()` yeni post-processing fonksiyonu: 35+ AI killer word tespiti ve temizliği (delve, tapestry, leverage, paradigm vb.) + 25+ AI phrase pattern temizliği (copula avoidance, filler phrases, significance inflation)
+- **feat**: `content_generator.py` — Post-processing zinciri güncellendi: `_humanize()` → `_detect_ai_patterns()` → `_enforce_lowercase()`
+- **feat**: `content_generator.py` — `score_tweet()` naturalness boyutuna yeni kontroller: AI killer word cezası (-2/kelime, max -8), copula avoidance cezası, filler phrase cezası, cümle uzunluğu varyasyonu (burstiness) analizi
+- **feat**: `content_generator.py` — `score_tweet()` hook boyutuna copywriting hook formül bonusları: curiosity (+3), contrarian (+3), value (+2), story (+2)
+- **feat**: `content_generator.py` — BASE_SYSTEM_PROMPT'a 4 yeni hook formülü eklendi: merak, değer, kişisel hikaye, karşıt görüş
+- **feat**: `content_generator.py` — X_ALGORITHM_RULES'a 3 yeni kural: thread optimum (4-8), link koyma yasağı, ilk 30-60 dakika kritik
+- **feat**: `deep_research.py` — `ai_extract_topic()` prompt'una 5 boyutlu alt-soru framework'ü eklendi: teknik detay, karşılaştırma, pratik etki, topluluk görüşü, risk/limitasyon
+- **feat**: `deep_research.py` — 2-döngülü araştırma: sentez sonrası `_detect_synthesis_gaps()` ile eksik alan tespiti → ek arama → zenginleştirilmiş final sentez (sadece agentic/deep modda aktif)
+- **feat**: `deep_research.py` — `_detect_synthesis_gaps()` yeni fonksiyon: AI ile sentez boşluklarını tespit edip 2-3 ek arama sorgusu üretir
 
 ### 2026-03-13 (Araştırma Kalitesi İyileştirme)
 - **feat**: `deep_research.py` — `ai_extract_topic()`: `verification_queries` eklendi — tweet'teki spesifik iddia/rakamlar için doğrulama sorguları (3 ek sorgu)

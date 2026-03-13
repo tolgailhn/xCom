@@ -22,6 +22,9 @@ X_ALGORITHM_RULES = """
 ### EK KURALLAR:
 6. DEĞER KAT = Haber aktarma, YORUM yap. "Bence asıl mesele..." ile kendi açını ekle.
 7. CONVERSATION HOOK = İddialı yaz ki reply gelsin. Reply = 150x like boost.
+8. THREAD OPTİMUM = 4-8 tweet. Daha uzun thread'ler düşüyor.
+9. LİNK KOYMA = Harici link tweet gövdesine KOYMA (erişim %50-90 düşer). Linki reply'a koy.
+10. İLK 30-60 DAKİKA = Erken engagement dağılımı belirler. Paylaştıktan sonra aktif ol.
 
 ### FORMAT:
 - Her paragraf arasında boş satır (\\n\\n)
@@ -66,6 +69,18 @@ PARADOKS: çelişen iki gerçeği yan yana koy
 
 ETKİ ODAKLI: direkt kullanıcıya ne değiştiğini söyle
   → "artık Excel'deki veriyi PowerPoint'e taşımak tek tıkla oluyor. sıfır tekrar açıklama."
+
+MERAK FORMÜLÜ: "[yaygın inanç] yanlış. asıl [sürpriz bilgi]."
+  → "herkes prompt engineering öğreniyor ama asıl beceri ne istediğini bilmek."
+
+DEĞER FORMÜLÜ: "[arzu edilen sonuç] nasıl elde edilir ([yaygın sıkıntı] olmadan):"
+  → "AI ile haftada 20 saat nasıl kazanılır (prompt yazmakla vakit kaybetmeden):"
+
+KİŞİSEL HİKAYE: "geçen [zaman], [beklenmedik olay] yaşadım/gördüm."
+  → "geçen hafta bir junior developer'ın Claude ile senior'dan hızlı ship ettiğini gördüm."
+
+KARŞIT GÖRÜŞ: "herkes [X] diyor ama [Y] gerçek."
+  → "herkes AI'ın iş çalacağını söylüyor ama asıl risk AI kullanmayanların geride kalması."
 
 ## DEĞER KATMA ZORUNLULUĞU:
 - sadece haber aktarma — HER tweet'te kendi görüşün, analizin veya deneyimin OLMALI
@@ -2563,6 +2578,7 @@ Paragraflari kısa tut, metin duvarı olmasın. Sadece içerik metnini yaz."""
             text = self._generate_openai(system_prompt, user_prompt, image_urls)
         text = self._fix_colon_labels(text)
         text = self._humanize(text)
+        text = self._detect_ai_patterns(text)
         text = self._enforce_lowercase(text)
         return text
 
@@ -2700,6 +2716,110 @@ Paragraflari kısa tut, metin duvarı olmasın. Sadece içerik metnini yaz."""
         text = re.sub(r'\s+$', '', text)  # trailing whitespace
         # Clean empty lines that only have spaces
         text = re.sub(r'\n +\n', '\n\n', text)
+
+        return text.strip()
+
+    @staticmethod
+    def _detect_ai_patterns(text: str) -> str:
+        """Post-process: detect and replace common AI-generated vocabulary patterns.
+
+        Based on humanizer/ai-humanizer skill analysis. Three tiers:
+        - Tier 1: Known AI "killer words" → direct replacement with natural Turkish equivalents
+        - Tier 2: AI phrase patterns → regex-based cleanup
+        - Tier 3: Statistical signals (handled in score_tweet separately)
+        """
+        import re
+
+        if not text or not text.strip():
+            return text
+
+        # --- Tier 1: AI killer words → natural replacements ---
+        # These words are statistically overrepresented in AI output vs human writing
+        AI_WORD_REPLACEMENTS = {
+            # English AI words that leak into Turkish tweets
+            "delve": "incele",
+            "tapestry": "",
+            "vibrant": "",
+            "crucial": "",
+            "comprehensive": "kapsamli",
+            "meticulous": "",
+            "robust": "guclu",
+            "seamless": "sorunsuz",
+            "leverage": "kullan",
+            "transformative": "",
+            "paramount": "",
+            "multifaceted": "",
+            "cornerstone": "temel",
+            "empower": "",
+            "catalyst": "tetikleyici",
+            "invaluable": "",
+            "realm": "alan",
+            "landscape": "alan",
+            "foster": "destekle",
+            "underscore": "vurgula",
+            "showcase": "goster",
+            "testament": "",
+            "pivotal": "kritik",
+            "navigate": "",
+            "harness": "kullan",
+            "spearhead": "",
+            "synergy": "",
+            "utilize": "kullan",
+            "facilitate": "",
+            "endeavor": "",
+            "intricate": "",
+            "nuanced": "",
+            "holistic": "",
+            "paradigm": "",
+            "plethora": "",
+            "myriad": "",
+            "encompasses": "kapsiyor",
+            "underscores": "vurguluyor",
+        }
+
+        for ai_word, replacement in AI_WORD_REPLACEMENTS.items():
+            # Case-insensitive word boundary replacement
+            pattern = re.compile(r'\b' + re.escape(ai_word) + r'\b', re.IGNORECASE)
+            text = pattern.sub(replacement, text)
+
+        # --- Tier 2: AI phrase patterns → cleanup ---
+        AI_PHRASE_PATTERNS = [
+            # Copula avoidance (AI avoids "is/are", uses complex alternatives)
+            (r'\bserves as\b', 'bir'),
+            (r'\bstands as\b', 'bir'),
+            (r'\bacts as\b', 'bir'),
+            (r'\bfunctions as\b', 'bir'),
+            (r'\bboasts\b', 'var'),
+            # Significance inflation
+            (r'\bindelible mark\b', 'iz'),
+            (r'\bkey turning point\b', 'donum noktasi'),
+            (r'\bevolving landscape\b', 'degisen alan'),
+            (r'\bever-evolving\b', 'degisen'),
+            (r'\bever-changing\b', 'degisen'),
+            # Filler phrases (add zero information)
+            (r'\bin order to\b', 'icin'),
+            (r'\bdue to the fact that\b', 'cunku'),
+            (r'\bat this point in time\b', 'simdi'),
+            (r'\bhas the ability to\b', 'yapabilir'),
+            (r'(?i)it is important to note that\s*', ''),
+            (r'(?i)it is worth noting that\s*', ''),
+            (r'(?i)it should be noted that\s*', ''),
+            (r'(?i)it goes without saying\s*', ''),
+            # Generic positive conclusions (hallmark of AI text)
+            (r'(?i)the future looks bright', ''),
+            (r'(?i)exciting times lie ahead', ''),
+            (r'(?i)only time will tell', ''),
+            (r'(?i)remains to be seen', ''),
+            (r'(?i)paving the way for', ''),
+        ]
+
+        for pattern, replacement in AI_PHRASE_PATTERNS:
+            text = re.sub(pattern, replacement, text)
+
+        # --- Cleanup artifacts from replacements ---
+        text = re.sub(r'  +', ' ', text)  # double spaces
+        text = re.sub(r'\n +\n', '\n\n', text)  # empty lines with spaces
+        text = re.sub(r'^\s+', '', text, flags=re.MULTILINE)  # leading spaces per line
 
         return text.strip()
 
@@ -3052,6 +3172,21 @@ def score_tweet(tweet_text: str, content_format: str = "spark",
     if any(bh in first_line.lower() for bh in benefit_hooks):
         hook_score += 3  # benefit-first opening = very strong
 
+    # Copywriting hook formula bonuses (curiosity, contrarian, value, story)
+    first_line_lower = first_line.lower()
+    # Curiosity hooks — challenge common beliefs
+    if _re.search(r'(yanlış|yanılıyor|sanıyor|kimse.*bilmiyor|kimsenin.*fark)', first_line_lower):
+        hook_score += 3
+    # Contrarian hooks — bold disagreement
+    if _re.search(r'(unpopular|herkes.*ama|sorun.*şu ki|aksine)', first_line_lower):
+        hook_score += 3
+    # Value hooks — promise practical benefit
+    if _re.search(r'(nasıl|yolu|adım|ipucu|sırrı|yöntemi)', first_line_lower):
+        hook_score += 2
+    # Story hooks — personal narrative
+    if _re.search(r'(geçen|dün|3 yıl|bi gün|başıma)', first_line_lower):
+        hook_score += 2
+
     # Bad hooks: cliché openings
     bad_hooks = [
         "heyecan verici", "dikkat çekici", "yapay zeka dünyasında",
@@ -3137,6 +3272,46 @@ def score_tweet(tweet_text: str, content_format: str = "spark",
         if _re.search(_sp, text.lower()):
             naturalness_score -= 3
             break
+
+    # AI killer word detection (humanizer skill — Tier 1 words)
+    _ai_killer_words = [
+        "delve", "tapestry", "vibrant", "crucial", "meticulous", "robust",
+        "seamless", "leverage", "transformative", "paramount", "multifaceted",
+        "cornerstone", "empower", "catalyst", "invaluable", "realm", "landscape",
+        "foster", "underscore", "showcase", "testament", "pivotal", "navigate",
+        "harness", "synergy", "utilize", "facilitate", "endeavor", "intricate",
+        "nuanced", "holistic", "paradigm", "plethora", "myriad",
+    ]
+    _ai_word_count = sum(1 for w in _ai_killer_words if w in text.lower())
+    if _ai_word_count > 0:
+        naturalness_score -= min(_ai_word_count * 2, 8)
+
+    # Copula avoidance detection (AI avoids "is", uses "serves as", "stands as")
+    _copula_patterns = ["serves as", "stands as", "represents a", "marks a",
+                        "acts as", "functions as"]
+    _copula_count = sum(1 for p in _copula_patterns if p in text.lower())
+    if _copula_count > 0:
+        naturalness_score -= _copula_count * 2
+
+    # Filler phrase detection
+    _filler_phrases = ["in order to", "it is important to note", "due to the fact",
+                       "it should be noted", "it goes without saying"]
+    _filler_count = sum(1 for f in _filler_phrases if f in text.lower())
+    if _filler_count > 0:
+        naturalness_score -= _filler_count * 3
+
+    # Sentence length variation (burstiness) — monotone = AI, varied = human
+    _sentences = [s.strip() for s in _re.split(r'[.!?]\s', text) if s.strip()]
+    if len(_sentences) >= 3:
+        _lengths = [len(s) for s in _sentences]
+        _mean_len = sum(_lengths) / len(_lengths)
+        if _mean_len > 0:
+            _variance = sum((l - _mean_len) ** 2 for l in _lengths) / len(_lengths)
+            _cov = _variance ** 0.5 / _mean_len
+            if _cov < 0.2:  # very monotone — strong AI signal
+                naturalness_score -= 4
+            elif _cov > 0.5:  # good variation — human-like
+                naturalness_score += 2
 
     # Check for natural Turkish markers (good sign)
     natural_markers = ["ya ", "yani", "aslında", "bence", "bi baktım",
