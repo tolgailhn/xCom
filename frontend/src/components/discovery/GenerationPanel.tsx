@@ -33,7 +33,8 @@ export default function GenerationPanel({
 
   useEffect(() => {
     if (generated?.text) setEditedText(generated.text);
-  }, [generated?.text, setEditedText]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generated?.text]);
 
   if (!generated) return null;
 
