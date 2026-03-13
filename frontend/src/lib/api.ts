@@ -594,6 +594,8 @@ export interface AutoReplyConfig {
   only_original_tweets: boolean;
   language: string;
   draft_only: boolean;
+  publish_mode?: "draft" | "twikit" | "api";
+  daily_max_replies?: number;
 }
 
 export interface AutoReplyLog {

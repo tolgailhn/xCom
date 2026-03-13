@@ -179,6 +179,19 @@ def scan_for_candidates():
                 seen.add(tweet_id)
                 continue
 
+            # Bugün filtresi: sadece bugünkü tweetler (eski tweetlere reply atma)
+            tweet_created = tweet.get("created_at", "")
+            if tweet_created:
+                try:
+                    tweet_dt = datetime.datetime.fromisoformat(tweet_created)
+                    if tweet_dt.tzinfo is None:
+                        tweet_dt = tweet_dt.replace(tzinfo=datetime.timezone.utc)
+                    if tweet_dt.astimezone(TZ_TR).date() != now.date():
+                        seen.add(tweet_id)
+                        continue
+                except (ValueError, TypeError):
+                    pass  # Parse hatası olursa geçir
+
             candidates.append(tweet)
 
         if not candidates:
@@ -277,6 +290,18 @@ def generate_and_reply():
         logger.info("Auto-reply generator: Rate limit — %d/%d replies in last hour", recent_replies, max_per_hour)
         return
 
+    # Günlük limit kontrolü
+    daily_max = config.get("daily_max_replies", 20)
+    today_str = now.strftime("%Y-%m-%d")
+    today_published = sum(
+        1 for log in logs
+        if log.get("status") == "published"
+        and log.get("created_at", "").startswith(today_str)
+    )
+    if today_published >= daily_max:
+        logger.info("Auto-reply generator: Günlük limit doldu (%d/%d)", today_published, daily_max)
+        return
+
     # Kuyruktan pending olanları al
     queue = load_auto_reply_queue()
     pending = [q for q in queue if q.get("status") == "pending"]
@@ -304,6 +329,12 @@ def generate_and_reply():
     additional_context = config.get("additional_context", "")
     language = config.get("language", "tr")
     draft_only = config.get("draft_only", True)
+
+    # 3 modlu publish_mode: draft / twikit / api
+    publish_mode = config.get("publish_mode", "draft")
+    # Backward compat: publish_mode yoksa draft_only'ye bak
+    if "publish_mode" not in config:
+        publish_mode = "draft" if draft_only else "api"
 
     # Generate reply
     try:
@@ -340,8 +371,10 @@ def generate_and_reply():
         })
         return
 
-    # Draft-only mode: sadece üret, paylaşma
-    if draft_only:
+    # ── PUBLISH MODE ROUTING ────────────────────────────────────
+
+    if publish_mode == "draft":
+        # Sadece üret, paylaşma
         update_auto_reply_queue_entry(tweet_id, {
             "status": "done",
             "reply_text": reply_text,
@@ -367,53 +400,118 @@ def generate_and_reply():
         )
         return
 
-    # Publish: önce reply dene, 403 alırsa quote tweet yap
-    result = _publish_with_fallback(
-        text=reply_text,
-        tweet_id=tweet_id,
-        account=account,
-    )
+    elif publish_mode == "twikit":
+        # İnsan-benzeri rastgele bekleme (30-90 saniye)
+        import random
+        delay = random.randint(30, 90)
+        logger.info("Auto-reply generator: %ds bekleniyor (insan-benzeri delay)", delay)
+        time.sleep(delay)
 
-    if result.get("success"):
-        publish_type = result.get("type", "reply")
-        update_auto_reply_queue_entry(tweet_id, {
-            "status": "done",
-            "reply_text": reply_text,
-            "processed_at": now.isoformat(),
-        })
-        add_auto_reply_log({
-            "account": account,
-            "tweet_id": tweet_id,
-            "tweet_text": tweet_text,
-            "reply_text": reply_text,
-            "reply_tweet_id": result.get("tweet_id", ""),
-            "reply_url": result.get("url", ""),
-            "status": "published",
-            "publish_type": publish_type,
-            "engagement_score": candidate.get("engagement_score", 0),
-            "like_count": candidate.get("like_count", 0),
-            "retweet_count": candidate.get("retweet_count", 0),
-        })
-        logger.info(
-            "Auto-reply generator: %s to @%s tweet %s — %s",
-            publish_type.upper(), account, tweet_id, result.get("url", ""),
+        # Twikit (cookie) ile reply gönder
+        result = _publish_via_twikit(
+            text=reply_text,
+            tweet_id=tweet_id,
+            account=account,
         )
-    else:
-        update_auto_reply_queue_entry(tweet_id, {
-            "status": "failed",
-            "processed_at": now.isoformat(),
-        })
-        add_auto_reply_log({
-            "account": account,
-            "tweet_id": tweet_id,
-            "tweet_text": tweet_text,
-            "reply_text": reply_text,
-            "status": "publish_failed",
-            "error": result.get("error", "Unknown error"),
-            "engagement_score": candidate.get("engagement_score", 0),
-            "like_count": candidate.get("like_count", 0),
-            "retweet_count": candidate.get("retweet_count", 0),
-        })
+
+        if result.get("success"):
+            update_auto_reply_queue_entry(tweet_id, {
+                "status": "done",
+                "reply_text": reply_text,
+                "processed_at": now.isoformat(),
+            })
+            add_auto_reply_log({
+                "account": account,
+                "tweet_id": tweet_id,
+                "tweet_text": tweet_text,
+                "reply_text": reply_text,
+                "reply_tweet_id": result.get("tweet_id", ""),
+                "reply_url": result.get("url", ""),
+                "status": "published",
+                "publish_type": "twikit_reply",
+                "engagement_score": candidate.get("engagement_score", 0),
+                "like_count": candidate.get("like_count", 0),
+                "retweet_count": candidate.get("retweet_count", 0),
+            })
+            logger.info(
+                "Auto-reply generator: TWIKIT REPLY to @%s tweet %s — %s",
+                account, tweet_id, result.get("url", ""),
+            )
+            _send_telegram_auto_reply(
+                account, tweet_text, reply_text, tweet_id,
+                candidate.get("engagement_score", 0),
+            )
+        else:
+            # Başarısız — sadece logla, atla (fallback yok)
+            update_auto_reply_queue_entry(tweet_id, {
+                "status": "failed",
+                "processed_at": now.isoformat(),
+            })
+            add_auto_reply_log({
+                "account": account,
+                "tweet_id": tweet_id,
+                "tweet_text": tweet_text,
+                "reply_text": reply_text,
+                "status": "publish_failed",
+                "error": result.get("error", "Unknown error"),
+                "engagement_score": candidate.get("engagement_score", 0),
+                "like_count": candidate.get("like_count", 0),
+                "retweet_count": candidate.get("retweet_count", 0),
+            })
+            logger.warning(
+                "Auto-reply generator: TWIKIT FAILED for @%s tweet %s — %s",
+                account, tweet_id, result.get("error", ""),
+            )
+        return
+
+    elif publish_mode == "api":
+        # Twitter API ile gönder (mevcut davranış)
+        result = _publish_with_fallback(
+            text=reply_text,
+            tweet_id=tweet_id,
+            account=account,
+        )
+
+        if result.get("success"):
+            publish_type = result.get("type", "reply")
+            update_auto_reply_queue_entry(tweet_id, {
+                "status": "done",
+                "reply_text": reply_text,
+                "processed_at": now.isoformat(),
+            })
+            add_auto_reply_log({
+                "account": account,
+                "tweet_id": tweet_id,
+                "tweet_text": tweet_text,
+                "reply_text": reply_text,
+                "reply_tweet_id": result.get("tweet_id", ""),
+                "reply_url": result.get("url", ""),
+                "status": "published",
+                "publish_type": publish_type,
+                "engagement_score": candidate.get("engagement_score", 0),
+                "like_count": candidate.get("like_count", 0),
+                "retweet_count": candidate.get("retweet_count", 0),
+            })
+            logger.info(
+                "Auto-reply generator: %s to @%s tweet %s — %s",
+                publish_type.upper(), account, tweet_id, result.get("url", ""),
+            )
+        else:
+            update_auto_reply_queue_entry(tweet_id, {
+                "status": "failed",
+                "processed_at": now.isoformat(),
+            })
+            add_auto_reply_log({
+                "account": account,
+                "tweet_id": tweet_id,
+                "tweet_text": tweet_text,
+                "reply_text": reply_text,
+                "status": "publish_failed",
+                "error": result.get("error", "Unknown error"),
+                "engagement_score": candidate.get("engagement_score", 0),
+                "like_count": candidate.get("like_count", 0),
+                "retweet_count": candidate.get("retweet_count", 0),
+            })
 
 
 # ── BACKWARD COMPAT WRAPPER ───────────────────────────────────
@@ -447,6 +545,26 @@ def _get_twikit_client():
     except Exception as e:
         logger.warning("Auto-reply: Twikit auth failed: %s", e)
     return None
+
+
+def _publish_via_twikit(text: str, tweet_id: str, account: str) -> dict:
+    """Twikit (cookie) ile reply gönder."""
+    twikit = _get_twikit_client()
+    if not twikit:
+        return {"success": False, "error": "Twikit client mevcut değil"}
+
+    # 280 karakter güvenlik
+    if len(text) > 280:
+        text = text[:277] + "..."
+
+    try:
+        result = twikit.create_reply(text, tweet_id)
+        if result.get("success"):
+            result["type"] = "twikit_reply"
+        return result
+    except Exception as e:
+        logger.warning("Twikit reply failed @%s tweet %s: %s", account, tweet_id, e)
+        return {"success": False, "error": str(e)}
 
 
 def _generate_reply(original_tweet: str, original_author: str,

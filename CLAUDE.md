@@ -267,6 +267,7 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 | 2026-03-13 | AI humanizer post-processing | OpenClaw humanizer skill'den 35+ AI kelime + 25+ pattern temizliği — `_detect_ai_patterns()` |
 | 2026-03-13 | 2-döngülü araştırma (deep mode) | Sentez sonrası eksik alan tespiti → ek arama → zenginleştirilmiş final sentez |
 | 2026-03-13 | Copywriting hook formülleri | 4 yeni hook kategorisi (merak, değer, hikaye, karşıt) + score_tweet bonusları |
+| 2026-03-13 | Twikit ile otomatik reply gönderimi | Cookie-based auth ile reply. 3 mod: draft/twikit/api. Günlük limit + bugün filtresi + insan-benzeri delay |
 
 ---
 
@@ -451,6 +452,19 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 ---
 
 ## Değişiklik Günlüğü
+
+### 2026-03-13 (Twikit ile Otomatik Reply Gönderimi)
+- **feat**: `twikit_client.py` — `create_reply(text, reply_to_tweet_id)` metodu eklendi: cookie-based auth ile tweet'e reply gönderme. Re-auth retry, rate limiting, hata yakalama dahil
+- **feat**: `auto_reply_worker.py` — 3 modlu `publish_mode`: "draft" (mevcut), "twikit" (cookie ile oto-gönder), "api" (Twitter API)
+- **feat**: `auto_reply_worker.py` — Bugün filtresi: sadece bugünkü tweetlere reply (eski tweetler atlanır)
+- **feat**: `auto_reply_worker.py` — Günlük limit: `daily_max_replies` (varsayılan 20) ile hard stop
+- **feat**: `auto_reply_worker.py` — İnsan-benzeri delay: reply öncesi 30-90sn rastgele bekleme
+- **feat**: `auto_reply_worker.py` — `_publish_via_twikit()` helper: Twikit ile reply gönderim + 280 char guard
+- **feat**: `TabConfig.tsx` — "Taslak Modu" toggle → 3 modlu "Gönderim Modu" seçici (Taslak/Twikit/API)
+- **feat**: `TabConfig.tsx` — "Günlük Maks Yanıt" input eklendi (1-30, varsayılan 20)
+- **feat**: `api.ts` — `AutoReplyConfig` interface'ine `publish_mode` ve `daily_max_replies` eklendi
+- **fix**: `style_manager.py` — Default config'e `publish_mode`, `daily_max_replies`, `draft_only` eklendi
+- **fix**: `style_manager.py` — Default hesap listesinden yabancı hesap (XCodeWraith) kaldırıldı
 
 ### 2026-03-13 (Türkçe Çeviri Inline Refactor — Timeout Fix)
 - **refactor**: `discovery_worker.py` — Hesap bazlı inline çeviri: her hesabın tweet'leri çekildikten HEMEN SONRA çevriliyor (kümeleme yaklaşımı). Toplu çeviri bloğu kaldırıldı

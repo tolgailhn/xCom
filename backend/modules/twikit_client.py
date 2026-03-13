@@ -463,6 +463,60 @@ class TwikitSearchClient:
     def is_authenticated(self) -> bool:
         return self._authenticated
 
+    # ── WRITE OPERATIONS ─────────────────────────────────────────
+
+    def create_reply(self, text: str, reply_to_tweet_id: str) -> dict:
+        """Post a reply to a tweet using cookie-based auth.
+
+        Returns dict with 'success', 'tweet_id', 'url' on success,
+        or 'success': False and 'error' on failure.
+        """
+        if not self._authenticated:
+            return {"success": False, "error": "Not authenticated"}
+
+        _twikit_rate_limit_wait()
+        client = self._get_client_sync()
+
+        async def _do_reply():
+            return await client.create_tweet(
+                text=text,
+                reply_to=reply_to_tweet_id,
+            )
+
+        try:
+            result = self._run(_do_reply(), timeout=60)
+            _twikit_rate_limit_success()
+            tweet_id = str(result.id) if hasattr(result, "id") else ""
+            return {
+                "success": True,
+                "tweet_id": tweet_id,
+                "url": f"https://x.com/i/status/{tweet_id}" if tweet_id else "",
+            }
+        except (Unauthorized, Forbidden) as e:
+            # Cookie expired or reply restricted — re-auth once and retry
+            try:
+                self.authenticate(skip_cookies=True)
+                result = self._run(_do_reply(), timeout=60)
+                _twikit_rate_limit_success()
+                tweet_id = str(result.id) if hasattr(result, "id") else ""
+                return {
+                    "success": True,
+                    "tweet_id": tweet_id,
+                    "url": f"https://x.com/i/status/{tweet_id}" if tweet_id else "",
+                }
+            except Exception as retry_err:
+                _twikit_rate_limit_error()
+                return {"success": False, "error": f"{type(e).__name__}: {e} (retry: {retry_err})"}
+        except TooManyRequests as e:
+            _twikit_rate_limit_error()
+            return {"success": False, "error": f"Rate limited: {e}"}
+        except (AccountLocked, AccountSuspended) as e:
+            _twikit_rate_limit_error()
+            return {"success": False, "error": f"Account issue: {e}"}
+        except Exception as e:
+            _twikit_rate_limit_error()
+            return {"success": False, "error": f"{type(e).__name__}: {e}"}
+
     def search_tweets(self, query: str, count: int = 20,
                       since_date: str = None) -> list[dict]:
         """Search tweets. Returns list of tweet dicts."""

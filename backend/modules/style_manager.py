@@ -390,7 +390,7 @@ def load_auto_reply_config() -> dict:
         "accounts": [
             "hrrcnes",
             "efecim1sn",
-            "XCodeWraith",
+
             "merak_makinesi",
             "umutcanbostanci",
             "demirbulbuloglu",
@@ -435,6 +435,9 @@ def load_auto_reply_config() -> dict:
         "min_likes_to_reply": 0,
         "only_original_tweets": True,
         "language": "tr",
+        "draft_only": True,
+        "publish_mode": "draft",
+        "daily_max_replies": 20,
     }
 
 
