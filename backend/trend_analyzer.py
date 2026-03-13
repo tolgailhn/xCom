@@ -556,6 +556,62 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
         len([s for s in suggestions if s["type"] == "news"]),
     )
 
+    # Telegram bildirim — AI kümeleri oluştu
+    if suggestions:
+        _notify_clustered_suggestions(suggestions)
+
+
+def _notify_clustered_suggestions(suggestions: list[dict]):
+    """Telegram bildirim — AI önerileri (kümelenmiş konular)."""
+    try:
+        from backend.config import get_settings
+        settings = get_settings()
+        if not (settings.telegram_bot_token and settings.telegram_chat_id):
+            return
+
+        from backend.modules.telegram_notifier import send_telegram_message
+
+        lines = ["🤖 AI Önerileri — Yeni Konular:\n"]
+
+        for s in suggestions[:5]:
+            topic_tr = s.get("topic_tr") or s.get("topic", "?")
+            description = s.get("description_tr", "")
+            potential = s.get("engagement_potential", 0)
+            tweet_count = len(s.get("tweets", []))
+            accounts = set(t.get("account", "") for t in s.get("tweets", []))
+            style = s.get("suggested_style", "")
+            hour = s.get("suggested_hour", "")
+
+            # Engagement potential emoji
+            if potential >= 8:
+                pot_emoji = "🔥"
+            elif potential >= 5:
+                pot_emoji = "📈"
+            else:
+                pot_emoji = "📊"
+
+            lines.append(
+                f"{pot_emoji} <b>{topic_tr}</b> ({potential}/10)"
+            )
+            if description:
+                lines.append(f"   {description}")
+            lines.append(
+                f"   └ {tweet_count} tweet, {len(accounts)} hesap"
+                + (f" • Stil: {style}" if style else "")
+                + (f" • Saat: {hour}" if hour else "")
+            )
+            lines.append("")
+
+        lines.append("🔗 /kesif sayfasından AI Önerileri tabına bak!")
+
+        msg = "\n".join(lines)
+        # Telegram max 4096 chars
+        if len(msg) > 4000:
+            msg = msg[:3990] + "\n..."
+        send_telegram_message(msg, settings.telegram_bot_token, settings.telegram_chat_id)
+    except Exception:
+        pass
+
 
 def _notify_breaking(trends: list[dict]):
     """Telegram bildirim — BREAKING: son 2 saatte 3+ hesaptan aynı konu."""

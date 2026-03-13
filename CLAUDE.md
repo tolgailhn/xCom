@@ -488,6 +488,10 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 - **fix**: `auto_topic_scanner.py` — Aynı pattern: boş başlangıç → AI çeviri → fallback preview + cache retry
 - **fix**: `trend_analyzer.py` — Backfill artık sadece boş değil, preview-only özetleri de yakalar ve yeniden çevirmeye çalışır
 
+### 2026-03-13 (AI Önerileri Telegram Bildirimi)
+- **feat**: `trend_analyzer.py` — `_notify_clustered_suggestions()` yeni fonksiyon: AI kümeleri oluştuğunda Telegram'a detaylı bildirim gönderir (konu başlığı, Türkçe açıklama, engagement potansiyeli, tweet/hesap sayısı, önerilen stil ve saat)
+- **feat**: `trend_analyzer.py` — `_cluster_smart_suggestions()` sonuna `_notify_clustered_suggestions()` çağrısı eklendi
+
 ### 2026-03-13 (Hesap Keşfi Yeniden Tasarım — Benzer Hesap Bulma)
 - **refactor**: `account_discoverer.py` — 4 eski strateji (cache_based, grok_search, trend_based, interaction_based) kaldırıldı
 - **feat**: `account_discoverer.py` — 3 yeni strateji: `follower_mining` (izlenen hesap takipçileri + AI bio filtre), `semantic_search` (konu bazlı X kullanıcı araması), `grok_similar` (kişiselleştirilmiş Grok benzer hesap önerisi)
