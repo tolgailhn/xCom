@@ -756,6 +756,23 @@ class SearchAccountsRequest(BaseModel):
     max_results: int = 10
 
 
+def _get_twikit_client():
+    """Get authenticated twikit client for API endpoints."""
+    from backend.config import get_settings
+    from backend.modules.twikit_client import TwikitSearchClient
+
+    settings = get_settings()
+    client = TwikitSearchClient(
+        username=settings.twikit_username or "",
+        password=settings.twikit_password or "",
+        email=getattr(settings, "twikit_email", "") or "",
+    )
+    client.authenticate()
+    if client._authenticated:
+        return client
+    return None
+
+
 @router.post("/search-accounts")
 def search_accounts(req: SearchAccountsRequest):
     """X'te aktif hesap araması (Twikit ile)."""
@@ -763,17 +780,16 @@ def search_accounts(req: SearchAccountsRequest):
         raise HTTPException(400, "Arama sorgusu boş olamaz")
 
     try:
-        from backend.modules.twikit_client import get_twikit_client
         import asyncio
 
-        client = get_twikit_client()
+        client = _get_twikit_client()
         if not client:
             raise HTTPException(400, "Twikit cookie ayarlı değil")
 
         loop = asyncio.new_event_loop()
         try:
             users = loop.run_until_complete(
-                client.search_user(req.query.strip(), count=min(req.max_results, 20))
+                client._get_client_sync().search_user(req.query.strip(), count=min(req.max_results, 20))
             )
         finally:
             loop.close()
@@ -1376,3 +1392,172 @@ Yanıtı sadece JSON array olarak döndür: [{{"idx": 1, "score": 8, "reason": "
     except Exception as e:
         logger.exception("AI suggestion scoring error")
         raise HTTPException(500, f"Öneri skorlama hatası: {str(e)}")
+
+
+# ── Kapsamlı Hesap Keşfi — Analiz + Akıllı Keşif ─────────
+
+class AnalyzeAccountRequest(BaseModel):
+    username: str
+    tweet_count: int = 20
+
+
+class SmartDiscoverRequest(BaseModel):
+    strategies: list[str] = ["cache_based", "grok_search", "trend_based", "interaction_based"]
+    max_per_strategy: int = 5
+
+
+class BatchAnalyzeRequest(BaseModel):
+    usernames: list[str]
+
+
+@router.post("/analyze-account")
+def analyze_account(req: AnalyzeAccountRequest):
+    """Bir hesabın son tweetlerini çekip AI ile değerlendir."""
+    username = req.username.strip().lstrip("@")
+    if not username:
+        raise HTTPException(400, "Kullanıcı adı boş olamaz")
+
+    try:
+        from backend.account_discoverer import analyze_single_account
+
+        result = analyze_single_account(username, req.tweet_count)
+        if not result:
+            raise HTTPException(404, f"@{username} için veri bulunamadı. Twikit cookie kontrol edin.")
+
+        # Save analysis to suggested accounts
+        if result.get("analysis"):
+            from backend.modules.style_manager import load_suggested_accounts, save_suggested_accounts
+            import datetime as _dt
+            from zoneinfo import ZoneInfo as _ZI
+
+            accounts = load_suggested_accounts()
+            existing = None
+            for a in accounts:
+                if a.get("username", "").lower() == username.lower():
+                    existing = a
+                    break
+
+            analysis_data = result["analysis"]
+            profile = result.get("profile") or {}
+
+            if existing:
+                existing["analysis"] = analysis_data
+                existing["profile"] = profile
+                if analysis_data.get("overall_score"):
+                    existing["score"] = analysis_data["overall_score"]
+            else:
+                accounts.append({
+                    "username": username.lower(),
+                    "appearances": 0,
+                    "avg_engagement": 0,
+                    "total_engagement": 0,
+                    "followers": profile.get("followers_count", 0) or 0,
+                    "score": analysis_data.get("overall_score", 0),
+                    "sample_tweet": "",
+                    "sample_tweets": [],
+                    "discovered_at": _dt.datetime.now(_ZI("Europe/Istanbul")).isoformat(),
+                    "dismissed": False,
+                    "discovery_strategy": "manual_analysis",
+                    "analysis": analysis_data,
+                    "profile": profile,
+                })
+
+            save_suggested_accounts(accounts)
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Account analysis error for @%s", username)
+        raise HTTPException(500, f"Hesap analiz hatası: {str(e)}")
+
+
+@router.post("/smart-discover")
+def smart_discover(req: SmartDiscoverRequest):
+    """Çoklu strateji ile akıllı hesap keşfi."""
+    try:
+        from backend.account_discoverer import discover_accounts_smart
+
+        result = discover_accounts_smart(
+            strategies=req.strategies,
+            max_per_strategy=req.max_per_strategy,
+        )
+
+        # Reload suggested accounts for response
+        from backend.modules.style_manager import load_suggested_accounts
+        accounts = load_suggested_accounts()
+        active = [a for a in accounts if not a.get("dismissed")]
+
+        return {
+            "success": True,
+            "accounts": active,
+            "total": len(active),
+            "discovery_stats": result,
+        }
+
+    except Exception as e:
+        logger.exception("Smart discover error")
+        raise HTTPException(500, f"Akıllı keşif hatası: {str(e)}")
+
+
+@router.post("/batch-analyze")
+def batch_analyze_accounts(req: BatchAnalyzeRequest):
+    """Birden fazla hesabı toplu analiz et (max 5)."""
+    usernames = [u.strip().lstrip("@") for u in req.usernames if u.strip()]
+    if not usernames:
+        raise HTTPException(400, "En az bir kullanıcı adı gerekli")
+    if len(usernames) > 5:
+        raise HTTPException(400, "Toplu analizde max 5 hesap")
+
+    results = []
+    for username in usernames:
+        try:
+            from backend.account_discoverer import analyze_single_account
+            result = analyze_single_account(username, tweet_count=15)
+            if result:
+                # Save analysis
+                if result.get("analysis"):
+                    from backend.modules.style_manager import load_suggested_accounts, save_suggested_accounts
+                    import datetime as _dt
+                    from zoneinfo import ZoneInfo as _ZI
+
+                    accounts = load_suggested_accounts()
+                    existing = None
+                    for a in accounts:
+                        if a.get("username", "").lower() == username.lower():
+                            existing = a
+                            break
+
+                    if existing:
+                        existing["analysis"] = result["analysis"]
+                        existing["profile"] = result.get("profile") or {}
+                        if result["analysis"].get("overall_score"):
+                            existing["score"] = result["analysis"]["overall_score"]
+                    else:
+                        profile = result.get("profile") or {}
+                        accounts.append({
+                            "username": username.lower(),
+                            "appearances": 0,
+                            "avg_engagement": 0,
+                            "total_engagement": 0,
+                            "followers": (profile.get("followers_count") or 0),
+                            "score": result["analysis"].get("overall_score", 0),
+                            "sample_tweet": "",
+                            "sample_tweets": [],
+                            "discovered_at": _dt.datetime.now(_ZI("Europe/Istanbul")).isoformat(),
+                            "dismissed": False,
+                            "discovery_strategy": "batch_analysis",
+                            "analysis": result["analysis"],
+                            "profile": profile,
+                        })
+
+                    save_suggested_accounts(accounts)
+
+                results.append({"username": username, "success": True, "data": result})
+            else:
+                results.append({"username": username, "success": False, "error": "Veri bulunamadı"})
+        except Exception as e:
+            results.append({"username": username, "success": False, "error": str(e)})
+
+    return {"results": results, "analyzed": len([r for r in results if r["success"]])}

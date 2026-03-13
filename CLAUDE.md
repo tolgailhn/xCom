@@ -254,6 +254,8 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 | 2026-03-13 | Değer katma zorunluluğu | Her tweet'te kişisel görüş/analiz ZORUNLU. Sadece haber aktarımı YASAK |
 | 2026-03-13 | Dinamik sorgu üretimi (haftalık) | 11 statik sorgu yerine AI ile trend-uyumlu yeni sorgular ekleniyor |
 | 2026-03-13 | Breaking news algılama | 2 saat içinde 3+ hesaptan aynı konu → Telegram breaking bildirimi |
+| 2026-03-13 | Kapsamlı hesap keşfi sistemi | 4 strateji (cache/grok/trend/interaction) + AI analiz + zengin UI |
+| 2026-03-13 | `search-accounts` bug fix | `get_twikit_client` import hatası düzeltildi (fonksiyon yoktu) |
 
 ---
 
@@ -438,6 +440,22 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 ---
 
 ## Değişiklik Günlüğü
+
+### 2026-03-13 (Kapsamlı Hesap Keşfi Sistemi)
+- **feat**: `account_discoverer.py` — TAM YENİDEN YAZIM: 4 keşif stratejisi (cache_based, grok_search, trend_based, interaction_based)
+- **feat**: `account_discoverer.py` — `analyze_account_with_ai()`: MiniMax/Claude/OpenAI ile hesap içerik analizi (content_relevance, quality, bot_probability, category, topics)
+- **feat**: `account_discoverer.py` — `discover_accounts_smart()`: Çoklu strateji ile toplu keşif
+- **feat**: `account_discoverer.py` — `analyze_single_account()`: Twikit tweet çekme + AI değerlendirme
+- **feat**: `api/discovery.py` — 3 yeni endpoint: `POST /analyze-account`, `POST /smart-discover`, `POST /batch-analyze`
+- **fix**: `api/discovery.py` — `search-accounts` endpoint'i kırık import düzeltildi (`get_twikit_client` fonksiyonu yoktu)
+- **fix**: `api/discovery.py` — `_get_twikit_client()` helper fonksiyonu eklendi (tüm hesap endpoint'leri için)
+- **feat**: `api.ts` — 3 yeni API fonksiyonu: `analyzeAccount()`, `smartDiscover()`, `batchAnalyzeAccounts()`
+- **feat**: `TabSuggestedAccounts.tsx` — TAM YENİDEN YAZIM: Strateji seçici, AI analiz paneli, kategori filtreleme, ScoreBar component, genişletilebilir kartlar
+- **feat**: `TabSuggestedAccounts.tsx` — Arama sonuçlarında "AI Analiz" butonu (hesabı analiz edip skor gösterir)
+- **feat**: `TabSuggestedAccounts.tsx` — Toplu analiz: seçilen hesapları tek tıkla analiz et
+- **feat**: `TabSuggestedAccounts.tsx` — Kategori pill filtreleri (Araştırmacı, Geliştirici, Gazeteci, vb.)
+- **fix**: `scheduler_worker.py` — `_discover_new_accounts()` artık `discover_accounts_smart()` kullanıyor (3 strateji)
+- **fix**: `GenerationPanel.tsx` — Sonsuz re-render döngüsü düzeltildi (`setEditedText` dependency kaldırıldı)
 
 ### 2026-03-13 (Türkçe Özet Tutarlılığı)
 - **fix**: `auto_topic_scanner.py` — Auto-scan tweetlerine de `summary_tr` (Türkçe özet) üretimi eklendi (daha önce hiç üretilmiyordu)

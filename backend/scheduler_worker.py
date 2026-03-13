@@ -350,10 +350,13 @@ def _analyze_trends():
 
 
 def _discover_new_accounts():
-    """Faz 9: Her 6 saatte yeni hesap keşfi — dynamic account discovery."""
+    """Her 6 saatte akıllı hesap keşfi — çoklu strateji ile."""
     try:
-        from backend.account_discoverer import discover_accounts
-        discover_accounts()
+        from backend.account_discoverer import discover_accounts_smart
+        discover_accounts_smart(
+            strategies=["cache_based", "trend_based", "interaction_based"],
+            max_per_strategy=5,
+        )
         _track_run("account_discoverer")
     except Exception:
         logger.exception("Account discovery error")

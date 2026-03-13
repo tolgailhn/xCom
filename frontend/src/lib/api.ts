@@ -1081,6 +1081,28 @@ export function searchAccounts(query: string, maxResults: number = 10) {
   });
 }
 
+// Kapsamlı Hesap Keşfi
+export function analyzeAccount(username: string, tweetCount: number = 20) {
+  return apiFetch("/api/discovery/analyze-account", {
+    method: "POST",
+    body: JSON.stringify({ username, tweet_count: tweetCount }),
+  });
+}
+
+export function smartDiscover(strategies: string[] = ["cache_based", "grok_search", "trend_based", "interaction_based"], maxPerStrategy: number = 5) {
+  return apiFetch("/api/discovery/smart-discover", {
+    method: "POST",
+    body: JSON.stringify({ strategies, max_per_strategy: maxPerStrategy }),
+  });
+}
+
+export function batchAnalyzeAccounts(usernames: string[]) {
+  return apiFetch("/api/discovery/batch-analyze", {
+    method: "POST",
+    body: JSON.stringify({ usernames }),
+  });
+}
+
 // ── Shared Discovery Tweets ──────────────────────────
 
 export function markTweetShared(tweetId: string): Promise<{ success: boolean; shared_tweets: string[] }> {
