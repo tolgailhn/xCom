@@ -71,13 +71,15 @@ def extract_tweet_id(url_or_id: str) -> str | None:
 # SEARCH FUNCTIONS
 # ========================================================================
 
-def web_search(query: str, max_results: int = 8, timelimit: str = "w") -> list[dict]:
-    """Search the web using DuckDuckGo with time filter and automatic fallback.
+def web_search(query: str, max_results: int = 8, timelimit: str = "w",
+               progress_callback=None) -> list[dict]:
+    """Search the web using DuckDuckGo with time filter, retry, and automatic fallback.
 
     Args:
         query: Search query
         max_results: Maximum results to return
         timelimit: Time filter - "d" (day), "w" (week), "m" (month), None (all time)
+        progress_callback: Optional callback for progress/error messages
     """
     if not query or not query.strip():
         return []
@@ -92,6 +94,20 @@ def web_search(query: str, max_results: int = 8, timelimit: str = "w") -> list[d
                 })
     except Exception as e:
         print(f"[DDG] Web search error for '{query[:40]}': {e}")
+        # Retry once after 2s for transient errors (DecodeError, network issues)
+        if progress_callback:
+            progress_callback(f"⚠️ DuckDuckGo arama hatası, yeniden deneniyor...")
+        time.sleep(2)
+        try:
+            with DDGS() as ddgs:
+                for r in ddgs.text(query, max_results=max_results, timelimit=timelimit):
+                    results.append({
+                        "title": r.get("title", ""),
+                        "url": r.get("href", ""),
+                        "body": r.get("body", ""),
+                    })
+        except Exception as e2:
+            print(f"[DDG] Web search retry also failed for '{query[:40]}': {e2}")
     # Fallback chain: if time-limited search returned nothing, broaden the time range
     if not results and timelimit:
         fallback_chain = {"d": "w", "w": "m", "m": None}
@@ -110,13 +126,15 @@ def web_search(query: str, max_results: int = 8, timelimit: str = "w") -> list[d
     return results
 
 
-def web_search_news(query: str, max_results: int = 6, timelimit: str = "w") -> list[dict]:
-    """Search recent news with time filter and automatic fallback chain.
+def web_search_news(query: str, max_results: int = 6, timelimit: str = "w",
+                    progress_callback=None) -> list[dict]:
+    """Search recent news with time filter, retry, and automatic fallback chain.
 
     Args:
         query: Search query
         max_results: Maximum results to return
         timelimit: Time filter - "d" (day), "w" (week), "m" (month), None (all time)
+        progress_callback: Optional callback for progress/error messages
     """
     if not query or not query.strip():
         return []
@@ -140,28 +158,45 @@ def web_search_news(query: str, max_results: int = 6, timelimit: str = "w") -> l
                     })
         except Exception as e:
             print(f"[DDG] News search error for '{query[:40]}' (timelimit={tl}): {e}")
+            # Retry once for transient errors
+            time.sleep(2)
+            try:
+                with DDGS() as ddgs:
+                    for r in ddgs.news(query, max_results=max_results, timelimit=tl):
+                        results.append({
+                            "title": r.get("title", ""),
+                            "url": r.get("url", ""),
+                            "body": r.get("body", ""),
+                            "source": r.get("source", ""),
+                        })
+            except Exception as e2:
+                print(f"[DDG] News search retry also failed for '{query[:40]}' (timelimit={tl}): {e2}")
         if results:
             break
         time.sleep(SEARCH_DELAY)
     return results
 
 
-def _parallel_web_search(queries: list[tuple[str, int, str]]) -> list[list[dict]]:
+def _parallel_web_search(queries: list[tuple[str, int, str]],
+                         progress_callback=None) -> list[list[dict]]:
     """Run multiple web searches in parallel using ThreadPoolExecutor.
 
     Args:
         queries: List of (query, max_results, timelimit) tuples
+        progress_callback: Optional callback for progress/error messages
 
     Returns:
         List of result lists, in the same order as input queries.
     """
     results = [[] for _ in range(len(queries))]
+    fail_count = 0
 
     def _do_search(idx_query_args):
         idx, (query, max_results, timelimit) = idx_query_args
         # Small stagger to avoid burst requests
         time.sleep(idx * 0.15)
-        return idx, web_search(query, max_results=max_results, timelimit=timelimit)
+        return idx, web_search(query, max_results=max_results, timelimit=timelimit,
+                               progress_callback=progress_callback)
 
     with ThreadPoolExecutor(max_workers=4) as executor:
         futures = [executor.submit(_do_search, (i, q)) for i, q in enumerate(queries)]
@@ -169,26 +204,35 @@ def _parallel_web_search(queries: list[tuple[str, int, str]]) -> list[list[dict]
             try:
                 idx, res = future.result()
                 results[idx] = res
+                if not res:
+                    fail_count += 1
             except Exception as e:
                 print(f"[DDG] Parallel search error: {e}")
+                fail_count += 1
+    if fail_count == len(queries) and progress_callback:
+        progress_callback("⚠️ Tüm DuckDuckGo web aramaları başarısız oldu.")
     return results
 
 
-def _parallel_news_search(queries: list[tuple[str, int, str]]) -> list[list[dict]]:
+def _parallel_news_search(queries: list[tuple[str, int, str]],
+                          progress_callback=None) -> list[list[dict]]:
     """Run multiple news searches in parallel using ThreadPoolExecutor.
 
     Args:
         queries: List of (query, max_results, timelimit) tuples
+        progress_callback: Optional callback for progress/error messages
 
     Returns:
         List of result lists, in the same order as input queries.
     """
     results = [[] for _ in range(len(queries))]
+    fail_count = 0
 
     def _do_search(idx_query_args):
         idx, (query, max_results, timelimit) = idx_query_args
         time.sleep(idx * 0.15)
-        return idx, web_search_news(query, max_results=max_results, timelimit=timelimit)
+        return idx, web_search_news(query, max_results=max_results, timelimit=timelimit,
+                                    progress_callback=progress_callback)
 
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = [executor.submit(_do_search, (i, q)) for i, q in enumerate(queries)]
@@ -196,8 +240,13 @@ def _parallel_news_search(queries: list[tuple[str, int, str]]) -> list[list[dict
             try:
                 idx, res = future.result()
                 results[idx] = res
+                if not res:
+                    fail_count += 1
             except Exception as e:
                 print(f"[DDG] Parallel news search error: {e}")
+                fail_count += 1
+    if fail_count == len(queries) and progress_callback:
+        progress_callback("⚠️ Tüm DuckDuckGo haber aramaları başarısız oldu.")
     return results
 
 
@@ -1706,7 +1755,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                     query_types.append("reddit")
 
             # Execute all searches in parallel
-            all_results = _parallel_web_search(parallel_queries)
+            all_results = _parallel_web_search(parallel_queries, progress_callback=progress_callback)
 
             for i, results in enumerate(all_results):
                 qtype = query_types[i]
@@ -1765,7 +1814,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
 
             # Parallel news search with built-in fallback chain (d → w → m)
             news_queries = [(q, 5, "d") for q in search_queries.get("news", [])[:2]]
-            all_news = _parallel_news_search(news_queries)
+            all_news = _parallel_news_search(news_queries, progress_callback=progress_callback)
 
             for news_list in all_news:
                 for n in news_list:
@@ -1777,6 +1826,11 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                             "body": n["body"],
                             "source": n.get("source", ""),
                         })
+
+    # Check if DDG searches returned any results at all
+    if not result.web_results and not result.reddit_results and progress_callback:
+        if any(s in research_sources for s in ["web", "reddit", "news"]):
+            progress_callback("⚠️ DuckDuckGo aramaları sonuç döndürmedi. Sonuçlar sınırlı olabilir.")
 
     # === STEP 6: DEEP FETCH — parallel article fetching ===
     if any(s in research_sources for s in ["web", "reddit", "news"]):
@@ -1931,7 +1985,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
 
                 # Run refinement searches in parallel
                 search_tuples = [(q, 5, "w") for q in gap_queries[:3]]
-                gap_search_results = _parallel_web_search(search_tuples)
+                gap_search_results = _parallel_web_search(search_tuples, progress_callback=progress_callback)
                 gap_results = [item for sublist in gap_search_results for item in sublist]
                 new_urls = _pick_best_urls(gap_results, max_urls=4)
                 if new_urls:
