@@ -144,6 +144,10 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [workflowIdx, setWorkflowIdx] = useState<number | null>(null);
 
+  // Tweet-level progressive disclosure
+  const [expandedTweet, setExpandedTweet] = useState<string | null>(null);
+  const [workflowTweet, setWorkflowTweet] = useState<string | null>(null);
+
   // Research & Generation per feed item (keyed by _key)
   const [researchData, setResearchData] = useState<Record<string, ResearchData>>({});
   const [researchingKey, setResearchingKey] = useState<string | null>(null);
@@ -424,6 +428,54 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
       const errText = `Hata: ${e instanceof Error ? e.message : "Bilinmeyen"}`;
       setGeneratedTweets(prev => ({ ...prev, [key]: { text: errText, score: 0 } }));
       setEditedTexts(prev => ({ ...prev, [key]: errText }));
+    } finally { setGeneratingKey(null); }
+  }, [researchData, tweetStyle, tweetLength, provider]);
+
+  const handleTweetResearch = useCallback(async (compositeKey: string, tweetText: string, tweetUrl: string, account: string, tweetId?: string) => {
+    setResearchingKey(compositeKey);
+    setResearchData(prev => ({ ...prev, [compositeKey]: { summary: "", key_points: [], sources: [], progress: "Arastirma baslatiliyor..." } }));
+    try {
+      let researchTopic = tweetText;
+      if (tweetUrl) {
+        try {
+          const extracted = await extractTweet(tweetUrl);
+          if (extracted?.full_thread_text) researchTopic = extracted.full_thread_text;
+          else if (extracted?.text) researchTopic = extracted.text;
+          if (extracted?.media_items?.length) setItemMedia(prev => ({ ...prev, [compositeKey]: [...(extracted.media_items || []), ...(extracted.thread_media || [])] }));
+          const allUrls = [...(extracted?.urls || []), ...(extracted?.thread_urls || [])];
+          if (allUrls.length) setItemUrls(prev => ({ ...prev, [compositeKey]: allUrls }));
+        } catch { /* use original text */ }
+      }
+      const result = await researchTopicStream(
+        { topic: researchTopic, engine: "default", tweet_id: tweetId || "", tweet_author: account || "" },
+        (progress: string) => setResearchData(prev => ({ ...prev, [compositeKey]: { ...prev[compositeKey], progress } })),
+      );
+      setResearchData(prev => ({ ...prev, [compositeKey]: { summary: result.summary, key_points: result.key_points, sources: result.sources, progress: "" } }));
+    } catch (e) {
+      setResearchData(prev => ({ ...prev, [compositeKey]: { ...prev[compositeKey], progress: `Hata: ${e instanceof Error ? e.message : "Bilinmeyen hata"}` } }));
+    } finally { setResearchingKey(null); }
+  }, []);
+
+  const handleTweetGenerate = useCallback(async (tw: ClusterTweet, compositeKey: string) => {
+    setGeneratingKey(compositeKey);
+    try {
+      const research = researchData[compositeKey];
+      const researchSummary = research?.summary ? `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}` : "";
+      const result = await generateQuoteTweet({
+        original_tweet: tw.text,
+        original_author: tw.account,
+        style: tweetStyle,
+        research_summary: researchSummary,
+        length_preference: tweetLength,
+        provider: provider || undefined,
+      });
+      const text = result.text || "";
+      setGeneratedTweets(prev => ({ ...prev, [compositeKey]: { text, score: result.score?.overall || 0, thread_parts: result.thread_parts } }));
+      setEditedTexts(prev => ({ ...prev, [compositeKey]: text }));
+    } catch (e) {
+      const errText = `Hata: ${e instanceof Error ? e.message : "Bilinmeyen"}`;
+      setGeneratedTweets(prev => ({ ...prev, [compositeKey]: { text: errText, score: 0 } }));
+      setEditedTexts(prev => ({ ...prev, [compositeKey]: errText }));
     } finally { setGeneratingKey(null); }
   }, [researchData, tweetStyle, tweetLength, provider]);
 
@@ -720,34 +772,124 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
                       </div>
                     )}
 
-                    {/* Related tweets (for suggestions & trends) */}
+                    {/* Related tweets (for suggestions & trends) — accordion pattern */}
                     {item.source !== "tweet" && tweets.length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-semibold text-[var(--text-secondary)]">Ilgili Tweetler</h4>
-                        {tweets.slice(0, 5).map((tw: ClusterTweet, i: number) => {
-                          const twUrl = tw.tweet_url
-                            || (tw.tweet_id ? `https://x.com/${tw.account}/status/${tw.tweet_id}` : "")
-                            || (tw.account ? `https://x.com/${tw.account}` : "");
-                          return (
-                          <div key={i}
-                            className="group flex items-start gap-2.5 text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2.5 border border-[var(--border)] hover:border-[var(--accent-blue)]/60 hover:bg-[var(--accent-blue)]/5 transition-all duration-200 cursor-pointer"
-                            onClick={() => { if (twUrl) window.open(twUrl, "_blank"); }}>
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--accent-blue)]/20 to-[var(--accent-purple)]/20 flex items-center justify-center text-[10px] font-bold text-[var(--accent-blue)] shrink-0">{tw.account.charAt(0).toUpperCase()}</div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <a href={`https://x.com/${tw.account}`} target="_blank" rel="noopener noreferrer" onClick={(e: React.MouseEvent) => e.stopPropagation()} className="font-semibold text-[var(--accent-blue)] hover:underline text-[11px]">@{tw.account}</a>
-                                {tw.engagement > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--accent-amber)]/10 text-[var(--accent-amber)] font-medium ml-auto shrink-0">{tw.engagement.toFixed(0)}</span>}
+                      <div>
+                        <div className="text-xs font-medium text-[var(--text-secondary)] mb-3">Ilgili Tweetler ({tweets.length})</div>
+                        <div className="space-y-2">
+                          {tweets.slice(0, 5).map((tw: ClusterTweet, i: number) => {
+                            const ck = `${key}::${i}`;
+                            const isTwExpanded = expandedTweet === ck;
+                            const isTwWorkflow = workflowTweet === ck;
+                            const twUrl = tw.tweet_url
+                              || (tw.tweet_id ? `https://x.com/${tw.account}/status/${tw.tweet_id}` : "")
+                              || (tw.account ? `https://x.com/${tw.account}` : "");
+
+                            return (
+                              <div key={i} className="rounded-xl bg-[var(--bg-primary)] border border-[var(--border)] overflow-hidden transition-all duration-300">
+                                {/* Level 1: Tweet summary (always visible) */}
+                                <button className="w-full text-left p-3 hover:bg-[var(--accent-blue)]/[0.03] transition-colors"
+                                  onClick={() => { setExpandedTweet(isTwExpanded ? null : ck); if (isTwExpanded) setWorkflowTweet(w => w === ck ? null : w); }}>
+                                  <div className="flex items-start gap-2.5">
+                                    <span className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--accent-blue)]/25 to-[var(--accent-purple)]/15 flex items-center justify-center text-[10px] font-bold text-[var(--accent-blue)] shrink-0">{tw.account.charAt(0).toUpperCase()}</span>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-[var(--accent-blue)] text-xs font-semibold">@{tw.account}</span>
+                                      </div>
+                                      {!isTwExpanded && (
+                                        <p className="text-xs text-[var(--text-secondary)] mt-0.5 line-clamp-2">{tw.text}</p>
+                                      )}
+                                    </div>
+                                    <div className="shrink-0 flex items-center gap-2">
+                                      {tw.engagement > 0 && <span className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--accent-green)]/15 text-[var(--accent-green)] font-bold tabular-nums">{formatNumber(tw.engagement)}</span>}
+                                      <span className="text-xs text-[var(--text-secondary)]" style={{ transform: isTwExpanded ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.2s" }}>&#9654;</span>
+                                    </div>
+                                  </div>
+                                </button>
+
+                                {/* Level 2: Expanded tweet + action buttons */}
+                                {isTwExpanded && (
+                                  <div className="px-3 pb-3 space-y-3 border-t border-[var(--border)]/30">
+                                    <div className="pt-2">
+                                      <p className="text-sm leading-relaxed text-[var(--text-primary)]">{tw.text}</p>
+                                    </div>
+
+                                    {/* Action buttons */}
+                                    <div className="flex flex-wrap gap-2 pt-2 border-t border-[var(--border)]/20">
+                                      <button onClick={() => handleTweetResearch(ck, tw.text, twUrl, tw.account, tw.tweet_id)}
+                                        disabled={researchingKey === ck}
+                                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300 disabled:opacity-50"
+                                        style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}>
+                                        {researchingKey === ck ? "Arastiriliyor..." : (researchData[ck]?.summary ? "Tekrar Arastir" : "Arastir")}
+                                      </button>
+                                      <button onClick={() => { setWorkflowTweet(isTwWorkflow ? null : ck); if (!researchData[ck]?.summary) handleTweetResearch(ck, tw.text, twUrl, tw.account, tw.tweet_id); }}
+                                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
+                                        style={{ background: "linear-gradient(135deg, var(--accent-green), var(--accent-blue))" }}>Tweet Uret</button>
+                                      {twUrl && (
+                                        <a href={twUrl} target="_blank" rel="noopener noreferrer"
+                                          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all inline-flex items-center"
+                                          onClick={(e: React.MouseEvent) => e.stopPropagation()}>X&apos;te Ac &rarr;</a>
+                                      )}
+                                    </div>
+
+                                    {/* Level 3: Workflow panel */}
+                                    {isTwWorkflow && (
+                                      <div className="space-y-3 pt-2">
+                                        <ResearchPanel
+                                          research={researchData[ck]}
+                                          isResearching={researchingKey === ck}
+                                          isExpanded={researchExpanded.has(ck) || researchExpanded.has("__all__")}
+                                          onToggleExpand={() => setResearchExpanded(prev => { const n = new Set(prev); n.has(ck) ? n.delete(ck) : n.add(ck); return n; })}
+                                        />
+
+                                        {researchData[ck]?.summary && (
+                                          <div className="space-y-3 pt-2 border-t border-[var(--border-primary)]/20">
+                                            <StyleFormatBar styles={styles} formats={formats}
+                                              selectedStyle={tweetStyle} setSelectedStyle={setTweetStyle}
+                                              selectedFormat={tweetLength} setSelectedFormat={setTweetLength}
+                                              selectedProvider={provider} setSelectedProvider={setProvider} compact />
+                                            <button onClick={() => handleTweetGenerate(tw, ck)} disabled={generatingKey === ck}
+                                              className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300 disabled:opacity-50"
+                                              style={{ background: "linear-gradient(135deg, var(--accent-green), var(--accent-blue))" }}>
+                                              {generatingKey === ck ? "Uretiliyor..." : "Tweet Uret"}
+                                            </button>
+                                          </div>
+                                        )}
+
+                                        <GenerationPanel
+                                          generated={generatedTweets[ck]}
+                                          editedText={editedTexts[ck] || generatedTweets[ck]?.text || ""}
+                                          setEditedText={(t: string) => setEditedTexts(prev => ({ ...prev, [ck]: t }))}
+                                          isGenerating={generatingKey === ck}
+                                          onGenerate={() => handleTweetGenerate(tw, ck)}
+                                          onPublish={async (text: string, parts?: string[]) => { try { await publishTweet({ text, thread_parts: parts || [] }); } catch { /* ignore */ } }}
+                                          onOpenInX={openInX}
+                                          onOpenQuote={twUrl ? () => window.open(`https://x.com/intent/tweet?url=${encodeURIComponent(twUrl)}`, "_blank") : undefined}
+                                          onCopy={copyToClipboard}
+                                          onSaveDraft={async (text: string) => { await addDraft({ text, topic: item.topic, style: tweetStyle }); }}
+                                          tweetUrl={twUrl}
+                                        />
+
+                                        {generatedTweets[ck] && <LinksBox links={itemUrls[ck] || []} />}
+                                        {generatedTweets[ck] && (
+                                          <MediaSection
+                                            mediaResults={mediaResults[ck]}
+                                            mediaLoading={mediaLoading === ck}
+                                            onFindMedia={() => handleFindMedia(editedTexts[ck] || generatedTweets[ck]?.text || tw.text, ck)}
+                                            infographicData={infographicData[ck]}
+                                            infographicLoading={infographicLoading === ck}
+                                            onGenerateInfographic={() => handleInfographic(ck, editedTexts[ck] || generatedTweets[ck]?.text || tw.text, researchData[ck]?.key_points || [])}
+                                            tweetMedia={itemMedia[ck]}
+                                          />
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
-                              <p className="text-[var(--text-primary)] line-clamp-2 mt-0.5 leading-relaxed">{tw.text}</p>
-                              {twUrl && (
-                                <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] text-[var(--accent-blue)] group-hover:underline font-medium opacity-70 group-hover:opacity-100 transition-opacity">
-                                  X&apos;te Gor &rarr;
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
 
