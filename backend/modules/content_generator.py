@@ -127,8 +127,10 @@ YAPMA:
 - resmi dil kullanma — "belirtmek gerekir", "önemle vurgulanmalıdır" YASAK
 - soru ile bitirme — "sizce?", "denediniz mi?" YASAK
 
-## SES KAYNAGI:
-Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
+## STİL + DNA DENGESİ:
+Bu stilin YAPI, TON ve YAKLAŞIM kurallarına MUTLAKA uy.
+DNA/havuzdan sadece KELİME TERCİHLERİNİ ve DOĞAL İFADELERİ al.
+Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
 """,
     },
     "profesyonel": {
@@ -171,8 +173,10 @@ YAPMA:
 - "-mış/-muş/-mış/-müş" duyum ekleri YASAK — "duyurulmuş", "çıkmış", "yapılmış" gibi dolaylı anlatım yapma. Haberi KENDİN araştırmış ve doğrulamış gibi anlat
 - "...olduğu belirtildi", "...olduğu öğrenildi" gibi gazete kalıpları YASAK
 
-## SES KAYNAGI:
-Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
+## STİL + DNA DENGESİ:
+Bu stilin YAPI, TON ve YAKLAŞIM kurallarına MUTLAKA uy.
+DNA/havuzdan sadece KELİME TERCİHLERİNİ ve DOĞAL İFADELERİ al.
+Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
 """,
     },
     "hook": {
@@ -217,8 +221,10 @@ YAPMA:
 - hep aynı kalıpla bitirme — "X yılında Y olacak" tekrarı YASAK
 - boş iddia yapma — söylediğini destekle
 
-## SES KAYNAGI:
-Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
+## STİL + DNA DENGESİ:
+Bu stilin YAPI, TON ve YAKLAŞIM kurallarına MUTLAKA uy.
+DNA/havuzdan sadece KELİME TERCİHLERİNİ ve DOĞAL İFADELERİ al.
+Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
 """,
     },
     "analitik": {
@@ -262,8 +268,10 @@ YAPMA:
 - akademik/resmi dil kullanma
 - soru ile bitirme YASAK
 
-## SES KAYNAGI:
-Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
+## STİL + DNA DENGESİ:
+Bu stilin YAPI, TON ve YAKLAŞIM kurallarına MUTLAKA uy.
+DNA/havuzdan sadece KELİME TERCİHLERİNİ ve DOĞAL İFADELERİ al.
+Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
 """,
     },
     "haber": {
@@ -312,8 +320,10 @@ YAPMA:
 - "-mış/-muş/-mış/-müş" duyum ekleri YASAK — "duyurulmuş", "çıkmış", "yapılmış" gibi dolaylı anlatım yapma. Haberi KENDİN araştırmış ve doğrulamış gibi anlat
 - "...olduğu belirtildi", "...olduğu öğrenildi" gibi gazete kalıpları YASAK
 
-## SES KAYNAGI:
-Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
+## STİL + DNA DENGESİ:
+Bu stilin YAPI, TON ve YAKLAŞIM kurallarına MUTLAKA uy.
+DNA/havuzdan sadece KELİME TERCİHLERİNİ ve DOĞAL İFADELERİ al.
+Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
 """,
     },
     "agresif": {
@@ -350,8 +360,10 @@ YAPMA:
 - hep aynı kalıpla bitirme — çeşitlen
 - soru ile bitirme YASAK
 
-## SES KAYNAGI:
-Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
+## STİL + DNA DENGESİ:
+Bu stilin YAPI, TON ve YAKLAŞIM kurallarına MUTLAKA uy.
+DNA/havuzdan sadece KELİME TERCİHLERİNİ ve DOĞAL İFADELERİ al.
+Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
 """,
     },
     "quote_tweet": {
@@ -409,8 +421,10 @@ YAPMA:
 - soru ile bitirme YASAK
 - klişe tahmin kalıpları YASAK
 
-## SES KAYNAGI:
-Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
+## STİL + DNA DENGESİ:
+Bu stilin YAPI, TON ve YAKLAŞIM kurallarına MUTLAKA uy.
+DNA/havuzdan sadece KELİME TERCİHLERİNİ ve DOĞAL İFADELERİ al.
+Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
 """,
     },
     "tolga": {
@@ -471,8 +485,10 @@ YAPMA:
 - "-mış/-muş/-mış/-müş" duyum ekleri YASAK — "duyurulmuş", "çıkmış", "yapılmış" gibi dolaylı anlatım yapma. Haberi KENDİN araştırmış ve doğrulamış gibi anlat
 - "...olduğu belirtildi", "...olduğu öğrenildi" gibi gazete kalıpları YASAK
 
-## SES KAYNAGI:
-Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
+## STİL + DNA DENGESİ:
+Bu stilin YAPI, TON ve YAKLAŞIM kurallarına MUTLAKA uy.
+DNA/havuzdan sadece KELİME TERCİHLERİNİ ve DOĞAL İFADELERİ al.
+Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
 """,
     },
     "tolga_news": {
@@ -542,8 +558,10 @@ AMAÇ: %50 haberin özü ve faydası, %30 pratik etki (SEN ne yapabilirsin), %20
 - "-mış/-muş/-mış/-müş" duyum ekleri YASAK — dolaylı anlatım yapma
 - "...olduğu belirtildi", "...olduğu öğrenildi" gibi gazete kalıpları YASAK
 
-## SES KAYNAGI:
-Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
+## STİL + DNA DENGESİ:
+Bu stilin YAPI, TON ve YAKLAŞIM kurallarına MUTLAKA uy.
+DNA/havuzdan sadece KELİME TERCİHLERİNİ ve DOĞAL İFADELERİ al.
+Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
 """,
     },
     "hurricane": {
@@ -610,8 +628,10 @@ kaçırma korkusu uyandır, otorite kurarak söyle
 - "dikkat çekici", "heyecan verici" gibi AI kalıpları YASAK
 - madde işareti dışında liste formatı kullanma — ve listeler de kısa olsun
 
-## SES KAYNAGI:
-Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
+## STİL + DNA DENGESİ:
+Bu stilin YAPI, TON ve YAKLAŞIM kurallarına MUTLAKA uy.
+DNA/havuzdan sadece KELİME TERCİHLERİNİ ve DOĞAL İFADELERİ al.
+Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
 """,
     },
     "mentalist": {
@@ -648,8 +668,10 @@ YAPMA:
 - soru ile bitirme YASAK
 - klişe psikoloji terimleri kullanma — doğal gözlemlerini paylaş
 
-## SES KAYNAGI:
-Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
+## STİL + DNA DENGESİ:
+Bu stilin YAPI, TON ve YAKLAŞIM kurallarına MUTLAKA uy.
+DNA/havuzdan sadece KELİME TERCİHLERİNİ ve DOĞAL İFADELERİ al.
+Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
 """,
     },
     "sigma": {
@@ -686,8 +708,10 @@ YAPMA:
 - nihilist olma — "hiçbir şeyin anlamı yok" tarzı YASAK
 - soru ile bitirme YASAK
 
-## SES KAYNAGI:
-Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
+## STİL + DNA DENGESİ:
+Bu stilin YAPI, TON ve YAKLAŞIM kurallarına MUTLAKA uy.
+DNA/havuzdan sadece KELİME TERCİHLERİNİ ve DOĞAL İFADELERİ al.
+Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
 """,
     },
     "doomer": {
@@ -724,8 +748,10 @@ YAPMA:
 - conspiracy theorist gibi yazma — verilerle konuş
 - soru ile bitirme YASAK
 
-## SES KAYNAGI:
-Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
+## STİL + DNA DENGESİ:
+Bu stilin YAPI, TON ve YAKLAŞIM kurallarına MUTLAKA uy.
+DNA/havuzdan sadece KELİME TERCİHLERİNİ ve DOĞAL İFADELERİ al.
+Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
 """,
     },
     "reply": {
@@ -768,8 +794,10 @@ YAPMA:
 - resmi/akademik dil kullanma — "belirtmek gerekir ki" YASAK
 - soru ile bitirme — "sizce?", "ne düşünüyorsunuz?" YASAK
 
-## SES KAYNAGI:
-Bu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.
+## STİL + DNA DENGESİ:
+Bu stilin YAPI, TON ve YAKLAŞIM kurallarına MUTLAKA uy.
+DNA/havuzdan sadece KELİME TERCİHLERİNİ ve DOĞAL İFADELERİ al.
+Stilin kuralları ile DNA çelişirse → STİL KAZANIR.
 """,
     },
 }
@@ -1918,11 +1946,11 @@ Eğitim verisi (DNA) yok. Günlük Türkçe tonu kullan: samimi, kısa cümleler
         # Stil prompt'u DNA'dan SONRA
         style_prompt = style_info['prompt']
 
-        # DNA yoksa: stil sadece yapı değil, SES de stilden gelsin
+        # DNA yoksa: tüm ses ve kelime tercihleri de stilden gelsin
         if not self.training_context:
             style_prompt = style_prompt.replace(
-                "## SES KAYNAGI:\nBu stil sadece YAPI ve FORMAT rehberi. Ses, ton, kelime seçimi, geçiş ifadeleri → eğitim verisindeki (DNA + havuz) tweet'lerden öğren. Stildeki yapı kurallarını DNA'daki sesle birleştir.",
-                "## SES KAYNAGI:\nEğitim verisi (DNA) yok. Bu stildeki TON, SES, KELİME SEÇİMİ ve YAKLAŞIM kurallarının hepsi senin sesin. Yapıyı DA sesi DE bu stilden ve örneklerden al."
+                "## STİL + DNA DENGESİ:\nBu stilin YAPI, TON ve YAKLAŞIM kurallarına MUTLAKA uy.\nDNA/havuzdan sadece KELİME TERCİHLERİNİ ve DOĞAL İFADELERİ al.\nStilin kuralları ile DNA çelişirse → STİL KAZANIR.",
+                "## STİL + DNA DENGESİ:\nEğitim verisi (DNA/havuz) yok. Bu stildeki TÜM kurallar — yapı, ton, yaklaşım, kelime seçimi — hepsi senin sesin.\nYapıyı DA sesi DE bu stilden ve örneklerden al."
             )
 
         prompt += f"""

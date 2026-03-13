@@ -1077,19 +1077,24 @@ def build_training_context(analyses: list[dict], max_examples: int = 50, topic: 
     return f"""{header}
 
 Bu veriler gerçek Twitter hesabının tweet'lerinden çıkarılmış KİŞİSEL YAZIM DNA'sıdır.
-Bu DNA TÜM yazım tarzlarının (samimi, haber, analitik, kişisel vb.) TEMELİDİR.
+Bu DNA senin SES KAYNAĞIN ve KELİME PALETİNDİR — ama yazının yapısını, tonunu ve yaklaşımını belirleyen SEÇİLEN YAZIM TARZIDIR.
+
+### ÖNCELİK HİYERARŞİSİ:
+- SEÇİLEN YAZIM TARZI → yapı, ton, yaklaşım, hook tipi, format belirler
+- BU DNA → kelime tercihleri, doğal ifadeler, imza kelimeleri, kişilik sesi sağlar
+- Çelişki durumunda → YAZIM TARZI KAZANIR (yapı, ton, format için)
 
 ### BU DNA'YI NASIL KULLANACAKSIN:
 
-1. TON VE KİŞİLİK: Aşağıdaki tweet örneklerindeki kişiliği hisset — samimiyeti, enerjiyi, ironiyi.
-   Bu kişinin RUHUNU yakala, ama KENDİ cümlelerini kur.
+1. KELİME TERCİHLERİ VE DOĞAL SES: Aşağıdaki tweet örneklerindeki kişiliği hisset.
+   KELİME SEÇİMİNİ ve DOĞAL İFADELERİ buradan al. Ama YAPI ve TON → seçilen yazım tarzından gelir.
 
 2. İMZA KELİMELERİ: Verilen kelimeler sana bir PALET sunuyor, hepsini aynı anda kullanma.
    Her tweet için listeden sadece 2-3 tanesini DOĞAL şekilde yerleştir.
    Bazen hiç imza kelimesi kullanmadan da yazabilirsin — doğallık her şeyden önemli.
 
-3. HOOK (AÇILIŞ): Örneklerdeki hook'ların TARZINI model al — kişisel anekdot, şaşırtıcı bilgi,
-   paradoks, kuru gözlem gibi YAKLAŞIMLARI kullan. Ama her seferinde KENDİ ORİJİNAL açılışını yaz.
+3. HOOK (AÇILIŞ): Yazım tarzının belirlediği hook tipini kullan.
+   DNA'daki örnekleri SADECE ilham kaynağı olarak gör, ama hook YAPISI → seçilen tarzdan gelir.
    Aynı hook yapısını üst üste kullanma.
 
 4. GEÇİŞ VE KAPANIŞ: Her tweet'te FARKLI geçiş tarzı ve kapanış kullan.

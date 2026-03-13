@@ -250,7 +250,7 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 | 2026-03-13 | Dismiss localStorage kalıcılığı | Sayfa yenilenince dismiss edilen öğeler geri gelmez |
 | 2026-03-13 | Duplicate kod temizliği (5 dosya) | timeAgo, gauge, formatNumber → shared components/discovery |
 | 2026-03-13 | `_enforce_lowercase()` post-processing | Tüm tweet üretimlerinde küçük harf zorlaması — prompt'lara güvenmek yetersizdi |
-| 2026-03-13 | Stil öncelik hiyerarşisi düzeltildi | DNA önceliği → Stil önceliği. Stil kuralları (yapı, ton, yaklaşım) DNA'dan önce gelir |
+| 2026-03-13 | Stil öncelik hiyerarşisi düzeltildi | DNA önceliği → Stil önceliği. Stil kuralları (yapı, ton, yaklaşım) DNA'dan önce gelir. 14 stildeki SES KAYNAGI + build_training_context DNA tanımı + fallback metni güncellendi |
 | 2026-03-13 | Değer katma zorunluluğu | Her tweet'te kişisel görüş/analiz ZORUNLU. Sadece haber aktarımı YASAK |
 | 2026-03-13 | Dinamik sorgu üretimi (haftalık) | 11 statik sorgu yerine AI ile trend-uyumlu yeni sorgular ekleniyor |
 | 2026-03-13 | Breaking news algılama | 2 saat içinde 3+ hesaptan aynı konu → Telegram breaking bildirimi |
@@ -452,6 +452,9 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 - **feat**: `trend_analyzer.py` — Breaking news algılama: 2 saat içinde 3+ hesaptan aynı konu → is_breaking flag
 - **feat**: `trend_analyzer.py` — `_notify_breaking()` — Telegram breaking news bildirimi
 - **feat**: `scheduler_worker.py` — `dynamic_query_generator` job eklendi (7 günde 1)
+- **fix**: `content_generator.py` — 14 stildeki `SES KAYNAGI` bloğu → `STİL + DNA DENGESİ` olarak güncellendi (stil > DNA tutarlılığı)
+- **fix**: `tweet_analyzer.py` — `build_training_context()` DNA tanım metni güncellendi: DNA artık "tüm tarzların temeli" değil, "ses kaynağı ve kelime paleti"
+- **fix**: `content_generator.py` — DNA yokken fallback metni yeni hiyerarşiye uyumlu hale getirildi
 
 ### 2026-03-13 (Keşif Sayfası Büyük Refaktör)
 - **remove**: `TabSmartSuggestions.tsx` — Silindi (TabAIOnerileri superset, duplicate)
