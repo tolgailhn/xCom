@@ -312,8 +312,8 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
     all_tweets = []
     tweet_meta = []  # Keep track of source info
     skipped_spam = 0
-    for trend in trends[:15]:  # Max 15 trends
-        for tw in trend.get("top_tweets", [])[:5]:
+    for trend in trends[:25]:  # Max 25 trends (daha fazla küme için)
+        for tw in trend.get("top_tweets", [])[:7]:
             text = (tw.get("text") or "")[:500].strip()  # 500 chars for better semantic understanding
             if not text or text in [t["text"] for t in tweet_meta]:
                 continue
@@ -351,16 +351,18 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
         "Bu tweet'leri SEMANTIK BENZERLIGE göre grupla.\n"
         "Her grup TEK BİR olay/duyuru/ürün/tartışma hakkında olmalı.\n"
         "AYNI KONU hakkında farklı kişilerin yazdığı tweetleri AYNI GRUBA koy.\n\n"
+        "HEDEF: 10-15 FARKLI KÜME oluştur. Mümkün olduğunca FAZLA farklı konu bul.\n"
+        "Tek tweet'lik konuları bile dahil et — her konu değerli.\n\n"
         "KURALLAR:\n"
         "1. SEMANTIK ANALIZ YAP — sadece keyword eşleşmesine bakma, anlam benzerliğine bak\n"
         "2. Aynı ürün/olay/duyuru hakkındaki tweetleri MUTLAKA birleştir (ör: 'GPT-5 launched', 'OpenAI releases GPT-5', 'New GPT model' → HEPSİ AYNI GRUP)\n"
         "3. Her konu başlığı EN AZ 3 kelime olmalı ve spesifik bir olay/ürün/duyuru içermeli\n"
         "4. GENELLEMELERDEN KAÇIN — 'AI gelişmeleri' değil, 'Google Gemini 2.5 Flash Çıkışı' gibi spesifik ol\n"
         "5. Birbirine BENZEMEYEN tweet'leri aynı gruba KOYMA\n"
-        "6. TEK tweet grubu YAPMA — eğer bir tweet hiçbir gruba uymuyorsa, onu dahil ETME\n"
-        "7. topic_title_tr ZORUNLU — Türkçe başlık MUTLAKA yaz\n"
-        "8. description_tr ZORUNLU — 'Bu konu neden önemli?' 1-2 cümle Türkçe açıklama yaz\n"
-        "9. Engagement yüksek olan grupları (toplam ❤️) daha yüksek engagement_potential ver\n\n"
+        "6. topic_title_tr ZORUNLU — Türkçe başlık MUTLAKA yaz\n"
+        "7. description_tr ZORUNLU — 'Bu konu neden önemli?' 1-2 cümle Türkçe açıklama yaz\n"
+        "8. Engagement yüksek olan grupları (toplam ❤️) daha yüksek engagement_potential ver\n"
+        "9. MINIMUM 10 küme üret — az üretme, her farklı konuyu ayrı küme yap\n\n"
         f"Tweet'ler:\n{tweets_text}\n\n"
         "SADECE JSON array döndür, başka bir şey yazma:\n"
         '[{"topic_title": "specific English topic title (min 3 words)", '
@@ -405,7 +407,7 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
             payload = {
                 "model": models[provider],
                 "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 2000,
+                "max_tokens": 3500,
                 "temperature": 0.3,
             }
             data = _json.dumps(payload).encode("utf-8")
@@ -427,7 +429,7 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
             }
             payload = {
                 "model": "claude-sonnet-4-20250514",
-                "max_tokens": 2000,
+                "max_tokens": 3500,
                 "messages": [{"role": "user", "content": prompt}],
             }
             data = _json.dumps(payload).encode("utf-8")
