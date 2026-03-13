@@ -290,6 +290,15 @@ def _generate_auto_replies():
         logger.exception("Auto-reply generator error")
 
 
+def _publish_ready_auto_replies():
+    """Auto-reply twikit publisher — hazır taslakları cookie ile gönderir."""
+    try:
+        from backend.auto_reply_worker import publish_ready_drafts
+        publish_ready_drafts()
+    except Exception:
+        logger.exception("Auto-reply twikit publisher error")
+
+
 def _check_self_replies():
     """Self-reply worker — her 15 dakikada kendi tweetlerine self-reply atar."""
     try:
@@ -586,6 +595,13 @@ def start_scheduler():
             "interval",
             minutes=5,
             id="auto_reply_generator",
+            replace_existing=True,
+        )
+        scheduler.add_job(
+            _publish_ready_auto_replies,
+            "interval",
+            minutes=7,
+            id="auto_reply_twikit_publisher",
             replace_existing=True,
         )
         scheduler.add_job(

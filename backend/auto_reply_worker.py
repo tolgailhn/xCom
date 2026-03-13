@@ -372,9 +372,12 @@ def generate_and_reply():
         return
 
     # ── PUBLISH MODE ROUTING ────────────────────────────────────
+    # draft + twikit modları: her zaman taslak üret.
+    # Twikit gönderimi ayrı fonksiyonda (publish_ready_drafts).
+    # api modu: üret + hemen gönder (eski davranış).
 
-    if publish_mode == "draft":
-        # Sadece üret, paylaşma
+    if publish_mode in ("draft", "twikit"):
+        # Taslak olarak kaydet (twikit modunda ayrı adımda gönderilecek)
         update_auto_reply_queue_entry(tweet_id, {
             "status": "done",
             "reply_text": reply_text,
@@ -391,77 +394,14 @@ def generate_and_reply():
             "retweet_count": candidate.get("retweet_count", 0),
         })
         logger.info(
-            "Auto-reply generator: DRAFT for @%s tweet %s — ready for manual posting",
+            "Auto-reply generator: DRAFT for @%s tweet %s — ready%s",
             account, tweet_id,
+            " (twikit auto-publish)" if publish_mode == "twikit" else "",
         )
         _send_telegram_auto_reply(
             account, tweet_text, reply_text, tweet_id,
             candidate.get("engagement_score", 0),
         )
-        return
-
-    elif publish_mode == "twikit":
-        # İnsan-benzeri rastgele bekleme (30-90 saniye)
-        import random
-        delay = random.randint(30, 90)
-        logger.info("Auto-reply generator: %ds bekleniyor (insan-benzeri delay)", delay)
-        time.sleep(delay)
-
-        # Twikit (cookie) ile reply gönder
-        result = _publish_via_twikit(
-            text=reply_text,
-            tweet_id=tweet_id,
-            account=account,
-        )
-
-        if result.get("success"):
-            update_auto_reply_queue_entry(tweet_id, {
-                "status": "done",
-                "reply_text": reply_text,
-                "processed_at": now.isoformat(),
-            })
-            add_auto_reply_log({
-                "account": account,
-                "tweet_id": tweet_id,
-                "tweet_text": tweet_text,
-                "reply_text": reply_text,
-                "reply_tweet_id": result.get("tweet_id", ""),
-                "reply_url": result.get("url", ""),
-                "status": "published",
-                "publish_type": "twikit_reply",
-                "engagement_score": candidate.get("engagement_score", 0),
-                "like_count": candidate.get("like_count", 0),
-                "retweet_count": candidate.get("retweet_count", 0),
-            })
-            logger.info(
-                "Auto-reply generator: TWIKIT REPLY to @%s tweet %s — %s",
-                account, tweet_id, result.get("url", ""),
-            )
-            _send_telegram_auto_reply(
-                account, tweet_text, reply_text, tweet_id,
-                candidate.get("engagement_score", 0),
-            )
-        else:
-            # Başarısız — sadece logla, atla (fallback yok)
-            update_auto_reply_queue_entry(tweet_id, {
-                "status": "failed",
-                "processed_at": now.isoformat(),
-            })
-            add_auto_reply_log({
-                "account": account,
-                "tweet_id": tweet_id,
-                "tweet_text": tweet_text,
-                "reply_text": reply_text,
-                "status": "publish_failed",
-                "error": result.get("error", "Unknown error"),
-                "engagement_score": candidate.get("engagement_score", 0),
-                "like_count": candidate.get("like_count", 0),
-                "retweet_count": candidate.get("retweet_count", 0),
-            })
-            logger.warning(
-                "Auto-reply generator: TWIKIT FAILED for @%s tweet %s — %s",
-                account, tweet_id, result.get("error", ""),
-            )
         return
 
     elif publish_mode == "api":
@@ -514,15 +454,139 @@ def generate_and_reply():
             })
 
 
+# ── PHASE 3: TWIKIT AUTO-PUBLISHER ───────────────────────────
+
+def publish_ready_drafts():
+    """
+    Twikit yayıncı — publish_mode "twikit" iken çalışır.
+
+    Log'daki status="ready" taslakları alır, rastgele birini seçer,
+    insan-benzeri bekleme sonrası Twikit ile reply gönderir.
+    Üretimden BAĞIMSIZ çalışır — sadece hazır taslakları gönderir.
+    """
+    import random
+
+    from backend.modules.style_manager import (
+        load_auto_reply_config,
+        load_auto_reply_logs,
+        update_auto_reply_log,
+    )
+
+    config = load_auto_reply_config()
+
+    if not config.get("enabled"):
+        return
+
+    publish_mode = config.get("publish_mode", "draft")
+    if publish_mode != "twikit":
+        return
+
+    now = datetime.datetime.now(TZ_TR)
+    hour = now.hour
+
+    # Çalışma saatleri kontrolü
+    work_start = config.get("work_hour_start", 9)
+    work_end = config.get("work_hour_end", 21)
+    if hour < work_start or hour >= work_end:
+        return
+
+    # Günlük limit kontrolü
+    logs = load_auto_reply_logs()
+    daily_max = config.get("daily_max_replies", 20)
+    today_str = now.strftime("%Y-%m-%d")
+    today_published = sum(
+        1 for log in logs
+        if log.get("status") == "published"
+        and log.get("created_at", "").startswith(today_str)
+    )
+    if today_published >= daily_max:
+        logger.info("Auto-reply publisher: Günlük limit doldu (%d/%d)", today_published, daily_max)
+        return
+
+    # Saatlik limit kontrolü
+    max_per_hour = config.get("max_replies_per_hour", 5)
+    one_hour_ago = now - datetime.timedelta(hours=1)
+    recent_published = 0
+    for log in logs:
+        try:
+            log_time = datetime.datetime.fromisoformat(log.get("created_at", ""))
+            if log_time.tzinfo is None:
+                log_time = log_time.replace(tzinfo=TZ_TR)
+            if log_time >= one_hour_ago and log.get("status") == "published":
+                recent_published += 1
+        except (ValueError, TypeError):
+            continue
+
+    if recent_published >= max_per_hour:
+        logger.info("Auto-reply publisher: Saatlik limit — %d/%d", recent_published, max_per_hour)
+        return
+
+    # Bugünkü "ready" taslakları bul
+    ready_drafts = [
+        log for log in logs
+        if log.get("status") == "ready"
+        and log.get("reply_text")
+        and log.get("tweet_id")
+        and log.get("created_at", "").startswith(today_str)
+    ]
+
+    if not ready_drafts:
+        return
+
+    # Rastgele bir taslak seç
+    draft = random.choice(ready_drafts)
+
+    logger.info(
+        "Auto-reply publisher: @%s tweet %s gönderiliyor (twikit)",
+        draft.get("account", "?"), draft.get("tweet_id", ""),
+    )
+
+    # İnsan-benzeri rastgele bekleme (30-90 saniye)
+    delay = random.randint(30, 90)
+    logger.info("Auto-reply publisher: %ds bekleniyor (insan-benzeri delay)", delay)
+    time.sleep(delay)
+
+    # Twikit ile gönder
+    result = _publish_via_twikit(
+        text=draft["reply_text"],
+        tweet_id=draft["tweet_id"],
+        account=draft.get("account", ""),
+    )
+
+    if result.get("success"):
+        update_auto_reply_log(draft["id"], {
+            "status": "published",
+            "publish_type": "twikit_reply",
+            "reply_tweet_id": result.get("tweet_id", ""),
+            "reply_url": result.get("url", ""),
+            "published_at": now.isoformat(),
+        })
+        logger.info(
+            "Auto-reply publisher: TWIKIT REPLY to @%s tweet %s — %s",
+            draft.get("account", "?"), draft["tweet_id"], result.get("url", ""),
+        )
+    else:
+        update_auto_reply_log(draft["id"], {
+            "status": "publish_failed",
+            "error": result.get("error", "Unknown error"),
+            "published_at": now.isoformat(),
+        })
+        logger.warning(
+            "Auto-reply publisher: TWIKIT FAILED for @%s tweet %s — %s",
+            draft.get("account", "?"), draft["tweet_id"], result.get("error", ""),
+        )
+
+
 # ── BACKWARD COMPAT WRAPPER ───────────────────────────────────
 
 def check_and_reply():
     """
-    Backward compat wrapper — hem tarar hem üretir.
+    Backward compat wrapper — hem tarar hem üretir hem yayınlar.
     Manuel trigger (/api/auto-reply/trigger) bu fonksiyonu çağırır.
     """
     scan_for_candidates()
     generate_and_reply()
+    publish_ready_drafts()
 
 
 # ── HELPER FUNCTIONS ──────────────────────────────────────────
