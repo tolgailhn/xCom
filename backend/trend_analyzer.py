@@ -494,6 +494,13 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
         logger.warning("Clustering: could not parse JSON from AI response (len=%d)", len(response_text))
         return
 
+    # Validate: filter out non-dict items (AI sometimes returns [1,2,3] instead of [{...}])
+    valid_clusters = [c for c in clusters if isinstance(c, dict)]
+    if not valid_clusters:
+        logger.warning("Clustering: parsed JSON but no valid dict items (sample: %s)", str(clusters[:3])[:200])
+        return
+    clusters = valid_clusters
+
     # Build clustered suggestions
     suggestions = []
     for cluster in clusters:
