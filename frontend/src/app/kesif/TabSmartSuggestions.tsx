@@ -63,6 +63,30 @@ function relativeTime(dateStr: string): string {
   return `${days}g`;
 }
 
+const MONTHS_TR = ["Oca", "Sub", "Mar", "Nis", "May", "Haz", "Tem", "Agu", "Eyl", "Eki", "Kas", "Ara"];
+
+function formatTweetDate(dateStr: string): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  const now = new Date();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  const time = `${hh}:${mm}`;
+  // Same day
+  if (d.toDateString() === now.toDateString()) return `Bugun ${time}`;
+  // Yesterday
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return `Dun ${time}`;
+  // Same year
+  const day = d.getDate();
+  const month = MONTHS_TR[d.getMonth()];
+  if (d.getFullYear() === now.getFullYear()) return `${day} ${month} ${time}`;
+  // Different year
+  return `${day} ${month} ${d.getFullYear()} ${time}`;
+}
+
 interface Suggestion {
   type: "trend" | "news";
   topic: string;
@@ -530,26 +554,30 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
                             || (tw.tweet_id ? `https://x.com/${tw.account}/status/${tw.tweet_id}` : "")
                             || (tw.account ? `https://x.com/search?q=from:${tw.account} ${encodeURIComponent(tw.text.slice(0, 40))}` : "")
                             || (tw.account ? `https://x.com/${tw.account}` : "");
+                          const dateDisplay = formatTweetDate(tw.created_at || "");
+                          const relDisplay = relativeTime(tw.created_at || "");
                           return (
-                          <div key={i} className="text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2.5 border border-[var(--border)] hover:border-[var(--accent-blue)]/40 transition-colors cursor-pointer"
-                            onClick={() => tweetUrl && window.open(tweetUrl, '_blank')}>
+                          <div key={i}
+                            className="group text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2.5 border border-[var(--border)] hover:border-[var(--accent-blue)]/60 hover:bg-[var(--accent-blue)]/5 transition-all duration-200 cursor-pointer"
+                            onClick={() => { const url = tweetUrl || `https://x.com/${tw.account}`; window.open(url, '_blank'); }}>
                             <div className="flex items-start gap-2.5">
                               <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--accent-blue)]/20 to-[var(--accent-purple)]/20 flex items-center justify-center text-[10px] font-bold text-[var(--accent-blue)] shrink-0">{tw.account.charAt(0).toUpperCase()}</div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5 flex-wrap">
                                   <a href={`https://x.com/${tw.account}`} target="_blank" rel="noopener noreferrer" onClick={(e: React.MouseEvent) => e.stopPropagation()} className="font-semibold text-[var(--accent-blue)] hover:underline text-[11px]">@{tw.account}</a>
-                                  {tw.created_at && relativeTime(tw.created_at) && (
-                                    <span className="text-[10px] text-[var(--text-tertiary)]">&middot; {relativeTime(tw.created_at)}</span>
-                                  )}
+                                  {dateDisplay ? (
+                                    <span className="text-[10px] text-[var(--text-tertiary)]" title={tw.created_at || ""}>
+                                      &middot; {dateDisplay}{relDisplay ? ` (${relDisplay})` : ""}
+                                    </span>
+                                  ) : relDisplay ? (
+                                    <span className="text-[10px] text-[var(--text-tertiary)]">&middot; {relDisplay}</span>
+                                  ) : null}
                                   {tw.engagement > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--accent-amber)]/10 text-[var(--accent-amber)] font-medium ml-auto shrink-0">{tw.engagement.toFixed(0)}</span>}
                                 </div>
                                 <p className="text-[var(--text-primary)] line-clamp-2 mt-0.5 leading-relaxed">{tw.text}</p>
-                                {tweetUrl && (
-                                  <a href={tweetUrl} target="_blank" rel="noopener noreferrer" onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                                    className="inline-flex items-center gap-1 mt-1.5 text-[11px] text-[var(--accent-blue)] hover:underline font-medium">
-                                    X{"'"}te Gor &rarr;
-                                  </a>
-                                )}
+                                <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] text-[var(--accent-blue)] group-hover:underline font-medium opacity-70 group-hover:opacity-100 transition-opacity">
+                                  X{"'"}te Gor &rarr;
+                                </span>
                               </div>
                             </div>
                           </div>
