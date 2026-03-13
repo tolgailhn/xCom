@@ -448,6 +448,16 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 
 ## Değişiklik Günlüğü
 
+### 2026-03-13 (Araştırma Kalitesi İyileştirme)
+- **feat**: `deep_research.py` — `ai_extract_topic()`: `verification_queries` eklendi — tweet'teki spesifik iddia/rakamlar için doğrulama sorguları (3 ek sorgu)
+- **feat**: `deep_research.py` — `ai_synthesize_research()`: "KARŞILAŞTIRMALI VERİLER" ve "ÇELİŞKİLER VE FARKLI KAYNAKLAR" bölümleri eklendi
+- **feat**: `deep_research.py` — Sentez max_tokens 4000→6000, araştırma bütçesi 20K→25K, makale limiti 4000→5000 chars, max 10→12 makale
+- **feat**: `deep_research.py` — `research_topic()`: verification sorgularını hem DuckDuckGo hem Grok modunda çalıştırıyor ([DOĞRULAMA] etiketi)
+- **feat**: `content_generator.py` — Research system prompt'a karşılaştırma ve çelişki yönetimi talimatları eklendi
+- **feat**: `content_generator.py` — `generate_long_content()` research context limiti 4000→6000 chars
+- **feat**: `content_generator.py` — Quote tweet sentez kullanım talimatları güncellendi (KARŞILAŞTIRMALI VERİLER, ÇELİŞKİLER)
+- **feat**: `api/generator.py` — Research stream endpoint: sources body 500→800 chars, max articles 8→10
+
 ### 2026-03-13 (Türkçe Özet Tutarsızlığı Fix)
 - **fix**: `discovery_worker.py` — `summary_tr` başlangıçta boş string atanıyor (preview değil), AI çevirisi sonra uygulanıyor
 - **fix**: `discovery_worker.py` — AI çevirisi başarısız olan tweet'lere İngilizce preview fallback eklendi

@@ -397,6 +397,7 @@ Yanıtını SADECE şu JSON formatında ver, başka hiçbir şey yazma:
     "general_queries": ["ne oldu/ne çıktı araması", "detay/özellik araması", "etki/analiz araması"],
     "technical_queries": ["teknik detay/benchmark araması", "karşılaştırma/rakip araması"],
     "impact_queries": ["pratik etki/kullanıcıya faydası araması", "sektör etkisi/büyük resim araması"],
+    "verification_queries": ["tweet'teki spesifik rakam/iddia doğrulama 1", "rakip/alternatif karşılaştırma doğrulama 2", "fiyat/tarih/versiyon doğrulama 3"],
     "reddit_queries": ["site:reddit.com spesifik tartışma 1", "site:reddit.com spesifik tartışma 2"],
     "news_queries": ["haber araması 1", "haber araması 2"]
 }}
@@ -407,6 +408,7 @@ KURALLAR:
 - general_queries: 3 farklı AÇI ile ara (ne oldu + detaylar + etki/analiz)
 - technical_queries: teknik detay + benchmark/karşılaştırma + önceki sürümle fark
 - impact_queries: 2 sorgu — pratik kullanıcı etkisi + sektörel/stratejik etki (ÖNEMLİ: "why it matters", "implications", "impact on" gibi sorgular)
+- verification_queries: Tweet'teki SPESİFİK rakamları/iddiaları doğrulamak için sorgular. Ör: tweet "%78.3 skor" diyorsa → "MRCR v2 benchmark score 2026" gibi. Tweet'te rakam/benchmark/fiyat/tarih varsa MUTLAKA doğrulama sorgusu yaz. 3 sorgu.
 - reddit_queries: Reddit'te kullanıcı deneyimleri ve tartışmaları bul
 - news_queries: son haberler ve duyurular
 - Sorgular KISA olsun (3-7 kelime ideal), spesifik olsun
@@ -414,7 +416,7 @@ KURALLAR:
 - impact_queries ÇOK ÖNEMLİ — haber analizi yazmak için "neden önemli" ve "kime etkisi var" bilgisi şart"""
 
     try:
-        raw = _call_ai(ai_client, provider, ai_model, prompt, max_tokens=500, temperature=0.1)
+        raw = _call_ai(ai_client, provider, ai_model, prompt, max_tokens=700, temperature=0.1)
         if not raw:
             return None
 
@@ -443,6 +445,7 @@ KURALLAR:
                 "general": data.get("general_queries", [])[:3],
                 "technical": data.get("technical_queries", [])[:2],
                 "impact": data.get("impact_queries", [])[:2],
+                "verification": data.get("verification_queries", [])[:3],
                 "reddit": data.get("reddit_queries", [])[:2],
                 "news": news_queries,
             }
@@ -1724,6 +1727,15 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                             all_urls.add(url)
                             r["title"] = f"[ETKİ] {r.get('title', '')}"
                             result.web_results.append(r)
+                # Verification queries — fact-check specific claims/numbers
+                for query in search_queries.get("verification", [])[:3]:
+                    grok_results = grok_search_web(query, max_results=4)
+                    for r in grok_results:
+                        url = r.get("url", "")
+                        if url and url not in all_urls:
+                            all_urls.add(url)
+                            r["title"] = f"[DOĞRULAMA] {r.get('title', '')}"
+                            result.web_results.append(r)
             except Exception as e:
                 print(f"Grok web search error, falling back to DuckDuckGo: {e}")
                 engine = "standard"  # Fallback
@@ -1748,6 +1760,11 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                 parallel_queries.append((query, 4, "m"))
                 query_types.append("impact")
 
+            # Verification queries — fact-check specific claims/numbers from tweet
+            for query in search_queries.get("verification", [])[:3]:
+                parallel_queries.append((query, 4, "m"))
+                query_types.append("verification")
+
             # Include Reddit queries in the same parallel batch
             if "reddit" in research_sources:
                 for query in search_queries.get("reddit", [])[:2]:
@@ -1767,6 +1784,9 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                             result.web_results.append(r)
                         elif qtype == "impact":
                             r["title"] = f"[ETKİ] {r['title']}"
+                            result.web_results.append(r)
+                        elif qtype == "verification":
+                            r["title"] = f"[DOĞRULAMA] {r['title']}"
                             result.web_results.append(r)
                         elif qtype == "reddit":
                             result.reddit_results.append(r)
@@ -2201,6 +2221,20 @@ Yanıtını şu formatta yaz:
 Sadece araştırmada AÇIKÇA bulunan bilgileri yaz. Çıkarım/tahmin YAPMA.
 Veri yoksa bu bölümü TAMAMEN ATLA — "bulunamadı" veya "doğrulanamadı" KESİNLİKLE YAZMA.)
 
+## KARŞILAŞTIRMALI VERİLER
+(Bu ürün/gelişme rakipleriyle veya önceki versiyonuyla nasıl kıyaslanıyor?
+- Benchmark tabloları, fiyat karşılaştırmaları, performans farkları — somut rakamlarla
+- Alternatif çözümlerle kıyaslama (varsa)
+- Önceki versiyon/model ile fark analizi
+Karşılaştırma verisi yoksa bu bölümü TAMAMEN ATLA.)
+
+## ÇELİŞKİLER VE FARKLI KAYNAKLAR
+(Kaynaklar arasında farklı rakamlar veya bilgiler varsa MUTLAKA belirt:
+- Ör: "Kaynak A: %76 skor — Kaynak B: %78.3 skor"
+- Hangi kaynak daha güvenilir görünüyor belirt
+- Tweet'teki iddia ile araştırma arasında fark varsa işaretle
+Çelişki yoksa bu bölümü TAMAMEN ATLA.)
+
 KURALLAR:
 - Orijinal tweet/thread'deki bilgilere SADIK KAL
 - Araştırmadan MÜMKÜN OLDUĞUNCA ÇOK somut bilgi aktar — yüzeysel özet YAPMA
@@ -2218,7 +2252,7 @@ KURALLAR:
 - Karşıt görüş veya çelişki ARAMA — sadece varsa ve önemliyse yaz"""
 
     try:
-        result = _call_ai(ai_client, provider, ai_model, prompt, max_tokens=4000, temperature=0.1)
+        result = _call_ai(ai_client, provider, ai_model, prompt, max_tokens=6000, temperature=0.1)
         if result:
             result = _clean_ai_tags(result)
         return result
@@ -2246,7 +2280,7 @@ def compile_research_summary(r: ResearchResult) -> str:
     """
     parts = []
     total_chars = 0
-    MAX_TOTAL = 20000  # 20K: 10 makale destekli, daha derin araştırma aktarımı
+    MAX_TOTAL = 25000  # 25K: 12 makale destekli, daha derin araştırma aktarımı
 
     # Section 1: Original tweet/thread — MOST IMPORTANT (always included)
     parts.append(f"# ANA KONU: {r.topic}")
@@ -2262,11 +2296,11 @@ def compile_research_summary(r: ResearchResult) -> str:
     total_chars = sum(len(p) for p in parts)
 
     # Section 2: DEEP ARTICLES — Key content from fetched pages
-    # Limit each article to 4000 chars, max 10 articles — derin bilgi aktarımı
+    # Limit each article to 5000 chars, max 12 articles — derin bilgi aktarımı
     if r.deep_articles:
         parts.append(f"\n## ARAŞTIRMA KAYNAKLARI ({len(r.deep_articles)} makale okundu):")
-        for i, article in enumerate(r.deep_articles[:10], 1):
-            content = article['content'][:4000]
+        for i, article in enumerate(r.deep_articles[:12], 1):
+            content = article['content'][:5000]
             article_text = f"\n### Kaynak {i}: {article['title']}\n{content}"
             if total_chars + len(article_text) > MAX_TOTAL:
                 # Truncate this article to fit budget

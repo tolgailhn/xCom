@@ -1540,9 +1540,10 @@ SADECE reply metnini yaz, başka açıklama ekleme."""
 
 BU SENTEZ NASIL KULLANILIR:
 - "TEMEL BULGULAR" bölümündeki bilgiler en değerli — tweet'e EN AZ 1 tanesini dahil et
-- "RAKAMLAR VE VERİLER" varsa tweet'e güç katar, kullan
-- "KARŞIT GÖRÜŞ" varsa ilginç bir açı sağlar
-- "BAĞLAM" kısmı konuyu büyük resme oturtmana yardımcı olur"""
+- "TEKNİK DETAYLAR VE RAKAMLAR" varsa tweet'e güç katar, kullan
+- "KARŞILAŞTIRMALI VERİLER" varsa okuyucuya bağlam sağlar — MUTLAKA kullan
+- "ÇELİŞKİLER" varsa en güvenilir kaynağı tercih et, aralık ver
+- "PRATİK ETKİ" kısmı konuyu büyük resme oturtmana yardımcı olur"""
             else:
                 # Raw research summary — guide the AI more explicitly
                 research_section = f"""## ARAŞTIRMA SONUÇLARI (ham veriler):
@@ -1877,6 +1878,12 @@ Bilgi yoksa o konuyu sessizce atla ve VAR OLAN bilgilerle güçlü bir tweet yaz
 5. KİŞİSEL PERSPEKTİF: Gazeteci gibi nesnel aktarma DEĞİL, kendi yorumun ÖN PLANDA.
 
 6. DOĞAL AKIŞ: Türkçe günlük dil, teknik terimler İngilizce. Her tweet farklı geçiş ifadeleri kullan.
+
+7. KARŞILAŞTIRMALI VERİ: Araştırmada "KARŞILAŞTIRMALI VERİLER" bölümü varsa bu bilgileri tweet'te MUTLAKA kullan.
+   Okuyucu bağlam ister — "X artık Y'den %20 daha hızlı" gibi somut karşılaştırmalar tweet'i güçlendirir.
+
+8. ÇELİŞKİ YÖNETİMİ: Araştırmada "ÇELİŞKİLER" bölümü varsa en güvenilir kaynağı tercih et.
+   Farklı rakamlar varsa "kaynaklara göre %76-78 arası" gibi aralık ver — tek taraflı iddia etme.
 
 ## ⛔ KRİTİK YASAKLAR:
 
@@ -2326,7 +2333,7 @@ Sadece tweet metnini yaz, başka bir şey yazma. Tırnak işareti kullanma."""
             research_block = f"""
 
 ## ARKA PLAN BİLGİSİ (bilgi kaynağın bu — ama kaynak belirtme, kendi bilginmiş gibi yaz):
-{research_context[:4000]}"""
+{research_context[:6000]}"""
 
         additional_block = ""
         if additional_instructions:

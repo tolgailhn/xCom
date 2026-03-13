@@ -803,11 +803,11 @@ async def research_stream(request: ResearchRequest):
                     if title:
                         key_points.append(f"{title}: {body[:100]}" if body else title)
                 sources = []
-                for art in getattr(result, "deep_articles", [])[:8]:
+                for art in getattr(result, "deep_articles", [])[:10]:
                     sources.append({
                         "title": art.get("title", ""),
                         "url": art.get("url", ""),
-                        "body": art.get("content", "")[:500] if art.get("content") else "",
+                        "body": art.get("content", "")[:800] if art.get("content") else "",
                     })
                 # Add web results as sources if no deep articles
                 if not sources:
