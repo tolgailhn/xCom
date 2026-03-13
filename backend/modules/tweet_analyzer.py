@@ -135,7 +135,7 @@ def _extract_style_dna(original_tweets: list[dict]) -> dict:
     # Casual markers — bunlar bulunursa BONUS ağırlık alır (x1.5)
     _casual_bonus = frozenset({
         "olm", "bak", "güzel", "mesela", "abi", "gerçekten", "neyse",
-        "valla", "kısacası", "ulan", "tamam", "hadi", "lan", "höcaam",
+        "valla", "ulan", "tamam", "hadi", "lan", "höcaam",
         "cidden", "harbiden", "arkadaşım", "kardeşim", "bence", "resmen",
         "net", "açık", "bedava", "millet", "aga", "beyler", "adam",
         "şimdi", "şey",
@@ -729,13 +729,13 @@ def build_training_context(analyses: list[dict], max_examples: int = 50, topic: 
         if style_dna:
             dna_rules = []
 
-            # Lowercase rule
-            lc_pct = style_dna.get("kucuk_harf_yuzde", 0)
-            if lc_pct > 80:
-                dna_rules.append(
-                    f"- KÜÇÜK HARF: Tweet'lerin %{lc_pct}'i küçük harfle başlıyor. "
-                    f"SEN DE küçük harfle başla. Büyük harf KULLANMA (isimler hariç: OpenAI, Claude vs.)"
-                )
+            # Lowercase rule — HER ZAMAN UYGULANIR (sabit kural)
+            dna_rules.append(
+                "- KÜÇÜK HARF (KESİN KURAL): TÜM tweet'ler küçük harfle yazılmalı. "
+                "Cümle başı dahil küçük harf kullan. Büyük harf SADECE özel isimler için: "
+                "OpenAI, Claude, Google, DeepSeek, Twitter/X gibi marka/ürün isimleri. "
+                "Cümle başında bile büyük harf KULLANMA. Bu kural istisnasızdır."
+            )
 
             # Signature words — ROTASYONLU: her çağrıda farklı alt küme
             sig_words = style_dna.get("imza_kelimeleri", {})
@@ -1018,9 +1018,10 @@ def build_training_context(analyses: list[dict], max_examples: int = 50, topic: 
                 pool_dna = get_pool_dna()
                 if pool_dna:
                     dna_rules = []
-                    lc_pct = pool_dna.get("kucuk_harf_yuzde", 0)
-                    if lc_pct > 50:
-                        dna_rules.append(f"- KÜÇÜK HARF: Havuzdaki tweet'lerin %{lc_pct}'i küçük harfle başlıyor.")
+                    dna_rules.append(
+                        "- KÜÇÜK HARF (KESİN KURAL): TÜM tweet'ler küçük harfle yazılmalı. "
+                        "Cümle başı dahil. Büyük harf SADECE marka/ürün isimleri için (OpenAI, Claude vb.)."
+                    )
                     sig_words = pool_dna.get("imza_kelimeleri", {})
                     if sig_words:
                         import random as _rnd_pool_w
@@ -1102,13 +1103,43 @@ Bu DNA TÜM yazım tarzlarının (samimi, haber, analitik, kişisel vb.) TEMELİ
 {body}
 
 KRİTİK KURALLAR:
-1. KÜÇÜK HARF + kapanış tarzı DNA'dan gelir — bunu uygula.
+1. KÜÇÜK HARF (İSTİSNASIZ): TÜM tweet'ler küçük harfle yazılmalı. Cümle başı dahil küçük harf.
+   Büyük harf SADECE özel isimler için: OpenAI, Claude, Google, DeepSeek, Twitter/X gibi marka isimleri.
+   Bu kural her şeyin üstündedir, asla büyük harfle cümle başlatma.
 2. İmza kelimelerinden tweet başına 2-3 TANE doğal kullan, hepsini tıkıştırma.
 3. SORU ile bitirme. "Sizce?", "Siz ne düşünüyorsunuz?" gibi CTA soruları YASAK.
+   "Peki bu neden önemli? Çünkü..." gibi retorik soru + kendi cevabı yapısı da YASAK.
 4. ASLA "@hesapadi diyor ki", "yorumlarda", "X'te kullanıcılar" gibi kaynak referansı verme.
 5. Bilgiyi KENDİ DENEYİMİN ve BİLGİN gibi yaz — sanki sen araştırdın, sen test ettin.
 6. Robotik ve yapay ifadeler YASAK — doğal, samimi, insan gibi yaz.
 7. BİREBİR KOPYALAMA YASAK: Örnek tweet'lerin cümlelerini, hook'larını, kalıplarını birebir kullanma.
    Aynı kelimeyi aynı pozisyonda (giriş/bitiş) tekrar tekrar kullanma.
    Her tweet TAZE ve ORİJİNAL olmalı — tekrara düşersen tweet kalitesi düşer.
+8. YASAKLI İFADELER — şunları ASLA kullanma:
+   "devrim niteliğinde", "oyunun kurallarını değiştiren", "çığır açan",
+   "geleceği şekillendiren", "kritik öneme sahip", "vazgeçilmez",
+   "dönüm noktası", "paradigma değişimi", "ezber bozan", "sınırları zorlayan",
+   "katma değer sağlayan", "ivme kazandıran", "dönüştüren",
+   "X artık lüks değil, standart", "bu trendi kaçıranlar geride kalacak",
+   "artık hiçbir şey eskisi gibi olmayacak", "hayati önem taşıyan".
+   Bu ifadeler AI parmak izi bırakır. Bunların yerine somut gözlem yaz.
+9. KAPANIŞ CÜMLESİ TESTİ: Son cümleyi yazdıktan sonra şunu sor:
+   - Bu cümleyi LinkedIn'de bir "thought leader" paylaşır mıydı? → SİL.
+   - Bu cümle bir motivasyon posteri üzerine yazılabilir mi? → SİL.
+   - Bu cümleyi kafede arkadaşına söylesen garip kaçar mıydı? → SİL.
+   İyi kapanış: spesifik detayla biter veya hiç "kapanış" olmadan biter.
+10. SİMETRİK İKİLİ YAPILAR YASAK:
+    "X artık Y değil, Z" formatında cümle KURMA.
+    "Mesele sadece X değil, aynı zamanda Y" KURMA.
+    Cümle iki yarıya bölünüp ikinci yarı birincisini ters yüz ediyorsa, SİL.
+11. ÜÇLÜ SOYUT İSİM LİSTESİ YASAK:
+    "Hız, verimlilik ve ölçeklenebilirlik" gibi 3 soyut ismi yan yana dizip
+    sonuç cümlesi olarak KULLANMA.
+12. GÖZLEMCİ TONU KULLAN:
+    "Yapmalılar", "hazırlıklı olmalılar" gibi zorunluluk bildiren yapılar YASAK.
+    Sen danışman değilsin, gözlemcisin. Gördüğünü, deneyimlediğini anlat.
+13. HEYECAN = SOMUT DETAY:
+    Abartılı sıfatlar yerine sayı, tarih, somut gözlem ver.
+    KÖTÜ: "İnanılmaz bir gelişme!"
+    İYİ: "dün açıkladılar, 3 saat içinde 50K kişi denemiş."
 """

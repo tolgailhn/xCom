@@ -231,9 +231,15 @@ Kaynak hesaplar: {", ".join(f"@{a}" for a in authors)}
 {chr(10).join(f"{i+1}. {ex}" for i, ex in enumerate(examples))}
 
 ÖNEMLİ:
+- KÜÇÜK HARF (İSTİSNASIZ): TÜM tweet'ler küçük harfle yazılmalı. Cümle başı dahil küçük harf.
+  Büyük harf SADECE marka/ürün isimleri için: OpenAI, Claude, Google, DeepSeek vb.
 - Bu örnekleri birebir KOPYALAMA — sadece ton, yapı ve yaklaşımı model al
 - Her tweet yazımında FARKLI bir giriş tarzı kullan
 - Örneklerdeki çeşitliliği koru: kişisel deneyim, rakam hook, paradoks, karşıt görüş, merak boşluğu
+- AI parmak izi bırakan ifadeler YASAK: "devrim niteliğinde", "oyunun kurallarını değiştiren",
+  "X artık lüks değil, standart", "çığır açan", "kritik öneme sahip", simetrik ikili kapanışlar
+- Kapanış cümlesi LinkedIn'de paylaşılabilecek gibiyse SİL — gözlem veya yarım bırakılmış düşünce ile bitir
+- Cümle uzunluğu varyasyonu olsun: kısa + orta + uzun karışımı, en az 1 devrik cümle kullan
 """
 
 

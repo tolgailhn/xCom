@@ -1,0 +1,626 @@
+[
+  {
+    "tweet_id": "2032052470931730502",
+    "text": "En ürkütücü kısmı, zaten savaş alanlarında test ediliyor olması.",
+    "url": "https://x.com/i/status/2032052470931730502",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 4,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-12T14:13:57.627161+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2032052393966276708",
+    "text": "1 milyon token yüklemesi ne kadar sürüyor peki?",
+    "url": "https://x.com/i/status/2032052393966276708",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 3,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-12T14:13:39.279338+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2032052343831773660",
+    "text": "Vay be, bu kadar basit miydı? 🙃",
+    "url": "https://x.com/i/status/2032052343831773660",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 0,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T14:46:09.859243+03:00",
+    "first_tracked": "2026-03-12T14:13:27.333893+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2032052255910662354",
+    "text": "Skill öğrenme güzel de, çoğu zaman ajanın sadece hafızaya ihtiyacı oluyor aslında.",
+    "url": "https://x.com/i/status/2032052255910662354",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 0,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T14:46:09.859243+03:00",
+    "first_tracked": "2026-03-12T14:13:06.340779+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2032041835078517245",
+    "text": "Artık ajanlar önceki hatalardan öğreniyor, aynı sorunları tekrar yaşamıyorsun.",
+    "url": "https://x.com/i/status/2032041835078517245",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 7,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-12T13:31:41.819879+03:00",
+    "source": "publish"
+  },
+  {
+    "tweet_id": "2031987084139896980",
+    "text": "Artık tez ve araştırmaları tek seferde analiz etmek mümkün hele",
+    "url": "https://x.com/i/status/2031987084139896980",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 8,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-12T09:54:08.173814+03:00",
+    "source": "publish"
+  },
+  {
+    "tweet_id": "2031780005647102453",
+    "text": "artık herkes bedava deneyebilir bu interaktif anlatımları",
+    "url": "https://x.com/i/status/2031780005647102453",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 18,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-11T20:11:16.818552+03:00",
+    "source": "publish"
+  },
+  {
+    "tweet_id": "2031611815541477795",
+    "text": "bunu test eden var mı?",
+    "url": "https://x.com/i/status/2031611815541477795",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 5,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-11T09:02:57.215717+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031611723422031950",
+    "text": "her yerde aynı hikaye, başta direnç sonra vazgeçilmez oluyor",
+    "url": "https://x.com/i/status/2031611723422031950",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 4,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-11T09:02:35.228452+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031611616869945812",
+    "text": "kaynak bırakıyorum merak edenler için, github/tarrasch/awesome-sysprompt",
+    "url": "https://x.com/i/status/2031611616869945812",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 5,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-11T09:02:09.857336+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031611552982302884",
+    "text": "bu sezon bambaşka geliyorlar ya, hissediyorum",
+    "url": "https://x.com/i/status/2031611552982302884",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 2,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-11T09:01:54.573685+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031410851698151683",
+    "text": "Rakamlarla bakınca aylık 30$+ yerine bedava aynı işi yapınca yılda 360$+ tasarruf oluyor — üstelik sunucu maliyeti, chrome extension geliştirme süresi de yok, sadece javascript yazıyorsun.",
+    "url": "https://x.com/i/status/2031410851698151683",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 1,
+      "impressions": 3,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-10T19:44:23.715990+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031410663180890325",
+    "text": "Aslında bu yaklaşım Google'ın Project Mariner'dan beri geliyor. Geçen yılın sonlarında memory özelliklerini duyurdular ama implementasyon tamamen LLM-tabanlı değildi. Bu sefer direkt transformer'ın ke",
+    "url": "https://x.com/i/status/2031410663180890325",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 1,
+      "impressions": 3,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-10T19:43:38.789602+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031410423707103367",
+    "text": "tek tuş deyince insanlar sanki sihirli değnek sanıyor ama aslında API bağlantısı kuruyor, ERP'nin veri yapısını tanıyor, alanları eşleştiriyor — bunu normalde yazılımcıya yaptırsan en az 200 dolara pa",
+    "url": "https://x.com/i/status/2031410423707103367",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 1,
+      "impressions": 2,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-10T19:42:41.668993+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031410177094611067",
+    "text": "Alibaba'nın bu hamlesi aslında onların açık kaynak stratejisinin devamı. Daha önce Qwen serisini herkese açtılar, MCP protokolünü desteklediler — hep aynı mantık: pahalı olanı bedavaya çevirip pazarı ",
+    "url": "https://x.com/i/status/2031410177094611067",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 1,
+      "impressions": 5,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-10T19:41:42.854582+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031403119129616601",
+    "text": "Browser Use açık kaynak olarak zaten herkesin kullanımına açık, hatta community edition'ı var. Alibaba'nın yaptığı şey aslında bu temeli alıp kurumsal kullanıma hazır hale getirmek — yani api desteği,",
+    "url": "https://x.com/i/status/2031403119129616601",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 10,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-10T19:13:40.157458+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031402919900176674",
+    "text": "şimdi sıra sende — alibaba browser agent'ı açık kaynak, github'a girip 5 dakikada kurabilirsin. deneyenler oldu mu? nasıl gitti?",
+    "url": "https://x.com/i/status/2031402919900176674",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 7,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-10T19:12:52.612284+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031399139402002574",
+    "text": "ekip içinde kullandık, en büyük kazanç zaman değil para oldu — normalde 5 kişilik otomasyon ekibi için aylık 1500 dolar bütçe ayırırdık, bu ile sıfıra indi. tek tuşla ERP'den veri çekip Excel'e aktarı",
+    "url": "https://x.com/i/status/2031399139402002574",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 2,
+      "impressions": 5,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-10T18:57:51.306934+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031395358966685939",
+    "text": "bende bunu denedim açıkçası, normalde selenium kurup 2 saat uğraşacağın işi 10 dakikada halletti. tek sorun vision olmadığı için captcha'ları atlıyor ama form doldurma, veri çekme gibi şeylerde gerçek",
+    "url": "https://x.com/i/status/2031395358966685939",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 1,
+      "impressions": 6,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-10T18:42:49.958416+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031395054007316735",
+    "text": "Peki ya güvenlik tarafı? %100 açık kaynak olması verilerin github'a düşmesi demek. Bu sistemi gerçek üretim ortamında kullanmak isteyenler için veri kontrolü nasıl sağlanır, bilmiyorum ama en azından ",
+    "url": "https://x.com/i/status/2031395054007316735",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 8,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-10T18:41:37.266695+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031391273228050637",
+    "text": "performans tarafında da ilginç bir nokta var, 32k token bağlamla çalışabiliyor yani uzun dosyaları tek seferde okuyabiliyor. vektör veritabanı kurcalamak, chunk'lamak, retrieval optimization yapmak ye",
+    "url": "https://x.com/i/status/2031391273228050637",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 1,
+      "impressions": 7,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-10T18:26:35.854682+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031387492939596255",
+    "text": "Maliyet tarafında karşılaştırma yapınca durum daha netleşiyor: aynı seviyedeki model Anthropic'te milyon token input 3 dolar, OpenAI'de 2.5 dolar. Google burada 10 kata yakın bir farkla öne geçmiş. üs",
+    "url": "https://x.com/i/status/2031387492939596255",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 1,
+      "impressions": 7,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-10T18:11:34.536368+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031359971565224338",
+    "text": "browser otomasyonu için daha önce aylık 30$+ ödemiş biri olarak söylüyorum, alibaba bunu ücretsiz yapınca gerçekten masa değişti. normalde kodu yazıp sunucuda çalıştıracak ortam bulman, chrome extensi",
+    "url": "https://x.com/i/status/2031359971565224338",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 1,
+      "impressions": 12,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-10T16:22:13.017552+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031355651448840584",
+    "text": "Browser Use kütüphanesi açık kaynak olarak zaten var, alibaba onu sarmalayıp ürünleştirmiş sadece. Yani aynı mantıkla playwright + agent yazsan da neredeyse aynı işi görüyorsun. Burada asıl değer ürün",
+    "url": "https://x.com/i/status/2031355651448840584",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 1,
+      "impressions": 11,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-10T16:05:02.922236+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031347367723540684",
+    "text": "web otomasyonu denince çoğu kişi \"scraping\" diye düşünüyor ama asıl güçlü kısım iş süreçlerinde. mesela şirketinizde bir rapor hazırlanıyor, excel'den veri çek, CRM'e gir, müşteri bilgilerini güncelle",
+    "url": "https://x.com/i/status/2031347367723540684",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 8,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T15:16:10.070486+03:00",
+    "first_tracked": "2026-03-10T15:32:07.991964+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031342719667212295",
+    "text": "Aynı işlemi eski yöntemle yapmaya çalışsan ortalama 2 dakika sürüyor, bu araçla 10 saniye. Üstelik her yeni site için element mapping falan yapmana gerek yok — \"şu formu doldur\" diyorsun o kadar.\n\nBu ",
+    "url": "https://x.com/i/status/2031342719667212295",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 8,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T14:46:09.859243+03:00",
+    "first_tracked": "2026-03-10T15:13:39.786418+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031338938741281188",
+    "text": "Araştırdığımda benzer bir şey görüyorum, Browserbase, Cloudflare Browser gibi şirketler aylık 99-200 dolar arası fiyatla \"yapay zeka browser\" diye satıyor. Alibabanın bu hamlesi o pazara direkt giriş ",
+    "url": "https://x.com/i/status/2031338938741281188",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 1,
+      "impressions": 17,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T14:46:09.859243+03:00",
+    "first_tracked": "2026-03-10T14:58:38.288609+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031313557669683373",
+    "text": "Bi baktım bu alibaba'nın açık kaynak çalışması \"marco\" diye geçiyor. dökümanlarına girdim — gerçekten 3-5 satır kodla selenium benzeri işler yapıyor. tek güzelliği json formatında output veriyor, yani",
+    "url": "https://x.com/i/status/2031313557669683373",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 14,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T13:12:28.778400+03:00",
+    "first_tracked": "2026-03-10T13:17:46.969982+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031308881079472401",
+    "text": "bu arada bu özellik claude code'un review modu — geçen yıl çıktı ve code review'da kaliteyi ölçen SWE-bench lite benchmark'ta %93 başarı yakalamış. o yüzden rakamlar şaşırtıcı değil aslında, test sonu",
+    "url": "https://x.com/i/status/2031308881079472401",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 12,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T12:42:28.922247+03:00",
+    "first_tracked": "2026-03-10T12:59:12.019607+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031308648526303558",
+    "text": "önümüzdeki 6 ay içinde bu tip skill marketplace'ler patlayacak, güvenilir olanla olmayanı ayırt etmek çok zorlaşacak. sizce ilk güvenlik standardı kim belirleyecek — openai mi, github mı, yoksa toplul",
+    "url": "https://x.com/i/status/2031308648526303558",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 15,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T12:42:28.922247+03:00",
+    "first_tracked": "2026-03-10T12:58:16.595978+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031304870137831721",
+    "text": "bende benzer bir repo toplamıştım ama 200 skill civarında kaldı, voltagent 549'la gelmiş yani bayağı emek var. ancak pratikte bunları gerçek projede kullanmak başka mesele — çoğu skill production orta",
+    "url": "https://x.com/i/status/2031304870137831721",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 1,
+      "impressions": 18,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T12:42:28.922247+03:00",
+    "first_tracked": "2026-03-10T12:43:15.754451+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031301091934060916",
+    "text": "voltagent'i daha yakından inceledim, typeScript tabanlı otonom ajan framework'ü olarak 2023'den beri aktifler, github'da 12bin+ yıldızları var. mit lisanslılar ve bu skill reposu da aynı lisansla geli",
+    "url": "https://x.com/i/status/2031301091934060916",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 1,
+      "impressions": 9,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T11:45:53.981754+03:00",
+    "first_tracked": "2026-03-10T12:28:14.954146+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031296764922171612",
+    "text": "Aslında bu tarz \"awesome list\" repoları yapay zeka dünyasında çok popüler. Awwesome-agent-skills dışında awesome-ai-agents, awesome-claude-extensions, awesome-openai-gpts gibi yüzlerce benzeri var. He",
+    "url": "https://x.com/i/status/2031296764922171612",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 12,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T11:45:53.981754+03:00",
+    "first_tracked": "2026-03-10T12:11:03.312584+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031296333051515083",
+    "text": "peki ya bu araçlar her şeyi bulamazsa? yani AI'a tam güvenmek yerine hala bir insan gözünün geçmesi şart mı sizce?",
+    "url": "https://x.com/i/status/2031296333051515083",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 8,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T11:45:53.981754+03:00",
+    "first_tracked": "2026-03-10T12:09:20.330173+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031294836565770249",
+    "text": "aslında küçük ekipler için asıl kazanım uzmanlık erişimi. 3 kişilik ekipte senior yoksa, o 15 dolarlık review bir nevi dışarıdan uzman gözü oluyor. on binlerce dolarlık hata maliyetini düşününce bu pa",
+    "url": "https://x.com/i/status/2031294836565770249",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 4,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T11:45:53.981754+03:00",
+    "first_tracked": "2026-03-10T12:03:23.538736+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031292554537234503",
+    "text": "aslında bunu microsoft'un araştırmasında görmüştüm — AI'ın bulduğu hataların yüzde 40'ı insan reviewer'ların kaçırdığı şeylermiş. yani bu araçlar sadece hız değil, coverage da getiriyor, insan gözünün",
+    "url": "https://x.com/i/status/2031292554537234503",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 1,
+      "impressions": 10,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T11:45:53.981754+03:00",
+    "first_tracked": "2026-03-10T11:54:19.475468+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031291058345103685",
+    "text": "Bu arada hız da önemli — ortalama 6 dakikada tamamlanan review'lar, manual review'un yarısı sürede yapılıyor. Yani 20 dakika dediğim şey zaten eskiye kıyasla çok hızlı.",
+    "url": "https://x.com/i/status/2031291058345103685",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 1,
+      "impressions": 4,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T11:45:53.981754+03:00",
+    "first_tracked": "2026-03-10T11:48:22.756256+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031288776572469677",
+    "text": "bir senior developer saatlik $80-150 arası maaş+vergilerle yazılımcı başına günde ortalama 2-3 saat verimli kod yazabiliyor. yani 20 dakikası en az $5-6 eder. $15-25'lik code review aracı aslında paha",
+    "url": "https://x.com/i/status/2031288776572469677",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 1,
+      "impressions": 3,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T09:59:18.343465+03:00",
+    "first_tracked": "2026-03-10T11:39:18.700210+03:00",
+    "source": "auto_self_reply"
+  },
+  {
+    "tweet_id": "2031120346456203363",
+    "text": "buna ek olarak, repoyu bizzat inceledim — güvenlik uyarılarının başlığı gerçekten net: \"topladığımız skill'leri güvenlik açısından test etmedik, kendi sorumluluğunuzda kullanın\" diyorlar. bu dürüstlük",
+    "url": "https://x.com/i/status/2031120346456203363",
+    "metrics": {
+      "likes": 0,
+      "retweets": 0,
+      "replies": 0,
+      "impressions": 14,
+      "bookmarks": 0,
+      "quotes": 0
+    },
+    "last_checked": "2026-03-12T00:25:39.080772+03:00",
+    "first_tracked": "2026-03-10T00:30:01.835265+03:00",
+    "source": "publish"
+  }
+]
