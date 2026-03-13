@@ -141,7 +141,7 @@ def run_auto_scan():
                            or t["summary_tr"] == t.get("text", "")[:200]]
             if needs_retry:
                 logger.info("Auto-scan: %d eski tweet icin Turkce ozet yeniden deneniyor", len(needs_retry))
-                retry_summaries = _generate_turkish_summary(needs_retry[:20])
+                retry_summaries = _generate_turkish_summary(needs_retry[:15])
                 if retry_summaries:
                     for t in cache:
                         tid = t.get("tweet_id", "")

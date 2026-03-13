@@ -104,7 +104,7 @@ def analyze_trends(force: bool = False):
                            or t["summary_tr"] == _make_preview(t.get("text", ""))
                            or t["summary_tr"] == t.get("text", "")[:200]]
         if missing_summary:
-            summaries = _generate_turkish_summary(missing_summary[:20])
+            summaries = _generate_turkish_summary(missing_summary[:15])
             if summaries:
                 for t in missing_summary:
                     tid = t.get("tweet_id", "")

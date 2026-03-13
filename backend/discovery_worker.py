@@ -79,7 +79,35 @@ def _make_preview(tweet_text: str) -> str:
 
 
 def _generate_turkish_summary(tweets: list[dict]) -> dict[str, str]:
-    """Toplu Türkçe çeviri üret — tweet metinlerinin tamamını Türkçeye çevir."""
+    """Toplu Türkçe çeviri üret — tweet metinlerinin tamamını Türkçeye çevir.
+
+    Büyük batch'leri küçük parçalara böler (max 5 tweet/batch).
+    Timeout olursa daha küçük batch ile retry yapar.
+    """
+    if not tweets:
+        return {}
+
+    # Büyük batch'leri küçük parçalara böl (timeout önleme)
+    BATCH_SIZE = 5
+    all_summaries = {}
+    for batch_start in range(0, len(tweets), BATCH_SIZE):
+        batch = tweets[batch_start:batch_start + BATCH_SIZE]
+        batch_result = _translate_batch(batch)
+        all_summaries.update(batch_result)
+
+        # Batch başarısız olduysa daha küçük batch ile retry
+        if not batch_result and len(batch) > 1:
+            logger.info("Discovery: Batch ceviri basarisiz, tek tek deneniyor (%d tweet)", len(batch))
+            for single_tweet in batch:
+                if single_tweet.get("tweet_id") not in all_summaries:
+                    single_result = _translate_batch([single_tweet])
+                    all_summaries.update(single_result)
+
+    return all_summaries
+
+
+def _translate_batch(tweets: list[dict]) -> dict[str, str]:
+    """Tek bir batch tweet'i çevir. Timeout ve hata durumunda boş dict döner."""
     if not tweets:
         return {}
 
@@ -109,6 +137,9 @@ def _generate_turkish_summary(tweets: list[dict]) -> dict[str, str]:
         )
 
         system_msg = "Tweet cevirmen. Ingilizce tweet'leri dogal, akici Turkce'ye cevir. Teknik terimleri olduklari gibi birak."
+
+        # Timeout: 120 saniye (önceki 60 timeout'a yol açıyordu)
+        API_TIMEOUT = 120
 
         # OpenAI-compatible API kullan (MiniMax, Groq, OpenAI)
         if provider in ("minimax", "groq", "openai"):
@@ -141,7 +172,7 @@ def _generate_turkish_summary(tweets: list[dict]) -> dict[str, str]:
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
             req = urllib.request.Request(url, data=data, headers=headers)
-            with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
+            with urllib.request.urlopen(req, timeout=API_TIMEOUT, context=ctx) as resp:
                 result = _json.loads(resp.read().decode("utf-8"))
                 ai_text = result.get("choices", [{}])[0].get("message", {}).get("content", "")
 
@@ -170,7 +201,7 @@ def _generate_turkish_summary(tweets: list[dict]) -> dict[str, str]:
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
             req = urllib.request.Request(url, data=data, headers=headers)
-            with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
+            with urllib.request.urlopen(req, timeout=API_TIMEOUT, context=ctx) as resp:
                 result = _json.loads(resp.read().decode("utf-8"))
                 ai_text = result.get("content", [{}])[0].get("text", "")
         else:
@@ -486,7 +517,7 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
                    or t["summary_tr"] == t.get("text", "")[:200]]
     if needs_retry:
         logger.info("Discovery: %d tweet icin Turkce ozet yeniden deneniyor", len(needs_retry))
-        retry_summaries = _generate_turkish_summary(needs_retry[:20])
+        retry_summaries = _generate_turkish_summary(needs_retry[:15])
         if retry_summaries:
             for t in existing_cache:
                 tid = t.get("tweet_id", "")
