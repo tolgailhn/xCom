@@ -32,6 +32,8 @@ class AutoReplyConfigRequest(BaseModel):
     only_original_tweets: bool = True
     language: str = "tr"
     draft_only: bool = True
+    publish_mode: str = "draft"
+    daily_max_replies: int = 20
 
 
 class LogStatusUpdate(BaseModel):
