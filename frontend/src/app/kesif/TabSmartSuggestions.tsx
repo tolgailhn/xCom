@@ -526,7 +526,9 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
                       <div className="space-y-2">
                         <h4 className="text-xs font-semibold text-[var(--text-secondary)]">Ilgili Tweetler</h4>
                         {tweets.filter((t: ClusterTweet) => !isLowQualityTweet(t.text)).map((tw: ClusterTweet, i: number) => {
-                          const tweetUrl = tw.tweet_url || (tw.tweet_id ? `https://x.com/${tw.account}/status/${tw.tweet_id}` : "");
+                          const tweetUrl = tw.tweet_url
+                            || (tw.tweet_id ? `https://x.com/${tw.account}/status/${tw.tweet_id}` : "")
+                            || (tw.account ? `https://x.com/search?q=from:${tw.account} ${encodeURIComponent(tw.text.slice(0, 40))}` : "");
                           return (
                           <div key={i} className="flex items-start gap-2.5 text-xs bg-[var(--bg-primary)] rounded-lg px-3 py-2.5 border border-[var(--border)]">
                             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--accent-blue)]/20 to-[var(--accent-purple)]/20 flex items-center justify-center text-[10px] font-bold text-[var(--accent-blue)] shrink-0">{tw.account.charAt(0).toUpperCase()}</div>

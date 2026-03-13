@@ -277,6 +277,7 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
                 "engagement": tw.get("engagement", 0),
                 "keyword": trend.get("keyword", ""),
                 "tweet_id": tw.get("tweet_id", ""),
+                "tweet_url": tw.get("tweet_url", ""),
                 "created_at": tw.get("created_at", ""),
             })
     if skipped_spam:
@@ -421,13 +422,14 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
             if 0 <= idx < len(tweet_meta):
                 meta = tweet_meta[idx]
                 tweet_id = meta.get("tweet_id", "")
+                tweet_url = meta.get("tweet_url", "") or (f"https://x.com/{meta['account']}/status/{tweet_id}" if tweet_id else "")
                 cluster_tweets.append({
                     "text": meta["text"],
                     "account": meta["account"],
                     "engagement": meta["engagement"],
                     "tweet_id": tweet_id,
                     "created_at": meta.get("created_at", ""),
-                    "tweet_url": f"https://x.com/{meta['account']}/status/{tweet_id}" if tweet_id else "",
+                    "tweet_url": tweet_url,
                 })
                 source_keywords.add(meta["keyword"])
 
