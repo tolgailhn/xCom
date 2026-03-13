@@ -1,15 +1,25 @@
 """
 Faz 3: Otomatik Konu Taraması
-Her 2 saatte çalışır, DISCOVER_QUERIES'den rastgele 3-4 sorgu seçip tarar.
+Her 2 saatte çalışır, DISCOVER_QUERIES + dinamik sorgulardan rastgele 3-4 sorgu seçip tarar.
 Sonuçları auto_scan_cache.json'a kaydeder.
+
+Faz 11: Dinamik Sorgu Üretimi
+Haftada 1 kez çalışır, mevcut trendlerden AI ile yeni arama sorguları üretir.
+data/dynamic_queries.json'a kaydeder.
 """
 import datetime
+import json
 import logging
+import os
 import random
 from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 TZ_TR = ZoneInfo("Europe/Istanbul")
+
+DYNAMIC_QUERIES_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "data", "dynamic_queries.json"
+)
 
 
 def run_auto_scan():
@@ -32,8 +42,14 @@ def run_auto_scan():
         logger.warning("Auto-scan import error: %s", e)
         return
 
-    # Pick 3-4 random queries (mix of discover + github)
+    # Pick 3-4 random queries (mix of discover + github + dynamic)
     all_queries = list(DISCOVER_QUERIES) + list(GITHUB_QUERIES)
+
+    # Load dynamic queries if available
+    dynamic = _load_dynamic_queries()
+    if dynamic:
+        all_queries.extend(dynamic)
+
     query_count = random.randint(3, 4)
     selected_queries = random.sample(all_queries, min(query_count, len(all_queries)))
 
@@ -127,3 +143,147 @@ def _notify_auto_scan(topics: list[dict]):
         send_telegram_message(msg, settings.telegram_bot_token, settings.telegram_chat_id)
     except Exception:
         pass
+
+
+# ============================================================================
+# DYNAMIC QUERY GENERATION — AI-powered adaptive search queries
+# ============================================================================
+
+def _load_dynamic_queries() -> list[str]:
+    """Load dynamic queries from JSON file."""
+    try:
+        if os.path.exists(DYNAMIC_QUERIES_PATH):
+            with open(DYNAMIC_QUERIES_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return data.get("queries", [])
+    except Exception:
+        pass
+    return []
+
+
+def _save_dynamic_queries(queries: list[str]):
+    """Save dynamic queries to JSON file."""
+    os.makedirs(os.path.dirname(DYNAMIC_QUERIES_PATH), exist_ok=True)
+    data = {
+        "queries": queries,
+        "generated_at": datetime.datetime.now(TZ_TR).isoformat(),
+        "count": len(queries),
+    }
+    with open(DYNAMIC_QUERIES_PATH, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def generate_dynamic_queries():
+    """AI ile mevcut trendlerden yeni arama sorguları üret.
+
+    Haftada 1 kez scheduler tarafından çağrılır.
+    Mevcut trend cache'ini okur, AI'dan yeni sorgular ister,
+    sonuçları data/dynamic_queries.json'a kaydeder.
+    """
+    try:
+        from backend.modules.style_manager import load_trend_cache
+        from backend.modules.content_generator import ContentGenerator
+        from backend.config import get_settings
+    except ImportError as e:
+        logger.warning("Dynamic query generation import error: %s", e)
+        return
+
+    settings = get_settings()
+
+    # Collect current trends
+    trends = load_trend_cache()
+    if not trends:
+        logger.info("Dynamic queries: no trend data available, skipping")
+        return
+
+    # Extract top keywords from trends
+    top_keywords = []
+    for trend in trends[:20]:
+        kw = trend.get("keyword", "")
+        if kw:
+            top_keywords.append(kw)
+        # Also get trending topics from tweets
+        for tweet in trend.get("tweets", [])[:2]:
+            text = tweet.get("text", "")[:100]
+            if text:
+                top_keywords.append(text)
+
+    if not top_keywords:
+        logger.info("Dynamic queries: no keywords found in trends")
+        return
+
+    # Build AI prompt
+    keywords_text = "\n".join([f"- {kw}" for kw in top_keywords[:15]])
+
+    prompt = f"""Aşağıdaki son trendlere ve konulara bakarak, X (Twitter)'da AI ve teknoloji gelişmelerini takip etmek için 5-8 yeni arama sorgusu üret.
+
+Mevcut trendler:
+{keywords_text}
+
+KURALLAR:
+1. Her sorgu X arama formatında olmalı (OR, AND, -is:retweet lang:en)
+2. Mevcut statik sorgularda OLMAYAN yeni konuları hedefle
+3. Son 1 haftanın en güncel AI/teknoloji gelişmelerini yakalayacak sorgular yaz
+4. Her sorgu spesifik olmalı — çok genel sorgular YAZMA
+5. Hem İngilizce hem Türkçe sorgu olabilir
+
+MEVCUT SORGULAR (bunları TEKRARLAMA):
+- "new AI model" OR "new LLM"
+- ChatGPT OR GPT-4 OR Claude
+- DeepSeek OR Qwen OR Llama
+- Cursor OR Windsurf OR Copilot
+- "AI agent" OR agentic
+- benchmark OR MMLU
+- OpenAI OR Anthropic OR Google
+
+Sadece sorgu listesini ver, her satırda bir sorgu. Başka açıklama yazma.
+JSON formatında döndür: {{"queries": ["sorgu1", "sorgu2", ...]}}"""
+
+    try:
+        # Use the cheapest available provider
+        gen = ContentGenerator(
+            provider=settings.default_ai_provider or "minimax",
+            api_key=settings.minimax_api_key or settings.anthropic_api_key or settings.openai_api_key,
+        )
+
+        result = gen._dispatch(
+            "Sen bir X (Twitter) arama sorgusu uzmanısın. Sadece JSON formatında cevap ver.",
+            prompt,
+        )
+
+        if not result:
+            logger.warning("Dynamic queries: empty AI response")
+            return
+
+        # Parse JSON response
+        import re
+        json_match = re.search(r'\{[\s\S]*"queries"[\s\S]*\}', result)
+        if json_match:
+            parsed = json.loads(json_match.group())
+            queries = parsed.get("queries", [])
+        else:
+            # Try line-by-line parsing
+            queries = [
+                line.strip().strip('"').strip("'")
+                for line in result.strip().split("\n")
+                if line.strip() and not line.strip().startswith("{") and not line.strip().startswith("}")
+            ]
+
+        # Validate queries
+        valid_queries = []
+        for q in queries:
+            q = q.strip()
+            if len(q) > 20 and ("OR" in q or "AND" in q or '"' in q):
+                # Ensure -is:retweet lang:en suffix
+                if "-is:retweet" not in q:
+                    q += " -is:retweet lang:en"
+                valid_queries.append(q)
+
+        if valid_queries:
+            _save_dynamic_queries(valid_queries)
+            logger.info("Dynamic queries: generated %d new queries", len(valid_queries))
+        else:
+            logger.warning("Dynamic queries: no valid queries generated from AI response")
+
+    except Exception as e:
+        logger.warning("Dynamic queries generation error: %s", e)

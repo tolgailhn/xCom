@@ -150,6 +150,17 @@ def analyze_trends(force: bool = False):
                 reverse=True
             )[:5]
 
+            # Breaking news detection: 3+ accounts tweeting about same topic in last 2 hours
+            is_breaking = False
+            recent_cutoff = (now - datetime.timedelta(hours=2)).isoformat()
+            recent_tweets = [
+                t for t in keyword_tweets[kw]
+                if t.get("created_at", "") > recent_cutoff
+            ]
+            recent_accounts = {t.get("account", "") for t in recent_tweets}
+            if len(recent_accounts) >= 3:
+                is_breaking = True
+
             trends.append({
                 "keyword": kw,
                 "account_count": account_count,
@@ -159,6 +170,7 @@ def analyze_trends(force: bool = False):
                 "tweet_count": len(keyword_tweets[kw]),
                 "top_tweets": top_tweets,
                 "is_strong_trend": account_count >= 3,
+                "is_breaking": is_breaking,
                 "detected_at": now.isoformat(),
             })
 
@@ -221,6 +233,11 @@ def analyze_trends(force: bool = False):
         _cluster_smart_suggestions(trends, now)
     except Exception:
         logger.exception("Auto clustering error")
+
+    # Notify about breaking trends (high urgency)
+    breaking_trends = [t for t in trends if t.get("is_breaking")]
+    if breaking_trends:
+        _notify_breaking(breaking_trends)
 
     # Notify about strong trends + auto-suggest content (Faz 8)
     if strong_trends:
@@ -501,6 +518,31 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
         len(all_tweets),
         len([s for s in suggestions if s["type"] == "news"]),
     )
+
+
+def _notify_breaking(trends: list[dict]):
+    """Telegram bildirim — BREAKING: son 2 saatte 3+ hesaptan aynı konu."""
+    try:
+        from backend.config import get_settings
+        settings = get_settings()
+        if not (settings.telegram_bot_token and settings.telegram_chat_id):
+            return
+
+        from backend.modules.telegram_notifier import send_telegram_message
+        lines = ["🚨 BREAKING — Son 2 saatte patlayan konular:\n"]
+        for t in trends[:3]:
+            kw = t["keyword"]
+            count = t["account_count"]
+            eng = t["total_engagement"]
+            lines.append(f"🔥 \"{kw}\" — {count} hesapta, {eng:.0f} engagement")
+            # Show top tweet
+            if t.get("top_tweets"):
+                top = t["top_tweets"][0]
+                lines.append(f"  └ @{top.get('account', '?')}: {top.get('text', '')[:80]}...")
+        msg = "\n".join(lines)
+        send_telegram_message(msg, settings.telegram_bot_token, settings.telegram_chat_id)
+    except Exception:
+        pass
 
 
 def _notify_trends(trends: list[dict]):

@@ -249,6 +249,11 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 | 2026-03-13 | TabMyTweets → analiz sayfası | Semantik olarak keşif değil analiz; keşif 6→5 tab, analiz 5→6 tab |
 | 2026-03-13 | Dismiss localStorage kalıcılığı | Sayfa yenilenince dismiss edilen öğeler geri gelmez |
 | 2026-03-13 | Duplicate kod temizliği (5 dosya) | timeAgo, gauge, formatNumber → shared components/discovery |
+| 2026-03-13 | `_enforce_lowercase()` post-processing | Tüm tweet üretimlerinde küçük harf zorlaması — prompt'lara güvenmek yetersizdi |
+| 2026-03-13 | Stil öncelik hiyerarşisi düzeltildi | DNA önceliği → Stil önceliği. Stil kuralları (yapı, ton, yaklaşım) DNA'dan önce gelir |
+| 2026-03-13 | Değer katma zorunluluğu | Her tweet'te kişisel görüş/analiz ZORUNLU. Sadece haber aktarımı YASAK |
+| 2026-03-13 | Dinamik sorgu üretimi (haftalık) | 11 statik sorgu yerine AI ile trend-uyumlu yeni sorgular ekleniyor |
+| 2026-03-13 | Breaking news algılama | 2 saat içinde 3+ hesaptan aynı konu → Telegram breaking bildirimi |
 
 ---
 
@@ -256,11 +261,15 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 
 ### Aktif Sorunlar
 - [x] **Engagement weights 4+ yerde tanımlı** → `constants.py` tek kaynağa taşındı (2026-03-11)
+- [x] **Yazım stili büyük harf sorunu** → `_enforce_lowercase()` post-processing eklendi + tüm prompt'lar güncellendi (2026-03-13)
+- [x] **Stil kuralları DNA tarafından eziliyordu** → Öncelik hiyerarşisi düzeltildi, stil kuralları artık DNA'dan önce (2026-03-13)
+- [x] **Tweet'ler haber aktarımı gibi kalıyordu** → Değer katma zorunluluğu + scoring bonusu eklendi (2026-03-13)
+- [x] **Keşif statik sorgular** → Dinamik sorgu üretimi + breaking news algılama eklendi (2026-03-13)
 - [ ] **Kategori tanımları 2 yerde**: `twitter_scanner.py:CATEGORY_KEYWORDS` ve `telegram_notifier.py`. Tek kaynağa taşınabilir.
 - [ ] **Hardcoded config**: Account listesi, API limitleri, timeout'lar ayrı bir `config.py`'ye taşınabilir.
 - [ ] **Test eksikliği**: Hiçbir modülde unit test yok.
 - [ ] **Session state bellek**: Grok cost ve scan sonuçları sınırsız birikebilir (cost reset eklendi ama scan cache'i hâlâ sınırsız).
-- [ ] **content_generator.py** çok büyük (~1700+ satır): bölünebilir.
+- [ ] **content_generator.py** çok büyük (~1900+ satır): bölünebilir.
 
 ### Çözülmüş Sorunlar (Referans)
 - [x] Page 6 `x_scanner` import hatası (2026-03-04)
@@ -429,6 +438,20 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 ---
 
 ## Değişiklik Günlüğü
+
+### 2026-03-13 (Tweet Kalitesi + Yazım Stili + Keşif Sistemi İyileştirme)
+- **feat**: `content_generator.py` — `_enforce_lowercase()` post-processing: tüm üretimlerde küçük harf zorlaması (proper noun whitelist ile)
+- **fix**: `content_generator.py` — Reply/self-reply/long-content prompt'larına eksik "küçük harfle yaz" kuralı eklendi
+- **fix**: `content_generator.py` — Provider guardrails'e (MiniMax/Claude/OpenAI/Groq) lowercase kuralı eklendi
+- **fix**: `content_generator.py` — Stil öncelik hiyerarşisi düzeltildi: DNA "ses kaynağı" → Stil "yapı+ton+yaklaşım kaynağı"
+- **feat**: `content_generator.py` — BASE_SYSTEM_PROMPT'a "değer katma zorunluluğu" eklendi (haber aktarımı YASAK, kişisel görüş ZORUNLU)
+- **feat**: `content_generator.py` — X_ALGORITHM_RULES'a 2 yeni kural: "değer kat" + "conversation hook"
+- **feat**: `content_generator.py` — `score_tweet()` scoring: kişisel perspektif bonus (+4), büyük harf cezası (-3)
+- **feat**: `auto_topic_scanner.py` — Dinamik sorgu üretimi: AI ile trend-uyumlu yeni arama sorguları (haftada 1)
+- **feat**: `auto_topic_scanner.py` — `data/dynamic_queries.json` — dinamik sorgular kalıcı dosya
+- **feat**: `trend_analyzer.py` — Breaking news algılama: 2 saat içinde 3+ hesaptan aynı konu → is_breaking flag
+- **feat**: `trend_analyzer.py` — `_notify_breaking()` — Telegram breaking news bildirimi
+- **feat**: `scheduler_worker.py` — `dynamic_query_generator` job eklendi (7 günde 1)
 
 ### 2026-03-13 (Keşif Sayfası Büyük Refaktör)
 - **remove**: `TabSmartSuggestions.tsx` — Silindi (TabAIOnerileri superset, duplicate)

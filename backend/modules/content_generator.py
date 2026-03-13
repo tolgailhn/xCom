@@ -19,6 +19,10 @@ X_ALGORITHM_RULES = """
 4. POZİTİF TON = Grok negatif tonu basıyor → Yapıcı, bilgilendirici ama cesur yaz.
 5. HASHTAG ve LINK KOYMA → İkisi de erişimi düşürüyor.
 
+### EK KURALLAR:
+6. DEĞER KAT = Haber aktarma, YORUM yap. "Bence asıl mesele..." ile kendi açını ekle.
+7. CONVERSATION HOOK = İddialı yaz ki reply gelsin. Reply = 150x like boost.
+
 ### FORMAT:
 - Her paragraf arasında boş satır (\\n\\n)
 - Emoji 0-2, hashtag 0
@@ -62,6 +66,15 @@ PARADOKS: çelişen iki gerçeği yan yana koy
 
 ETKİ ODAKLI: direkt kullanıcıya ne değiştiğini söyle
   → "artık Excel'deki veriyi PowerPoint'e taşımak tek tıkla oluyor. sıfır tekrar açıklama."
+
+## DEĞER KATMA ZORUNLULUĞU:
+- sadece haber aktarma — HER tweet'te kendi görüşün, analizin veya deneyimin OLMALI
+- haberi SEÇİLEN STİLİN kurallarıyla yaz — stil ne diyorsa ona uy
+- "X çıktı, şunları yapıyor" → YANLIŞ (haber bülteni, kişisel değer yok)
+- "X çıktı, bence asıl önemli olan Y çünkü Z" → DOĞRU (kişisel değer + analiz)
+- okuyucu senin tweet'ini okuduğunda haberin ÖTESİNDE bir şey öğrenmeli
+- güçlü bir görüş belirt — tartışma yaratacak kadar cesur ol (ama saygılı)
+- haberi TEKRARLA değil, YORUMLa — kendi perspektifini ekle
 
 ## KESİNLİKLE YASAK KALIPLAR (AI'nin en sık yaptığı hatalar):
 - "X, Mart 2026'da duyurduğu Y ile..." — gazete başlığı gibi cümle YASAK
@@ -1792,11 +1805,12 @@ Sadece yeni tweet metnini yaz."""
 {tc}
 
 ## ÖNCELİK HİYERARŞİSİ:
-1. SES, TON, KELİME SEÇİMİ, GEÇİŞ İFADELERİ → eğitim verisinden (DNA + havuz) öğren. Bu senin GERÇEK sesin.
-2. YAPI, FORMAT, YAKLAŞIM → seçilen yazım tarzından (haber → haber formatı, analitik → analitik yapı)
-3. İKİSİNİ BİRLEŞTİR: Yazım tarzının istediği YAPIYI, eğitim verisindeki SESle yaz.
-- DNA'daki tweet'lerin açılışlarını, kapanışlarını, geçişlerini, kelime tercihlerini BURADAN al
-- DNA'daki tweet'ler senin gerçek yazım tarzın, stil prompt'u sadece formatı belirler
+1. SEÇİLEN YAZIM TARZI → Stil kurallarına MUTLAKA uy. Hook tipi, yapı, ton, yaklaşım → stilden gel.
+2. SES VE KELİME SEÇİMİ → eğitim verisinden (DNA + havuz) öğren. Bu senin doğal sesin.
+3. İKİSİNİ BİRLEŞTİR: Yazım tarzının istediği YAPI + TON + YAKLAŞIM'ı, DNA'daki ses ve kelime tercihleriyle yaz.
+- Stil "hook ile başla" diyorsa → hook ile başla. Stil "kısa yaz" diyorsa → kısa yaz.
+- DNA'dan sadece KELİME TERCİHLERİNİ ve DOĞAL İFADELERİ al, yapıyı ve kuralları STİLDEN al.
+- Stil kuralları ile DNA çelişirse → STİL KAZANIR (yapı, format, ton için)
 """
         else:
             prompt += """
@@ -1887,11 +1901,12 @@ DİKKAT: Bu örneklerdeki TONU referans al ama ASLA birebir kopyalama.
 {tc}
 
 ## ÖNCELİK HİYERARŞİSİ:
-1. SES, TON, KELİME SEÇİMİ, GEÇİŞ İFADELERİ → eğitim verisinden (DNA + havuz) öğren. Bu senin GERÇEK sesin.
-2. YAPI, FORMAT, YAKLAŞIM → seçilen yazım tarzından (haber → haber formatı, analitik → analitik yapı)
-3. İKİSİNİ BİRLEŞTİR: Yazım tarzının istediği YAPIYI, eğitim verisindeki SESle yaz.
-- DNA'daki tweet'lerin açılışlarını, kapanışlarını, geçişlerini, kelime tercihlerini BURADAN al
-- DNA'daki tweet'ler senin gerçek yazım tarzın, stil prompt'u sadece formatı belirler
+1. SEÇİLEN YAZIM TARZI → Stil kurallarına MUTLAKA uy. Hook tipi, yapı, ton, yaklaşım → stilden gel.
+2. SES VE KELİME SEÇİMİ → eğitim verisinden (DNA + havuz) öğren. Bu senin doğal sesin.
+3. İKİSİNİ BİRLEŞTİR: Yazım tarzının istediği YAPI + TON + YAKLAŞIM'ı, DNA'daki ses ve kelime tercihleriyle yaz.
+- Stil "hook ile başla" diyorsa → hook ile başla. Stil "kısa yaz" diyorsa → kısa yaz.
+- DNA'dan sadece KELİME TERCİHLERİNİ ve DOĞAL İFADELERİ al, yapıyı ve kuralları STİLDEN al.
+- Stil kuralları ile DNA çelişirse → STİL KAZANIR (yapı, format, ton için)
 """
         else:
             prompt += """
@@ -1945,6 +1960,7 @@ Kendi orijinal cümlelerini kur ama aynı doğallık ve samimiyet olsun.
             prompt += """
 ## DOĞALLIK:
 - İnsan gibi yaz, AI kalıpları kullanma
+- küçük harfle yaz (isimler hariç: OpenAI, Claude, NVIDIA)
 - Günlük Türkçe: "ya, bence, harbiden, bi baktım"
 - Soru ile bitirme, tırnak koyma, hashtag koyma
 - Uydurma rakam/veri YASAK
@@ -1954,6 +1970,7 @@ Kendi orijinal cümlelerini kur ama aynı doğallık ve samimiyet olsun.
             prompt += """
 ## DOĞALLIK:
 - Kısa yaz, konuya gel. AI kalıpları kullanma.
+- küçük harfle yaz (isimler hariç: OpenAI, Claude, NVIDIA)
 - Samimi Türkçe, günlük konuşma dili.
 - Liste/madde yapma, düz yaz. Soru sorma sonunda.
 - Uydurma veri YASAK.
@@ -1963,15 +1980,16 @@ Kendi orijinal cümlelerini kur ama aynı doğallık ve samimiyet olsun.
             prompt += """
 ## DOĞALLIK KURALLARI:
 1. İnsan gibi yaz — AI kalıpları ("dikkat çekici", "gelin bakalım") YASAK
-2. Günlük Türkçe — "ya, bence, harbiden, bi baktım" kullan
-3. Tek tweet = tek fikir, liste yapma
-4. Soru ile bitirme, tırnak koyma
-5. Uydurma rakam/veri YASAK
+2. küçük harfle yaz (isimler hariç: OpenAI, Claude, NVIDIA)
+3. Günlük Türkçe — "ya, bence, harbiden, bi baktım" kullan
+4. Tek tweet = tek fikir, liste yapma
+5. Soru ile bitirme, tırnak koyma
+6. Uydurma rakam/veri YASAK
 """
         elif self.provider == "anthropic":
             # Claude: en iyi takip ediyor, minimal extra rules
             prompt += """
-## DOĞALLIK: İnsan gibi yaz. AI kalıpları kullanma. Günlük Türkçe. Uydurma veri YASAK.
+## DOĞALLIK: İnsan gibi yaz. AI kalıpları kullanma. küçük harfle yaz (isimler hariç). Günlük Türkçe. Uydurma veri YASAK.
 """
 
         # Final safety: hard-cap total prompt length (~35K chars ≈ ~9K tokens)
@@ -1987,6 +2005,7 @@ Kendi orijinal cümlelerini kur ama aynı doğallık ve samimiyet olsun.
 
         prompt = f"""Sen X (Twitter) üzerinde keskin, içgörülü yanıtlar yazan teknoloji ve AI meraklısı birisin.
 TÜRKÇE yazıyorsun. Gerçek bir insan gibi konuşuyorsun — samimi, bilgili, fikirli.
+küçük harfle yaz (isimler hariç: OpenAI, Claude, NVIDIA). hashtag KULLANMA. soru ile bitirme.
 
 {style_info.get('prompt', '')}
 """
@@ -2046,6 +2065,7 @@ TÜRKÇE yazıyorsun. Bu BİR BAŞKASINA YANIT DEĞİL — kendi tweet'ine 0-2 d
 ## TEK REPLY KURALLARI:
 1. ÇOK KISA — ideal 5-15 kelime, max 1-2 cümle
 2. DOĞAL OL — arkadaşına yazıyormuşsun gibi, yapay değil
+3. küçük harfle yaz (isimler hariç: OpenAI, Claude, NVIDIA)
 3. İÇERİĞE UYGUN — teknik konuysa teknik detay, haber konuysa kısa yorum
 4. HASHTAG KULLANMA
 5. "Buna ek olarak" gibi yapay geçiş kalıpları YASAK
@@ -2259,17 +2279,18 @@ Sadece tweet metnini yaz, başka bir şey yazma. Tırnak işareti kullanma."""
 
 ÖNEMLİ KURALLAR:
 1. Türkçe yaz (teknik terimler İngilizce kalabilir)
-2. Paragraflari KISA tut — her paragraf 1-3 cümle
-3. Her paragraftan sonra boş satır bırak (okunabilirlik)
-4. Metin duvarı YAZMA — kısa paragraflar, bol boşluk
-5. Doğal ve samimi ol — "corporate speak" YAPMA
-6. Araştırma sonuçlarındaki GÜNCEL bilgileri kullan AMA kaynağı BELİRTME
-7. Spesifik ol — genel laflar değil, somut detaylar
-8. Sadece içerik metnini yaz — başlık, meta, açıklama YAZMA
-9. Tırnak işareti ile sarma
-10. ASLA "@şuhesap şöyle diyor", "yorumlarda şöyle yazıyorlar", "X'te kullanıcılar" gibi ifadeler KULLANMA
-11. ASLA araştırma kaynaklarına referans verme — bilgiyi KENDİ sözlerinle, kendi deneyiminmiş gibi yaz
-12. Bilgiyi özümse ve KENDİ perspektifinden anlat — "test ettim", "gördüğüm kadarıyla", "bence" gibi"""
+2. küçük harfle yaz (isimler hariç: OpenAI, Claude, NVIDIA)
+3. Paragraflari KISA tut — her paragraf 1-3 cümle
+4. Her paragraftan sonra boş satır bırak (okunabilirlik)
+5. Metin duvarı YAZMA — kısa paragraflar, bol boşluk
+6. Doğal ve samimi ol — "corporate speak" YAPMA
+7. Araştırma sonuçlarındaki GÜNCEL bilgileri kullan AMA kaynağı BELİRTME
+8. Spesifik ol — genel laflar değil, somut detaylar
+9. Sadece içerik metnini yaz — başlık, meta, açıklama YAZMA
+10. Tırnak işareti ile sarma
+11. ASLA "@şuhesap şöyle diyor", "yorumlarda şöyle yazıyorlar", "X'te kullanıcılar" gibi ifadeler KULLANMA
+12. ASLA araştırma kaynaklarına referans verme — bilgiyi KENDİ sözlerinle, kendi deneyiminmiş gibi yaz
+13. Bilgiyi özümse ve KENDİ perspektifinden anlat — "test ettim", "gördüğüm kadarıyla", "bence" gibi"""
 
         # Build user prompt
         research_block = ""
@@ -2313,6 +2334,7 @@ Paragraflari kısa tut, metin duvarı olmasın. Sadece içerik metnini yaz."""
             text = self._generate_openai(system_prompt, user_prompt, image_urls)
         text = self._fix_colon_labels(text)
         text = self._humanize(text)
+        text = self._enforce_lowercase(text)
         return text
 
     @staticmethod
@@ -2451,6 +2473,104 @@ Paragraflari kısa tut, metin duvarı olmasın. Sadece içerik metnini yaz."""
         text = re.sub(r'\n +\n', '\n\n', text)
 
         return text.strip()
+
+    @staticmethod
+    def _enforce_lowercase(text: str) -> str:
+        """Post-process: enforce lowercase writing except for proper nouns.
+
+        Turkish X culture writes in all lowercase. This function guarantees
+        lowercase output regardless of what the AI model produces.
+
+        Proper nouns (company names, acronyms, tech terms) are preserved
+        via a whitelist.
+        """
+        import re
+
+        if not text or not text.strip():
+            return text
+
+        # Whitelist: proper nouns and acronyms that should keep their casing
+        # These are replaced back after lowercasing
+        PROPER_NOUNS = [
+            # Companies & Products
+            "OpenAI", "ChatGPT", "GPT-4o", "GPT-4", "GPT-5", "GPT-3.5",
+            "DALL-E", "Codex", "Sora",
+            "Anthropic", "Claude", "Claude Code",
+            "Google", "Gemini", "DeepMind", "Bard", "Vertex AI",
+            "Meta", "Llama", "LLaMA",
+            "Microsoft", "Copilot", "Azure", "GitHub", "VS Code", "VSCode",
+            "Apple", "Siri",
+            "Amazon", "AWS", "Bedrock",
+            "NVIDIA", "Tesla",
+            "DeepSeek",
+            "Mistral",
+            "Groq",
+            "Grok", "xAI",
+            "Perplexity",
+            "HuggingFace", "Hugging Face",
+            "Replit",
+            "Cursor", "Windsurf",
+            "Cloudflare",
+            "Docker", "Kubernetes",
+            "Linux", "Windows", "macOS", "iOS", "Android",
+            "Python", "JavaScript", "TypeScript", "Rust", "Go",
+            "FastAPI", "Next.js", "React", "Node.js", "PyTorch", "TensorFlow",
+            "PostgreSQL", "MongoDB", "Redis",
+            "Zapier", "Notion", "Slack", "Discord", "Telegram",
+            "YouTube", "Instagram", "TikTok", "Reddit",
+            "CrewAI",
+            "MiniMax",
+            # Acronyms & Technical Terms
+            "AI", "API", "SDK", "SSH", "SSL", "HTTP", "HTTPS", "URL",
+            "CEO", "CTO", "CFO", "CIO",
+            "LLM", "NLP", "ML", "DL", "RL", "RAG", "RPA",
+            "GPU", "TPU", "CPU", "RAM", "SSD", "VRAM",
+            "MMLU", "SOTA", "RLHF", "DPO", "SFT",
+            "PR", "CI/CD", "MVP", "SaaS", "B2B", "B2C",
+            "JSON", "XML", "CSV", "PDF", "HTML", "CSS",
+            "USB", "HDMI", "WiFi", "Bluetooth",
+            "IOT", "VR", "AR", "XR",
+            "NFT", "DAO",
+            "EU", "ABD", "KVKK", "GDPR",
+            # Turkish proper nouns
+            "Türkiye", "İstanbul", "Ankara",
+        ]
+
+        # Create case-insensitive mapping: lowercase form → original form
+        noun_map = {}
+        for noun in PROPER_NOUNS:
+            noun_map[noun.lower()] = noun
+
+        # Sort by length descending so longer matches take priority
+        sorted_nouns = sorted(noun_map.keys(), key=len, reverse=True)
+
+        # Step 1: Find all proper noun positions BEFORE lowercasing
+        # Store their positions and original forms
+        preserved = []
+        text_lower = text.lower()
+        for noun_lower in sorted_nouns:
+            start = 0
+            while True:
+                pos = text_lower.find(noun_lower, start)
+                if pos == -1:
+                    break
+                # Check word boundary (avoid matching "AI" inside "DAILY")
+                before_ok = (pos == 0 or not text_lower[pos - 1].isalpha())
+                after_pos = pos + len(noun_lower)
+                after_ok = (after_pos >= len(text_lower) or not text_lower[after_pos].isalpha())
+                if before_ok and after_ok:
+                    preserved.append((pos, pos + len(noun_lower), noun_map[noun_lower]))
+                start = pos + 1
+
+        # Step 2: Lowercase the entire text
+        result = text.lower()
+
+        # Step 3: Restore proper nouns (apply in reverse position order to avoid offset issues)
+        preserved.sort(key=lambda x: x[0], reverse=True)
+        for start, end, original in preserved:
+            result = result[:start] + original + result[end:]
+
+        return result
 
     @staticmethod
     def _fix_colon_labels(text: str) -> str:
@@ -2774,6 +2894,16 @@ def score_tweet(tweet_text: str, content_format: str = "spark",
     natural_count = sum(1 for m in natural_markers if m in text.lower())
     naturalness_score += min(4, natural_count * 2)
 
+    # Penalize uppercase starts (Turkish X culture = lowercase)
+    first_line = text.split("\n")[0].strip()
+    if first_line and first_line[0].isupper():
+        # Allow if starts with a proper noun
+        _proper_starts = ["openai", "claude", "gpt", "google", "meta", "nvidia",
+                          "anthropic", "microsoft", "apple", "amazon", "deepseek",
+                          "perplexity", "replit", "cursor"]
+        if not any(first_line.lower().startswith(p) for p in _proper_starts):
+            naturalness_score -= 3  # uppercase start = unnatural for Turkish X
+
     # Penalize ending with question (CTA)
     last_line = text.rstrip().split("\n")[-1].strip()
     if last_line.endswith("?"):
@@ -2816,11 +2946,14 @@ def score_tweet(tweet_text: str, content_format: str = "spark",
     if len(paragraphs) >= 4:
         depth_score += 2
 
-    # Personal perspective markers
+    # Personal perspective markers — critical for engagement
     perspective_markers = ["bence", "gördüğüm kadarıyla", "test ettim",
-                           "denedim", "kendi deneyimim", "izlediğim kadarıyla"]
-    if any(pm in text.lower() for pm in perspective_markers):
-        depth_score += 2
+                           "denedim", "kendi deneyimim", "izlediğim kadarıyla",
+                           "kendi açımdan", "dikkatimi çeken", "fark ettim",
+                           "şaşırdım", "beni şaşırtan", "kullandım"]
+    perspective_count = sum(1 for pm in perspective_markers if pm in text.lower())
+    if perspective_count > 0:
+        depth_score += min(4, perspective_count * 2)  # bonus for personal value
 
     # Penalize very short tweets with no depth
     if char_count < 200 and depth_marker_count == 0:

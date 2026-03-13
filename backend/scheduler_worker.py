@@ -328,6 +328,16 @@ def _auto_scan_topics():
         logger.exception("Auto topic scan error")
 
 
+def _generate_dynamic_queries():
+    """Faz 11: Haftada 1 kez AI ile yeni arama sorguları üret."""
+    try:
+        from backend.auto_topic_scanner import generate_dynamic_queries
+        generate_dynamic_queries()
+        _track_run("dynamic_query_generator")
+    except Exception:
+        logger.exception("Dynamic query generation error")
+
+
 def _analyze_trends():
     """Faz 4: Her 1 saatte trend tespiti — cross-account keyword analysis."""
     try:
@@ -644,12 +654,20 @@ def start_scheduler():
             id="ai_scorer",
             replace_existing=True,
         )
+        # Faz 11: Dinamik sorgu üretimi — haftada 1 kez AI ile yeni arama sorguları
+        scheduler.add_job(
+            _generate_dynamic_queries,
+            "interval",
+            hours=168,  # 7 gün = 168 saat
+            id="dynamic_query_generator",
+            replace_existing=True,
+        )
         scheduler.start()
         logger.info(
             "Scheduler started — publish 1m, metrics 30m, auto-reply scanner 10m, "
             "auto-reply generator 5m, self-reply 3m, discovery 30m, telegram 5s, "
             "auto-scan 2h, trends 1h, account-discovery 6h, suggestions 30m, "
-            "my-tweets 2h, ai-scorer 1h"
+            "my-tweets 2h, ai-scorer 1h, dynamic-queries 7d"
         )
 
 
