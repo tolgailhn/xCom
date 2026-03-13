@@ -261,8 +261,9 @@ def _strategy_trend_based(monitored: set, dismissed: set, max_results: int = 5) 
     except ImportError:
         return []
 
-    trend_cache = load_trend_cache()
-    if not trend_cache:
+    trend_data = load_trend_cache()
+    trends = trend_data.get("trends", []) if isinstance(trend_data, dict) else trend_data
+    if not trends:
         return []
 
     author_topics: dict[str, list[str]] = {}
@@ -270,7 +271,7 @@ def _strategy_trend_based(monitored: set, dismissed: set, max_results: int = 5) 
     author_count: Counter = Counter()
     author_sample: dict[str, str] = {}
 
-    for trend in trend_cache:
+    for trend in trends:
         keyword = trend.get("keyword", "")
         for tw in trend.get("top_tweets", []):
             author = (tw.get("author", "") or tw.get("account", "") or "").lower()
