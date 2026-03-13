@@ -614,7 +614,7 @@ def start_scheduler():
         scheduler.add_job(
             _check_discovery,
             "interval",
-            minutes=30,
+            minutes=20,
             id="discovery_checker",
             replace_existing=True,
         )
@@ -625,35 +625,35 @@ def start_scheduler():
             id="telegram_bot",
             replace_existing=True,
         )
-        # Faz 3: Otomatik konu taraması — her 2 saatte
+        # Faz 3: Otomatik konu taraması — her 45 dakikada
         scheduler.add_job(
             _auto_scan_topics,
             "interval",
-            hours=2,
+            minutes=45,
             id="auto_topic_scanner",
             replace_existing=True,
         )
-        # Faz 4: Trend tespiti — her 1 saatte
+        # Faz 4: Trend tespiti — her 20 dakikada
         scheduler.add_job(
             _analyze_trends,
             "interval",
-            hours=1,
+            minutes=20,
             id="trend_analyzer",
             replace_existing=True,
         )
-        # Faz 9: Dinamik hesap keşfi — her 6 saatte
+        # Faz 9: Dinamik hesap keşfi — her 3 saatte
         scheduler.add_job(
             _discover_new_accounts,
             "interval",
-            hours=6,
+            hours=3,
             id="account_discoverer",
             replace_existing=True,
         )
-        # Akıllı öneriler — her 30 dakikada otomatik kümele
+        # Akıllı öneriler — her 15 dakikada otomatik kümele
         scheduler.add_job(
             _auto_cluster_suggestions,
             "interval",
-            minutes=30,
+            minutes=15,
             id="auto_content_suggester",
             replace_existing=True,
         )
@@ -665,11 +665,11 @@ def start_scheduler():
             id="my_tweet_fetcher",
             replace_existing=True,
         )
-        # AI skorlama — her 1 saatte keşif verilerini kullanıcı profiline göre skorla
+        # AI skorlama — her 30 dakikada keşif verilerini kullanıcı profiline göre skorla
         scheduler.add_job(
             _auto_score_all,
             "interval",
-            hours=1,
+            minutes=30,
             id="ai_scorer",
             replace_existing=True,
         )
@@ -684,9 +684,9 @@ def start_scheduler():
         scheduler.start()
         logger.info(
             "Scheduler started — publish 1m, metrics 30m, auto-reply scanner 10m, "
-            "auto-reply generator 5m, self-reply 3m, discovery 30m, telegram 5s, "
-            "auto-scan 2h, trends 1h, account-discovery 6h, suggestions 30m, "
-            "my-tweets 2h, ai-scorer 1h, dynamic-queries 7d"
+            "auto-reply generator 5m, self-reply 3m, discovery 20m, telegram 5s, "
+            "auto-scan 45m, trends 20m, account-discovery 3h, suggestions 15m, "
+            "my-tweets 2h, ai-scorer 30m, dynamic-queries 7d"
         )
 
 
