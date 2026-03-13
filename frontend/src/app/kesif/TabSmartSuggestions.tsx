@@ -541,14 +541,13 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <a href={`https://x.com/${tw.account}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--accent-blue)] hover:underline text-[11px]">@{tw.account}</a>
                                 {tw.created_at && relativeTime(tw.created_at) && (
-                                  <span className="text-[10px] text-[var(--text-tertiary)]">{relativeTime(tw.created_at)}</span>
+                                  <span className="text-[10px] text-[var(--text-tertiary)]">&middot; {relativeTime(tw.created_at)}</span>
+                                )}
+                                {tw.tweet_url && (
+                                  <a href={tw.tweet_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[var(--accent-blue)] hover:underline ml-auto">X{"'"}te Gor &rarr;</a>
                                 )}
                               </div>
-                              {tw.tweet_url ? (
-                                <a href={tw.tweet_url} target="_blank" rel="noopener noreferrer" className="text-[var(--text-primary)] line-clamp-2 mt-0.5 leading-relaxed hover:text-[var(--accent-blue)] transition-colors block">{tw.text}</a>
-                              ) : (
-                                <p className="text-[var(--text-primary)] line-clamp-2 mt-0.5 leading-relaxed">{tw.text}</p>
-                              )}
+                              <p className="text-[var(--text-primary)] line-clamp-2 mt-0.5 leading-relaxed">{tw.text}</p>
                             </div>
                             {tw.engagement > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--accent-amber)]/10 text-[var(--accent-amber)] font-medium shrink-0">{tw.engagement.toFixed(0)}</span>}
                           </div>

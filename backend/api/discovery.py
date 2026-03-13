@@ -541,16 +541,26 @@ def get_smart_suggestions():
 
 @router.post("/cluster-suggestions")
 def trigger_clustering():
-    """Manuel kümeleme tetikle."""
+    """Manuel kümeleme tetikle — önce trendleri yenile, sonra kümele."""
     try:
         import datetime as _dt
         from zoneinfo import ZoneInfo
+        now = _dt.datetime.now(ZoneInfo("Europe/Istanbul"))
+
+        # Step 1: Re-analyze trends from fresh scan data
+        try:
+            from backend.trend_analyzer import analyze_trends
+            analyze_trends()
+            logger.info("Manual clustering: trends re-analyzed")
+        except Exception as e:
+            logger.warning("Manual clustering: trend re-analysis failed: %s", e)
+
+        # Step 2: Cluster with fresh trends
         from backend.trend_analyzer import _cluster_smart_suggestions
         from backend.modules.style_manager import load_trend_cache, load_clustered_suggestions
 
         trend_cache = load_trend_cache()
         trends = trend_cache.get("trends", [])
-        now = _dt.datetime.now(ZoneInfo("Europe/Istanbul"))
         _cluster_smart_suggestions(trends, now)
 
         cached = load_clustered_suggestions()
