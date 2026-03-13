@@ -7,7 +7,7 @@ import {
   dismissSuggestedAccount,
   triggerAccountDiscovery,
   searchAccounts,
-  analyzeAccount,
+  analyzeDiscoveryAccount,
   smartDiscover,
   batchAnalyzeAccounts,
 } from "@/lib/api";
@@ -253,7 +253,7 @@ export default function TabSuggestedAccounts({ refreshTrigger }: { refreshTrigge
   const handleAnalyze = async (username: string) => {
     setAnalyzingAccounts(prev => new Set(prev).add(username));
     try {
-      const data = await analyzeAccount(username);
+      const data = await analyzeDiscoveryAccount(username);
       if (data?.analysis) {
         // Update in search results analysis map
         setSearchAnalysis(prev => ({ ...prev, [username.toLowerCase()]: data.analysis }));

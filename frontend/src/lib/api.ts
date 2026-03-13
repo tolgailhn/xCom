@@ -1082,7 +1082,7 @@ export function searchAccounts(query: string, maxResults: number = 10) {
 }
 
 // Kapsamlı Hesap Keşfi
-export function analyzeAccount(username: string, tweetCount: number = 20) {
+export function analyzeDiscoveryAccount(username: string, tweetCount: number = 20) {
   return apiFetch("/api/discovery/analyze-account", {
     method: "POST",
     body: JSON.stringify({ username, tweet_count: tweetCount }),
