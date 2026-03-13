@@ -49,12 +49,14 @@ frontend/src/app/
     TabSelfReply.tsx          → Self-reply ayarları
     TabAnalytics.tsx          → Analitik (ısı haritası, performans)
   kesif/                      → Keşif & tarama
-    page.tsx                  → Ana sayfa (5 tab) + scheduler durum paneli
+    page.tsx                  → Ana sayfa (6 tab) + scheduler durum paneli
     TabTweets.tsx             → Tweet listesi + araştırma + quote tweet
     TabTrends.tsx             → Trend analizi + araştırma + tweet üretimi
+    TabAIOnerileri.tsx        → AI Önerileri — birleşik feed (küme+trend+tweet) ← ANA TAB
     TabSuggestedAccounts.tsx  → Hesap önerileri + aktif X araması
-    TabSmartSuggestions.tsx   → Akıllı öneriler (trend/haber tabanlı)
+    TabMyTweets.tsx           → Kullanıcı tweetleri (Tolga Tweetler)
     TabAyarlar.tsx            → Keşif ayarları
+    TabSmartSuggestions.tsx   → [KULLANILMIYOR — eski, TabAIOnerileri ile değiştirildi]
   analiz/                     → Hesap analizi
     page.tsx                  → Ana sayfa (5 tab)
     TabNew.tsx                → Yeni analiz
