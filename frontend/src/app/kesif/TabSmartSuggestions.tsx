@@ -596,6 +596,17 @@ export default function TabSmartSuggestions({ refreshTrigger }: { refreshTrigger
                       <button onClick={() => { setWorkflowIdx(isWorkflow ? null : idx); if (!researchData[idx]?.summary) handleResearch(suggestion, idx); }}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
                         style={{ background: "linear-gradient(135deg, var(--accent-green), var(--accent-blue))" }}>Tweet Uret</button>
+                      {(() => {
+                        const firstTweet = tweets[0];
+                        const twUrl = firstTweet?.tweet_url
+                          || (firstTweet?.tweet_id ? `https://x.com/${firstTweet.account}/status/${firstTweet.tweet_id}` : "")
+                          || (firstTweet?.account ? `https://x.com/${firstTweet.account}` : "");
+                        return twUrl ? (
+                          <a href={twUrl} target="_blank" rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--border-primary)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all inline-flex items-center"
+                            onClick={(e: React.MouseEvent) => e.stopPropagation()}>X&apos;te Ac</a>
+                        ) : null;
+                      })()}
                       {suggestion.suggested_hour && generatedTweets[idx] && (
                         <button onClick={() => handleScheduleBestTime(idx)}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--accent-purple)]/30 text-[var(--accent-purple)] hover:bg-[var(--accent-purple)]/10 transition-all">
