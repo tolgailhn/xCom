@@ -611,19 +611,19 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
 
   /* ── Render ───────────────────────────────────────── */
 
+  // Date navigation — useMemo MUST be called before any early return (React hooks rule)
+  const currentDate = selectedDate || todayStr();
+  const allDates = useMemo(() => {
+    const set = new Set([todayStr(), ...availableDates]);
+    return Array.from(set).sort().reverse();
+  }, [availableDates]);
+
   if (loading) return (
     <div className="text-center py-12">
       <div className="w-10 h-10 mx-auto mb-3 rounded-full border-2 border-[var(--accent-blue)]/30 border-t-[var(--accent-blue)] animate-spin" />
       <div className="text-sm text-[var(--text-secondary)]">3 kaynaktan veriler yukleniyor...</div>
     </div>
   );
-
-  // Date navigation handlers
-  const currentDate = selectedDate || todayStr();
-  const allDates = useMemo(() => {
-    const set = new Set([todayStr(), ...availableDates]);
-    return Array.from(set).sort().reverse();
-  }, [availableDates]);
   const currentIdx = allDates.indexOf(currentDate);
   const canGoBack = currentIdx < allDates.length - 1;
   const canGoForward = currentIdx > 0;
