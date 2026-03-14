@@ -112,6 +112,9 @@ frontend/src/components/      → Paylaşılan UI bileşenleri
     MediaSection.tsx          → Medya arama/infografik bölümü
     LinksBox.tsx              → Bağlantılar kutusu
 
+frontend/src/hooks/           → Custom React hook'ları
+  useResearchWorkflow.ts      → Araştırma/üretim/medya paylaşılan workflow hook (3 tab kullanır)
+
 frontend/src/lib/             → Paylaşılan kütüphaneler
   api.ts                      → Tüm backend API çağrıları (tek dosya, ~tüm endpointler)
   auth.tsx                    → Kimlik doğrulama context + hook
@@ -164,6 +167,7 @@ Her sayfa page.tsx → kendi Tab*.tsx dosyaları (tab-per-file pattern)
 icerik/ → shared.tsx (ortak fonksiyonlar)
 Tüm Tab*.tsx dosyaları → components/discovery/* (paylaşılan UI: GenerationPanel, ResearchPanel vb.)
 Tüm Tab*.tsx dosyaları → lib/api.ts (backend API çağrıları)
+kesif/TabTweets, TabTrends, TabAIOnerileri → hooks/useResearchWorkflow.ts (paylaşılan workflow)
 kesif/TabAIOnerileri.tsx → suggestions + trends + discovery tweets (3 kaynak birleşik feed)
 kesif/page.tsx → TabTweets, TabTrends, TabAIOnerileri, TabSuggestedAccounts, TabAyarlar
 analiz/page.tsx → TabNew, TabSaved, TabFollowers, TabPool, TabExport, TabMyTweets
@@ -269,6 +273,9 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 | 2026-03-13 | Copywriting hook formülleri | 4 yeni hook kategorisi (merak, değer, hikaye, karşıt) + score_tweet bonusları |
 | 2026-03-13 | Twikit ile otomatik reply gönderimi | Cookie-based auth ile reply. 3 mod: draft/twikit/api. Günlük limit + bugün filtresi + insan-benzeri delay |
 | 2026-03-14 | Günlük snapshot arşiv sistemi | AI önerileri (kümeler, trendler, tweetler) gece yarısında kayboluyordu — 7 günlük arşiv + tarih navigasyonu eklendi |
+| 2026-03-14 | `useResearchWorkflow` custom hook | 3 tab'da ~630 satır tekrarlanan araştırma/üretim/medya workflow'u tek hook'a taşındı. Publish bug fix (editedText kullanımı) |
+| 2026-03-14 | Trend analyzer 12h→24h | discovery_worker MAX_TWEET_AGE_HOURS=24 ile uyumlu hale getirildi |
+| 2026-03-14 | Scheduler jobs accordion | page.tsx'teki 6 job kartı varsayılan kapalı details/summary'ye alındı. Rotasyon bilgisi TabAyarlar'a taşındı |
 
 ---
 
@@ -457,6 +464,17 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 ---
 
 ## Değişiklik Günlüğü
+
+### 2026-03-14 (Keşif Sayfası Kapsamlı Yenileme — useResearchWorkflow Hook)
+- **feat**: `hooks/useResearchWorkflow.ts` — YENİ: 3 tab'da tekrarlanan araştırma/üretim/medya/zamanlama workflow'u tek custom hook'a taşındı (~280 satır). Per-key state yönetimi, streaming araştırma, publish bug fix (editedText kullanımı)
+- **fix**: `GenerationPanel.tsx` — Tek tweet'e "API ile Paylaş" butonu eklendi (daha önce sadece thread'lerde vardı). `editedText` kullanarak düzenlenen metin kaybı bug'ı düzeltildi
+- **refactor**: `TabTweets.tsx` — 17 state + 4 handler kaldırıldı → `useResearchWorkflow()` hook'a geçirildi (702→~540 satır)
+- **refactor**: `TabTrends.tsx` — 15 state + 6 handler kaldırıldı → `useResearchWorkflow()` hook'a geçirildi (809→~630 satır)
+- **refactor**: `TabAIOnerileri.tsx` — 18 state + 6 handler kaldırıldı → `useResearchWorkflow()` hook'a geçirildi. Subtab pill'leri ("Trendler"/"Tweetler") kaldırıldı → dropdown ile farklı isimler ("AI Kümeleri"/"Anahtar Kelimeler"/"Tekil Tweetler")
+- **refactor**: `page.tsx` — Scheduler jobs 6 kart → varsayılan kapalı `<details>` accordion ("N aktif iş" pill). Rotasyon bilgisi kaldırıldı (TabAyarlar'a taşındı)
+- **feat**: `TabAyarlar.tsx` — `rotationInfo` prop eklendi, hesap rotasyon durumu burada gösteriliyor
+- **fix**: `trend_analyzer.py` — `hours=12` → `hours=24` (discovery_worker MAX_TWEET_AGE_HOURS=24 ile uyumlu)
+- **fix**: `api/discovery.py` — `/news` ve `/news/scan` endpoint'leri graceful degrade (news_scanner deaktif, boş yanıt döndürür)
 
 ### 2026-03-14 (Hesap Yönetimi — DEFAULT Hesaplar Ayarlarda Görünsün)
 - **fix**: `twitter_scanner.py` — `DEFAULT_AI_ACCOUNTS`'tan `pusholder` kaldırıldı (AI hesabı değil)
