@@ -5,14 +5,13 @@ PIPELINE:
 1. scan_for_candidates() — Twikit ile tweet çeker, kuyruğa yazar (AI çağrısı YOK)
 2. generate_and_reply() — Kuyruktan okur, AI yanıt üretir, publish/draft yapar
 
-ROTASYON SİSTEMİ:
-- Hesaplar ÇALIŞMA SAATLERİNE dağıtılır (ör. 9-21 = 12 slot)
-- 5 hesap → her biri farklı saatte (hepsi kontrol edilir)
-- 38 hesap → saat başı ~3 hesap (rate limit güvenli)
-- Deterministik: hesap listesi değişmedikçe aynı saat aynı hesapları alır
+TARAMA SİSTEMİ:
+- Her 10 dakikada TÜM hesaplar taranır
+- Hesap bazlı cooldown: aynı hesap 1 saat içinde tekrar taranmaz
+- Böylece gün içinde yeni tweet atan her hesap hızla yakalanır
 
 ÇALIŞMA SAATLERİ:
-- Varsayılan 09:00-21:00 arası çalışır (config ile ayarlanabilir)
+- Varsayılan 09:00-23:00 arası çalışır (config ile ayarlanabilir)
 - Gece saatlerinde otomatik duraklar
 
 PAYLAŞIM STRATEJİSİ:
@@ -28,32 +27,21 @@ from zoneinfo import ZoneInfo
 logger = logging.getLogger(__name__)
 TZ_TR = ZoneInfo("Europe/Istanbul")
 
-# Track which hour we last scanned to avoid duplicate scans within same hour
-_last_scanned_hour: str | None = None
+# Hesap bazlı cooldown: {account: last_scanned_hour_key}
+_account_last_scanned: dict[str, str] = {}
 
 
 def _get_accounts_for_hour(accounts: list[str], hour: int,
-                           work_start: int = 9, work_end: int = 21) -> list[str]:
+                           work_start: int = 9, work_end: int = 23) -> list[str]:
     """
-    Hesapları ÇALIŞMA SAATLERİNE dağıt (24 saate değil!).
-
-    Ör: work_start=9, work_end=21 → 12 slot [9,10,...,20]
-    5 hesap + 12 slot → her hesap farklı saatte, hepsi kontrol edilir
-    38 hesap + 12 slot → saat başı ~3 hesap
-
-    Dağılım deterministik: hesap listesi değişmedikçe aynı saat aynı hesapları alır.
+    Backward compat — artık tüm hesapları döndürür (cooldown scan_for_candidates'te).
+    Çalışma saatleri dışındaysa boş liste döner.
     """
     if not accounts:
         return []
-
-    work_hours = list(range(work_start, work_end))
-    num_slots = len(work_hours)
-
-    if not num_slots or hour not in work_hours:
+    if hour < work_start or hour >= work_end:
         return []
-
-    slot_index = work_hours.index(hour)
-    return [acc for i, acc in enumerate(accounts) if i % num_slots == slot_index]
+    return list(accounts)
 
 
 def _is_retweet(tweet_text: str) -> bool:
@@ -73,11 +61,11 @@ def scan_for_candidates():
     """
     Tarayıcı — scheduler tarafından her 10 dakikada bir çağrılır.
 
+    Her çalışmada TÜM hesapları tarar (hesap bazlı 1 saat cooldown ile).
     Twikit ile tweet çeker, filtreler, skorlar, kuyruğa yazar.
     AI çağrısı YAPMAZ, publish YAPMAZ — sadece tarama.
-    Aynı saat içinde tekrar çağrılırsa çalışmaz (duplicate koruması).
     """
-    global _last_scanned_hour
+    global _account_last_scanned
 
     from backend.modules.style_manager import (
         load_auto_reply_config,
@@ -101,7 +89,7 @@ def scan_for_candidates():
 
     # Çalışma saatleri kontrolü
     work_start = config.get("work_hour_start", 9)
-    work_end = config.get("work_hour_end", 21)
+    work_end = config.get("work_hour_end", 23)
     if hour < work_start or hour >= work_end:
         logger.info(
             "Auto-reply scanner: Saat %02d — çalışma saatleri dışında (%02d:00-%02d:00), atlanıyor",
@@ -111,24 +99,23 @@ def scan_for_candidates():
 
     current_hour_key = now.strftime("%Y-%m-%d-%H")
 
-    # Aynı saat içinde tekrar tarama yapma
-    if _last_scanned_hour == current_hour_key:
-        return
-    _last_scanned_hour = current_hour_key
+    # Hesap bazlı cooldown: son 1 saatte taranan hesapları atla
+    accounts_to_scan = []
+    for acc in accounts:
+        acc_clean = acc.strip().lstrip("@")
+        if not acc_clean:
+            continue
+        last_key = _account_last_scanned.get(acc_clean)
+        if last_key == current_hour_key:
+            continue  # Bu saat zaten tarandı
+        accounts_to_scan.append(acc_clean)
 
-    hourly_accounts = _get_accounts_for_hour(accounts, hour, work_start, work_end)
-
-    if not hourly_accounts:
-        logger.info(
-            "Auto-reply scanner: Saat %02d — bu saatte kontrol edilecek hesap yok", hour
-        )
+    if not accounts_to_scan:
         return
 
     logger.info(
-        "Auto-reply scanner: Saat %02d — %d hesap taranıyor: %s",
-        hour,
-        len(hourly_accounts),
-        ", ".join(f"@{a}" for a in hourly_accounts),
+        "Auto-reply scanner: Saat %02d — %d/%d hesap taranıyor",
+        hour, len(accounts_to_scan), len(accounts),
     )
 
     # Load seen tweet IDs
@@ -144,7 +131,7 @@ def scan_for_candidates():
     only_original = config.get("only_original_tweets", True)
     queued_count = 0
 
-    for account in hourly_accounts:
+    for account in accounts_to_scan:
         account = account.strip().lstrip("@")
         if not account:
             continue
@@ -153,7 +140,12 @@ def scan_for_candidates():
             tweets = twikit.get_user_tweets(account, count=5)
         except Exception as e:
             logger.warning("Auto-reply scanner: Failed to fetch tweets for @%s: %s", account, e)
+            # Hata alsa bile cooldown kaydet (rate limit koruması)
+            _account_last_scanned[account] = current_hour_key
             continue
+
+        # Başarılı tarama — cooldown kaydet
+        _account_last_scanned[account] = current_hour_key
 
         # Tweetleri filtrele
         candidates = []
@@ -235,7 +227,7 @@ def scan_for_candidates():
 
     logger.info(
         "Auto-reply scanner: Saat %02d — %d hesap tarandı, %d aday kuyruğa eklendi",
-        hour, len(hourly_accounts), queued_count,
+        hour, len(accounts_to_scan), queued_count,
     )
 
 
@@ -266,12 +258,12 @@ def generate_and_reply():
 
     # Çalışma saatleri kontrolü
     work_start = config.get("work_hour_start", 9)
-    work_end = config.get("work_hour_end", 21)
+    work_end = config.get("work_hour_end", 23)
     if hour < work_start or hour >= work_end:
         return
 
     # Rate limit: max replies per hour
-    max_per_hour = config.get("max_replies_per_hour", 5)
+    max_per_hour = config.get("max_replies_per_hour", 10)
     logs = load_auto_reply_logs()
     one_hour_ago = now - datetime.timedelta(hours=1)
 
@@ -291,11 +283,11 @@ def generate_and_reply():
         return
 
     # Günlük limit kontrolü
-    daily_max = config.get("daily_max_replies", 20)
+    daily_max = config.get("daily_max_replies", 50)
     today_str = now.strftime("%Y-%m-%d")
     today_published = sum(
         1 for log in logs
-        if log.get("status") == "published"
+        if log.get("status") in ("published", "ready")
         and log.get("created_at", "").startswith(today_str)
     )
     if today_published >= daily_max:
@@ -432,13 +424,13 @@ def publish_ready_drafts():
 
     # Çalışma saatleri kontrolü
     work_start = config.get("work_hour_start", 9)
-    work_end = config.get("work_hour_end", 21)
+    work_end = config.get("work_hour_end", 23)
     if hour < work_start or hour >= work_end:
         return
 
     # Günlük limit kontrolü
     logs = load_auto_reply_logs()
-    daily_max = config.get("daily_max_replies", 20)
+    daily_max = config.get("daily_max_replies", 50)
     today_str = now.strftime("%Y-%m-%d")
     today_published = sum(
         1 for log in logs
@@ -450,7 +442,7 @@ def publish_ready_drafts():
         return
 
     # Saatlik limit kontrolü
-    max_per_hour = config.get("max_replies_per_hour", 5)
+    max_per_hour = config.get("max_replies_per_hour", 10)
     one_hour_ago = now - datetime.timedelta(hours=1)
     recent_published = 0
     for log in logs:

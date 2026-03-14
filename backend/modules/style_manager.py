@@ -424,13 +424,15 @@ def load_auto_reply_config() -> dict:
         "reply_delay_seconds": 60,
         "style": "reply",
         "additional_context": "Her zaman deger katan, bilgilendirici yanitlar yaz. AI konularinda kendi deneyimlerinden bahset. Kisa ve oz tut.",
-        "max_replies_per_hour": 3,
+        "max_replies_per_hour": 10,
         "min_likes_to_reply": 0,
         "only_original_tweets": True,
         "language": "tr",
         "draft_only": True,
         "publish_mode": "draft",
-        "daily_max_replies": 20,
+        "daily_max_replies": 50,
+        "work_hour_start": 9,
+        "work_hour_end": 23,
     }
 
 

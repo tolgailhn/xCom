@@ -141,34 +141,43 @@ async def get_status():
         except (ValueError, TypeError):
             continue
 
-    # Rotation schedule: which accounts at which hour
+    # Tüm hesaplar her taramada kontrol ediliyor (hesap bazlı 1 saat cooldown)
     accounts = config.get("accounts", [])
-    from backend.auto_reply_worker import _get_accounts_for_hour
-    current_hour_accounts = _get_accounts_for_hour(accounts, now.hour)
-    next_hour = (now.hour + 1) % 24
-    next_hour_accounts = _get_accounts_for_hour(accounts, next_hour)
+    work_start = config.get("work_hour_start", 9)
+    work_end = config.get("work_hour_end", 23)
+    is_work_hour = work_start <= now.hour < work_end
 
-    # Full 24-hour schedule
+    # Cooldown durumu: hangi hesaplar bu saat tarandı?
+    from backend.auto_reply_worker import _account_last_scanned
+    current_hour_key = now.strftime("%Y-%m-%d-%H")
+    already_scanned = [
+        f"@{acc}" for acc in accounts
+        if _account_last_scanned.get(acc.strip().lstrip("@")) == current_hour_key
+    ]
+    not_yet_scanned = [
+        f"@{acc}" for acc in accounts
+        if _account_last_scanned.get(acc.strip().lstrip("@")) != current_hour_key
+    ]
+
+    # Çalışma saatleri takvimi
     schedule = {}
-    for h in range(24):
-        h_accounts = _get_accounts_for_hour(accounts, h)
-        if h_accounts:
-            schedule[f"{h:02d}:00"] = [f"@{a}" for a in h_accounts]
+    for h in range(work_start, work_end):
+        schedule[f"{h:02d}:00"] = [f"@{a}" for a in accounts]
 
     return {
         "enabled": config.get("enabled", False),
         "draft_only": config.get("draft_only", True),
         "accounts_count": len(accounts),
         "replies_last_hour": recent_replies,
-        "max_per_hour": config.get("max_replies_per_hour", 5),
+        "max_per_hour": config.get("max_replies_per_hour", 10),
         "last_reply_time": last_reply_time,
         "total_replies": sum(1 for l in logs if l.get("status") == "published"),
         "total_ready": sum(1 for l in logs if l.get("status") == "ready"),
         "total_manually_posted": sum(1 for l in logs if l.get("status") == "manually_posted"),
         "total_failures": sum(1 for l in logs if "failed" in l.get("status", "")),
         "current_hour": f"{now.hour:02d}:00",
-        "current_hour_accounts": [f"@{a}" for a in current_hour_accounts],
-        "next_hour": f"{next_hour:02d}:00",
-        "next_hour_accounts": [f"@{a}" for a in next_hour_accounts],
+        "current_hour_accounts": already_scanned if is_work_hour else [],
+        "next_hour": f"{(now.hour + 1) % 24:02d}:00",
+        "next_hour_accounts": not_yet_scanned if is_work_hour else [f"@{a}" for a in accounts],
         "schedule": schedule,
     }

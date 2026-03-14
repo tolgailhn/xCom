@@ -286,6 +286,8 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 | 2026-03-14 | Keyword gruplama (`KEYWORD_GROUPS`) | "agent"/"agents"/"agentic" gibi benzer keyword'ler ayrı trend olarak görünüyordu → canonical keyword'e birleştirme |
 | 2026-03-14 | AI trend başlık zenginleştirme | Keyword trendler "rag", "mcp" gibi kısa kalıyordu → AI ile Türkçe açıklayıcı başlık + 1 cümle açıklama |
 | 2026-03-14 | Küme tweet'lerinde `summary_tr` | Trend/küme tweetlerinde Türkçe çeviri gösterilmiyordu → backend'den frontend'e taşındı |
+| 2026-03-14 | Auto-reply saatlik rotasyon kaldırıldı | 38 hesap / 12 saat = saatte 3 hesap çok yetersiz → her 10dk'da tüm hesaplar taranıyor (hesap bazlı 1 saat cooldown) |
+| 2026-03-14 | Auto-reply limitleri yükseltildi | Saatlik 3→10, günlük 20→50, çalışma saatleri 09-21→09-23 |
 
 ---
 
@@ -474,6 +476,13 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 ---
 
 ## Değişiklik Günlüğü
+
+### 2026-03-14 (Otomatik Yanıt — Tarama Sistemi Yenileme)
+- **refactor**: `auto_reply_worker.py` — Saatlik rotasyon kaldırıldı → her 10 dakikada TÜM hesaplar taranıyor (hesap bazlı 1 saat cooldown ile)
+- **feat**: `auto_reply_worker.py` — `_account_last_scanned` dict: hesap bazlı cooldown (aynı hesap 1 saatte 1 kez)
+- **fix**: `auto_reply_worker.py` — Varsayılan limitler yükseltildi: saatlik 3→10, günlük 20→50, çalışma saatleri 09-21→09-23
+- **fix**: `style_manager.py` — Default config güncellendi: `max_replies_per_hour: 10`, `daily_max_replies: 50`, `work_hour_end: 23`
+- **fix**: `api/auto_reply.py` — Status endpoint güncellendi: rotasyon yerine cooldown durumu gösteriliyor (taranmış/bekleyen hesaplar)
 
 ### 2026-03-14 (Keşif Sayfası İyileştirme — Keyword Gruplama + AI Başlık + UI)
 - **feat**: `trend_analyzer.py` — `KEYWORD_GROUPS` dict + `_KEYWORD_CANONICAL` reverse lookup: benzer keyword'ler birleşik trend olarak gösteriliyor (ör: "agent"+"agents"+"agentic" → tek "agent" trendi)
