@@ -6,9 +6,10 @@ PIPELINE:
 2. generate_and_reply() — Kuyruktan okur, AI yanıt üretir, publish/draft yapar
 
 TARAMA SİSTEMİ:
-- Her 10 dakikada TÜM hesaplar taranır
+- Her 10 dakikada bir batch hesap taranır (38 hesap / 6 çalışma = ~7 hesap per batch)
+- 1 saat içinde TÜM hesaplar taranmış olur
 - Hesap bazlı cooldown: aynı hesap 1 saat içinde tekrar taranmaz
-- Böylece gün içinde yeni tweet atan her hesap hızla yakalanır
+- Rate limit güvenli: tek seferde max 7 hesap
 
 ÇALIŞMA SAATLERİ:
 - Varsayılan 09:00-23:00 arası çalışır (config ile ayarlanabilir)
@@ -100,7 +101,7 @@ def scan_for_candidates():
     current_hour_key = now.strftime("%Y-%m-%d-%H")
 
     # Hesap bazlı cooldown: son 1 saatte taranan hesapları atla
-    accounts_to_scan = []
+    remaining = []
     for acc in accounts:
         acc_clean = acc.strip().lstrip("@")
         if not acc_clean:
@@ -108,14 +109,21 @@ def scan_for_candidates():
         last_key = _account_last_scanned.get(acc_clean)
         if last_key == current_hour_key:
             continue  # Bu saat zaten tarandı
-        accounts_to_scan.append(acc_clean)
+        remaining.append(acc_clean)
 
-    if not accounts_to_scan:
+    if not remaining:
         return
 
+    # Batch mantığı: scheduler 10dk'da bir çalışır → 1 saatte 6 çalışma
+    # Hesapları eşit dilimlere böl, her çalışmada 1 dilim tara
+    # Böylece tüm hesaplar 1 saat içinde parça parça taranır
+    RUNS_PER_HOUR = 6  # 60dk / 10dk = 6 çalışma
+    batch_size = max(1, len(accounts) // RUNS_PER_HOUR + 1)
+    accounts_to_scan = remaining[:batch_size]
+
     logger.info(
-        "Auto-reply scanner: Saat %02d — %d/%d hesap taranıyor",
-        hour, len(accounts_to_scan), len(accounts),
+        "Auto-reply scanner: Saat %02d — batch %d/%d hesap taranıyor (kalan: %d)",
+        hour, len(accounts_to_scan), len(accounts), len(remaining),
     )
 
     # Load seen tweet IDs
