@@ -284,9 +284,14 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
       .slice(0, 20)
       .map((dt: DiscoveryTweet) => normalizeDiscoveryTweet(dt));
 
-    // Deduplicate
-    const sugTopics = new Set(sugItems.map((s: FeedItem) => s.topic.toLowerCase()));
-    const dedupedTrends = trendItems.filter((t: FeedItem) => !sugTopics.has(t.topic.toLowerCase()));
+    // Deduplicate — küme topic'leri genellikle uzun cümle, trend keyword'leri kısa
+    // Sadece TAMAMEN aynı topic'leri filtrele (kısmi eşleşme dedup yapma)
+    const sugTopicsExact = new Set(sugItems.map((s: FeedItem) => s.topic.toLowerCase().trim()));
+    const dedupedTrends = trendItems.filter((t: FeedItem) => {
+      const kw = t.topic.toLowerCase().trim();
+      // Sadece birebir eşleşme varsa filtrele
+      return !sugTopicsExact.has(kw);
+    });
     const sugTweetIds = new Set(
       sugItems.flatMap((s: FeedItem) => s.tweets.map((tw: ClusterTweet) => tw.tweet_id).filter(Boolean))
     );

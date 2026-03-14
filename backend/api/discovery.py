@@ -669,21 +669,21 @@ def trigger_clustering():
         from zoneinfo import ZoneInfo
         now = _dt.datetime.now(ZoneInfo("Europe/Istanbul"))
 
-        # Step 1: Re-analyze trends from fresh scan data
+        # Step 1: Re-analyze trends (bu zaten _cluster_smart_suggestions'ı da çağırır)
+        # Ama force=True olduğunda clustering hash bypass eder
+        from backend.trend_analyzer import analyze_trends, _cluster_smart_suggestions
+        from backend.modules.style_manager import load_trend_cache, load_clustered_suggestions
+
         try:
-            from backend.trend_analyzer import analyze_trends
             analyze_trends(force=True)
             logger.info("Manual clustering: trends re-analyzed")
         except Exception as e:
             logger.warning("Manual clustering: trend re-analysis failed: %s", e)
 
-        # Step 2: Cluster with fresh trends
-        from backend.trend_analyzer import _cluster_smart_suggestions
-        from backend.modules.style_manager import load_trend_cache, load_clustered_suggestions
-
+        # Step 2: Force re-cluster (hash bypass)
         trend_cache = load_trend_cache()
         trends = trend_cache.get("trends", [])
-        _cluster_smart_suggestions(trends, now)
+        _cluster_smart_suggestions(trends, now, force=True)
 
         cached = load_clustered_suggestions()
         return {

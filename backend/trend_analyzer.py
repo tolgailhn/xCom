@@ -286,7 +286,7 @@ def analyze_trends(force: bool = False):
             logger.exception("Auto content suggestion error")
 
 
-def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
+def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime, force: bool = False):
     """Trend tweet'lerini + tüm cache tweet'lerini AI ile konu bazlı kümele."""
     import json as _json
 
@@ -411,8 +411,18 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
         len(all_tweets), trend_count, len(all_tweets) - trend_count,
     )
 
+    # Aynı veriyle gereksiz AI çağrısı yapma — hash kontrolü (force ile bypass)
+    new_hash = str(hash("|".join(sorted(all_tweets)[:50])))
+    existing = load_clustered_suggestions()
+    if not force and isinstance(existing, dict) and existing.get("source_hash") == new_hash:
+        # Veriler değişmemiş — clustered_at'ı güncelle ama AI çağrısı yapma
+        existing["clustered_at"] = now.isoformat()
+        save_clustered_suggestions(existing)
+        logger.info("Clustering: same data hash, skipping AI call (updated timestamp)")
+        return
+
     if len(all_tweets) < 3:
-        logger.info("Clustering: too few tweets (%d), skipping", len(all_tweets))
+        logger.warning("Clustering: too few tweets (%d), skipping — trends may be stale", len(all_tweets))
         return
 
     # Build prompt for AI clustering — include engagement data for context
