@@ -41,7 +41,18 @@ class TriggerScanRequest(BaseModel):
 @router.get("/config")
 def get_config():
     from backend.modules.style_manager import load_discovery_config
-    return {"config": load_discovery_config()}
+    config = load_discovery_config()
+    # DEFAULT_AI_ACCOUNTS'ı da göster (kullanıcı görsün/yönetsin)
+    try:
+        from backend.modules.twitter_scanner import DEFAULT_AI_ACCOUNTS
+        excluded = {a.lower() for a in config.get("excluded_accounts", [])}
+        existing = {a.lower() for a in config.get("priority_accounts", []) + config.get("normal_accounts", [])}
+        for acc in DEFAULT_AI_ACCOUNTS:
+            if acc.lower() not in existing and acc.lower() not in excluded:
+                config.setdefault("normal_accounts", []).append(acc)
+    except ImportError:
+        pass
+    return {"config": config}
 
 
 @router.post("/config")
@@ -84,8 +95,14 @@ def remove_account(req: RemoveAccountRequest):
     config = load_discovery_config()
     username = req.username.strip().lstrip("@")
 
-    config["priority_accounts"] = [a for a in config["priority_accounts"] if a != username]
-    config["normal_accounts"] = [a for a in config["normal_accounts"] if a != username]
+    config["priority_accounts"] = [a for a in config.get("priority_accounts", []) if a != username]
+    config["normal_accounts"] = [a for a in config.get("normal_accounts", []) if a != username]
+
+    # excluded_accounts'a ekle (DEFAULT listesinden geri gelmemesi için)
+    excluded = config.get("excluded_accounts", [])
+    if username.lower() not in {e.lower() for e in excluded}:
+        excluded.append(username)
+    config["excluded_accounts"] = excluded
 
     save_discovery_config(config)
     return {"success": True, "config": config}

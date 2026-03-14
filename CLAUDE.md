@@ -458,6 +458,13 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 
 ## Değişiklik Günlüğü
 
+### 2026-03-14 (Hesap Yönetimi — DEFAULT Hesaplar Ayarlarda Görünsün)
+- **fix**: `twitter_scanner.py` — `DEFAULT_AI_ACCOUNTS`'tan `pusholder` kaldırıldı (AI hesabı değil)
+- **feat**: `style_manager.py` — Discovery config'e `excluded_accounts` alanı eklendi
+- **feat**: `api/discovery.py` — GET `/config`: DEFAULT_AI_ACCOUNTS'ı da gösteriyor (excluded hariç). Kullanıcı tüm hesapları görebilir ve yönetebilir
+- **feat**: `api/discovery.py` — Remove endpoint: kaldırılan hesapları `excluded_accounts`'a ekliyor (tekrar geri gelmez)
+- **feat**: `discovery_worker.py` — DEFAULT_AI_ACCOUNTS merge'de `excluded_accounts` kontrol ediliyor
+
 ### 2026-03-14 (Kümeleme Sistemi İyileştirme)
 - **fix**: `trend_analyzer.py` — `_cluster_smart_suggestions()` artık sadece trend tweet'leri değil, TÜM discovery_cache + auto_scan_cache tweet'lerini de kullanıyor (max 100 tweet). Trend'lerde olmayan benzersiz konular artık da kümeleniyor
 - **fix**: `api/discovery.py` — `/tweets` endpoint'i artık `auto_scan_cache` tweet'lerini de dahil ediyor (duplicate tweet_id kontrolü ile)

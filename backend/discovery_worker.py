@@ -341,13 +341,16 @@ def scan_accounts(force: bool = False, only_accounts: list[str] | None = None):
     priority_accounts = config.get("priority_accounts", [])
     normal_accounts = config.get("normal_accounts", [])
 
-    # DEFAULT_AI_ACCOUNTS'u normal listeye birleştir (eksik olanları ekle)
+    # DEFAULT_AI_ACCOUNTS'u normal listeye birleştir (excluded hariç)
+    excluded_lower = {a.lower() for a in config.get("excluded_accounts", [])}
     try:
         from backend.modules.twitter_scanner import DEFAULT_AI_ACCOUNTS
         priority_set_lower = {a.lower().lstrip("@") for a in priority_accounts}
         normal_set_lower = {a.lower().lstrip("@") for a in normal_accounts}
         for acc in DEFAULT_AI_ACCOUNTS:
             acc_lower = acc.lower().lstrip("@")
+            if acc_lower in excluded_lower:
+                continue
             if acc_lower not in priority_set_lower and acc_lower not in normal_set_lower:
                 normal_accounts.append(acc)
     except ImportError:

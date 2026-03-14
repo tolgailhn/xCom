@@ -94,7 +94,7 @@ DEFAULT_AI_ACCOUNTS = [
     "AytuncYildizli", "erhanmeydan", "ismailgunaydinn", "GokBoraYlmz",
     "ariferol01", "UfukDegen", "0xemrey", "FlowRiderMM",
     "vibeeval", "onur_a61", "alarax", "yigitakinkaya",
-    "Rucknettin", "turkiyeai", "canlandirdik", "pusholder",
+    "Rucknettin", "turkiyeai", "canlandirdik",
     "futuristufuk", "AI4Turkey", "1muhammedavci", "mysancaktutan",
     "bedriozyurt", "devburaq",
 ]

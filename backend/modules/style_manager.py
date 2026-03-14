@@ -705,6 +705,7 @@ def load_discovery_config() -> dict:
         "enabled": False,
         "priority_accounts": DEFAULT_DISCOVERY_ACCOUNTS_PRIORITY.copy(),
         "normal_accounts": DEFAULT_DISCOVERY_ACCOUNTS_NORMAL.copy(),
+        "excluded_accounts": [],
         "check_interval_hours": 2,
         "work_hour_start": 8,
         "work_hour_end": 23,
