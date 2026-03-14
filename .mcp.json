@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "xcom": {
+      "command": "python3",
+      "args": ["/home/user/xCom/mcp-server/server.py"],
+      "env": {
+        "XCOM_API_URL": "http://localhost:8000"
+      }
+    }
+  }
+}
