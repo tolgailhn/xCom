@@ -491,7 +491,7 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime, force
             payload = {
                 "model": models[provider],
                 "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 3500,
+                "max_tokens": 5000,
                 "temperature": 0.3,
             }
             data = _json.dumps(payload).encode("utf-8")
@@ -513,7 +513,7 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime, force
             }
             payload = {
                 "model": "claude-sonnet-4-20250514",
-                "max_tokens": 3500,
+                "max_tokens": 5000,
                 "messages": [{"role": "user", "content": prompt}],
             }
             data = _json.dumps(payload).encode("utf-8")
@@ -531,13 +531,15 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime, force
         logger.warning("Clustering AI call failed: %s", e)
         return
 
-    # Strip MiniMax tags if present
-    if provider == "minimax" and response_text:
+    # Strip MiniMax tags if present (all providers might have similar issues)
+    if response_text:
         response_text = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL).strip()
         response_text = re.sub(r'<minimax:tool_call>.*?</minimax:tool_call>', '', response_text, flags=re.DOTALL).strip()
         response_text = re.sub(r'<minimax:tool_call>.*', '', response_text, flags=re.DOTALL).strip()
+        # Strip markdown code blocks: ```json ... ``` or ``` ... ```
+        response_text = re.sub(r'```(?:json)?\s*\n?', '', response_text).strip()
 
-    # Parse clusters — robust 3-layer JSON extraction
+    # Parse clusters — robust 4-layer JSON extraction
     clusters = None
 
     # Layer 1: Direct parse
@@ -561,7 +563,7 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime, force
             except Exception:
                 clusters = None
 
-    # Layer 3: JSON repair (trailing commas, control chars, etc.)
+    # Layer 3: JSON repair (trailing commas, control chars, unescaped newlines, etc.)
     if not clusters:
         try:
             match = re.search(r'\[.*\]', response_text, re.DOTALL)
@@ -570,14 +572,45 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime, force
                 cleaned = re.sub(r',\s*([}\]])', r'\1', cleaned)  # trailing commas
                 cleaned = re.sub(r'[\x00-\x1f\x7f]', ' ', cleaned)  # control chars
                 cleaned = cleaned.replace('\n', ' ').replace('\r', '')
+                # Fix common AI output issues
+                cleaned = re.sub(r'"\s*\n\s*"', '""', cleaned)  # broken strings
+                cleaned = re.sub(r'\s+', ' ', cleaned)  # normalize whitespace
                 clusters = _json.loads(cleaned)
                 if not isinstance(clusters, list):
                     clusters = None
         except Exception:
             clusters = None
 
+    # Layer 4: Line-by-line JSON object extraction (last resort)
     if not clusters:
-        logger.warning("Clustering: could not parse JSON from AI response (len=%d)", len(response_text))
+        try:
+            # Find all individual JSON objects {...} and collect them
+            obj_pattern = re.compile(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}')
+            objects = obj_pattern.findall(response_text)
+            if objects:
+                parsed_objs = []
+                for obj_str in objects:
+                    try:
+                        # Clean control chars
+                        obj_clean = re.sub(r'[\x00-\x1f\x7f]', ' ', obj_str)
+                        obj_clean = re.sub(r',\s*([}\]])', r'\1', obj_clean)
+                        obj = _json.loads(obj_clean)
+                        if isinstance(obj, dict) and "tweet_indices" in obj:
+                            parsed_objs.append(obj)
+                    except Exception:
+                        continue
+                if parsed_objs:
+                    clusters = parsed_objs
+                    logger.info("Clustering: Layer 4 extracted %d objects individually", len(parsed_objs))
+        except Exception:
+            pass
+
+    if not clusters:
+        # Log first 500 chars of response for debugging
+        logger.warning(
+            "Clustering: could not parse JSON from AI response (len=%d). First 500 chars: %s",
+            len(response_text), response_text[:500]
+        )
         return
 
     # Validate: filter out non-dict items (AI sometimes returns [1,2,3] instead of [{...}])
