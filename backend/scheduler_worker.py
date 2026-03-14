@@ -587,6 +587,38 @@ def _auto_score_all():
         logger.exception("Auto-score all error")
 
 
+def _save_daily_archive():
+    """Günün son snapshot'ını kaydet + 7 günden eski arşivleri temizle."""
+    try:
+        import datetime
+        from zoneinfo import ZoneInfo
+        from backend.modules.style_manager import (
+            save_daily_snapshot,
+            cleanup_old_snapshots,
+            load_clustered_suggestions,
+            load_trend_cache,
+            load_discovery_cache,
+        )
+        tz = ZoneInfo("Europe/Istanbul")
+        now = datetime.datetime.now(tz)
+        today_str = now.strftime("%Y-%m-%d")
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+
+        sug_data = load_clustered_suggestions()
+        suggestions = sug_data.get("suggestions", []) if isinstance(sug_data, dict) else []
+        trend_data = load_trend_cache()
+        trends = trend_data.get("trends", []) if isinstance(trend_data, dict) else trend_data if isinstance(trend_data, list) else []
+        all_tweets = load_discovery_cache()
+        today_tweets = [t for t in all_tweets if (t.get("created_at") or t.get("scanned_at", "")) >= today_start]
+
+        save_daily_snapshot(today_str, suggestions, trends, today_tweets)
+        cleanup_old_snapshots(7)
+        logger.info("Daily archive saved: %s (%d sug, %d trends, %d tweets)", today_str, len(suggestions), len(trends), len(today_tweets))
+        _track_run("daily_snapshot_archiver")
+    except Exception:
+        logger.exception("Daily archive save failed")
+
+
 def start_scheduler():
     """Scheduler'i baslat — FastAPI startup'ta cagirilir."""
     if not scheduler.running:
@@ -702,12 +734,22 @@ def start_scheduler():
             id="dynamic_query_generator",
             replace_existing=True,
         )
+        # Günlük arşiv — her gün 23:55 TR saati, günün son snapshot'ını kaydet + eski temizle
+        scheduler.add_job(
+            _save_daily_archive,
+            "cron",
+            hour=23,
+            minute=55,
+            timezone="Europe/Istanbul",
+            id="daily_snapshot_archiver",
+            replace_existing=True,
+        )
         scheduler.start()
         logger.info(
             "Scheduler started — publish 1m, metrics 30m, auto-reply scanner 10m, "
             "auto-reply generator 5m, self-reply 3m, discovery 20m, telegram 5s, "
             "auto-scan 45m, trends 20m, account-discovery 3h, suggestions 15m, "
-            "my-tweets 2h, ai-scorer 30m, dynamic-queries 7d"
+            "my-tweets 2h, ai-scorer 30m, dynamic-queries 7d, daily-snapshot 23:55"
         )
 
 

@@ -268,6 +268,7 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 | 2026-03-13 | 2-döngülü araştırma (deep mode) | Sentez sonrası eksik alan tespiti → ek arama → zenginleştirilmiş final sentez |
 | 2026-03-13 | Copywriting hook formülleri | 4 yeni hook kategorisi (merak, değer, hikaye, karşıt) + score_tweet bonusları |
 | 2026-03-13 | Twikit ile otomatik reply gönderimi | Cookie-based auth ile reply. 3 mod: draft/twikit/api. Günlük limit + bugün filtresi + insan-benzeri delay |
+| 2026-03-14 | Günlük snapshot arşiv sistemi | AI önerileri (kümeler, trendler, tweetler) gece yarısında kayboluyordu — 7 günlük arşiv + tarih navigasyonu eklendi |
 
 ---
 
@@ -456,6 +457,15 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 ---
 
 ## Değişiklik Günlüğü
+
+### 2026-03-14 (AI Önerileri — Günlük Arşiv ve Tarih Navigasyonu)
+- **feat**: `style_manager.py` — Günlük snapshot sistemi: `save_daily_snapshot()`, `load_daily_snapshot()`, `list_snapshot_dates()`, `cleanup_old_snapshots()` (7 gün arşiv, `data/daily_snapshots/YYYY-MM-DD.json`)
+- **feat**: `trend_analyzer.py` — Her clustering sonrası otomatik günlük snapshot kaydı (bugünün verisini arşivle)
+- **feat**: `api/discovery.py` — `GET /daily-feed?date=YYYY-MM-DD`: bugün → canlı veri, geçmiş tarih → arşivden; `GET /available-dates`: mevcut arşiv tarihleri
+- **feat**: `api.ts` — `getDailyFeed(date?)`, `getAvailableDates()` yeni API fonksiyonları + `DailyFeed` interface
+- **feat**: `TabAIOnerileri.tsx` — Tarih navigasyonu: ok tuşlarıyla gün gün gezinme (← Dün / Bugün →), "Canlı" / "Arşiv" badge, geçmiş günde "Yeniden Kümele" ve "AI Skorla" gizlenir
+- **feat**: `scheduler_worker.py` — `daily_snapshot_archiver` cron job: her gün 23:55 TR saati günün son snapshot'ını kaydet + 7 günden eski arşivleri temizle
+- **fix**: `TabAyarlar.tsx` — Başlangıç saati 0 seçilemiyordu (`parseInt("0") || 8` → falsy bug düzeltildi)
 
 ### 2026-03-13 (Kalite İyileştirmeleri — Atomik Yazma, Hata Gösterimi, State Kalıcılığı)
 - **feat**: `style_manager.py` — `_atomic_write()` helper: tempfile + os.replace ile atomik dosya yazma (race condition koruması)

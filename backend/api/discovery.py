@@ -1630,3 +1630,77 @@ def batch_analyze_accounts(req: BatchAnalyzeRequest):
             results.append({"username": username, "success": False, "error": str(e)})
 
     return {"results": results, "analyzed": len([r for r in results if r["success"]])}
+
+
+# ── Daily Feed (Günlük Arşiv) ─────────────────────────────
+
+@router.get("/daily-feed")
+def get_daily_feed(date: str = ""):
+    """Belirli bir günün arşivini veya bugünün canlı verisini döndür.
+
+    date boşsa veya bugünse → canlı veri (mevcut cache'lerden)
+    date geçmiş bir tarihse → arşivden oku
+    """
+    import datetime as _dt
+    from zoneinfo import ZoneInfo as _ZI
+    from backend.modules.style_manager import (
+        load_clustered_suggestions,
+        load_trend_cache,
+        load_discovery_cache,
+        load_daily_snapshot,
+        list_snapshot_dates,
+    )
+
+    tz = _ZI("Europe/Istanbul")
+    now = _dt.datetime.now(tz)
+    today_str = now.strftime("%Y-%m-%d")
+    available = list_snapshot_dates()
+
+    # Bugün veya tarih belirtilmemişse → canlı veri
+    if not date or date == today_str:
+        suggestions_data = load_clustered_suggestions()
+        suggestions = suggestions_data.get("suggestions", []) if isinstance(suggestions_data, dict) else []
+        trends_data = load_trend_cache()
+        trends = trends_data.get("trends", []) if isinstance(trends_data, dict) else trends_data if isinstance(trends_data, list) else []
+
+        # Bugünün tweet'leri (24h)
+        cache = load_discovery_cache()
+        cutoff = (now - _dt.timedelta(hours=24)).isoformat()
+        tweets = [t for t in cache if (t.get("created_at") or t.get("scanned_at", "")) >= cutoff]
+
+        return {
+            "date": today_str,
+            "suggestions": suggestions,
+            "trends": trends,
+            "tweets": tweets,
+            "available_dates": available,
+            "is_live": True,
+        }
+
+    # Geçmiş tarih → arşivden
+    snapshot = load_daily_snapshot(date)
+    if not snapshot:
+        return {
+            "date": date,
+            "suggestions": [],
+            "trends": [],
+            "tweets": [],
+            "available_dates": available,
+            "is_live": False,
+        }
+
+    return {
+        "date": snapshot.get("date", date),
+        "suggestions": snapshot.get("suggestions", []),
+        "trends": snapshot.get("trends", []),
+        "tweets": snapshot.get("tweets", []),
+        "available_dates": available,
+        "is_live": False,
+    }
+
+
+@router.get("/available-dates")
+def get_available_dates():
+    """Arşivdeki mevcut tarihleri döndür (yeniden eskiye)."""
+    from backend.modules.style_manager import list_snapshot_dates
+    return {"dates": list_snapshot_dates()}

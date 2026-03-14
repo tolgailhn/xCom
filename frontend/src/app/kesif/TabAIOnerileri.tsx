@@ -5,6 +5,7 @@ import {
   getSmartSuggestions,
   getTrends,
   getDiscoveryTweets,
+  getDailyFeed,
   triggerClustering,
   generateQuoteTweet,
   researchTopicStream,
@@ -119,10 +120,42 @@ interface FeedItem {
 
 /* ── Component ──────────────────────────────────────── */
 
+/* ── Date helpers ──────────────────────────────────── */
+
+const TR_MONTHS = ["Ocak", "Subat", "Mart", "Nisan", "Mayis", "Haziran", "Temmuz", "Agustos", "Eylul", "Ekim", "Kasim", "Aralik"];
+
+function formatDateTR(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return `${d} ${TR_MONTHS[m - 1]} ${y}`;
+}
+
+function todayStr(): string {
+  // Turkey is UTC+3
+  const now = new Date(Date.now() + 3 * 3600_000);
+  return now.toISOString().slice(0, 10);
+}
+
+function dateDayLabel(dateStr: string): string {
+  const today = todayStr();
+  if (dateStr === today) return "Bugun";
+  const d = new Date(dateStr + "T00:00:00");
+  const t = new Date(today + "T00:00:00");
+  const diff = Math.round((t.getTime() - d.getTime()) / 86400_000);
+  if (diff === 1) return "Dun";
+  if (diff > 1 && diff <= 7) return `${diff} gun once`;
+  return "";
+}
+
+
 export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: number }) {
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [clustering, setClustering] = useState(false);
+
+  // Date navigation
+  const [selectedDate, setSelectedDate] = useState<string>(""); // "" = bugün (canlı)
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [isLive, setIsLive] = useState(true);
 
   // Filters
   const [filterSource, setFilterSource] = useState<"all" | "suggestion" | "trend" | "tweet">("all");
@@ -277,50 +310,63 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
 
   /* ── Load Data ────────────────────────────────────── */
 
+  const buildFeedFromRaw = useCallback((suggestions: Suggestion[], trends: TrendItem[], discoveryTweets: DiscoveryTweet[]) => {
+    const sugItems = suggestions.map((s: Suggestion, i: number) => normalizeSuggestion(s, i));
+    const trendItems = trends.map((t: TrendItem, i: number) => normalizeTrend(t, i));
+    const topTweets = discoveryTweets
+      .sort((a: DiscoveryTweet, b: DiscoveryTweet) => (b.engagement_score || 0) - (a.engagement_score || 0))
+      .slice(0, 20)
+      .map((dt: DiscoveryTweet) => normalizeDiscoveryTweet(dt));
+
+    // Deduplicate
+    const sugTopics = new Set(sugItems.map((s: FeedItem) => s.topic.toLowerCase()));
+    const dedupedTrends = trendItems.filter((t: FeedItem) => !sugTopics.has(t.topic.toLowerCase()));
+    const sugTweetIds = new Set(
+      sugItems.flatMap((s: FeedItem) => s.tweets.map((tw: ClusterTweet) => tw.tweet_id).filter(Boolean))
+    );
+    const dedupedTweets = topTweets.filter((t: FeedItem) => {
+      const tid = t._discoveryTweet?.tweet_id;
+      return !tid || !sugTweetIds.has(tid);
+    });
+
+    return [...sugItems, ...dedupedTrends, ...dedupedTweets];
+  }, [normalizeSuggestion, normalizeTrend, normalizeDiscoveryTweet]);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [sugRes, trendRes, tweetRes] = await Promise.all([
-        getSmartSuggestions().catch(() => ({ suggestions: [] })),
-        getTrends().catch(() => ({ trends: [] })),
-        getDiscoveryTweets().catch(() => ({ tweets: [] })),
-      ]);
-
-      const suggestions: Suggestion[] = sugRes.suggestions || [];
-      const trends: TrendItem[] = trendRes.trends || [];
-      const discoveryTweets: DiscoveryTweet[] = tweetRes.tweets || [];
-
-      // Normalize all sources
-      const sugItems = suggestions.map((s: Suggestion, i: number) => normalizeSuggestion(s, i));
-      const trendItems = trends.map((t: TrendItem, i: number) => normalizeTrend(t, i));
-      // Only top discovery tweets by engagement
-      const topTweets = discoveryTweets
-        .sort((a: DiscoveryTweet, b: DiscoveryTweet) => b.engagement_score - a.engagement_score)
-        .slice(0, 20)
-        .map((dt: DiscoveryTweet) => normalizeDiscoveryTweet(dt));
-
-      // Deduplicate: if a trend keyword appears in suggestions, skip the raw trend
-      const sugTopics = new Set(sugItems.map((s: FeedItem) => s.topic.toLowerCase()));
-      const dedupedTrends = trendItems.filter((t: FeedItem) => !sugTopics.has(t.topic.toLowerCase()));
-
-      // Deduplicate: if a tweet_id appears in suggestions tweets, skip
-      const sugTweetIds = new Set(
-        sugItems.flatMap((s: FeedItem) => s.tweets.map((tw: ClusterTweet) => tw.tweet_id).filter(Boolean))
-      );
-      const dedupedTweets = topTweets.filter((t: FeedItem) => {
-        const tid = t._discoveryTweet?.tweet_id;
-        return !tid || !sugTweetIds.has(tid);
-      });
-
-      setFeedItems([...sugItems, ...dedupedTrends, ...dedupedTweets]);
+      if (selectedDate && selectedDate !== todayStr()) {
+        // Geçmiş tarih → arşivden
+        const feed = await getDailyFeed(selectedDate);
+        setAvailableDates(feed.available_dates || []);
+        setIsLive(false);
+        const suggestions: Suggestion[] = feed.suggestions || [];
+        const trends: TrendItem[] = feed.trends || [];
+        const tweets: DiscoveryTweet[] = feed.tweets || [];
+        setFeedItems(buildFeedFromRaw(suggestions, trends, tweets));
+      } else {
+        // Bugün → canlı veri (mevcut davranış) + available_dates
+        const [sugRes, trendRes, tweetRes, feedMeta] = await Promise.all([
+          getSmartSuggestions().catch(() => ({ suggestions: [] })),
+          getTrends().catch(() => ({ trends: [] })),
+          getDiscoveryTweets().catch(() => ({ tweets: [] })),
+          getDailyFeed().catch(() => ({ available_dates: [] })),
+        ]);
+        setAvailableDates((feedMeta as { available_dates?: string[] }).available_dates || []);
+        setIsLive(true);
+        const suggestions: Suggestion[] = sugRes.suggestions || [];
+        const trends: TrendItem[] = trendRes.trends || [];
+        const discoveryTweets: DiscoveryTweet[] = tweetRes.tweets || [];
+        setFeedItems(buildFeedFromRaw(suggestions, trends, discoveryTweets));
+      }
     } catch {
       // ignore
     } finally {
       setLoading(false);
     }
-  }, [normalizeSuggestion, normalizeTrend, normalizeDiscoveryTweet]);
+  }, [selectedDate, buildFeedFromRaw]);
 
-  useEffect(() => { loadData(); }, [refreshTrigger, loadData]);
+  useEffect(() => { loadData(); }, [refreshTrigger, loadData, selectedDate]);
 
   useEffect(() => {
     getStyles()
@@ -331,8 +377,9 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
       .catch(() => {});
   }, []);
 
-  // Auto AI scoring on mount
+  // Auto AI scoring on mount (only for live data)
   useEffect(() => {
+    if (selectedDate && selectedDate !== todayStr()) return;
     Promise.all([
       aiScoreSuggestions().catch(() => ({ scored: 0 })),
       aiScoreTrends().catch(() => ({ scored: 0 })),
@@ -571,18 +618,64 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
     </div>
   );
 
+  // Date navigation handlers
+  const currentDate = selectedDate || todayStr();
+  const allDates = useMemo(() => {
+    const set = new Set([todayStr(), ...availableDates]);
+    return Array.from(set).sort().reverse();
+  }, [availableDates]);
+  const currentIdx = allDates.indexOf(currentDate);
+  const canGoBack = currentIdx < allDates.length - 1;
+  const canGoForward = currentIdx > 0;
+
+  const goBack = () => { if (canGoBack) setSelectedDate(allDates[currentIdx + 1]); };
+  const goForward = () => {
+    if (!canGoForward) return;
+    const next = allDates[currentIdx - 1];
+    setSelectedDate(next === todayStr() ? "" : next);
+  };
+  const goToday = () => setSelectedDate("");
+
   return (
     <div className="space-y-4">
+      {/* ════ Date Navigation ════ */}
+      <div className="flex items-center justify-center gap-2">
+        <button onClick={goBack} disabled={!canGoBack}
+          className="p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <button onClick={goToday}
+          className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all min-w-[200px] ${
+            isLive
+              ? "bg-[var(--accent-blue)]/15 border-[var(--accent-blue)]/30 text-[var(--accent-blue)]"
+              : "bg-[var(--bg-secondary)] border-[var(--border)] text-[var(--text-primary)] hover:border-[var(--accent-blue)]/40"
+          }`}>
+          <span>{formatDateTR(currentDate)}</span>
+          {dateDayLabel(currentDate) && (
+            <span className={`ml-2 text-xs ${isLive ? "text-[var(--accent-green)]" : "text-[var(--text-secondary)]"}`}>
+              {isLive ? "Canli" : dateDayLabel(currentDate)}
+            </span>
+          )}
+        </button>
+        <button onClick={goForward} disabled={!canGoForward}
+          className="p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+      </div>
+
       {/* ════ Header ════ */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="text-sm text-[var(--text-secondary)]">
           {feedItems.length} oneri &middot; {counts.suggestion} kume, {counts.trend} trend, {counts.tweet} tweet
+          {!isLive && <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[var(--accent-amber)]/15 text-[var(--accent-amber)]">Arsiv</span>}
         </div>
-        <button onClick={handleRecluster} disabled={clustering}
-          className={`btn-primary text-xs inline-flex items-center gap-1.5 ${clustering ? "animate-pulse" : ""}`}>
-          {clustering && <div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />}
-          {clustering ? "Guncelleniyor..." : "Yeniden Kumele"}
-        </button>
+        {isLive && (
+          <button onClick={handleRecluster} disabled={clustering}
+            className={`btn-primary text-xs inline-flex items-center gap-1.5 ${clustering ? "animate-pulse" : ""}`}>
+            {clustering && <div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />}
+            {clustering ? "Guncelleniyor..." : "Yeniden Kumele"}
+          </button>
+        )}
       </div>
 
       {/* ════ Overview Panel ════ */}
@@ -646,10 +739,12 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
                 ? "bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] border-[var(--accent-blue)]/30"
                 : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)]"
             }`}>Filtreler{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}</button>
-          <button onClick={handleAIScore} disabled={aiScoring}
-            className="px-3 py-1.5 rounded-full text-xs font-medium border transition-all bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] border-[var(--accent-blue)]/30 disabled:opacity-50">
-            {aiScoring ? "Skorlaniyor..." : "AI Skorla"}
-          </button>
+          {isLive && (
+            <button onClick={handleAIScore} disabled={aiScoring}
+              className="px-3 py-1.5 rounded-full text-xs font-medium border transition-all bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] border-[var(--accent-blue)]/30 disabled:opacity-50">
+              {aiScoring ? "Skorlaniyor..." : "AI Skorla"}
+            </button>
+          )}
         </div>
 
         {showFilters && (

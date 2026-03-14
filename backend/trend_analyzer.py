@@ -565,6 +565,24 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
         len([s for s in suggestions if s["type"] == "news"]),
     )
 
+    # Günlük snapshot arşivle
+    try:
+        from backend.modules.style_manager import (
+            save_daily_snapshot,
+            load_discovery_cache,
+            load_trend_cache as _load_tc,
+        )
+        today_str = now.strftime("%Y-%m-%d")
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+        # Bugünün tweet'lerini filtrele
+        all_disc = load_discovery_cache()
+        today_tweets = [t for t in all_disc if (t.get("created_at") or t.get("scanned_at", "")) >= today_start]
+        current_trends = _load_tc()
+        save_daily_snapshot(today_str, suggestions, current_trends.get("trends", []) if isinstance(current_trends, dict) else current_trends, today_tweets)
+        logger.info("Daily snapshot saved for %s (%d suggestions, %d tweets)", today_str, len(suggestions), len(today_tweets))
+    except Exception:
+        logger.exception("Daily snapshot save error")
+
     # Telegram bildirim — AI kümeleri oluştu
     if suggestions:
         _notify_clustered_suggestions(suggestions)

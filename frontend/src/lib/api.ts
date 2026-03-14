@@ -1157,3 +1157,22 @@ export function aiScoreTrends(): Promise<{ scored: number; message?: string }> {
 export function aiScoreSuggestions(): Promise<{ scored: number; message?: string }> {
   return apiFetch("/api/discovery/ai-score-suggestions", { method: "POST" });
 }
+
+// Daily Feed (Günlük Arşiv)
+export interface DailyFeed {
+  date: string;
+  suggestions: any[];
+  trends: any[];
+  tweets: DiscoveryTweet[];
+  available_dates: string[];
+  is_live: boolean;
+}
+
+export function getDailyFeed(date?: string): Promise<DailyFeed> {
+  const params = date ? `?date=${date}` : "";
+  return apiFetch(`/api/discovery/daily-feed${params}`);
+}
+
+export function getAvailableDates(): Promise<{ dates: string[] }> {
+  return apiFetch("/api/discovery/available-dates");
+}

@@ -920,3 +920,51 @@ def unmark_discovery_tweet_shared(tweet_id: str) -> list:
     data = [d for d in data if d.get("tweet_id") != tweet_id]
     save_shared_discovery_tweets(data)
     return data
+
+
+# ── Daily Snapshots (Günlük Arşiv) ────────────────────────
+
+SNAPSHOT_DIR = DATA_DIR / "daily_snapshots"
+
+
+def save_daily_snapshot(date_str: str, suggestions: list, trends: list, tweets: list):
+    """Belirli bir günün verilerini arşivle (aynı gün için günceller)."""
+    SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
+    snapshot = {
+        "date": date_str,
+        "updated_at": datetime.datetime.now(TZ_TR).isoformat(),
+        "suggestions": suggestions,
+        "trends": trends,
+        "tweets": tweets,
+    }
+    _atomic_write(SNAPSHOT_DIR / f"{date_str}.json", snapshot, default=str)
+
+
+def load_daily_snapshot(date_str: str) -> dict | None:
+    """Belirli bir günün arşivini oku. Yoksa None."""
+    path = SNAPSHOT_DIR / f"{date_str}.json"
+    if not path.exists():
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def list_snapshot_dates() -> list[str]:
+    """Mevcut arşiv tarihlerini döndür (yeniden eskiye)."""
+    if not SNAPSHOT_DIR.exists():
+        return []
+    dates = [f.stem for f in SNAPSHOT_DIR.glob("*.json") if len(f.stem) == 10]
+    return sorted(dates, reverse=True)
+
+
+def cleanup_old_snapshots(max_days: int = 7):
+    """max_days'den eski arşivleri sil."""
+    if not SNAPSHOT_DIR.exists():
+        return
+    cutoff = (datetime.datetime.now(TZ_TR) - datetime.timedelta(days=max_days)).strftime("%Y-%m-%d")
+    for f in SNAPSHOT_DIR.glob("*.json"):
+        if len(f.stem) == 10 and f.stem < cutoff:
+            f.unlink(missing_ok=True)
