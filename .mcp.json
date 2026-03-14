@@ -4,7 +4,7 @@
       "command": "python3",
       "args": ["/home/user/xCom/mcp-server/server.py"],
       "env": {
-        "XCOM_API_URL": "http://193.36.63.65:1634"
+        "XCOM_API_URL": "http://193.36.63.65:8000"
       }
     }
   }
