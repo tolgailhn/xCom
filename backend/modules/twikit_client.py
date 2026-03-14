@@ -31,6 +31,7 @@ from twikit.errors import (
 )
 
 LOGIN_TIMEOUT = 30  # seconds — prevents infinite hang on interactive prompts
+_TWIKIT_PATCHED = False  # Track if monkey-patch has been applied
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 COOKIES_PATH = DATA_DIR / "twikit_cookies.json"
@@ -152,6 +153,111 @@ def adapt_query_for_web(query: str, since_date: str = None) -> str:
     return re.sub(r'\s+', ' ', q).strip()
 
 
+def _patch_twikit_itemcontent():
+    """Monkey-patch twikit's get_tweet_by_id and _get_more_replies to handle
+    missing 'itemContent' keys in X's API responses.
+
+    X/Twitter changed their internal API response structure — cursor entries
+    no longer always have itemContent. This causes KeyError in twikit 2.3.x.
+    See: https://github.com/d60/twikit/issues/375
+    """
+    global _TWIKIT_PATCHED
+    if _TWIKIT_PATCHED:
+        return
+    try:
+        from twikit import Client
+        from twikit.utils import find_dict, Result
+        from twikit.tweet import tweet_from_data
+        from functools import partial
+
+        _orig_get_tweet = Client.get_tweet_by_id
+        _orig_get_more = Client._get_more_replies
+
+        async def _safe_get_tweet_by_id(self, tweet_id, cursor=None):
+            """Patched get_tweet_by_id that handles missing itemContent."""
+            try:
+                return await _orig_get_tweet(self, tweet_id, cursor)
+            except KeyError as e:
+                if 'itemContent' not in str(e) and 'items' not in str(e) and 'content' not in str(e):
+                    raise
+                # Fallback: fetch raw data and extract tweet without reply cursors
+                print(f"Twikit patch: KeyError {e} in get_tweet_by_id, using safe fallback")
+                try:
+                    response, _ = await self.gql.tweet_detail(tweet_id, cursor)
+                    if 'errors' in response:
+                        from twikit.errors import TweetNotAvailable
+                        raise TweetNotAvailable(response['errors'][0]['message'])
+                    entries = find_dict(response, 'entries', find_one=True)[0]
+                    tweet = None
+                    reply_to = []
+                    replies_list = []
+                    related_tweets = []
+                    for entry in entries:
+                        if entry.get('entryId', '').startswith('cursor'):
+                            continue
+                        try:
+                            tweet_object = tweet_from_data(self, entry)
+                        except Exception:
+                            continue
+                        if tweet_object is None:
+                            continue
+                        if entry.get('entryId', '').startswith('tweetdetailrelatedtweets'):
+                            related_tweets.append(tweet_object)
+                            continue
+                        if entry.get('entryId') == f'tweet-{tweet_id}':
+                            tweet = tweet_object
+                        else:
+                            if tweet is None:
+                                reply_to.append(tweet_object)
+                            else:
+                                # Try to extract replies from items safely
+                                replies = []
+                                items = entry.get('content', {}).get('items', [])
+                                for reply in items[1:]:
+                                    eid = reply.get('entryId', '')
+                                    if 'tweetcomposer' in eid:
+                                        continue
+                                    if 'tweet' in eid:
+                                        try:
+                                            rpl = tweet_from_data(self, reply)
+                                            if rpl:
+                                                replies.append(rpl)
+                                        except Exception:
+                                            pass
+                                tweet_object.replies = Result(replies)
+                                replies_list.append(tweet_object)
+                                display_type = find_dict(entry, 'tweetDisplayType', True)
+                                if display_type and display_type[0] == 'SelfThread':
+                                    tweet.thread = [tweet_object, *replies]
+
+                    if tweet is None:
+                        return None
+                    # Skip reply cursor (the thing that fails) — just set empty
+                    tweet.replies = Result(replies_list)
+                    tweet.reply_to = reply_to
+                    tweet.related_tweets = related_tweets
+                    return tweet
+                except KeyError:
+                    # Even fallback failed — return None
+                    print(f"Twikit patch: safe fallback also failed for tweet {tweet_id}")
+                    return None
+
+        async def _safe_get_more_replies(self, tweet_id, cursor):
+            """Patched _get_more_replies that handles missing itemContent."""
+            try:
+                return await _orig_get_more(self, tweet_id, cursor)
+            except KeyError:
+                print(f"Twikit patch: KeyError in _get_more_replies for tweet {tweet_id}")
+                return Result([])
+
+        Client.get_tweet_by_id = _safe_get_tweet_by_id
+        Client._get_more_replies = _safe_get_more_replies
+        _TWIKIT_PATCHED = True
+        print("Twikit: itemContent monkey-patch applied successfully")
+    except Exception as e:
+        print(f"Twikit: failed to apply itemContent patch: {e}")
+
+
 class TwikitSearchClient:
     """Sync wrapper for twikit async client, focused on search/read operations."""
 
@@ -189,6 +295,9 @@ class TwikitSearchClient:
         Also monkey-patches the client's request() method to remove the
         X-Client-Transaction-Id header entirely (an empty string can cause 404s).
         """
+        # Apply itemContent fix (once, globally)
+        _patch_twikit_itemcontent()
+
         client = self._get_client_sync()
         ct = client.client_transaction
         if ct is None:
