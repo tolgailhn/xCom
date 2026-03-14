@@ -158,6 +158,10 @@ backend/
     image_generator.py        → Görsel üretimi
     claude_code_client.py     → Claude Code entegrasyonu
     _compat.py                → Uyumluluk katmanı
+
+mcp-server/
+  server.py                   → MCP (Model Context Protocol) server — Claude'a 20 araç ile gerçek zamanlı erişim
+.mcp.json                     → MCP server yapılandırması (Claude Code tarafından okunur)
 ```
 
 ### Modüller Arası Bağımlılıklar
@@ -276,6 +280,9 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 | 2026-03-14 | `useResearchWorkflow` custom hook | 3 tab'da ~630 satır tekrarlanan araştırma/üretim/medya workflow'u tek hook'a taşındı. Publish bug fix (editedText kullanımı) |
 | 2026-03-14 | Trend analyzer 12h→24h | discovery_worker MAX_TWEET_AGE_HOURS=24 ile uyumlu hale getirildi |
 | 2026-03-14 | Scheduler jobs accordion | page.tsx'teki 6 job kartı varsayılan kapalı details/summary'ye alındı. Rotasyon bilgisi TabAyarlar'a taşındı |
+| 2026-03-14 | MCP Server (20 araç) | Claude'a gerçek zamanlı sistem erişimi: keşif, araştırma, üretim, yayınlama, analiz. `.mcp.json` + `mcp-server/server.py` |
+| 2026-03-14 | Twikit itemContent monkey-patch | X API response değişikliği — `get_tweet_by_id` ve `_get_more_replies` safe fallback parsing |
+| 2026-03-14 | SSE JSON parse fix | Malformed JSON satırları araştırma stream'ini sessizce durduruyordu — skip ile devam |
 
 ---
 
@@ -464,6 +471,14 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 ---
 
 ## Değişiklik Günlüğü
+
+### 2026-03-14 (MCP Server + Twikit/SSE Fix)
+- **feat**: `mcp-server/server.py` — YENİ: 20 araçlı MCP server (FastMCP). Keşif, araştırma, tweet üretimi, yayınlama, zamanlama, taslak, analiz, medya arama, sistem durumu
+- **feat**: `.mcp.json` — MCP server yapılandırması (Claude Code otomatik yükler)
+- **fix**: `twikit_client.py` — X API `itemContent` KeyError monkey-patch: `get_tweet_by_id` ve `_get_more_replies` safe fallback
+- **fix**: `api.ts` — `researchTopicStream()` SSE JSON parse hatası stream'i durduruyordu → malformed satırlar skip edilir
+- **fix**: `ResearchPanel.tsx` — Araştırma hatası mavi spinner yerine kırmızı alert kutusu ile gösteriliyor
+- **fix**: `useResearchWorkflow.ts` — Boş araştırma sonucu algılama ve kullanıcıya bildirim eklendi
 
 ### 2026-03-14 (Keşif Sayfası Kapsamlı Yenileme — useResearchWorkflow Hook)
 - **feat**: `hooks/useResearchWorkflow.ts` — YENİ: 3 tab'da tekrarlanan araştırma/üretim/medya/zamanlama workflow'u tek custom hook'a taşındı (~280 satır). Per-key state yönetimi, streaming araştırma, publish bug fix (editedText kullanımı)
