@@ -155,17 +155,20 @@ export async function researchTopicStream(
 
     for (const line of lines) {
       if (!line.startsWith("data: ")) continue;
+      const raw = line.slice(6);
+      let event: { type?: string; message?: string; data?: ReturnType<typeof JSON.parse> };
       try {
-        const event = JSON.parse(line.slice(6));
-        if (event.type === "progress") {
-          onProgress(event.message);
-        } else if (event.type === "result") {
-          resultData = event.data;
-        } else if (event.type === "error") {
-          throw new Error(event.message);
-        }
-      } catch (e) {
-        if (e instanceof Error && e.message !== line.slice(6)) throw e;
+        event = JSON.parse(raw);
+      } catch {
+        // Malformed JSON line — skip, don't crash the stream
+        continue;
+      }
+      if (event.type === "progress") {
+        onProgress(event.message || "");
+      } else if (event.type === "result") {
+        resultData = event.data;
+      } else if (event.type === "error") {
+        throw new Error(event.message || "Bilinmeyen sunucu hatasi");
       }
     }
   }

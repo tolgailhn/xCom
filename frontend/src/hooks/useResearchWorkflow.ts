@@ -199,19 +199,37 @@ export default function useResearchWorkflow(opts?: UseResearchWorkflowOptions): 
           [key]: { ...prev[key], progress },
         })),
       );
-      setResearchData(prev => ({
-        ...prev,
-        [key]: {
-          summary: result.summary,
-          key_points: result.key_points,
-          sources: result.sources,
-          progress: "",
-        },
-      }));
+      if (result.summary) {
+        setResearchData(prev => ({
+          ...prev,
+          [key]: {
+            summary: result.summary,
+            key_points: result.key_points,
+            sources: result.sources,
+            progress: "",
+          },
+        }));
+      } else {
+        // Research returned but with empty summary — DDG or AI might have failed
+        setResearchData(prev => ({
+          ...prev,
+          [key]: {
+            summary: "",
+            key_points: [],
+            sources: [],
+            progress: "Hata: Arastirma sonuc uretmedi. DuckDuckGo gecici olarak erisilemiyor olabilir, tekrar deneyin.",
+          },
+        }));
+      }
     } catch (e) {
       setResearchData(prev => ({
         ...prev,
-        [key]: { ...prev[key], progress: `Hata: ${e instanceof Error ? e.message : "Bilinmeyen hata"}` },
+        [key]: {
+          summary: "",
+          key_points: [],
+          sources: [],
+          progress: `Hata: ${e instanceof Error ? e.message : "Bilinmeyen hata"}`,
+        },
       }));
     } finally {
       setResearchingKey(null);

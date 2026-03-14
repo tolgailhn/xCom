@@ -17,11 +17,21 @@ interface ResearchPanelProps {
 export default function ResearchPanel({ research, isResearching, isExpanded, onToggleExpand }: ResearchPanelProps) {
   if (!research) return null;
 
-  // Show progress spinner
-  if (research.progress) {
+  // Show progress spinner while researching
+  if (isResearching && research.progress) {
     return (
       <div className="text-xs text-[var(--accent-blue)] animate-pulse flex items-center gap-2">
         <div className="w-3 h-3 border-2 border-[var(--accent-blue)] border-t-transparent rounded-full animate-spin" />
+        {research.progress}
+      </div>
+    );
+  }
+
+  // Show error message (red, no spinner) when research failed
+  if (!isResearching && research.progress && research.progress.startsWith("Hata:")) {
+    return (
+      <div className="text-xs text-red-400 flex items-center gap-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20">
+        <span>&#x26A0;</span>
         {research.progress}
       </div>
     );
