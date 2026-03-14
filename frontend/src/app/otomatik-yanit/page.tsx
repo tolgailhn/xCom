@@ -19,6 +19,7 @@ import {
   deleteSelfReplyLog,
   triggerSelfReplyCheck,
   getSelfReplyStatus,
+  getSchedulerStatus,
   type AutoReplyConfig,
   type AutoReplyLog,
   type AutoReplyStatus,
@@ -66,6 +67,11 @@ export default function OtomatikYanitPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [markingId, setMarkingId] = useState<string | null>(null);
 
+  // Scheduler state
+  interface SchedulerJob { id: string; next_run: string | null; last_run: string | null; }
+  const [schedulerJobs, setSchedulerJobs] = useState<SchedulerJob[]>([]);
+  const [showSchedule, setShowSchedule] = useState(false);
+
   // Self-Reply state
   const [selfConfig, setSelfConfig] = useState<SelfReplyConfig>({
     enabled: false,
@@ -93,7 +99,7 @@ export default function OtomatikYanitPage() {
   async function loadAll() {
     setLoading(true);
     try {
-      const [configRes, logsRes, statusRes, stylesRes, selfConfigRes, selfLogsRes, selfStatusRes] = await Promise.all([
+      const [configRes, logsRes, statusRes, stylesRes, selfConfigRes, selfLogsRes, selfStatusRes, schedulerRes] = await Promise.all([
         getAutoReplyConfig(),
         getAutoReplyLogs(200),
         getAutoReplyStatus(),
@@ -101,6 +107,7 @@ export default function OtomatikYanitPage() {
         getSelfReplyConfig().catch(() => ({ config: selfConfig })),
         getSelfReplyLogs(200).catch(() => ({ logs: [] })),
         getSelfReplyStatus().catch(() => null),
+        getSchedulerStatus().catch(() => ({ jobs: [] })),
       ]);
       setConfig(configRes.config);
       setLogs(logsRes.logs);
@@ -109,6 +116,7 @@ export default function OtomatikYanitPage() {
       setSelfConfig(selfConfigRes.config);
       setSelfLogs(selfLogsRes.logs);
       if (selfStatusRes) setSelfStatus(selfStatusRes);
+      if (schedulerRes?.jobs) setSchedulerJobs(schedulerRes.jobs);
     } catch (err) {
       console.error(err);
     } finally {
@@ -358,6 +366,100 @@ export default function OtomatikYanitPage() {
             </div>
             <div className="text-xs text-[var(--text-secondary)]">Basarisiz</div>
           </div>
+        </div>
+      )}
+
+      {/* Worker Durumu */}
+      {status && status.current_hour_accounts && (
+        <div className="card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">Worker Durumu</h3>
+            <span className="text-xs text-[var(--text-secondary)]">
+              Calisma Saatleri: {config.work_hour_start ?? 9}:00 — {config.work_hour_end ?? 21}:00
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Şu an taranan */}
+            <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+              <div className="text-xs text-[var(--text-secondary)] mb-1">Su An Taranan ({status.current_hour})</div>
+              <div className="flex flex-wrap gap-1">
+                {status.current_hour_accounts.length > 0 ? status.current_hour_accounts.map((a) => (
+                  <span key={a} className="text-xs bg-[var(--accent-blue)]/20 text-[var(--accent-blue)] px-2 py-0.5 rounded-full">{a}</span>
+                )) : <span className="text-xs text-[var(--text-secondary)]">Bu saatte tarama yok</span>}
+              </div>
+            </div>
+            {/* Sonraki saat */}
+            <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+              <div className="text-xs text-[var(--text-secondary)] mb-1">Sonraki Saat ({status.next_hour})</div>
+              <div className="flex flex-wrap gap-1">
+                {status.next_hour_accounts.length > 0 ? status.next_hour_accounts.map((a) => (
+                  <span key={a} className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">{a}</span>
+                )) : <span className="text-xs text-[var(--text-secondary)]">Tarama yok</span>}
+              </div>
+            </div>
+          </div>
+
+          {/* Scheduler job durumları */}
+          {schedulerJobs.length > 0 && (() => {
+            const arJobs = schedulerJobs.filter((j) => j.id.startsWith("auto_reply"));
+            if (arJobs.length === 0) return null;
+            const fmtTime = (iso: string | null) => {
+              if (!iso) return "—";
+              try { return new Date(iso).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }); }
+              catch { return "—"; }
+            };
+            const jobLabel: Record<string, string> = {
+              auto_reply_scanner: "Tarayici",
+              auto_reply_generator: "Uretici",
+              auto_reply_twikit_publisher: "Yayinci",
+            };
+            return (
+              <div className="flex flex-wrap gap-3">
+                {arJobs.map((j) => (
+                  <div key={j.id} className="flex items-center gap-2 text-xs">
+                    <span className="text-[var(--text-secondary)]">{jobLabel[j.id] || j.id}:</span>
+                    <span className="text-[var(--text-primary)]">Son {fmtTime(j.last_run)}</span>
+                    <span className="text-[var(--text-secondary)]">/</span>
+                    <span className="text-[var(--accent-cyan)]">Sonraki {fmtTime(j.next_run)}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* 24 saat rotasyon takvimi */}
+          {status.schedule && Object.keys(status.schedule).length > 0 && (
+            <div>
+              <button
+                onClick={() => setShowSchedule(!showSchedule)}
+                className="text-xs text-[var(--accent-blue)] hover:underline"
+              >
+                {showSchedule ? "Gunluk Programi Gizle" : "Gunluk Programi Goster"}
+              </button>
+              {showSchedule && (
+                <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-1.5 max-h-64 overflow-y-auto">
+                  {Object.entries(status.schedule).sort(([a], [b]) => a.localeCompare(b)).map(([hour, accounts]) => (
+                    <div
+                      key={hour}
+                      className={`text-xs p-2 rounded ${
+                        hour === status.current_hour
+                          ? "bg-[var(--accent-blue)]/20 border border-[var(--accent-blue)]/40"
+                          : "bg-[var(--bg-secondary)]"
+                      }`}
+                    >
+                      <span className={`font-medium ${hour === status.current_hour ? "text-[var(--accent-blue)]" : "text-[var(--text-primary)]"}`}>
+                        {hour}
+                      </span>
+                      <div className="text-[var(--text-secondary)] mt-0.5 truncate" title={(accounts as string[]).join(", ")}>
+                        {(accounts as string[]).join(", ")}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

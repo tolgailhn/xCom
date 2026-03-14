@@ -458,6 +458,12 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 
 ## Değişiklik Günlüğü
 
+### 2026-03-14 (Otomatik Yanıt Worker Durumu + Clustering Timeout Fix)
+- **feat**: `api.ts` — `AutoReplyStatus` interface'e `current_hour`, `current_hour_accounts`, `next_hour`, `next_hour_accounts`, `schedule` alanları eklendi (backend zaten döndürüyordu, frontend kullanmıyordu)
+- **feat**: `otomatik-yanit/page.tsx` — Worker Durumu paneli: şu an taranan hesaplar, sonraki saat hesapları, scheduler job durumları (son/sonraki çalışma zamanı), çalışma saatleri gösterimi
+- **feat**: `otomatik-yanit/page.tsx` — 24 saat rotasyon takvimi: genişletilebilir günlük program tablosu, aktif saat vurgulaması
+- **fix**: `trend_analyzer.py` — Clustering AI call timeout 60→120 saniye (175 tweet'lik büyük prompt MiniMax'ta timeout veriyordu)
+
 ### 2026-03-14 (AI Önerileri — Günlük Arşiv ve Tarih Navigasyonu)
 - **feat**: `style_manager.py` — Günlük snapshot sistemi: `save_daily_snapshot()`, `load_daily_snapshot()`, `list_snapshot_dates()`, `cleanup_old_snapshots()` (7 gün arşiv, `data/daily_snapshots/YYYY-MM-DD.json`)
 - **feat**: `trend_analyzer.py` — Her clustering sonrası otomatik günlük snapshot kaydı (bugünün verisini arşivle)

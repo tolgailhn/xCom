@@ -627,6 +627,11 @@ export interface AutoReplyStatus {
   total_ready: number;
   total_manually_posted: number;
   total_failures: number;
+  current_hour: string;
+  current_hour_accounts: string[];
+  next_hour: string;
+  next_hour_accounts: string[];
+  schedule: Record<string, string[]>;
 }
 
 export function getAutoReplyConfig(): Promise<{ config: AutoReplyConfig }> {

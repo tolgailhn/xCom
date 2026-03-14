@@ -415,7 +415,7 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
             req = urllib.request.Request(url, data=data, headers=headers)
-            with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
+            with urllib.request.urlopen(req, timeout=120, context=ctx) as resp:
                 result = _json.loads(resp.read().decode("utf-8"))
                 response_text = result.get("choices", [{}])[0].get("message", {}).get("content", "")
         elif provider == "anthropic":
@@ -437,7 +437,7 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
             req = urllib.request.Request(url, data=data, headers=headers)
-            with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
+            with urllib.request.urlopen(req, timeout=120, context=ctx) as resp:
                 result = _json.loads(resp.read().decode("utf-8"))
                 response_text = result.get("content", [{}])[0].get("text", "")
         else:
