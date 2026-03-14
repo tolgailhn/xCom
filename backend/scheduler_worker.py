@@ -393,11 +393,28 @@ def _discover_new_accounts():
 
 
 def _auto_cluster_suggestions():
-    """Her 30 dakikada akıllı önerileri otomatik kümele (trend verilerinden)."""
+    """Her 15 dakikada akıllı önerileri otomatik kümele."""
     try:
-        from backend.trend_analyzer import analyze_trends
-        # analyze_trends() internally calls _cluster_smart_suggestions()
-        analyze_trends()
+        import datetime as _dt
+        from zoneinfo import ZoneInfo as _ZI
+
+        now = _dt.datetime.now(_ZI("Europe/Istanbul"))
+
+        # Önce trend analizi çalıştır (trend cache'i günceller)
+        try:
+            from backend.trend_analyzer import analyze_trends
+            analyze_trends()
+        except Exception:
+            logger.warning("Auto-cluster: trend analysis failed, continuing with existing trends")
+
+        # Kümelemeyi HER ZAMAN çalıştır (trend olmasa bile cache tweet'lerini kullanır)
+        from backend.trend_analyzer import _cluster_smart_suggestions
+        from backend.modules.style_manager import load_trend_cache
+
+        trend_cache = load_trend_cache()
+        trends = trend_cache.get("trends", []) if isinstance(trend_cache, dict) else []
+        _cluster_smart_suggestions(trends, now)
+
         _track_run("auto_content_suggester")
     except Exception:
         logger.exception("Auto content suggestion/clustering error")
