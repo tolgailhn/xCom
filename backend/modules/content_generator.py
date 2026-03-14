@@ -46,6 +46,14 @@ BASE_SYSTEM_PROMPT = """sen bir türk teknoloji meraklısısın. X (twitter) kul
 2. BODY — spesifik bilgi, kendi görüşün, rakamlar, karşılaştırma
 3. KAPANIŞ — güçlü görüş veya kısa gözlemle bitir. Soru SORMA.
 
+## PARAGRAF FORMATI (ÇOK ÖNEMLİ):
+- her tweet'te paragraflar arasında BOŞ SATIR bırak (\n\n ile ayır)
+- düz blok metin YAZMA — okunabilirlik için kısa paragraflar yap
+- her paragraf 1-3 cümle olsun
+- hook ayrı paragraf, body ayrı paragraf, kapanış ayrı paragraf
+- ÖRNEK FORMAT:
+  "hook cümlesi burada.\n\nbody paragrafı burada. detaylar, veriler.\n\nkapanış görüşü burada."
+
 ## HOOK KALIPLARI (her seferinde farklı birini seç — tekrar YASAK):
 
 HABER DUYURUSU: "[Ürün] çıktı!" veya "[Ürün] artık [fayda] yapabiliyor"
@@ -2180,6 +2188,7 @@ Kendi orijinal cümlelerini kur ama aynı doğallık ve samimiyet olsun.
 - Günlük Türkçe: "ya, bence, harbiden, bi baktım"
 - Soru ile bitirme, tırnak koyma, hashtag koyma
 - Uydurma rakam/veri YASAK
+- PARAGRAF FORMATI: paragraflar arasında mutlaka boş satır bırak (\\n\\n). düz blok metin YAZMA. her paragraf 1-3 cümle.
 """
 
         # Final safety: hard-cap total prompt length (~35K chars ≈ ~9K tokens)
@@ -2513,6 +2522,7 @@ Paragraflari kısa tut, metin duvarı olmasın. Sadece içerik metnini yaz."""
         text = self._humanize(text)
         text = self._detect_ai_patterns(text)
         text = self._enforce_lowercase(text)
+        text = self._format_paragraphs(text)
         return text
 
     @staticmethod
@@ -2884,6 +2894,53 @@ Paragraflari kısa tut, metin duvarı olmasın. Sadece içerik metnini yaz."""
             fixed.append(p)
         return '\n\n'.join(fixed)
 
+    @staticmethod
+    def _format_paragraphs(text: str) -> str:
+        """Post-process: ensure proper paragraph breaks for readability.
+
+        MiniMax often outputs text as a continuous block without line breaks.
+        This function detects natural paragraph boundaries and inserts breaks.
+
+        Rules:
+        - Thread parts (---TWEET--- markers) are left untouched
+        - If text already has 2+ paragraphs (double newlines), only normalize spacing
+        - For single-block text (>200 chars), split at sentence boundaries
+        - Each paragraph should be 1-3 sentences max
+        """
+        if not text or len(text) < 100:
+            return text
+
+        # Don't touch thread format (multiple tweets)
+        if '---TWEET' in text or '===TWEET' in text:
+            return text
+
+        import re
+
+        # Normalize existing breaks: collapse 3+ newlines to 2
+        text = re.sub(r'\n{3,}', '\n\n', text)
+
+        # Count existing paragraphs
+        paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+
+        # If already has reasonable paragraph structure, just clean up
+        if len(paragraphs) >= 2:
+            # Check if any paragraph is too long (>300 chars = needs splitting)
+            result = []
+            for p in paragraphs:
+                if len(p) > 300:
+                    result.extend(_split_long_paragraph(p))
+                else:
+                    result.append(p)
+            return '\n\n'.join(result)
+
+        # Single block text — need to add paragraph breaks
+        full_text = text.strip()
+        if len(full_text) < 200:
+            return full_text
+
+        # Split into paragraphs at natural boundaries
+        return '\n\n'.join(_split_long_paragraph(full_text))
+
     def _generate_gemini(self, system_prompt: str, user_prompt: str,
                           image_urls: list[str] = None) -> str:
         """Generate content using Google Gemini API.
@@ -3058,6 +3115,79 @@ Bu analizi, AI'ın aynı tarzda tweet yazabilmesi için bir "yazım profili" ola
         system = "Sen bir yazım tarzı analisti̇si̇n. Tweet'leri analiz edip yazarın benzersiz tarzını tespit ediyorsun."
 
         return self._dispatch(system, prompt)
+
+
+# ── Paragraph Formatting Helper ─────────────────────────────────
+
+def _split_long_paragraph(text: str) -> list[str]:
+    """Split a long block of text into readable paragraphs.
+
+    Uses sentence boundaries to create 1-3 sentence paragraphs.
+    Respects natural break points like topic shifts.
+    """
+    import re
+
+    # Split into sentences (Turkish + English punctuation)
+    # Match: sentence-ending punctuation followed by space and next sentence start
+    sentences = re.split(
+        r'(?<=[.!?])\s+(?=[a-zA-ZçğıöşüÇĞİÖŞÜ0-9"\'])',
+        text.strip()
+    )
+
+    if len(sentences) <= 2:
+        return [text.strip()]
+
+    # Group sentences into paragraphs (2-3 sentences each)
+    paragraphs = []
+    current = []
+    current_len = 0
+
+    # Natural break indicators - these words often start new paragraphs
+    break_starters = {
+        'ama', 'fakat', 'ancak', 'bence', 'aslında', 'yani',
+        'bu', 'asıl', 'önemli', 'mesele', 'sorun', 'tek',
+        'beni', 'ilginç', 'şaşırtan', 'peki', 'sonuç',
+        'google', 'openai', 'microsoft', 'meta', 'apple', 'anthropic',
+    }
+
+    for i, sentence in enumerate(sentences):
+        sentence = sentence.strip()
+        if not sentence:
+            continue
+
+        first_word = sentence.split()[0].lower().rstrip('.,!?:') if sentence.split() else ''
+
+        # Start new paragraph if:
+        # 1. Current paragraph has 2+ sentences and next starts with break word
+        # 2. Current paragraph has 3 sentences
+        # 3. Current char count > 250 and we have at least 1 sentence
+        should_break = (
+            len(current) >= 2 and first_word in break_starters
+        ) or (
+            len(current) >= 3
+        ) or (
+            current_len > 250 and len(current) >= 1 and first_word in break_starters
+        )
+
+        if should_break and current:
+            paragraphs.append(' '.join(current))
+            current = []
+            current_len = 0
+
+        current.append(sentence)
+        current_len += len(sentence)
+
+    if current:
+        paragraphs.append(' '.join(current))
+
+    # If we only got 1 paragraph, try a simpler split (every 2-3 sentences)
+    if len(paragraphs) <= 1 and len(sentences) >= 4:
+        paragraphs = []
+        for i in range(0, len(sentences), 2):
+            chunk = sentences[i:i + 2]
+            paragraphs.append(' '.join(s.strip() for s in chunk if s.strip()))
+
+    return paragraphs if paragraphs else [text.strip()]
 
 
 def score_tweet(tweet_text: str, content_format: str = "spark",
