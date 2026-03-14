@@ -75,41 +75,12 @@ export default function TabConfig({
           </button>
         </div>
 
-        {/* Gonderim Modu (3 mod: Taslak / Twikit / API) */}
+        {/* Gonderim Bilgisi */}
         <div className="p-3 rounded-lg bg-[var(--accent-blue)]/5 border border-[var(--accent-blue)]/20">
-          <label className="block text-sm font-medium mb-2">Gonderim Modu</label>
-          <div className="flex gap-2">
-            {([
-              { id: "draft" as const, label: "Taslak", desc: "Sadece uret, gondermez" },
-              { id: "twikit" as const, label: "Twikit (Cookie)", desc: "Cookie ile oto-gonder" },
-              { id: "api" as const, label: "Twitter API", desc: "Resmi API ile gonder" },
-            ]).map((mode) => (
-              <button
-                key={mode.id}
-                onClick={() =>
-                  setConfig((prev) => ({
-                    ...prev,
-                    publish_mode: mode.id,
-                    draft_only: mode.id === "draft",
-                  }))
-                }
-                className={`flex-1 p-3 rounded-lg border text-left transition-all ${
-                  (config.publish_mode || "draft") === mode.id
-                    ? "border-[var(--accent-blue)] bg-[var(--accent-blue)]/10"
-                    : "border-[var(--border)] hover:border-[var(--accent-blue)]/50"
-                }`}
-              >
-                <span className="text-sm font-medium block">{mode.label}</span>
-                <span className="text-xs text-[var(--text-secondary)]">{mode.desc}</span>
-              </button>
-            ))}
-          </div>
-          {(config.publish_mode || "draft") === "twikit" && (
-            <div className="mt-2 p-2 rounded bg-orange-500/10 border border-orange-500/20 text-xs text-orange-300">
-              Cookie tabanli gonderim. Gunluk max {config.daily_max_replies || 20} yanit.
-              Twikit cookie&apos;nin guncel oldugunu Ayarlar sayfasindan kontrol edin.
-            </div>
-          )}
+          <p className="text-sm text-[var(--text-secondary)]">
+            Yanitlar otomatik uretilir. Loglar sekmesinden &quot;Yaniti Kopyala&quot; ile kopyalayip
+            &quot;Tweet&apos;i Ac&quot; ile X&apos;te manuel paylasabilirsiniz.
+          </p>
         </div>
       </div>
 
@@ -216,28 +187,6 @@ export default function TabConfig({
             </p>
           </div>
 
-          {/* Daily max replies */}
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Gunluk Maks Yanit
-            </label>
-            <input
-              type="number"
-              value={config.daily_max_replies || 20}
-              onChange={(e) =>
-                setConfig((prev) => ({
-                  ...prev,
-                  daily_max_replies: parseInt(e.target.value) || 20,
-                }))
-              }
-              min={1}
-              max={30}
-              className="input w-full"
-            />
-            <p className="text-xs text-[var(--text-secondary)] mt-1">
-              Gunde max kac yanit gonderilsin. 15-20 onerilen.
-            </p>
-          </div>
 
           {/* Reply delay */}
           <div>

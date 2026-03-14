@@ -371,87 +371,33 @@ def generate_and_reply():
         })
         return
 
-    # ── PUBLISH MODE ROUTING ────────────────────────────────────
-    # draft + twikit modları: her zaman taslak üret.
-    # Twikit gönderimi ayrı fonksiyonda (publish_ready_drafts).
-    # api modu: üret + hemen gönder (eski davranış).
+    # ── ALWAYS DRAFT MODE ────────────────────────────────────
+    # Reply üret, taslak olarak kaydet. Kullanıcı Loglar'dan kopyalayıp
+    # X'te manuel paylaşır, sonra "Paylaştım" butonuyla işaretler.
 
-    if publish_mode in ("draft", "twikit"):
-        # Taslak olarak kaydet (twikit modunda ayrı adımda gönderilecek)
-        update_auto_reply_queue_entry(tweet_id, {
-            "status": "done",
-            "reply_text": reply_text,
-            "processed_at": now.isoformat(),
-        })
-        add_auto_reply_log({
-            "account": account,
-            "tweet_id": tweet_id,
-            "tweet_text": tweet_text,
-            "reply_text": reply_text,
-            "status": "ready",
-            "engagement_score": candidate.get("engagement_score", 0),
-            "like_count": candidate.get("like_count", 0),
-            "retweet_count": candidate.get("retweet_count", 0),
-        })
-        logger.info(
-            "Auto-reply generator: DRAFT for @%s tweet %s — ready%s",
-            account, tweet_id,
-            " (twikit auto-publish)" if publish_mode == "twikit" else "",
-        )
-        _send_telegram_auto_reply(
-            account, tweet_text, reply_text, tweet_id,
-            candidate.get("engagement_score", 0),
-        )
-        return
-
-    elif publish_mode == "api":
-        # Twitter API ile gönder (mevcut davranış)
-        result = _publish_with_fallback(
-            text=reply_text,
-            tweet_id=tweet_id,
-            account=account,
-        )
-
-        if result.get("success"):
-            publish_type = result.get("type", "reply")
-            update_auto_reply_queue_entry(tweet_id, {
-                "status": "done",
-                "reply_text": reply_text,
-                "processed_at": now.isoformat(),
-            })
-            add_auto_reply_log({
-                "account": account,
-                "tweet_id": tweet_id,
-                "tweet_text": tweet_text,
-                "reply_text": reply_text,
-                "reply_tweet_id": result.get("tweet_id", ""),
-                "reply_url": result.get("url", ""),
-                "status": "published",
-                "publish_type": publish_type,
-                "engagement_score": candidate.get("engagement_score", 0),
-                "like_count": candidate.get("like_count", 0),
-                "retweet_count": candidate.get("retweet_count", 0),
-            })
-            logger.info(
-                "Auto-reply generator: %s to @%s tweet %s — %s",
-                publish_type.upper(), account, tweet_id, result.get("url", ""),
-            )
-        else:
-            update_auto_reply_queue_entry(tweet_id, {
-                "status": "failed",
-                "processed_at": now.isoformat(),
-            })
-            add_auto_reply_log({
-                "account": account,
-                "tweet_id": tweet_id,
-                "tweet_text": tweet_text,
-                "reply_text": reply_text,
-                "status": "publish_failed",
-                "error": result.get("error", "Unknown error"),
-                "engagement_score": candidate.get("engagement_score", 0),
-                "like_count": candidate.get("like_count", 0),
-                "retweet_count": candidate.get("retweet_count", 0),
-            })
+    update_auto_reply_queue_entry(tweet_id, {
+        "status": "done",
+        "reply_text": reply_text,
+        "processed_at": now.isoformat(),
+    })
+    add_auto_reply_log({
+        "account": account,
+        "tweet_id": tweet_id,
+        "tweet_text": tweet_text,
+        "reply_text": reply_text,
+        "status": "ready",
+        "engagement_score": candidate.get("engagement_score", 0),
+        "like_count": candidate.get("like_count", 0),
+        "retweet_count": candidate.get("retweet_count", 0),
+    })
+    logger.info(
+        "Auto-reply generator: DRAFT for @%s tweet %s — ready",
+        account, tweet_id,
+    )
+    _send_telegram_auto_reply(
+        account, tweet_text, reply_text, tweet_id,
+        candidate.get("engagement_score", 0),
+    )
 
 
 # ── PHASE 3: TWIKIT AUTO-PUBLISHER ───────────────────────────

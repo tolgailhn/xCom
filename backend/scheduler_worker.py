@@ -650,13 +650,8 @@ def start_scheduler():
             id="auto_reply_generator",
             replace_existing=True,
         )
-        scheduler.add_job(
-            _publish_ready_auto_replies,
-            "interval",
-            minutes=7,
-            id="auto_reply_twikit_publisher",
-            replace_existing=True,
-        )
+        # Twikit auto-publisher kaldırıldı — X "automated" algılıyor (226 hata).
+        # Kullanıcı loglardan kopyalayıp manuel paylaşır.
         scheduler.add_job(
             _check_self_replies,
             "interval",
