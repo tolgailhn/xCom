@@ -428,23 +428,14 @@ def trigger_trend_analysis():
 
 @router.get("/news")
 def get_news():
-    """Haber taraması sonuçlarını getir."""
-    from backend.modules.style_manager import load_news_cache
-    cache = load_news_cache()
-    return {"articles": cache, "total": len(cache)}
+    """News scanner deaktif — boş liste döndür."""
+    return {"articles": [], "total": 0}
 
 
 @router.post("/news/scan")
 def trigger_news_scan():
-    """Manuel haber taraması tetikle."""
-    try:
-        from backend.news_scanner import scan_news
-        scan_news()
-        from backend.modules.style_manager import load_news_cache
-        cache = load_news_cache()
-        return {"success": True, "total": len(cache)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    """News scanner deaktif — graceful response."""
+    return {"success": True, "total": 0, "message": "News scanner deaktif"}
 
 
 # ── Faz 9: Suggested Accounts Endpoints ─────────────────

@@ -118,6 +118,15 @@ export default function GenerationPanel({
             <div className="text-[10px] text-[var(--text-secondary)] text-right mt-1">{editedText.length} karakter</div>
           </div>
           <div className="flex flex-wrap gap-2">
+            {onPublish && (
+              <button
+                onClick={() => onPublish(editedText)}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
+                style={{ background: "linear-gradient(135deg, var(--accent-purple), var(--accent-blue))" }}
+              >
+                API ile Paylas
+              </button>
+            )}
             <button onClick={() => onOpenInX(editedText)}
               className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
               style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}>

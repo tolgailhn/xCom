@@ -11,6 +11,9 @@ import {
 } from "@/lib/api";
 import { timeAgo } from "@/components/discovery";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RotationInfo = any;
+
 export interface TabAyarlarProps {
   config: DiscoveryConfig;
   setConfig: (c: DiscoveryConfig) => void;
@@ -21,6 +24,7 @@ export interface TabAyarlarProps {
   onClear: () => Promise<void>;
   status: DiscoveryStatus | null;
   onScanDone: () => Promise<void>;
+  rotationInfo?: RotationInfo;
 }
 
 export default function TabAyarlar({
@@ -33,6 +37,7 @@ export default function TabAyarlar({
   onClear,
   status,
   onScanDone,
+  rotationInfo,
 }: TabAyarlarProps) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -294,6 +299,45 @@ export default function TabAyarlar({
           )}
         </div>
       </div>
+
+      {/* Rotation Info */}
+      {rotationInfo && rotationInfo.accounts?.length > 0 && (
+        <div className="card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold">Hesap Rotasyonu</h3>
+            <div className="flex items-center gap-3 text-[10px] text-[var(--text-secondary)]">
+              <span>{rotationInfo.total_accounts} hesap</span>
+              <span>Batch: {rotationInfo.batch_size} hesap/{rotationInfo.interval_minutes}dk</span>
+              <span>Tam tur: ~{rotationInfo.full_rotation_minutes}dk</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {rotationInfo.accounts
+              .sort((a: { last_scanned: string | null }, b: { last_scanned: string | null }) => {
+                if (!a.last_scanned && !b.last_scanned) return 0;
+                if (!a.last_scanned) return 1;
+                if (!b.last_scanned) return -1;
+                return a.last_scanned.localeCompare(b.last_scanned);
+              })
+              .map((acc: { username: string; last_scanned: string | null; is_priority: boolean }) => (
+                <span
+                  key={acc.username}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] ${
+                    acc.is_priority
+                      ? "bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/30"
+                      : "bg-[var(--bg-secondary)]"
+                  }`}
+                >
+                  <span className="font-medium">@{acc.username}</span>
+                  <span className="text-[var(--text-secondary)]">
+                    {acc.last_scanned ? timeAgo(acc.last_scanned) : "bekliyor"}
+                  </span>
+                </span>
+              ))
+            }
+          </div>
+        </div>
+      )}
     </div>
   );
 }

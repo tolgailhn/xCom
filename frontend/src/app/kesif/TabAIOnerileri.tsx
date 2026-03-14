@@ -7,22 +7,13 @@ import {
   getDiscoveryTweets,
   getDailyFeed,
   triggerClustering,
-  generateQuoteTweet,
-  researchTopicStream,
-  getStyles,
-  addDraft,
-  schedulePost,
-  findMedia,
-  extractTweet,
-  generateInfographic,
   aiScoreSuggestions,
   aiScoreTrends,
   aiScoreDiscoveryTweets,
   publishTweet,
-  type TweetMediaItem,
-  type TweetUrl,
   type DiscoveryTweet,
 } from "@/lib/api";
+import useResearchWorkflow from "@/hooks/useResearchWorkflow";
 
 import {
   AIScoreBadge,
@@ -37,11 +28,6 @@ import {
   isLowQualityTweet,
   openInX,
   copyToClipboard,
-  type StyleOption,
-  type FormatOption,
-  type ResearchData,
-  type GeneratedData,
-  type MediaItem,
 } from "@/components/discovery";
 
 /* ── Types ──────────────────────────────────────────── */
@@ -148,6 +134,9 @@ function dateDayLabel(dateStr: string): string {
 
 
 export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: number }) {
+  // Shared research/generate/media workflow
+  const wf = useResearchWorkflow();
+
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [clustering, setClustering] = useState(false);
@@ -166,13 +155,6 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
   // AI scoring
   const [aiScoring, setAiScoring] = useState(false);
 
-  // Style/format
-  const [styles, setStyles] = useState<StyleOption[]>([]);
-  const [formats, setFormats] = useState<FormatOption[]>([]);
-  const [tweetStyle, setTweetStyle] = useState("quote_tweet");
-  const [tweetLength, setTweetLength] = useState("spark");
-  const [provider, setProvider] = useState("");
-
   // Progressive disclosure
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [workflowIdx, setWorkflowIdx] = useState<number | null>(null);
@@ -180,22 +162,6 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
   // Tweet-level progressive disclosure
   const [expandedTweet, setExpandedTweet] = useState<string | null>(null);
   const [workflowTweet, setWorkflowTweet] = useState<string | null>(null);
-
-  // Research & Generation per feed item (keyed by _key)
-  const [researchData, setResearchData] = useState<Record<string, ResearchData>>({});
-  const [researchingKey, setResearchingKey] = useState<string | null>(null);
-  const [researchExpanded, setResearchExpanded] = useState<Set<string>>(new Set(["__all__"]));
-  const [generatedTweets, setGeneratedTweets] = useState<Record<string, GeneratedData>>({});
-  const [generatingKey, setGeneratingKey] = useState<string | null>(null);
-  const [editedTexts, setEditedTexts] = useState<Record<string, string>>({});
-
-  // Media
-  const [mediaResults, setMediaResults] = useState<Record<string, MediaItem[]>>({});
-  const [mediaLoading, setMediaLoading] = useState<string | null>(null);
-  const [infographicData, setInfographicData] = useState<Record<string, { image: string; format: string }>>({});
-  const [infographicLoading, setInfographicLoading] = useState<string | null>(null);
-  const [itemMedia, setItemMedia] = useState<Record<string, TweetMediaItem[]>>({});
-  const [itemUrls, setItemUrls] = useState<Record<string, TweetUrl[]>>({});
 
   // Dismiss (persisted in localStorage with 30-day expiry)
   const DISMISS_EXPIRY_MS = 30 * 86400_000; // 30 gün
@@ -368,14 +334,7 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
 
   useEffect(() => { loadData(); }, [refreshTrigger, loadData, selectedDate]);
 
-  useEffect(() => {
-    getStyles()
-      .then((data: { styles?: StyleOption[]; formats?: FormatOption[] }) => {
-        if (data.styles) setStyles(data.styles);
-        if (data.formats) setFormats(data.formats);
-      })
-      .catch(() => {});
-  }, []);
+  // Styles loaded by wf hook
 
   // Auto AI scoring on mount (only for live data)
   useEffect(() => {
@@ -456,140 +415,47 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
 
   const handleResearch = useCallback(async (item: FeedItem) => {
     const key = item._key;
-    setResearchingKey(key);
     setWorkflowIdx(sorted.findIndex((i: FeedItem) => i._key === key));
-    setResearchData(prev => ({ ...prev, [key]: { summary: "", key_points: [], sources: [], progress: "Arastirma baslatiliyor..." } }));
-
-    try {
-      let researchTopic = item.topic;
-      const firstTweet = item.tweets[0];
-
-      if (firstTweet?.tweet_url || (firstTweet?.account && firstTweet?.tweet_id)) {
-        const tweetUrl = firstTweet.tweet_url || `https://x.com/${firstTweet.account}/status/${firstTweet.tweet_id}`;
-        try {
-          const extracted = await extractTweet(tweetUrl);
-          if (extracted?.full_thread_text) researchTopic = extracted.full_thread_text;
-          else if (extracted?.text) researchTopic = extracted.text;
-          if (extracted?.media_items?.length) setItemMedia(prev => ({ ...prev, [key]: [...(extracted.media_items || []), ...(extracted.thread_media || [])] }));
-          const allUrls = [...(extracted?.urls || []), ...(extracted?.thread_urls || [])];
-          if (allUrls.length) setItemUrls(prev => ({ ...prev, [key]: allUrls }));
-        } catch { /* use original topic */ }
-      }
-
-      if (item.url && !researchTopic.includes(item.url)) researchTopic += `\n\nKaynak: ${item.url}`;
-
-      const result = await researchTopicStream(
-        { topic: researchTopic, engine: "default", tweet_id: firstTweet?.tweet_id || "", tweet_author: firstTweet?.account || "" },
-        (progress: string) => setResearchData(prev => ({ ...prev, [key]: { ...prev[key], progress } })),
-      );
-      setResearchData(prev => ({ ...prev, [key]: { summary: result.summary, key_points: result.key_points, sources: result.sources, progress: "" } }));
-    } catch (e) {
-      setResearchData(prev => ({ ...prev, [key]: { ...prev[key], progress: `Hata: ${e instanceof Error ? e.message : "Bilinmeyen hata"}` } }));
-    } finally { setResearchingKey(null); }
-  }, [sorted]);
+    const firstTweet = item.tweets[0];
+    const tweetUrl = firstTweet?.tweet_url || (firstTweet?.account && firstTweet?.tweet_id ? `https://x.com/${firstTweet.account}/status/${firstTweet.tweet_id}` : undefined);
+    await wf.research(key, item.topic, {
+      tweetUrl,
+      account: firstTweet?.account,
+      tweetId: firstTweet?.tweet_id,
+      extraContext: item.url ? `Kaynak: ${item.url}` : undefined,
+    });
+  }, [sorted, wf]);
 
   const handleGenerate = useCallback(async (item: FeedItem) => {
-    const key = item._key;
-    setGeneratingKey(key);
-    try {
-      const research = researchData[key];
-      const researchSummary = research?.summary ? `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}` : "";
-      const topTweetsContext = item.tweets.length > 0
-        ? item.tweets.map((t: ClusterTweet) => `@${t.account}: ${t.text}`).join("\n")
-        : "";
-
-      const result = await generateQuoteTweet({
-        original_tweet: item.topic + (topTweetsContext ? `\n\n${topTweetsContext}` : ""),
-        original_author: item.tweets[0]?.account || item.topic.slice(0, 50),
-        style: tweetStyle,
-        research_summary: researchSummary,
-        length_preference: tweetLength,
-        provider: provider || undefined,
-      });
-      const text = result.text || "";
-      setGeneratedTweets(prev => ({ ...prev, [key]: { text, score: result.score?.overall || 0, thread_parts: result.thread_parts } }));
-      setEditedTexts(prev => ({ ...prev, [key]: text }));
-    } catch (e) {
-      const errText = `Hata: ${e instanceof Error ? e.message : "Bilinmeyen"}`;
-      setGeneratedTweets(prev => ({ ...prev, [key]: { text: errText, score: 0 } }));
-      setEditedTexts(prev => ({ ...prev, [key]: errText }));
-    } finally { setGeneratingKey(null); }
-  }, [researchData, tweetStyle, tweetLength, provider]);
+    const topTweetsContext = item.tweets.length > 0
+      ? item.tweets.map((t: ClusterTweet) => `@${t.account}: ${t.text}`).join("\n")
+      : "";
+    await wf.generateQuote(item._key, {
+      originalTweet: item.topic + (topTweetsContext ? `\n\n${topTweetsContext}` : ""),
+      originalAuthor: item.tweets[0]?.account || item.topic.slice(0, 50),
+    });
+  }, [wf]);
 
   const handleTweetResearch = useCallback(async (compositeKey: string, tweetText: string, tweetUrl: string, account: string, tweetId?: string) => {
-    setResearchingKey(compositeKey);
-    setResearchData(prev => ({ ...prev, [compositeKey]: { summary: "", key_points: [], sources: [], progress: "Arastirma baslatiliyor..." } }));
-    try {
-      let researchTopic = tweetText;
-      if (tweetUrl) {
-        try {
-          const extracted = await extractTweet(tweetUrl);
-          if (extracted?.full_thread_text) researchTopic = extracted.full_thread_text;
-          else if (extracted?.text) researchTopic = extracted.text;
-          if (extracted?.media_items?.length) setItemMedia(prev => ({ ...prev, [compositeKey]: [...(extracted.media_items || []), ...(extracted.thread_media || [])] }));
-          const allUrls = [...(extracted?.urls || []), ...(extracted?.thread_urls || [])];
-          if (allUrls.length) setItemUrls(prev => ({ ...prev, [compositeKey]: allUrls }));
-        } catch { /* use original text */ }
-      }
-      const result = await researchTopicStream(
-        { topic: researchTopic, engine: "default", tweet_id: tweetId || "", tweet_author: account || "" },
-        (progress: string) => setResearchData(prev => ({ ...prev, [compositeKey]: { ...prev[compositeKey], progress } })),
-      );
-      setResearchData(prev => ({ ...prev, [compositeKey]: { summary: result.summary, key_points: result.key_points, sources: result.sources, progress: "" } }));
-    } catch (e) {
-      setResearchData(prev => ({ ...prev, [compositeKey]: { ...prev[compositeKey], progress: `Hata: ${e instanceof Error ? e.message : "Bilinmeyen hata"}` } }));
-    } finally { setResearchingKey(null); }
-  }, []);
+    await wf.research(compositeKey, tweetText, { tweetUrl, account, tweetId });
+  }, [wf]);
 
   const handleTweetGenerate = useCallback(async (tw: ClusterTweet, compositeKey: string) => {
-    setGeneratingKey(compositeKey);
-    try {
-      const research = researchData[compositeKey];
-      const researchSummary = research?.summary ? `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}` : "";
-      const result = await generateQuoteTweet({
-        original_tweet: tw.text,
-        original_author: tw.account,
-        style: tweetStyle,
-        research_summary: researchSummary,
-        length_preference: tweetLength,
-        provider: provider || undefined,
-      });
-      const text = result.text || "";
-      setGeneratedTweets(prev => ({ ...prev, [compositeKey]: { text, score: result.score?.overall || 0, thread_parts: result.thread_parts } }));
-      setEditedTexts(prev => ({ ...prev, [compositeKey]: text }));
-    } catch (e) {
-      const errText = `Hata: ${e instanceof Error ? e.message : "Bilinmeyen"}`;
-      setGeneratedTweets(prev => ({ ...prev, [compositeKey]: { text: errText, score: 0 } }));
-      setEditedTexts(prev => ({ ...prev, [compositeKey]: errText }));
-    } finally { setGeneratingKey(null); }
-  }, [researchData, tweetStyle, tweetLength, provider]);
-
-  const handleFindMedia = useCallback(async (topic: string, key: string) => {
-    setMediaLoading(key);
-    try { const r = await findMedia(topic.slice(0, 100), "both"); setMediaResults(prev => ({ ...prev, [key]: r.results || [] })); }
-    catch { /* ignore */ }
-    finally { setMediaLoading(null); }
-  }, []);
-
-  const handleInfographic = useCallback(async (key: string, topic: string, keyPoints: string[]) => {
-    setInfographicLoading(key);
-    try {
-      const result = await generateInfographic({ topic, key_points: keyPoints });
-      if (result.image_base64) setInfographicData(prev => ({ ...prev, [key]: { image: result.image_base64, format: result.image_format || "png" } }));
-    } catch { /* ignore */ }
-    finally { setInfographicLoading(null); }
-  }, []);
+    await wf.generateQuote(compositeKey, {
+      originalTweet: tw.text,
+      originalAuthor: tw.account,
+    });
+  }, [wf]);
 
   const handleScheduleBestTime = async (item: FeedItem) => {
     const key = item._key;
-    const text = editedTexts[key];
-    if (!text || !item.suggestedHour) return;
+    if (!item.suggestedHour) return;
     const now = new Date();
     const [h, m] = item.suggestedHour.split(":").map(Number);
     const target = new Date(now);
     target.setHours(h || 14, m || 7, 0, 0);
     if (target <= now) target.setDate(target.getDate() + 1);
-    try { await schedulePost({ text, scheduled_time: target.toISOString() }); } catch { /* ignore */ }
+    try { await wf.schedule(key, target.toISOString()); } catch { /* ignore */ }
   };
 
   /* ── Helpers ──────────────────────────────────────── */
@@ -714,19 +580,13 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
       {/* ═══ Filter Bar ═══ */}
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex gap-1 bg-[var(--bg-secondary)] rounded-lg p-0.5">
-            {([
-              { key: "all", label: "Tumu" },
-              { key: "suggestion", label: "Kumeler" },
-              { key: "trend", label: "Trendler" },
-              { key: "tweet", label: "Tweetler" },
-            ] as const).map(t => (
-              <button key={t.key} onClick={() => setFilterSource(t.key)}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${filterSource === t.key ? "bg-[var(--accent-blue)] text-white" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}>
-                {t.label}
-              </button>
-            ))}
-          </div>
+          <select value={filterSource} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterSource(e.target.value as "all" | "suggestion" | "trend" | "tweet")}
+            className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]">
+            <option value="all">Kaynak: Tumu</option>
+            <option value="suggestion">AI Kumeleri</option>
+            <option value="trend">Anahtar Kelimeler</option>
+            <option value="tweet">Tekil Tweetler</option>
+          </select>
           <select value={sortBy} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortBy(e.target.value as "ai" | "engagement" | "newest")}
             className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--text-primary)]">
             <option value="ai">Siralama: AI Skoru</option>
@@ -766,10 +626,10 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
           <span className="text-xs font-medium text-[var(--text-secondary)]">Tweet Uretim Ayarlari</span>
         </div>
         <StyleFormatBar
-          styles={styles} formats={formats}
-          selectedStyle={tweetStyle} setSelectedStyle={setTweetStyle}
-          selectedFormat={tweetLength} setSelectedFormat={setTweetLength}
-          selectedProvider={provider} setSelectedProvider={setProvider}
+          styles={wf.styles} formats={wf.formats}
+          selectedStyle={wf.selectedStyle} setSelectedStyle={wf.setSelectedStyle}
+          selectedFormat={wf.selectedFormat} setSelectedFormat={wf.setSelectedFormat}
+          selectedProvider={wf.selectedProvider} setSelectedProvider={wf.setSelectedProvider}
           compact
         />
       </div>
@@ -960,12 +820,12 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
                                     {/* Action buttons */}
                                     <div className="flex flex-wrap gap-2 pt-2 border-t border-[var(--border)]/20">
                                       <button onClick={() => handleTweetResearch(ck, tw.text, twUrl, tw.account, tw.tweet_id)}
-                                        disabled={researchingKey === ck}
+                                        disabled={wf.researchingKey === ck}
                                         className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300 disabled:opacity-50"
                                         style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}>
-                                        {researchingKey === ck ? "Arastiriliyor..." : (researchData[ck]?.summary ? "Tekrar Arastir" : "Arastir")}
+                                        {wf.researchingKey === ck ? "Arastiriliyor..." : (wf.researchData[ck]?.summary ? "Tekrar Arastir" : "Arastir")}
                                       </button>
-                                      <button onClick={() => { setWorkflowTweet(isTwWorkflow ? null : ck); if (!researchData[ck]?.summary) handleTweetResearch(ck, tw.text, twUrl, tw.account, tw.tweet_id); }}
+                                      <button onClick={() => { setWorkflowTweet(isTwWorkflow ? null : ck); if (!wf.researchData[ck]?.summary) handleTweetResearch(ck, tw.text, twUrl, tw.account, tw.tweet_id); }}
                                         className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
                                         style={{ background: "linear-gradient(135deg, var(--accent-green), var(--accent-blue))" }}>Tweet Uret</button>
                                       {twUrl && (
@@ -979,50 +839,50 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
                                     {isTwWorkflow && (
                                       <div className="space-y-3 pt-2">
                                         <ResearchPanel
-                                          research={researchData[ck]}
-                                          isResearching={researchingKey === ck}
-                                          isExpanded={researchExpanded.has(ck) || researchExpanded.has("__all__")}
-                                          onToggleExpand={() => setResearchExpanded(prev => { const n = new Set(prev); n.has(ck) ? n.delete(ck) : n.add(ck); return n; })}
+                                          research={wf.researchData[ck]}
+                                          isResearching={wf.researchingKey === ck}
+                                          isExpanded={wf.researchExpanded.has(ck) || wf.researchExpanded.has("__all__")}
+                                          onToggleExpand={() => wf.toggleResearchExpanded(ck)}
                                         />
 
-                                        {researchData[ck]?.summary && (
+                                        {wf.researchData[ck]?.summary && (
                                           <div className="space-y-3 pt-2 border-t border-[var(--border-primary)]/20">
-                                            <StyleFormatBar styles={styles} formats={formats}
-                                              selectedStyle={tweetStyle} setSelectedStyle={setTweetStyle}
-                                              selectedFormat={tweetLength} setSelectedFormat={setTweetLength}
-                                              selectedProvider={provider} setSelectedProvider={setProvider} compact />
-                                            <button onClick={() => handleTweetGenerate(tw, ck)} disabled={generatingKey === ck}
+                                            <StyleFormatBar styles={wf.styles} formats={wf.formats}
+                                              selectedStyle={wf.selectedStyle} setSelectedStyle={wf.setSelectedStyle}
+                                              selectedFormat={wf.selectedFormat} setSelectedFormat={wf.setSelectedFormat}
+                                              selectedProvider={wf.selectedProvider} setSelectedProvider={wf.setSelectedProvider} compact />
+                                            <button onClick={() => handleTweetGenerate(tw, ck)} disabled={wf.generatingKey === ck}
                                               className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300 disabled:opacity-50"
                                               style={{ background: "linear-gradient(135deg, var(--accent-green), var(--accent-blue))" }}>
-                                              {generatingKey === ck ? "Uretiliyor..." : "Tweet Uret"}
+                                              {wf.generatingKey === ck ? "Uretiliyor..." : "Tweet Uret"}
                                             </button>
                                           </div>
                                         )}
 
                                         <GenerationPanel
-                                          generated={generatedTweets[ck]}
-                                          editedText={editedTexts[ck] || generatedTweets[ck]?.text || ""}
-                                          setEditedText={(t: string) => setEditedTexts(prev => ({ ...prev, [ck]: t }))}
-                                          isGenerating={generatingKey === ck}
+                                          generated={wf.generatedTexts[ck]}
+                                          editedText={wf.editedTexts[ck] || wf.generatedTexts[ck]?.text || ""}
+                                          setEditedText={(t: string) => wf.setEditedText(ck, t)}
+                                          isGenerating={wf.generatingKey === ck}
                                           onGenerate={() => handleTweetGenerate(tw, ck)}
                                           onPublish={async (text: string, parts?: string[]) => { try { await publishTweet({ text, thread_parts: parts || [] }); } catch { /* ignore */ } }}
                                           onOpenInX={openInX}
                                           onOpenQuote={twUrl ? () => window.open(`https://x.com/intent/tweet?url=${encodeURIComponent(twUrl)}`, "_blank") : undefined}
                                           onCopy={copyToClipboard}
-                                          onSaveDraft={async (text: string) => { await addDraft({ text, topic: item.topic, style: tweetStyle }); }}
+                                          onSaveDraft={async () => { await wf.saveDraft(ck, item.topic); }}
                                           tweetUrl={twUrl}
                                         />
 
-                                        {generatedTweets[ck] && <LinksBox links={itemUrls[ck] || []} />}
-                                        {generatedTweets[ck] && (
+                                        {wf.generatedTexts[ck] && <LinksBox links={wf.extractedMedia[ck]?.urls || []} />}
+                                        {wf.generatedTexts[ck] && (
                                           <MediaSection
-                                            mediaResults={mediaResults[ck]}
-                                            mediaLoading={mediaLoading === ck}
-                                            onFindMedia={() => handleFindMedia(editedTexts[ck] || generatedTweets[ck]?.text || tw.text, ck)}
-                                            infographicData={infographicData[ck]}
-                                            infographicLoading={infographicLoading === ck}
-                                            onGenerateInfographic={() => handleInfographic(ck, editedTexts[ck] || generatedTweets[ck]?.text || tw.text, researchData[ck]?.key_points || [])}
-                                            tweetMedia={itemMedia[ck]}
+                                            mediaResults={wf.mediaResults[ck]}
+                                            mediaLoading={wf.mediaLoading === ck}
+                                            onFindMedia={() => wf.searchMedia(ck, wf.editedTexts[ck] || wf.generatedTexts[ck]?.text || tw.text)}
+                                            infographicData={wf.infographicData[ck]}
+                                            infographicLoading={wf.infographicLoading === ck}
+                                            onGenerateInfographic={() => wf.createInfographic(ck, wf.editedTexts[ck] || wf.generatedTexts[ck]?.text || tw.text, wf.researchData[ck]?.key_points || [])}
+                                            tweetMedia={wf.extractedMedia[ck]?.media_items}
                                           />
                                         )}
                                       </div>
@@ -1038,12 +898,12 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
 
                     {/* Action buttons */}
                     <div className="flex flex-wrap gap-2 pt-2 border-t border-[var(--border)]/20">
-                      <button onClick={() => handleResearch(item)} disabled={researchingKey === key}
+                      <button onClick={() => handleResearch(item)} disabled={wf.researchingKey === key}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300 disabled:opacity-50"
                         style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}>
-                        {researchingKey === key ? "Arastiriliyor..." : (researchData[key]?.summary ? "Tekrar Arastir" : "Arastir")}
+                        {wf.researchingKey === key ? "Arastiriliyor..." : (wf.researchData[key]?.summary ? "Tekrar Arastir" : "Arastir")}
                       </button>
-                      <button onClick={() => { setWorkflowIdx(isWorkflow ? null : idx); if (!researchData[key]?.summary) handleResearch(item); }}
+                      <button onClick={() => { setWorkflowIdx(isWorkflow ? null : idx); if (!wf.researchData[key]?.summary) handleResearch(item); }}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300"
                         style={{ background: "linear-gradient(135deg, var(--accent-green), var(--accent-blue))" }}>Tweet Uret</button>
                       {(() => {
@@ -1057,7 +917,7 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
                             className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--accent-blue)]/30 text-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/10 transition-all inline-flex items-center gap-1">X&apos;te Ac &rarr;</a>
                         ) : null;
                       })()}
-                      {item.suggestedHour && generatedTweets[key] && (
+                      {item.suggestedHour && wf.generatedTexts[key] && (
                         <button onClick={() => handleScheduleBestTime(item)}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--accent-purple)]/30 text-[var(--accent-purple)] hover:bg-[var(--accent-purple)]/10 transition-all">
                           {item.suggestedHour}&apos;de Zamanla
@@ -1069,48 +929,48 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
                     {isWorkflow && (
                       <div className="space-y-3 pt-2">
                         <ResearchPanel
-                          research={researchData[key]}
-                          isResearching={researchingKey === key}
-                          isExpanded={researchExpanded.has(key) || researchExpanded.has("__all__")}
-                          onToggleExpand={() => setResearchExpanded(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; })}
+                          research={wf.researchData[key]}
+                          isResearching={wf.researchingKey === key}
+                          isExpanded={wf.researchExpanded.has(key) || wf.researchExpanded.has("__all__")}
+                          onToggleExpand={() => wf.toggleResearchExpanded(key)}
                         />
 
-                        {researchData[key]?.summary && (
+                        {wf.researchData[key]?.summary && (
                           <div className="space-y-3 pt-2 border-t border-[var(--border-primary)]/20">
-                            <StyleFormatBar styles={styles} formats={formats}
-                              selectedStyle={tweetStyle} setSelectedStyle={setTweetStyle}
-                              selectedFormat={tweetLength} setSelectedFormat={setTweetLength}
-                              selectedProvider={provider} setSelectedProvider={setProvider} compact />
-                            <button onClick={() => handleGenerate(item)} disabled={generatingKey === key}
+                            <StyleFormatBar styles={wf.styles} formats={wf.formats}
+                              selectedStyle={wf.selectedStyle} setSelectedStyle={wf.setSelectedStyle}
+                              selectedFormat={wf.selectedFormat} setSelectedFormat={wf.setSelectedFormat}
+                              selectedProvider={wf.selectedProvider} setSelectedProvider={wf.setSelectedProvider} compact />
+                            <button onClick={() => handleGenerate(item)} disabled={wf.generatingKey === key}
                               className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300 disabled:opacity-50"
                               style={{ background: "linear-gradient(135deg, var(--accent-green), var(--accent-blue))" }}>
-                              {generatingKey === key ? "Uretiliyor..." : "Tweet Uret"}
+                              {wf.generatingKey === key ? "Uretiliyor..." : "Tweet Uret"}
                             </button>
                           </div>
                         )}
 
                         <GenerationPanel
-                          generated={generatedTweets[key]}
-                          editedText={editedTexts[key] || generatedTweets[key]?.text || ""}
-                          setEditedText={(t: string) => setEditedTexts(prev => ({ ...prev, [key]: t }))}
-                          isGenerating={generatingKey === key}
+                          generated={wf.generatedTexts[key]}
+                          editedText={wf.editedTexts[key] || wf.generatedTexts[key]?.text || ""}
+                          setEditedText={(t: string) => wf.setEditedText(key, t)}
+                          isGenerating={wf.generatingKey === key}
                           onGenerate={() => handleGenerate(item)}
                           onPublish={async (text: string, parts?: string[]) => { try { await publishTweet({ text, thread_parts: parts || [] }); } catch { /* ignore */ } }}
                           onOpenInX={openInX}
                           onCopy={copyToClipboard}
-                          onSaveDraft={async (text: string) => { await addDraft({ text, topic: item.topic, style: tweetStyle }); }}
+                          onSaveDraft={async () => { await wf.saveDraft(key, item.topic); }}
                         />
 
-                        {generatedTweets[key] && <LinksBox links={itemUrls[key] || []} />}
-                        {generatedTweets[key] && (
+                        {wf.generatedTexts[key] && <LinksBox links={wf.extractedMedia[key]?.urls || []} />}
+                        {wf.generatedTexts[key] && (
                           <MediaSection
-                            mediaResults={mediaResults[key]}
-                            mediaLoading={mediaLoading === key}
-                            onFindMedia={() => handleFindMedia(editedTexts[key] || generatedTweets[key]?.text || item.topic, key)}
-                            infographicData={infographicData[key]}
-                            infographicLoading={infographicLoading === key}
-                            onGenerateInfographic={() => handleInfographic(key, editedTexts[key] || generatedTweets[key]?.text || item.topic, researchData[key]?.key_points || [])}
-                            tweetMedia={itemMedia[key]}
+                            mediaResults={wf.mediaResults[key]}
+                            mediaLoading={wf.mediaLoading === key}
+                            onFindMedia={() => wf.searchMedia(key, wf.editedTexts[key] || wf.generatedTexts[key]?.text || item.topic)}
+                            infographicData={wf.infographicData[key]}
+                            infographicLoading={wf.infographicLoading === key}
+                            onGenerateInfographic={() => wf.createInfographic(key, wf.editedTexts[key] || wf.generatedTexts[key]?.text || item.topic, wf.researchData[key]?.key_points || [])}
+                            tweetMedia={wf.extractedMedia[key]?.media_items}
                           />
                         )}
                       </div>

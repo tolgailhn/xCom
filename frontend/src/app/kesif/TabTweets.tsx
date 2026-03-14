@@ -2,13 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  researchTopicStream,
-  generateQuoteTweet,
-  findMedia,
-  generateInfographic,
-  addDraft,
-  extractTweet,
-  getStyles,
   summarizeDiscoveryTweets,
   getDiscoveryTweets,
   markTweetShared,
@@ -21,6 +14,7 @@ import {
   type TweetMediaItem,
   type TweetUrl,
 } from "@/lib/api";
+import useResearchWorkflow from "@/hooks/useResearchWorkflow";
 
 import {
   AIScoreBadge,
@@ -40,21 +34,9 @@ import {
   openInX,
   copyToClipboard,
   IMPORTANCE_BADGE,
-  type StyleOption,
-  type FormatOption,
-  type ResearchData,
-  type GeneratedData,
-  type MediaItem,
 } from "@/components/discovery";
 
 /* ── Types ──────────────────────────────────────────── */
-
-interface ExtractedMedia {
-  media_items: TweetMediaItem[];
-  urls: TweetUrl[];
-  thread_urls: TweetUrl[];
-  thread_media: TweetMediaItem[];
-}
 
 interface TabTweetsProps {
   tweets: DiscoveryTweet[];
@@ -66,36 +48,13 @@ interface TabTweetsProps {
 /* ── Main Component ─────────────────────────────────── */
 
 export default function TabTweets({ tweets, setTweets, allAccounts = [] }: TabTweetsProps) {
+  // Shared research/generate/media workflow
+  const wf = useResearchWorkflow();
+
   // Expansion: level 2 = card expanded, level 3 = workflow panel open
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [workflowCard, setWorkflowCard] = useState<string | null>(null);
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
-
-  // Research & Generation per tweet
-  const [researchData, setResearchData] = useState<Record<string, ResearchData>>({});
-  const [generatedTexts, setGeneratedTexts] = useState<Record<string, GeneratedData>>({});
-  const [editedTexts, setEditedTexts] = useState<Record<string, string>>({});
-  const [researchingId, setResearchingId] = useState<string | null>(null);
-  const [generatingId, setGeneratingId] = useState<string | null>(null);
-  const [researchExpanded, setResearchExpanded] = useState<Set<string>>(new Set(["__all__"]));
-
-  // Extracted media per tweet
-  const [extractedMedia, setExtractedMedia] = useState<Record<string, ExtractedMedia>>({});
-
-  // Style & provider (global)
-  const [styles, setStyles] = useState<StyleOption[]>([]);
-  const [formats, setFormats] = useState<FormatOption[]>([]);
-  const [tweetStyle, setTweetStyle] = useState("quote_tweet");
-  const [tweetLength, setTweetLength] = useState("spark");
-  const [provider, setProvider] = useState("");
-
-  // Media search results
-  const [mediaResults, setMediaResults] = useState<Record<string, MediaItem[]>>({});
-  const [mediaLoading, setMediaLoading] = useState<string | null>(null);
-
-  // Infographic
-  const [infographicData, setInfographicData] = useState<Record<string, { image: string; format: string }>>({});
-  const [infographicLoading, setInfographicLoading] = useState<string | null>(null);
 
   // Filters
   const [filterAccount, setFilterAccount] = useState("");
@@ -143,9 +102,8 @@ export default function TabTweets({ tweets, setTweets, allAccounts = [] }: TabTw
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tweets.length]);
 
-  // Load styles, shared tweets, AI scoring
+  // Load shared tweets, AI scoring
   useEffect(() => {
-    getStyles().then((r: { styles: StyleOption[]; formats: FormatOption[] }) => { setStyles(r.styles); setFormats(r.formats); }).catch(() => {});
     getSharedTweets().then(d => setSharedTweetIds(new Set(d.tweet_ids || []))).catch(() => {});
     aiScoreDiscoveryTweets().then(r => setAiScoredCount(r.scored || 0)).catch(() => {});
   }, []);
@@ -153,73 +111,20 @@ export default function TabTweets({ tweets, setTweets, allAccounts = [] }: TabTw
   /* ── Handlers ─────────────────────────────────────── */
 
   const handleResearch = useCallback(async (tweet: DiscoveryTweet) => {
-    const id = tweet.tweet_id;
-    setResearchingId(id);
-    setWorkflowCard(id);
-    setResearchData((prev: Record<string, ResearchData>) => ({ ...prev, [id]: { summary: "", key_points: [], sources: [], progress: "Baslatiliyor..." } }));
-
-    try {
-      let fullText = tweet.text;
-      try {
-        const extracted = await extractTweet(tweet.tweet_url);
-        if (extracted?.full_thread_text) fullText = extracted.full_thread_text;
-        else if (extracted?.text) fullText = extracted.text;
-        const mi = extracted?.media_items || [];
-        const u = extracted?.urls || [];
-        const tu = extracted?.thread_urls || [];
-        const tm = extracted?.thread_media || [];
-        if (mi.length > 0 || u.length > 0 || tu.length > 0 || tm.length > 0) {
-          setExtractedMedia((prev: Record<string, ExtractedMedia>) => ({ ...prev, [id]: { media_items: mi, urls: u, thread_urls: tu, thread_media: tm } }));
-        }
-      } catch { /* use original text */ }
-
-      const result = await researchTopicStream(
-        { topic: fullText, engine: "default", tweet_id: tweet.tweet_id, tweet_author: tweet.account },
-        (progress: string) => setResearchData((prev: Record<string, ResearchData>) => ({ ...prev, [id]: { ...prev[id], progress } })),
-      );
-      setResearchData((prev: Record<string, ResearchData>) => ({ ...prev, [id]: { summary: result.summary, key_points: result.key_points, sources: result.sources, progress: "" } }));
-    } catch (e) {
-      setResearchData((prev: Record<string, ResearchData>) => ({ ...prev, [id]: { ...prev[id], progress: `Hata: ${e instanceof Error ? e.message : "Bilinmeyen hata"}` } }));
-    } finally {
-      setResearchingId(null);
-    }
-  }, []);
+    setWorkflowCard(tweet.tweet_id);
+    await wf.research(tweet.tweet_id, tweet.text, {
+      tweetUrl: tweet.tweet_url,
+      account: tweet.account,
+      tweetId: tweet.tweet_id,
+    });
+  }, [wf]);
 
   const handleGenerate = useCallback(async (tweet: DiscoveryTweet) => {
-    const id = tweet.tweet_id;
-    setGeneratingId(id);
-    try {
-      const research = researchData[id];
-      const researchSummary = research ? `${research.summary}\n\nKey Points:\n${research.key_points.join("\n")}` : "";
-      const result = await generateQuoteTweet({
-        original_tweet: tweet.text, original_author: tweet.account,
-        style: tweetStyle, research_summary: researchSummary,
-        length_preference: tweetLength, provider: provider || undefined,
-      });
-      setGeneratedTexts((prev: Record<string, GeneratedData>) => ({ ...prev, [id]: { text: result.text, score: result.score?.overall || 0, thread_parts: result.thread_parts } }));
-    } catch (e) {
-      setGeneratedTexts((prev: Record<string, GeneratedData>) => ({ ...prev, [id]: { text: `Hata: ${e instanceof Error ? e.message : "Bilinmeyen"}`, score: 0 } }));
-    } finally { setGeneratingId(null); }
-  }, [researchData, tweetStyle, tweetLength, provider]);
-
-  const handleFindMedia = useCallback(async (tweet: DiscoveryTweet) => {
-    const id = tweet.tweet_id;
-    setMediaLoading(id);
-    try { const r = await findMedia(tweet.text.slice(0, 100), "both"); setMediaResults((prev: Record<string, MediaItem[]>) => ({ ...prev, [id]: r.results || [] })); }
-    catch { /* ignore */ }
-    finally { setMediaLoading(null); }
-  }, []);
-
-  const handleInfographic = useCallback(async (tweet: DiscoveryTweet) => {
-    const id = tweet.tweet_id;
-    setInfographicLoading(id);
-    try {
-      const research = researchData[id];
-      const result = await generateInfographic({ topic: tweet.text.slice(0, 200), research_summary: research?.summary || "", key_points: research?.key_points || [] });
-      if (result.success) setInfographicData((prev: Record<string, { image: string; format: string }>) => ({ ...prev, [id]: { image: result.image_base64, format: result.image_format } }));
-    } catch { /* ignore */ }
-    finally { setInfographicLoading(null); }
-  }, [researchData]);
+    await wf.generateQuote(tweet.tweet_id, {
+      originalTweet: tweet.text,
+      originalAuthor: tweet.account,
+    });
+  }, [wf]);
 
   const handleTranslate = useCallback(async (tweet: DiscoveryTweet) => {
     const id = tweet.tweet_id;
@@ -282,24 +187,26 @@ export default function TabTweets({ tweets, setTweets, allAccounts = [] }: TabTw
   const showAccordion = groupByAccount && !filterAccount && sortBy !== "ai" && sortBy !== "newest";
 
   // Collect links for a tweet
-  const collectLinks = (tweet: DiscoveryTweet, extracted?: ExtractedMedia): TweetUrl[] => {
+  const collectLinks = (tweet: DiscoveryTweet, id: string): TweetUrl[] => {
     const links: TweetUrl[] = [];
     const seen = new Set<string>();
     const add = (u: TweetUrl) => { if (!seen.has(u.url)) { seen.add(u.url); links.push(u); } };
     if (tweet.urls) tweet.urls.forEach(add);
     if (tweet.thread_parts) tweet.thread_parts.forEach(p => { if (p.urls) p.urls.forEach(add); });
-    if (extracted) { extracted.urls.forEach(add); extracted.thread_urls.forEach(add); }
+    const ext = wf.extractedMedia[id];
+    if (ext) ext.urls.forEach(add);
     return links;
   };
 
   // Collect all tweet media
-  const collectTweetMedia = (tweet: DiscoveryTweet, extracted?: ExtractedMedia): TweetMediaItem[] => {
+  const collectTweetMedia = (tweet: DiscoveryTweet, id: string): TweetMediaItem[] => {
     const items: TweetMediaItem[] = [];
     const seen = new Set<string>();
     const add = (m: TweetMediaItem) => { if (!seen.has(m.url)) { seen.add(m.url); items.push(m); } };
     if (tweet.media_items) tweet.media_items.forEach(add);
     if (tweet.thread_parts) tweet.thread_parts.forEach(p => { if (p.media_items) p.media_items.forEach(add); });
-    if (extracted) { extracted.media_items.forEach(add); extracted.thread_media.forEach(add); }
+    const ext = wf.extractedMedia[id];
+    if (ext) ext.media_items.forEach(add);
     return items;
   };
 
@@ -312,9 +219,9 @@ export default function TabTweets({ tweets, setTweets, allAccounts = [] }: TabTw
     const badge = IMPORTANCE_BADGE[tweet.importance] || IMPORTANCE_BADGE.dusuk;
     const scoreColor = getScoreColor(tweet.display_score);
     const importanceColor = getImportanceColor(tweet.importance);
-    const allLinks = collectLinks(tweet, extractedMedia[id]);
-    const allMedia = collectTweetMedia(tweet, extractedMedia[id]);
-    const hasResearch = researchData[id]?.summary;
+    const allLinks = collectLinks(tweet, id);
+    const allMedia = collectTweetMedia(tweet, id);
+    const hasResearch = wf.researchData[id]?.summary;
 
     return (
       <div
@@ -406,11 +313,11 @@ export default function TabTweets({ tweets, setTweets, allAccounts = [] }: TabTw
             <div className="flex flex-wrap gap-2 pt-2 border-t border-[var(--border-primary)]/20">
               <button
                 onClick={(e) => { e.stopPropagation(); handleResearch(tweet); }}
-                disabled={researchingId === id}
+                disabled={wf.researchingKey === id}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300 disabled:opacity-50"
                 style={{ background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))" }}
               >
-                {researchingId === id ? "Arastiriliyor..." : (hasResearch ? "Tekrar Arastir" : "Arastir")}
+                {wf.researchingKey === id ? "Arastiriliyor..." : (hasResearch ? "Tekrar Arastir" : "Arastir")}
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); setWorkflowCard(isWorkflow ? null : id); if (!hasResearch) handleResearch(tweet); }}
@@ -440,59 +347,59 @@ export default function TabTweets({ tweets, setTweets, allAccounts = [] }: TabTw
               <div className="space-y-3 pt-2">
                 {/* Research results */}
                 <ResearchPanel
-                  research={researchData[id]}
-                  isResearching={researchingId === id}
-                  isExpanded={researchExpanded.has(id) || researchExpanded.has("__all__")}
-                  onToggleExpand={() => setResearchExpanded(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; })}
+                  research={wf.researchData[id]}
+                  isResearching={wf.researchingKey === id}
+                  isExpanded={wf.researchExpanded.has(id) || wf.researchExpanded.has("__all__")}
+                  onToggleExpand={() => wf.toggleResearchExpanded(id)}
                 />
 
                 {/* Style/Format/Provider + Generate */}
-                {researchData[id]?.summary && (
+                {wf.researchData[id]?.summary && (
                   <div className="space-y-3 pt-2 border-t border-[var(--border-primary)]/20">
                     <StyleFormatBar
-                      styles={styles} formats={formats}
-                      selectedStyle={tweetStyle} setSelectedStyle={setTweetStyle}
-                      selectedFormat={tweetLength} setSelectedFormat={setTweetLength}
-                      selectedProvider={provider} setSelectedProvider={setProvider}
+                      styles={wf.styles} formats={wf.formats}
+                      selectedStyle={wf.selectedStyle} setSelectedStyle={wf.setSelectedStyle}
+                      selectedFormat={wf.selectedFormat} setSelectedFormat={wf.setSelectedFormat}
+                      selectedProvider={wf.selectedProvider} setSelectedProvider={wf.setSelectedProvider}
                     />
                     <button
                       onClick={() => handleGenerate(tweet)}
-                      disabled={generatingId === id}
+                      disabled={wf.generatingKey === id}
                       className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-all duration-300 disabled:opacity-50"
                       style={{ background: "linear-gradient(135deg, var(--accent-green), var(--accent-blue))" }}
                     >
-                      {generatingId === id ? "Uretiliyor..." : "Tweet Uret"}
+                      {wf.generatingKey === id ? "Uretiliyor..." : "Tweet Uret"}
                     </button>
                   </div>
                 )}
 
                 {/* Generated tweet */}
                 <GenerationPanel
-                  generated={generatedTexts[id]}
-                  editedText={editedTexts[id] || generatedTexts[id]?.text || ""}
-                  setEditedText={(t) => setEditedTexts(prev => ({ ...prev, [id]: t }))}
-                  isGenerating={generatingId === id}
+                  generated={wf.generatedTexts[id]}
+                  editedText={wf.editedTexts[id] || wf.generatedTexts[id]?.text || ""}
+                  setEditedText={(t) => wf.setEditedText(id, t)}
+                  isGenerating={wf.generatingKey === id}
                   onGenerate={() => handleGenerate(tweet)}
                   onPublish={async (text, parts) => { try { await publishTweet({ text, thread_parts: parts || [] }); } catch { /* ignore */ } }}
                   onOpenInX={openInX}
                   onOpenQuote={() => window.open(tweet.tweet_url, "_blank")}
                   onCopy={copyToClipboard}
-                  onSaveDraft={async (text) => { await addDraft({ text, topic: tweet.tweet_url, style: tweetStyle }); }}
+                  onSaveDraft={async () => { await wf.saveDraft(id, tweet.tweet_url); }}
                   tweetUrl={tweet.tweet_url}
                 />
 
                 {/* Links box */}
-                {generatedTexts[id] && <LinksBox links={allLinks} />}
+                {wf.generatedTexts[id] && <LinksBox links={allLinks} />}
 
                 {/* Media section */}
-                {generatedTexts[id] && (
+                {wf.generatedTexts[id] && (
                   <MediaSection
-                    mediaResults={mediaResults[id]}
-                    mediaLoading={mediaLoading === id}
-                    onFindMedia={() => handleFindMedia(tweet)}
-                    infographicData={infographicData[id]}
-                    infographicLoading={infographicLoading === id}
-                    onGenerateInfographic={() => handleInfographic(tweet)}
+                    mediaResults={wf.mediaResults[id]}
+                    mediaLoading={wf.mediaLoading === id}
+                    onFindMedia={() => wf.searchMedia(id, tweet.text.slice(0, 100))}
+                    infographicData={wf.infographicData[id]}
+                    infographicLoading={wf.infographicLoading === id}
+                    onGenerateInfographic={() => wf.createInfographic(id, tweet.text.slice(0, 200), wf.researchData[id]?.key_points || [])}
                     tweetMedia={allMedia}
                   />
                 )}

@@ -62,8 +62,8 @@ def analyze_trends(force: bool = False):
         logger.warning("Trend analyzer import error: %s", e)
         return
 
-    # Collect all recent tweets (last 12 hours)
-    cutoff = (now - datetime.timedelta(hours=12)).isoformat()
+    # Collect all recent tweets (last 24 hours — matches discovery_worker MAX_TWEET_AGE_HOURS)
+    cutoff = (now - datetime.timedelta(hours=24)).isoformat()
 
     discovery_tweets = load_discovery_cache()
     auto_scan_tweets = load_auto_scan_cache()

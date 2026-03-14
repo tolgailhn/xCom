@@ -251,7 +251,7 @@ export default function KesifPage() {
         </div>
       )}
 
-      {/* Scheduler Worker Status */}
+      {/* Scheduler Worker Status — collapsible */}
       {schedulerJobs.length > 0 && (() => {
         const JOB_LABELS: Record<string, string> = {
           auto_topic_scanner: "Konu Tarama (45dk)",
@@ -264,76 +264,37 @@ export default function KesifPage() {
         const relevantJobs = schedulerJobs.filter((j: { id: string }) => JOB_LABELS[j.id]);
         if (!relevantJobs.length) return null;
         return (
-          <div className="glass-card p-3">
-            <div className="flex items-center gap-2 mb-2.5">
+          <details className="glass-card">
+            <summary className="flex items-center gap-2 p-3 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
               <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-green)] animate-pulse" />
               <span className="text-xs font-medium text-[var(--text-secondary)]">Otomatik Tarama Durumlari</span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-              {relevantJobs.map((job: { id: string; last_run: string | null; next_run: string | null }) => (
-                <div key={job.id} className="flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-lg bg-[var(--bg-secondary)]/60 border border-[var(--border)]/50 hover:border-[var(--accent-blue)]/30 transition-colors">
-                  <span className="text-[10px] font-semibold text-[var(--text-primary)]">{JOB_LABELS[job.id]}</span>
-                  <span className="text-[10px] text-[var(--text-secondary)]">
-                    {job.last_run ? `Son: ${timeAgo(job.last_run)}` : "Henuz calismadi"}
-                  </span>
-                  {job.next_run && (
-                    <span className="text-[10px] font-medium text-[var(--accent-green)]">
-                      Sonraki: {timeAgo(job.next_run).includes("g") ? timeAgo(job.next_run) : (() => {
-                        try {
-                          const d = new Date(job.next_run);
-                          return d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
-                        } catch { return ""; }
-                      })()}
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-green)]/15 text-[var(--accent-green)] font-medium ml-auto">{relevantJobs.length} aktif is</span>
+            </summary>
+            <div className="px-3 pb-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                {relevantJobs.map((job: { id: string; last_run: string | null; next_run: string | null }) => (
+                  <div key={job.id} className="flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-lg bg-[var(--bg-secondary)]/60 border border-[var(--border)]/50 hover:border-[var(--accent-blue)]/30 transition-colors">
+                    <span className="text-[10px] font-semibold text-[var(--text-primary)]">{JOB_LABELS[job.id]}</span>
+                    <span className="text-[10px] text-[var(--text-secondary)]">
+                      {job.last_run ? `Son: ${timeAgo(job.last_run)}` : "Henuz calismadi"}
                     </span>
-                  )}
-                </div>
-              ))}
+                    {job.next_run && (
+                      <span className="text-[10px] font-medium text-[var(--accent-green)]">
+                        Sonraki: {timeAgo(job.next_run).includes("g") ? timeAgo(job.next_run) : (() => {
+                          try {
+                            const d = new Date(job.next_run);
+                            return d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+                          } catch { return ""; }
+                        })()}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          </details>
         );
       })()}
-
-      {/* Rotation Info — Detaylı hesap tarama durumu */}
-      {rotationInfo && rotationInfo.accounts?.length > 0 && (
-        <div className="glass-card p-3">
-          <div className="flex items-center justify-between mb-2.5">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-[var(--text-secondary)]">
-                Rotasyon &mdash; batch ({rotationInfo.interval_minutes}dk, {rotationInfo.batch_size} hesap/tur)
-              </span>
-            </div>
-            <div className="flex items-center gap-3 text-[10px] text-[var(--text-secondary)]">
-              <span>{rotationInfo.total_accounts} hesap</span>
-              <span>Tam tur: ~{rotationInfo.full_rotation_minutes}dk</span>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {rotationInfo.accounts
-              .sort((a: { last_scanned: string | null }, b: { last_scanned: string | null }) => {
-                if (!a.last_scanned && !b.last_scanned) return 0;
-                if (!a.last_scanned) return 1;
-                if (!b.last_scanned) return -1;
-                return a.last_scanned.localeCompare(b.last_scanned);
-              })
-              .map((acc: { username: string; last_scanned: string | null; is_priority: boolean }) => (
-                <span
-                  key={acc.username}
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] ${
-                    acc.is_priority
-                      ? "bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/30"
-                      : "bg-[var(--bg-secondary)]"
-                  }`}
-                >
-                  <span className="font-medium">@{acc.username}</span>
-                  <span className="text-[var(--text-secondary)]">
-                    {acc.last_scanned ? timeAgo(acc.last_scanned) : "bekliyor"}
-                  </span>
-                </span>
-              ))
-            }
-          </div>
-        </div>
-      )}
 
       {/* Tabs — Modern pill-style navigation */}
       <div className="flex gap-1.5 bg-[var(--bg-secondary)]/60 backdrop-blur-sm rounded-full p-1.5 border border-[var(--border)]/50 overflow-x-auto">
@@ -369,6 +330,7 @@ export default function KesifPage() {
           onClear={async () => { await clearDiscoveryCache(); await loadData(); }}
           status={status}
           onScanDone={loadData}
+          rotationInfo={rotationInfo}
         />
       )}
 
