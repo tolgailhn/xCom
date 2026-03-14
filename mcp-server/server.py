@@ -282,7 +282,7 @@ async def generate_tweet(
         style: Stil (informative, provocative, technical, storytelling vb.)
         content_format: Format (spark=kısa, thread_short=3-4 tweet, thread_long=5+ tweet)
         research_context: Araştırma özeti (research_topic çıktısını yapıştır)
-        provider: AI provider (boş=otomatik, "minimax", "anthropic", "openai")
+        provider: AI provider (her zaman MiniMax kullanılır)
     """
     body: dict[str, Any] = {
         "topic": topic,

@@ -457,78 +457,42 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime, force
         '"reasoning": "neden ilginç kısa açıklama"}]'
     )
 
-    # Call AI
+    # Call MiniMax AI
     try:
-        from backend.api.helpers import get_ai_provider
-        provider, api_key, _ = get_ai_provider()
+        from backend.config import get_settings
+        api_key = get_settings().minimax_api_key
         if not api_key:
-            logger.warning("Clustering: no AI key available")
+            logger.warning("Clustering: MiniMax API key not configured")
             return
     except Exception:
-        logger.warning("Clustering: AI provider unavailable")
+        logger.warning("Clustering: could not load settings")
         return
 
     response_text = ""
     try:
-        if provider in ("minimax", "groq", "openai"):
-            import ssl
-            import urllib.request
-            base_urls = {
-                "minimax": "https://api.minimax.io/v1",
-                "groq": "https://api.groq.com/openai/v1",
-                "openai": "https://api.openai.com/v1",
-            }
-            models = {
-                "minimax": "MiniMax-M2.5",
-                "groq": "llama-3.3-70b-versatile",
-                "openai": "gpt-4o-mini",
-            }
-            url = f"{base_urls[provider]}/chat/completions"
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}",
-            }
-            payload = {
-                "model": models[provider],
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 5000,
-                "temperature": 0.3,
-            }
-            data = _json.dumps(payload).encode("utf-8")
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
-            req = urllib.request.Request(url, data=data, headers=headers)
-            with urllib.request.urlopen(req, timeout=120, context=ctx) as resp:
-                result = _json.loads(resp.read().decode("utf-8"))
-                response_text = result.get("choices", [{}])[0].get("message", {}).get("content", "")
-        elif provider == "anthropic":
-            import ssl
-            import urllib.request
-            url = "https://api.anthropic.com/v1/messages"
-            headers = {
-                "Content-Type": "application/json",
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-            }
-            payload = {
-                "model": "claude-sonnet-4-20250514",
-                "max_tokens": 5000,
-                "messages": [{"role": "user", "content": prompt}],
-            }
-            data = _json.dumps(payload).encode("utf-8")
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
-            req = urllib.request.Request(url, data=data, headers=headers)
-            with urllib.request.urlopen(req, timeout=120, context=ctx) as resp:
-                result = _json.loads(resp.read().decode("utf-8"))
-                response_text = result.get("content", [{}])[0].get("text", "")
-        else:
-            logger.warning("Clustering: unsupported provider %s", provider)
-            return
+        import ssl
+        import urllib.request
+        url = "https://api.minimax.io/v1/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
+        payload = {
+            "model": "MiniMax-M2.5",
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 5000,
+            "temperature": 0.3,
+        }
+        data = _json.dumps(payload).encode("utf-8")
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        req = urllib.request.Request(url, data=data, headers=headers)
+        with urllib.request.urlopen(req, timeout=120, context=ctx) as resp:
+            result = _json.loads(resp.read().decode("utf-8"))
+            response_text = result.get("choices", [{}])[0].get("message", {}).get("content", "")
     except Exception as e:
-        logger.warning("Clustering AI call failed: %s", e)
+        logger.warning("Clustering MiniMax AI call failed: %s", e)
         return
 
     # Strip MiniMax tags if present (all providers might have similar issues)

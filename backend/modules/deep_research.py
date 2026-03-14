@@ -297,49 +297,25 @@ def _clean_ai_tags(text: str) -> str:
 
 def _call_ai(ai_client, provider: str, ai_model: str | None, prompt: str,
              max_tokens: int = 1000, temperature: float = 0.3, system: str = "") -> str | None:
-    """Unified AI call helper — supports anthropic, gemini, openai/minimax/groq."""
+    """MiniMax AI call helper — OpenAI-compatible API."""
     if not ai_client:
         return None
     try:
-        if provider == "anthropic":
-            kwargs = dict(
-                model=ai_model or "claude-haiku-4-5-20251001",
-                max_tokens=max_tokens,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-            )
-            if system:
-                kwargs["system"] = system
-            response = ai_client.messages.create(**kwargs)
-            return response.content[0].text.strip()
-        elif provider == "gemini":
-            from google.genai import types
-            response = ai_client.models.generate_content(
-                model=ai_model or "gemini-3.1-flash-lite",
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=system or None,
-                    max_output_tokens=max_tokens,
-                    temperature=temperature,
-                ),
-            )
-            return response.text.strip() if response and response.text else None
-        else:
-            messages = []
-            if system:
-                messages.append({"role": "system", "content": system})
-            messages.append({"role": "user", "content": prompt})
-            response = ai_client.chat.completions.create(
-                model=ai_model or "MiniMax-M2.5",
-                messages=messages,
-                max_tokens=max_tokens,
-                temperature=temperature,
-            )
-            text = response.choices[0].message.content.strip()
-            # Strip unwanted AI tags (MiniMax tool_call, think from any reasoning model)
-            if text:
-                text = _clean_ai_tags(text)
-            return text
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        response = ai_client.chat.completions.create(
+            model=ai_model or "MiniMax-M2.5",
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+        text = response.choices[0].message.content.strip()
+        # Strip unwanted AI tags (MiniMax tool_call, think)
+        if text:
+            text = _clean_ai_tags(text)
+        return text
     except Exception as e:
         print(f"AI call error ({provider}): {e}")
         return None
@@ -3483,22 +3459,13 @@ JSON formatında 5-8 konu ver:
 SADECE JSON ver, başka bir şey yazma."""
 
     try:
-        if ai_provider == "anthropic":
-            response = ai_client.messages.create(
-                model=ai_model or "claude-haiku-4-5-20251001",
-                max_tokens=2500,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.5,
-            )
-            text = response.content[0].text
-        else:
-            response = ai_client.chat.completions.create(
-                model=ai_model or "MiniMax-M2.5",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=2500,
-                temperature=0.5,
-            )
-            text = response.choices[0].message.content
+        response = ai_client.chat.completions.create(
+            model=ai_model or "MiniMax-M2.5",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=2500,
+            temperature=0.5,
+        )
+        text = response.choices[0].message.content
 
         # Parse JSON
         text = _clean_ai_tags(text)

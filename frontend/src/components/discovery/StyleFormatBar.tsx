@@ -9,8 +9,8 @@ interface StyleFormatBarProps {
   setSelectedStyle: (s: string) => void;
   selectedFormat: string;
   setSelectedFormat: (s: string) => void;
-  selectedProvider: string;
-  setSelectedProvider: (s: string) => void;
+  selectedProvider?: string;
+  setSelectedProvider?: (s: string) => void;
   compact?: boolean;
 }
 
@@ -20,7 +20,6 @@ export default function StyleFormatBar({
   styles, formats,
   selectedStyle, setSelectedStyle,
   selectedFormat, setSelectedFormat,
-  selectedProvider, setSelectedProvider,
   compact = false,
 }: StyleFormatBarProps) {
   return (
@@ -34,13 +33,6 @@ export default function StyleFormatBar({
         {formats.length > 0 ? formats.map(f => <option key={f.id} value={f.id}>{f.name}</option>) : (
           <option value="spark">Spark</option>
         )}
-      </select>
-      <select value={selectedProvider} onChange={e => setSelectedProvider(e.target.value)} className={selectCls}>
-        <option value="">Otomatik</option>
-        <option value="anthropic">Claude</option>
-        <option value="openai">GPT</option>
-        <option value="minimax">MiniMax</option>
-        <option value="groq">Groq</option>
       </select>
     </div>
   );

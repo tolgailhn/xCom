@@ -561,7 +561,7 @@ def _call_ai_for_scores(provider: str, api_key: str, prompt: str) -> list[dict]:
         response_text = resp.content[0].text
     elif provider == "minimax":
         from openai import OpenAI
-        client = OpenAI(api_key=api_key, base_url="https://api.minimaxi.chat/v1")
+        client = OpenAI(api_key=api_key, base_url="https://api.minimax.io/v1")
         resp = client.chat.completions.create(
             model="MiniMax-Text-01",
             max_tokens=1000,
@@ -720,31 +720,9 @@ def generate_smart_suggestion(req: GenerateSmartSuggestionRequest):
     try:
         from backend.api.helpers import get_ai_provider
 
-        # Build provider fallback chain
-        providers_to_try: list[tuple[str, str]] = []
-        seen = set()
-
-        # Primary: user-selected or auto
-        try:
-            p, k, _ = get_ai_provider(req.provider or "")
-            if k and p not in seen:
-                providers_to_try.append((p, k))
-                seen.add(p)
-        except Exception:
-            pass
-
-        # Fallbacks: try all available providers
-        for fb in ["anthropic", "openai", "gemini", "groq"]:
-            try:
-                p, k, _ = get_ai_provider(fb)
-                if k and p not in seen:
-                    providers_to_try.append((p, k))
-                    seen.add(p)
-            except Exception:
-                pass
-
-        if not providers_to_try:
-            raise HTTPException(400, "AI API anahtarı bulunamadı")
+        p, k, _ = get_ai_provider()
+        if not k:
+            raise HTTPException(400, "MiniMax API anahtarı bulunamadı")
 
         prompt = (
             f"Konu: {req.topic}\n"
@@ -761,20 +739,8 @@ def generate_smart_suggestion(req: GenerateSmartSuggestionRequest):
             '{"tweet": "tweet metni", "engagement_potential": 8, "best_time": "14:07", "reasoning": "neden bu saat"}'
         )
 
-        # Try providers with fallback
-        response_text = ""
-        last_error: Exception | None = None
-        for provider_name, api_key in providers_to_try:
-            try:
-                response_text = _call_ai_simple(provider_name, api_key, prompt)
-                logger.info("Smart suggestion generated with %s", provider_name)
-                break
-            except Exception as e:
-                last_error = e
-                logger.warning("Provider %s failed: %s — trying next", provider_name, e)
-                continue
-        else:
-            raise HTTPException(500, f"Tüm AI providerlar başarısız: {last_error}")
+        response_text = _call_ai_simple(p, k, prompt)
+        logger.info("Smart suggestion generated with MiniMax")
 
         # Parse JSON
         match = re.search(r'\{.*\}', response_text, re.DOTALL)
@@ -806,34 +772,15 @@ def generate_smart_suggestion(req: GenerateSmartSuggestionRequest):
 
 
 def _call_ai_simple(provider: str, api_key: str, prompt: str) -> str:
-    """Simple AI call returning text response."""
-    if provider == "anthropic":
-        import anthropic
-        client = anthropic.Anthropic(api_key=api_key)
-        resp = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=1000,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return resp.content[0].text
-    elif provider == "minimax":
-        from openai import OpenAI
-        client = OpenAI(api_key=api_key, base_url="https://api.minimaxi.chat/v1")
-        resp = client.chat.completions.create(
-            model="MiniMax-Text-01",
-            max_tokens=1000,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return resp.choices[0].message.content or ""
-    else:
-        from openai import OpenAI
-        client = OpenAI(api_key=api_key)
-        resp = client.chat.completions.create(
-            model="gpt-4o-mini",
-            max_tokens=1000,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return resp.choices[0].message.content or ""
+    """Simple MiniMax AI call returning text response."""
+    from openai import OpenAI
+    client = OpenAI(api_key=api_key, base_url="https://api.minimax.io/v1")
+    resp = client.chat.completions.create(
+        model="MiniMax-M2.5",
+        max_tokens=1000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return resp.choices[0].message.content or ""
 
 
 # ── Faz 9: Active Account Search ──────────────────────

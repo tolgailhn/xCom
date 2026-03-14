@@ -56,17 +56,8 @@ def _get_ai_client():
     from backend.api.helpers import get_ai_provider
     try:
         provider, api_key, model = get_ai_provider()
-        if provider == "anthropic":
-            import anthropic
-            return anthropic.Anthropic(api_key=api_key), model, provider
-        elif provider in ("openai", "minimax", "groq"):
-            from openai import OpenAI
-            base_url = (
-                "https://api.minimaxi.chat/v1" if provider == "minimax"
-                else "https://api.groq.com/openai/v1" if provider == "groq"
-                else None
-            )
-            return OpenAI(api_key=api_key, base_url=base_url), model, provider
+        from openai import OpenAI
+        return OpenAI(api_key=api_key, base_url="https://api.minimax.io/v1"), model or "MiniMax-M2.5", provider
     except Exception:
         pass
     return None, None, None

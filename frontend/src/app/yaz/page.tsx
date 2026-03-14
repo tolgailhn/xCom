@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { getStyles, getProviders } from "@/lib/api";
+import { getStyles } from "@/lib/api";
 import ErrorMessage from "@/components/ui/ErrorMessage";
 
 import TabQuoteTweet from "./TabQuoteTweet";
@@ -16,12 +16,6 @@ interface StyleOption {
   id: string;
   name: string;
   desc: string;
-}
-
-interface ProviderOption {
-  id: string;
-  name: string;
-  available: boolean;
 }
 
 interface FormatOption {
@@ -53,7 +47,6 @@ function YazContent() {
   /* ── Shared State ───────────────── */
   const [styles, setStyles] = useState<StyleOption[]>([]);
   const [formats, setFormats] = useState<FormatOption[]>([]);
-  const [providers, setProviders] = useState<ProviderOption[]>([]);
   const [pageError, setPageError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -63,9 +56,6 @@ function YazContent() {
         setFormats(r.formats);
       })
       .catch((e) => setPageError(e instanceof Error ? e.message : "Stiller yuklenemedi — backend calisiyor mu?"));
-    getProviders()
-      .then((r: { providers: ProviderOption[] }) => setProviders(r.providers))
-      .catch(() => {});
   }, []);
 
   // Pre-fill from search params
@@ -117,13 +107,13 @@ function YazContent() {
         <TabQuoteTweet
           styles={styles}
           formats={formats}
-          providers={providers}
+          providers={[]}
           initialUrl={searchParams.get("quote_url") || ""}
         />
       )}
-      {activeTab === "reply" && <TabQuickReply styles={styles} providers={providers} />}
-      {activeTab === "linkreply" && <TabLinkReply styles={styles} providers={providers} />}
-      {activeTab === "selfreply" && <TabSelfReply styles={styles} providers={providers} />}
+      {activeTab === "reply" && <TabQuickReply styles={styles} providers={[]} />}
+      {activeTab === "linkreply" && <TabLinkReply styles={styles} providers={[]} />}
+      {activeTab === "selfreply" && <TabSelfReply styles={styles} providers={[]} />}
     </div>
   );
 }

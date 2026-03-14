@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { getStyles, getProviders } from "@/lib/api";
-import { ContentStyle, FormatOption, ProviderOption } from "./shared";
+import { getStyles } from "@/lib/api";
+import { ContentStyle, FormatOption } from "./shared";
 import ErrorMessage from "@/components/ui/ErrorMessage";
 import TabDiscover from "./TabDiscover";
 import TabGenerate from "./TabGenerate";
@@ -15,7 +15,6 @@ export default function IcerikPage() {
   const [activeTab, setActiveTab] = useState<"discover" | "generate">("discover");
   const [contentStyles, setContentStyles] = useState<ContentStyle[]>([]);
   const [formats, setFormats] = useState<FormatOption[]>([]);
-  const [providers, setProviders] = useState<ProviderOption[]>([]);
   const [pageError, setPageError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -43,9 +42,6 @@ export default function IcerikPage() {
         }
       )
       .catch((e) => setPageError(e instanceof Error ? e.message : "Stiller yuklenemedi — backend calisiyor mu?"));
-    getProviders()
-      .then((r: { providers: ProviderOption[] }) => setProviders(r.providers))
-      .catch(() => {});
   }, []);
 
   const tabs = [
@@ -77,10 +73,10 @@ export default function IcerikPage() {
       </div>
 
       {activeTab === "discover" && (
-        <TabDiscover contentStyles={contentStyles} formats={formats} providers={providers} />
+        <TabDiscover contentStyles={contentStyles} formats={formats} providers={[]} />
       )}
       {activeTab === "generate" && (
-        <TabGenerate contentStyles={contentStyles} formats={formats} providers={providers} />
+        <TabGenerate contentStyles={contentStyles} formats={formats} providers={[]} />
       )}
     </div>
   );

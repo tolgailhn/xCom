@@ -40,7 +40,7 @@ export interface ResearchWorkflow {
   selectedFormat: string;
   setSelectedFormat: (s: string) => void;
   selectedProvider: string;
-  setSelectedProvider: (s: string) => void;
+  setSelectedProvider: (s: string) => void;  // no-op, always MiniMax
 
   // Per-key research data
   researchData: Record<string, ResearchData>;
@@ -97,7 +97,8 @@ export default function useResearchWorkflow(opts?: UseResearchWorkflowOptions): 
   const [formats, setFormats] = useState<FormatOption[]>([]);
   const [selectedStyle, setSelectedStyle] = useState(opts?.defaultStyle || "quote_tweet");
   const [selectedFormat, setSelectedFormat] = useState(opts?.defaultFormat || "spark");
-  const [selectedProvider, setSelectedProvider] = useState(opts?.defaultProvider || "");
+  const [selectedProvider] = useState("");  // Always MiniMax
+  const setSelectedProvider = (_: string) => {};  // no-op
 
   // Per-key state
   const [researchData, setResearchData] = useState<Record<string, ResearchData>>({});

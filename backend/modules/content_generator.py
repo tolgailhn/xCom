@@ -1,9 +1,8 @@
 """
 AI Content Generator Module
-Generates natural, human-like tweets using Claude/OpenAI APIs
+Generates natural, human-like tweets using MiniMax AI API
 Optimized for X algorithm and natural Turkish/English writing
 """
-import anthropic
 import openai
 import json
 import random
@@ -1462,54 +1461,29 @@ def _resolve_style(style: str, context: str = "tweet") -> str:
 class ContentGenerator:
     """AI-powered content generator for natural tweet writing"""
 
-    def __init__(self, provider: str = "anthropic", api_key: str = None,
+    def __init__(self, provider: str = "minimax", api_key: str = None,
                  model: str = None, custom_persona: str = None,
                  training_context: str = None):
         """
-        Initialize content generator
+        Initialize content generator — sadece MiniMax kullanır.
 
         Args:
-            provider: "anthropic" or "openai"
-            api_key: API key for the provider
-            model: Model to use (default: best available)
+            provider: Her zaman "minimax" (geriye uyumluluk için parametre korundu)
+            api_key: MiniMax API key
+            model: Model (varsayılan: MiniMax-M2.5)
             custom_persona: Custom persona description to override default
             training_context: Training data from tweet analyses (engagement data)
         """
-        self.provider = provider
+        self.provider = "minimax"
         self.api_key = api_key
         self.custom_persona = custom_persona
         self.training_context = training_context or ""
 
-        if provider == "anthropic":
-            self.model = model or "claude-sonnet-4-20250514"
-            self.client = anthropic.Anthropic(api_key=api_key) if api_key else None
-        elif provider == "openai":
-            self.model = model or "gpt-4o"
-            self.client = openai.OpenAI(api_key=api_key) if api_key else None
-        elif provider == "minimax":
-            self.model = model or "MiniMax-M2.5"
-            self.client = openai.OpenAI(
-                api_key=api_key,
-                base_url="https://api.minimax.io/v1",
-            ) if api_key else None
-        elif provider == "groq":
-            self.model = model or "llama-3.3-70b-versatile"
-            self.client = openai.OpenAI(
-                api_key=api_key,
-                base_url="https://api.groq.com/openai/v1",
-            ) if api_key else None
-        elif provider == "gemini":
-            self.model = model or "gemini-3.1-flash-lite"
-            try:
-                from google import genai
-                self.client = genai.Client(api_key=api_key) if api_key else None
-            except ImportError:
-                raise ValueError("google-genai paketi yuklu degil. pip install google-genai")
-        elif provider == "claude_code":
-            self.model = "claude-code-cli"
-            self.client = True  # Marker: CLI-based, no API client needed
-        else:
-            raise ValueError(f"Unsupported provider: {provider}")
+        self.model = model or "MiniMax-M2.5"
+        self.client = openai.OpenAI(
+            api_key=api_key,
+            base_url="https://api.minimax.io/v1",
+        ) if api_key else None
 
     def generate_tweet(self, topic_text: str, topic_source: str = "",
                        style: str = "samimi", additional_context: str = "",
@@ -2198,42 +2172,14 @@ ASLA bu örnekleri birebir kopyalama veya "şu tweet'teki gibi" diye referans ve
 Kendi orijinal cümlelerini kur ama aynı doğallık ve samimiyet olsun.
 """
 
-        # Provider-specific guardrails (Faz 6)
-        if self.provider == "minimax":
-            # MiniMax: en kısa prompt, sadece örneklerle öğretim
-            prompt += """
+        # MiniMax doğallık kuralları
+        prompt += """
 ## DOĞALLIK:
 - İnsan gibi yaz, AI kalıpları kullanma
 - küçük harfle yaz (isimler hariç: OpenAI, Claude, NVIDIA)
 - Günlük Türkçe: "ya, bence, harbiden, bi baktım"
 - Soru ile bitirme, tırnak koyma, hashtag koyma
 - Uydurma rakam/veri YASAK
-"""
-        elif self.provider == "groq":
-            # Groq (Llama): kısa ve basit komutlar
-            prompt += """
-## DOĞALLIK:
-- Kısa yaz, konuya gel. AI kalıpları kullanma.
-- küçük harfle yaz (isimler hariç: OpenAI, Claude, NVIDIA)
-- Samimi Türkçe, günlük konuşma dili.
-- Liste/madde yapma, düz yaz. Soru sorma sonunda.
-- Uydurma veri YASAK.
-"""
-        elif self.provider in ("openai",):
-            # GPT-4o: orta uzunluk
-            prompt += """
-## DOĞALLIK KURALLARI:
-1. İnsan gibi yaz — AI kalıpları ("dikkat çekici", "gelin bakalım") YASAK
-2. küçük harfle yaz (isimler hariç: OpenAI, Claude, NVIDIA)
-3. Günlük Türkçe — "ya, bence, harbiden, bi baktım" kullan
-4. Tek tweet = tek fikir, liste yapma
-5. Soru ile bitirme, tırnak koyma
-6. Uydurma rakam/veri YASAK
-"""
-        elif self.provider == "anthropic":
-            # Claude: en iyi takip ediyor, minimal extra rules
-            prompt += """
-## DOĞALLIK: İnsan gibi yaz. AI kalıpları kullanma. küçük harfle yaz (isimler hariç). Günlük Türkçe. Uydurma veri YASAK.
 """
 
         # Final safety: hard-cap total prompt length (~35K chars ≈ ~9K tokens)
@@ -2278,14 +2224,9 @@ NOT: Bu örneklerdeki TONU ve YAKLAŞIMI kullan.
 Bu tweet'leri ASLA kopyalama. Aynı doğal sesle orijinal cümleler yaz.
 """
 
-        # Provider-specific guardrails for reply (Faz 6)
-        if self.provider in ("minimax", "groq"):
-            prompt += """
+        # MiniMax doğallık kuralları
+        prompt += """
 ## DOĞALLIK: Kısa yaz, AI kalıpları yok, samimi Türkçe, soru sorma sonunda.
-"""
-        elif self.provider in ("openai",):
-            prompt += """
-## DOĞALLIK: İnsan gibi yaz. AI kalıpları yok. Samimi Türkçe. Soru ile bitirme.
 """
 
         MAX_PROMPT_CHARS = 35000
@@ -2345,8 +2286,7 @@ Kısa yaz (5-15 kelime) ama yukarıdaki kişinin tonu ve kelime tercihleriyle.
 {samples_text}
 """
 
-        if self.provider in ("minimax", "openai", "groq"):
-            prompt += """
+        prompt += """
 ## DOĞALLIK: Kısa (5-15 kelime), samimi Türkçe, AI kalıpları yok, tırnak koyma.
 """
 
@@ -2565,17 +2505,10 @@ Paragraflari kısa tut, metin duvarı olmasın. Sadece içerik metnini yaz."""
 
     def _dispatch(self, system_prompt: str, user_prompt: str,
                   image_urls: list[str] = None) -> str:
-        """Route generation to the correct provider backend."""
+        """Route generation to MiniMax backend."""
         if not self.client:
-            raise ValueError(f"{self.provider} API anahtari eksik veya gecersiz. Ayarlar sayfasindan kontrol edin.")
-        if self.provider == "claude_code":
-            text = self._generate_claude_code(system_prompt, user_prompt)
-        elif self.provider == "anthropic":
-            text = self._generate_anthropic(system_prompt, user_prompt, image_urls)
-        elif self.provider == "gemini":
-            text = self._generate_gemini(system_prompt, user_prompt, image_urls)
-        else:
-            text = self._generate_openai(system_prompt, user_prompt, image_urls)
+            raise ValueError("MiniMax API anahtari eksik veya gecersiz. Ayarlar sayfasindan kontrol edin.")
+        text = self._generate_openai(system_prompt, user_prompt, image_urls)
         text = self._fix_colon_labels(text)
         text = self._humanize(text)
         text = self._detect_ai_patterns(text)
@@ -3073,9 +3006,8 @@ Paragraflari kısa tut, metin duvarı olmasın. Sadece içerik metnini yaz."""
         if not self.client:
             return ""
 
-        # MiniMax and Groq don't support vision — skip
-        if self.provider in ("minimax", "groq"):
-            return ""
+        # MiniMax doesn't support vision — skip
+        return ""
 
         system_prompt = (
             "Sen bir görsel analiz uzmanısın. Görseldeki tüm bilgileri, verileri, "

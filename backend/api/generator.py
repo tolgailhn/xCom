@@ -27,7 +27,7 @@ class GenerateRequest(BaseModel):
     media_urls: list[str] = []
     content_format: str = ""
     quote_url: str = ""
-    provider: str = ""  # "", "minimax", "gemini", "openai", "groq", "anthropic" — empty = auto
+    provider: str = ""  # her zaman MiniMax kullanılır
     additional_instructions: str = ""  # Extra user instructions for generation
 
 
@@ -252,7 +252,7 @@ async def generate_quote_tweet_endpoint(request: QuoteTweetRequest):
                     ai_fact_check_draft, verify_claims,
                     compile_verification_context,
                 )
-                # Use cheapest provider for fact-checking (MiniMax preferred)
+                # MiniMax for fact-checking
                 from backend.config import get_settings as _gs
                 _s = _gs()
                 ai_client = None
@@ -260,22 +260,7 @@ async def generate_quote_tweet_endpoint(request: QuoteTweetRequest):
                 model = "MiniMax-M2.5"
                 if _s.minimax_api_key:
                     from openai import OpenAI
-                    ai_client = OpenAI(api_key=_s.minimax_api_key, base_url="https://api.minimaxi.chat/v1")
-                elif _s.groq_api_key:
-                    from openai import OpenAI
-                    ai_client = OpenAI(api_key=_s.groq_api_key, base_url="https://api.groq.com/openai/v1")
-                    provider = "groq"
-                    model = "llama-3.3-70b-versatile"
-                elif _s.openai_api_key:
-                    from openai import OpenAI
-                    ai_client = OpenAI(api_key=_s.openai_api_key)
-                    provider = "openai"
-                    model = "gpt-4o"
-                elif _s.anthropic_api_key:
-                    import anthropic
-                    ai_client = anthropic.Anthropic(api_key=_s.anthropic_api_key)
-                    provider = "anthropic"
-                    model = "claude-haiku-4-5-20251001"
+                    ai_client = OpenAI(api_key=_s.minimax_api_key, base_url="https://api.minimax.io/v1")
 
                 claims = await asyncio.to_thread(
                     ai_fact_check_draft,
@@ -432,30 +417,14 @@ async def do_research_endpoint(request: ResearchRequest):
         # Build AI client for research (always cheapest: MiniMax > Groq > OpenAI > Anthropic)
         # This is SEPARATE from tweet generation provider — research needs fast & cheap AI.
         ai_client = None
-        ai_model = None
+        ai_model = "MiniMax-M2.5"
         ai_provider = "minimax"
         try:
             from backend.config import get_settings as _gs2
             _s2 = _gs2()
             if _s2.minimax_api_key:
                 from openai import OpenAI
-                ai_client = OpenAI(api_key=_s2.minimax_api_key, base_url="https://api.minimaxi.chat/v1")
-                ai_model = "MiniMax-M2.5"
-            elif _s2.groq_api_key:
-                from openai import OpenAI
-                ai_client = OpenAI(api_key=_s2.groq_api_key, base_url="https://api.groq.com/openai/v1")
-                ai_provider = "groq"
-                ai_model = "llama-3.3-70b-versatile"
-            elif _s2.openai_api_key:
-                from openai import OpenAI
-                ai_client = OpenAI(api_key=_s2.openai_api_key)
-                ai_provider = "openai"
-                ai_model = "gpt-4o"
-            elif _s2.anthropic_api_key:
-                import anthropic
-                ai_client = anthropic.Anthropic(api_key=_s2.anthropic_api_key)
-                ai_provider = "anthropic"
-                ai_model = "claude-haiku-4-5-20251001"
+                ai_client = OpenAI(api_key=_s2.minimax_api_key, base_url="https://api.minimax.io/v1")
         except Exception:
             pass  # AI client is optional, research can work without it
 
@@ -608,41 +577,14 @@ async def research_stream(request: ResearchRequest):
         from backend.config import get_settings
         s = get_settings()
 
-        def _build_ai_providers():
-            """Build ordered list of available AI providers for research."""
-            providers = []
-            if s.minimax_api_key:
-                providers.append(("minimax", s.minimax_api_key, "https://api.minimaxi.chat/v1", "MiniMax-M2.5"))
-            if s.groq_api_key:
-                providers.append(("groq", s.groq_api_key, "https://api.groq.com/openai/v1", "llama-3.3-70b-versatile"))
-            if s.openai_api_key:
-                providers.append(("openai", s.openai_api_key, None, "gpt-4o"))
-            if s.anthropic_api_key:
-                providers.append(("anthropic", s.anthropic_api_key, None, "claude-haiku-4-5-20251001"))
-            return providers
-
-        def _make_ai_client(provider_name, api_key, base_url):
-            """Create AI client for a given provider."""
-            if provider_name == "anthropic":
-                import anthropic
-                return anthropic.Anthropic(api_key=api_key)
-            else:
-                from openai import OpenAI
-                kwargs = {"api_key": api_key}
-                if base_url:
-                    kwargs["base_url"] = base_url
-                return OpenAI(**kwargs)
-
-        all_providers = _build_ai_providers()
+        # MiniMax AI client for research synthesis
         ai_client = None
-        ai_model = None
+        ai_model = "MiniMax-M2.5"
         ai_provider = "minimax"
-        if all_providers:
-            prov_name, prov_key, prov_url, prov_model = all_providers[0]
+        if s.minimax_api_key:
             try:
-                ai_client = _make_ai_client(prov_name, prov_key, prov_url)
-                ai_provider = prov_name
-                ai_model = prov_model
+                from openai import OpenAI
+                ai_client = OpenAI(api_key=s.minimax_api_key, base_url="https://api.minimax.io/v1")
             except Exception:
                 pass
 
@@ -1210,19 +1152,9 @@ async def fact_check(request: FactCheckRequest):
 
         provider, api_key, model = get_ai_provider()
 
-        # Build AI client
-        ai_client = None
-        if provider == "anthropic":
-            import anthropic
-            ai_client = anthropic.Anthropic(api_key=api_key)
-        elif provider in ("openai", "minimax", "groq"):
-            from openai import OpenAI
-            base_url = (
-                "https://api.minimaxi.chat/v1" if provider == "minimax"
-                else "https://api.groq.com/openai/v1" if provider == "groq"
-                else None
-            )
-            ai_client = OpenAI(api_key=api_key, base_url=base_url)
+        # MiniMax AI client
+        from openai import OpenAI
+        ai_client = OpenAI(api_key=api_key, base_url="https://api.minimax.io/v1")
 
         claims = await asyncio.to_thread(
             ai_fact_check_draft,
@@ -1276,21 +1208,8 @@ async def discover_topics_endpoint(request: DiscoverRequest):
         provider, api_key, model = get_ai_provider()
 
         # Build AI client
-        ai_client = None
-        if provider == "anthropic":
-            import anthropic
-            ai_client = anthropic.Anthropic(api_key=api_key)
-        elif provider in ("openai", "minimax", "groq"):
-            from openai import OpenAI
-            base_url = (
-                "https://api.minimaxi.chat/v1" if provider == "minimax"
-                else "https://api.groq.com/openai/v1" if provider == "groq"
-                else None
-            )
-            ai_client = OpenAI(api_key=api_key, base_url=base_url)
-
-        if not ai_client:
-            raise HTTPException(status_code=400, detail="AI API anahtari bulunamadi")
+        from openai import OpenAI
+        ai_client = OpenAI(api_key=api_key, base_url="https://api.minimax.io/v1")
 
         # Try to get scanner for X search
         scanner = None
@@ -1347,23 +1266,12 @@ async def generate_infographic_endpoint(request: InfographicRequest):
 
         # Get AI client for brief generation
         ai_client = None
-        ai_model = ""
-        ai_provider = ""
+        ai_model = "MiniMax-M2.5"
+        ai_provider = "minimax"
         try:
-            provider, api_key, model = get_ai_provider(preferred=request.provider)
-            ai_provider = provider
-            ai_model = model or ""
-            if provider == "anthropic":
-                import anthropic
-                ai_client = anthropic.Anthropic(api_key=api_key)
-            elif provider in ("openai", "minimax", "groq"):
-                from openai import OpenAI
-                base_url = None
-                if provider == "minimax":
-                    base_url = "https://api.minimaxi.chat/v1"
-                elif provider == "groq":
-                    base_url = "https://api.groq.com/openai/v1"
-                ai_client = OpenAI(api_key=api_key, base_url=base_url)
+            provider, api_key, model = get_ai_provider()
+            from openai import OpenAI
+            ai_client = OpenAI(api_key=api_key, base_url="https://api.minimax.io/v1")
         except Exception:
             pass  # Brief olmadan da devam edebilir
 
