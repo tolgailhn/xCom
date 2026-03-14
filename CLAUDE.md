@@ -283,6 +283,9 @@ MiniMax (öncelikli) → Anthropic Claude → OpenAI GPT. `get_ai_client()` bu s
 | 2026-03-14 | MCP Server (20 araç) | Claude'a gerçek zamanlı sistem erişimi: keşif, araştırma, üretim, yayınlama, analiz. `.mcp.json` + `mcp-server/server.py` |
 | 2026-03-14 | Twikit itemContent monkey-patch | X API response değişikliği — `get_tweet_by_id` ve `_get_more_replies` safe fallback parsing |
 | 2026-03-14 | SSE JSON parse fix | Malformed JSON satırları araştırma stream'ini sessizce durduruyordu — skip ile devam |
+| 2026-03-14 | Keyword gruplama (`KEYWORD_GROUPS`) | "agent"/"agents"/"agentic" gibi benzer keyword'ler ayrı trend olarak görünüyordu → canonical keyword'e birleştirme |
+| 2026-03-14 | AI trend başlık zenginleştirme | Keyword trendler "rag", "mcp" gibi kısa kalıyordu → AI ile Türkçe açıklayıcı başlık + 1 cümle açıklama |
+| 2026-03-14 | Küme tweet'lerinde `summary_tr` | Trend/küme tweetlerinde Türkçe çeviri gösterilmiyordu → backend'den frontend'e taşındı |
 
 ---
 
@@ -471,6 +474,18 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 ---
 
 ## Değişiklik Günlüğü
+
+### 2026-03-14 (Keşif Sayfası İyileştirme — Keyword Gruplama + AI Başlık + UI)
+- **feat**: `trend_analyzer.py` — `KEYWORD_GROUPS` dict + `_KEYWORD_CANONICAL` reverse lookup: benzer keyword'ler birleşik trend olarak gösteriliyor (ör: "agent"+"agents"+"agentic" → tek "agent" trendi)
+- **feat**: `trend_analyzer.py` — `_enrich_trend_titles()` yeni fonksiyon: keyword trendlere MiniMax AI ile Türkçe açıklayıcı başlık (`topic_title_tr`) ve 1 cümle açıklama (`description_tr`) üretir (batch, max 15 trend)
+- **feat**: `trend_analyzer.py` — Kümeleme tweet_meta ve cluster_tweets'e `summary_tr` alanı eklendi (Türkçe çeviri frontend'e taşınıyor)
+- **feat**: `TabAIOnerileri.tsx` — İlgili Tweetler bölümünde "Tümünü Göster (N)" / "5 Göster" toggle butonu eklendi (daha önce sadece ilk 5 gösteriliyordu)
+- **feat**: `TabAIOnerileri.tsx` — Trend/küme tweet kartlarında `summary_tr` (Türkçe çeviri) gösterimi: varsa cyan renkle İngilizce metnin üstünde, expanded'da da üstte gösterilir
+- **feat**: `TabAIOnerileri.tsx` — Birleşik Feed pill layout'u grid yapısına geçirildi (2 sütun desktop, 1 sütun mobil) — daha düzenli, tutarlı format
+- **feat**: `TabTrends.tsx` — Trend kartı başlığında `topic_title_tr` gösterimi (ör: "agent" → "AI Ajan Teknolojileri"), keyword alt satırda italic
+- **feat**: `TabTrends.tsx` — Expanded trend kartında `description_tr` açıklama gösterimi
+- **fix**: `TabAIOnerileri.tsx` — `ClusterTweet` interface'ine `summary_tr` ve `created_at` eklendi
+- **fix**: `TabTrends.tsx` — `Trend` interface'ine `topic_title_tr` ve `description_tr` eklendi
 
 ### 2026-03-14 (MCP Server + Twikit/SSE Fix)
 - **feat**: `mcp-server/server.py` — YENİ: 20 araçlı MCP server (FastMCP). Keşif, araştırma, tweet üretimi, yayınlama, zamanlama, taslak, analiz, medya arama, sistem durumu

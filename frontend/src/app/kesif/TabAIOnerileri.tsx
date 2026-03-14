@@ -38,6 +38,8 @@ interface ClusterTweet {
   engagement: number;
   tweet_id?: string;
   tweet_url?: string;
+  summary_tr?: string;
+  created_at?: string;
 }
 
 interface Suggestion {
@@ -75,6 +77,8 @@ interface TrendItem {
   detected_at: string;
   ai_relevance_score?: number;
   ai_relevance_reason?: string;
+  topic_title_tr?: string;
+  description_tr?: string;
 }
 
 /** Unified feed item — all 3 sources normalized into this shape */
@@ -162,6 +166,8 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
   // Tweet-level progressive disclosure
   const [expandedTweet, setExpandedTweet] = useState<string | null>(null);
   const [workflowTweet, setWorkflowTweet] = useState<string | null>(null);
+  // Show all tweets toggle (per card key)
+  const [showAllTweets, setShowAllTweets] = useState<Set<string>>(new Set());
 
   // Dismiss (persisted in localStorage with 30-day expiry)
   const DISMISS_EXPIRY_MS = 30 * 86400_000; // 30 gün
@@ -235,6 +241,8 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
     source: "trend",
     sourceLabel: t.is_strong_trend ? "Guclu Trend" : "Trend",
     topic: t.keyword,
+    topicTr: t.topic_title_tr,
+    description: t.description_tr,
     reason: `${t.account_count} hesap, ${t.tweet_count} tweet, ${formatNumber(t.total_engagement)} engagement`,
     engagementPotential: Math.min(10, Math.round(t.trend_score / 10)),
     aiScore: t.ai_relevance_score,
@@ -561,20 +569,16 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
             {counts.tweet > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent-cyan)]/15 text-[var(--accent-cyan)] font-medium">{counts.tweet} tweet</span>}
             {dismissed.size > 0 && <span className="text-[10px] text-[var(--text-secondary)]">({dismissed.size} gizlendi)</span>}
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             {sorted.slice(0, 15).map((item: FeedItem) => {
               const sc = sourceColor(item.source);
               return (
                 <button key={item._key} onClick={() => scrollToCard(item._key)}
-                  className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 hover:scale-105 ${
-                    item.engagementPotential >= 7
-                      ? "bg-gradient-to-r from-[var(--accent-green)]/20 to-[var(--accent-green)]/5 text-[var(--accent-green)] border-[var(--accent-green)]/30"
-                      : `bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)]`
-                  }`}>
-                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: sc.bg }} />
-                  <span className="max-w-[120px] truncate">{item.topicTr || item.topic}</span>
+                  className="group flex items-center gap-2 px-3 py-2 rounded-lg text-xs border transition-all duration-200 hover:bg-[var(--bg-secondary)]/60 bg-[var(--bg-primary)]/40 border-[var(--border)]/50 text-left w-full">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: sc.bg }} />
+                  <span className="flex-1 min-w-0 truncate font-medium text-[var(--text-primary)]">{item.topicTr || item.topic}</span>
                   <AIScoreBadge score={item.aiScore} reason={item.aiReason} size="sm" />
-                  <span className="text-[10px] font-bold" style={{ color: engagementColor(item.engagementPotential) }}>{item.engagementPotential}</span>
+                  <span className="text-[10px] font-bold shrink-0 w-4 text-right" style={{ color: engagementColor(item.engagementPotential) }}>{item.engagementPotential}</span>
                 </button>
               );
             })}
@@ -783,9 +787,22 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
                     {/* Related tweets (for suggestions & trends) — accordion pattern */}
                     {item.source !== "tweet" && tweets.length > 0 && (
                       <div>
-                        <div className="text-xs font-medium text-[var(--text-secondary)] mb-3">Ilgili Tweetler ({tweets.length})</div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-xs font-medium text-[var(--text-secondary)]">Ilgili Tweetler ({tweets.length})</span>
+                          {tweets.length > 5 && (
+                            <button
+                              onClick={() => setShowAllTweets(prev => {
+                                const next = new Set(prev);
+                                if (next.has(key)) next.delete(key); else next.add(key);
+                                return next;
+                              })}
+                              className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-blue)]/15 text-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/25 transition-colors">
+                              {showAllTweets.has(key) ? "5 Goster" : `Tumunu Goster (${tweets.length})`}
+                            </button>
+                          )}
+                        </div>
                         <div className="space-y-2">
-                          {tweets.slice(0, 5).map((tw: ClusterTweet, i: number) => {
+                          {(showAllTweets.has(key) ? tweets : tweets.slice(0, 5)).map((tw: ClusterTweet, i: number) => {
                             const ck = `${key}::${i}`;
                             const isTwExpanded = expandedTweet === ck;
                             const isTwWorkflow = workflowTweet === ck;
@@ -805,7 +822,13 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
                                         <span className="text-[var(--accent-blue)] text-xs font-semibold">@{tw.account}</span>
                                       </div>
                                       {!isTwExpanded && (
-                                        <p className="text-xs text-[var(--text-secondary)] mt-0.5 line-clamp-2">{tw.text}</p>
+                                        <>
+                                          {tw.summary_tr && tw.summary_tr !== tw.text?.slice(0, 200) ? (
+                                            <p className="text-xs text-[var(--accent-cyan)] mt-0.5 line-clamp-2">{tw.summary_tr}</p>
+                                          ) : (
+                                            <p className="text-xs text-[var(--text-secondary)] mt-0.5 line-clamp-2">{tw.text}</p>
+                                          )}
+                                        </>
                                       )}
                                     </div>
                                     <div className="shrink-0 flex items-center gap-2">
@@ -819,6 +842,9 @@ export default function TabAIOnerileri({ refreshTrigger }: { refreshTrigger?: nu
                                 {isTwExpanded && (
                                   <div className="px-3 pb-3 space-y-3 border-t border-[var(--border)]/30">
                                     <div className="pt-2">
+                                      {tw.summary_tr && tw.summary_tr !== tw.text?.slice(0, 200) && (
+                                        <p className="text-xs text-[var(--accent-cyan)] mb-2 leading-relaxed">{tw.summary_tr}</p>
+                                      )}
                                       <p className="text-sm leading-relaxed text-[var(--text-primary)]">{tw.text}</p>
                                     </div>
 

@@ -31,6 +31,23 @@ TRACKED_KEYWORDS = {
     "h100", "h200", "b200", "tpu", "chip",
 }
 
+# Keyword groups — benzer/çoğul keyword'leri tek trend altında birleştir
+# Key = canonical (ana) keyword, Value = eş anlamlılar/çoğullar
+KEYWORD_GROUPS: dict[str, list[str]] = {
+    "agent": ["agents", "agentic"],
+    "open-source": ["open source"],
+    "gpt-4": ["gpt-4o"],
+    "fine-tuning": ["finetuning"],
+    "dall-e": ["dalle"],
+    "stable diffusion": ["stablediffusion"],
+}
+
+# Reverse lookup: variant → canonical
+_KEYWORD_CANONICAL: dict[str, str] = {}
+for _canon, _variants in KEYWORD_GROUPS.items():
+    for _v in _variants:
+        _KEYWORD_CANONICAL[_v] = _canon
+
 # Stop words to exclude from auto-detected keywords
 STOP_WORDS = {
     "the", "is", "at", "in", "on", "to", "for", "of", "and", "or", "a", "an",
@@ -142,11 +159,12 @@ def analyze_trends(force: bool = False):
         account = tweet.get("account", "") or tweet.get("author", "") or "unknown"
         engagement = tweet.get("engagement_score", 0) or tweet.get("like_count", 0)
 
-        # Check tracked keywords
+        # Check tracked keywords — map variants to canonical form
         found_keywords = set()
         for kw in TRACKED_KEYWORDS:
             if kw in text:
-                found_keywords.add(kw)
+                canonical = _KEYWORD_CANONICAL.get(kw, kw)
+                found_keywords.add(canonical)
 
         # Auto-detect capitalized terms (potential new keywords)
         # E.g., "GPT-5o", "Llama4", etc.
@@ -220,6 +238,12 @@ def analyze_trends(force: bool = False):
         for kw, accounts in keyword_accounts.items()
         if len(accounts) >= 2
     }
+
+    # AI ile keyword trendlere Türkçe başlık ve açıklama ekle
+    try:
+        _enrich_trend_titles(trends[:15])
+    except Exception:
+        logger.exception("Trend title enrichment error")
 
     trend_cache = {
         "trends": trends[:30],  # Top 30 trends
@@ -352,6 +376,7 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime, force
                 "tweet_id": tid,
                 "tweet_url": tw.get("tweet_url", ""),
                 "created_at": tw.get("created_at", ""),
+                "summary_tr": tw.get("summary_tr", ""),
             })
 
     trend_count = len(all_tweets)
@@ -390,6 +415,7 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime, force
                 "tweet_id": tid,
                 "tweet_url": t.get("tweet_url", "") or (f"https://x.com/{t.get('account', '')}/status/{tid}" if tid else ""),
                 "created_at": t.get("created_at", ""),
+                "summary_tr": t.get("summary_tr", ""),
             })
             seen_texts.add(text)
             if tid:
@@ -606,6 +632,7 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime, force
                     "tweet_id": tweet_id,
                     "created_at": meta.get("created_at", ""),
                     "tweet_url": tweet_url,
+                    "summary_tr": meta.get("summary_tr", ""),
                 })
                 source_keywords.add(meta["keyword"])
 
@@ -744,6 +771,114 @@ def _notify_breaking(trends: list[dict]):
         send_telegram_message(msg, settings.telegram_bot_token, settings.telegram_chat_id)
     except Exception:
         pass
+
+
+def _enrich_trend_titles(trends: list[dict]):
+    """Keyword trendlere AI ile Türkçe başlık ve 1 cümle açıklama ekle.
+
+    Sadece topic_title_tr/description_tr eksik olan trendlere uygulanır.
+    Tek bir AI call ile batch olarak çalışır (max 15 trend).
+    """
+    import json as _json
+
+    needs_enrichment = [
+        t for t in trends
+        if not t.get("topic_title_tr") and t.get("keyword")
+    ]
+    if not needs_enrichment:
+        return
+
+    # Build context — her trend için keyword + top tweet'ler
+    items = []
+    for i, t in enumerate(needs_enrichment[:15]):
+        top_texts = [tw.get("text", "")[:150] for tw in t.get("top_tweets", [])[:3]]
+        items.append(
+            f"[{i}] keyword=\"{t['keyword']}\" ({t.get('account_count', 0)} hesap, "
+            f"{t.get('tweet_count', 0)} tweet)\n"
+            f"  Ornek tweetler: {' | '.join(top_texts) if top_texts else 'yok'}"
+        )
+
+    prompt = (
+        "Bu keyword trendlere Türkçe başlık ve kısa açıklama yaz.\n\n"
+        "KURALLAR:\n"
+        "1. topic_title_tr: Keyword'ün TEKNİK anlamını açıklayan kısa Türkçe başlık (3-8 kelime)\n"
+        "   Örnekler: 'agent' → 'AI Ajan Teknolojileri', 'rag' → 'RAG ile Bilgi Erişimi', 'mcp' → 'Model Context Protocol'\n"
+        "2. description_tr: Bu keyword neden trend? Tweet'lere bakarak 1 cümle açıklama yaz\n"
+        "3. SADECE JSON döndür\n\n"
+        f"Trendler:\n{''.join(items)}\n\n"
+        "SADECE JSON array döndür:\n"
+        '[{"index": 0, "topic_title_tr": "Türkçe başlık", "description_tr": "Kısa açıklama"}]'
+    )
+
+    try:
+        from backend.config import get_settings
+        api_key = get_settings().minimax_api_key
+        if not api_key:
+            return
+    except Exception:
+        return
+
+    try:
+        import ssl
+        import urllib.request
+        url = "https://api.minimax.io/v1/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
+        payload = {
+            "model": "MiniMax-M2.5",
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 2000,
+            "temperature": 0.3,
+        }
+        data = _json.dumps(payload).encode("utf-8")
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        req = urllib.request.Request(url, data=data, headers=headers)
+        with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
+            result = _json.loads(resp.read().decode("utf-8"))
+            response_text = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+    except Exception as e:
+        logger.warning("Trend title enrichment AI call failed: %s", e)
+        return
+
+    # Parse response
+    if response_text:
+        response_text = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL).strip()
+        response_text = re.sub(r'<minimax:tool_call>.*?</minimax:tool_call>', '', response_text, flags=re.DOTALL).strip()
+        response_text = re.sub(r'```(?:json)?\s*\n?', '', response_text).strip()
+
+    try:
+        # Try direct parse, then bracket extraction
+        enrichments = None
+        try:
+            enrichments = _json.loads(response_text)
+        except Exception:
+            match = re.search(r'\[.*\]', response_text, re.DOTALL)
+            if match:
+                cleaned = re.sub(r',\s*([}\]])', r'\1', match.group())
+                enrichments = _json.loads(cleaned)
+
+        if not enrichments or not isinstance(enrichments, list):
+            return
+
+        for item in enrichments:
+            if not isinstance(item, dict):
+                continue
+            idx = item.get("index", -1)
+            if 0 <= idx < len(needs_enrichment):
+                t = needs_enrichment[idx]
+                if item.get("topic_title_tr"):
+                    t["topic_title_tr"] = item["topic_title_tr"]
+                if item.get("description_tr"):
+                    t["description_tr"] = item["description_tr"]
+
+        enriched_count = sum(1 for t in needs_enrichment if t.get("topic_title_tr"))
+        logger.info("Trend title enrichment: %d/%d trends enriched", enriched_count, len(needs_enrichment))
+    except Exception as e:
+        logger.warning("Trend title enrichment parse error: %s", e)
 
 
 def _notify_trends(trends: list[dict]):

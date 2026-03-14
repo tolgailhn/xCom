@@ -52,6 +52,8 @@ interface Trend {
   detected_at: string;
   ai_relevance_score?: number;
   ai_relevance_reason?: string;
+  topic_title_tr?: string;
+  description_tr?: string;
 }
 
 interface TrendHistoryEntry {
@@ -290,7 +292,7 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
                       : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]/40"
                 }`}>
                 {t.is_strong_trend && <span className="text-[10px]">&#9650;</span>}
-                <span>{t.keyword}</span>
+                <span>{t.topic_title_tr || t.keyword}</span>
                 <AIScoreBadge score={t.ai_relevance_score} reason={t.ai_relevance_reason} size="sm" />
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--bg-primary)] text-[var(--text-secondary)]">{t.account_count}</span>
               </button>
@@ -426,13 +428,20 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
                     <div className="flex-1 min-w-0">
                       {/* Keyword + badges */}
                       <div className="flex items-center gap-2 flex-wrap mb-2">
-                        <span className="text-xl font-extrabold tracking-tight" style={{ color: trendColor }}>{key}</span>
+                        <span className="text-xl font-extrabold tracking-tight" style={{ color: trendColor }}>{trend.topic_title_tr || key}</span>
                         {trend.is_strong_trend && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-[var(--accent-amber)]/25 to-[var(--accent-amber)]/10 text-[var(--accent-amber)] border border-[var(--accent-amber)]/30">&#9650; GUCLU TREND</span>
                         )}
                         <AIScoreBadge score={trend.ai_relevance_score} reason={trend.ai_relevance_reason} />
                         <span className="text-sm text-[var(--text-secondary)]" style={{ transform: isExpanded ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.2s", display: "inline-block" }}>&#9654;</span>
                       </div>
+                      {/* Keyword subtitle + description */}
+                      {trend.topic_title_tr && (
+                        <p className="text-[11px] text-[var(--text-secondary)]/60 mb-0.5 italic">{key}</p>
+                      )}
+                      {trend.description_tr && !isExpanded && (
+                        <p className="text-xs text-[var(--accent-cyan)] mb-1 line-clamp-1">{trend.description_tr}</p>
+                      )}
 
                       {/* Score gauge + account pills */}
                       <div className="flex items-center gap-3 mb-2">
@@ -490,6 +499,10 @@ export default function TabTrends({ refreshTrigger }: { refreshTrigger?: number 
                 {/* ──── Expanded Content ──── */}
                 {isExpanded && (
                   <div className="border-t border-[var(--border)] p-4 space-y-4">
+                    {/* Trend description */}
+                    {trend.description_tr && (
+                      <p className="text-xs text-[var(--accent-cyan)] leading-relaxed">{trend.description_tr}</p>
+                    )}
                     {/* Tweets with progressive disclosure */}
                     {trend.top_tweets.length > 0 && (
                       <div>
