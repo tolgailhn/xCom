@@ -458,6 +458,11 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 
 ## Değişiklik Günlüğü
 
+### 2026-03-14 (Self-Reply Duplicate Fix)
+- **fix**: `twikit_client.py` — `_tweet_to_dict()` `conversation_id` fallback eklendi: `in_reply_to_tweet_id` boşsa ve `conversation_id != tweet.id` ise tweet reply olarak işaretleniyor (self-reply tweetler artık doğru filtreleniyor)
+- **fix**: `self_reply_worker.py` — Bilinen reply metin kontrolü eklendi: daha önce üretilen reply metinleri `known_reply_texts` set'ine toplanıp eşleşen tweetler atlanıyor (ID kaybolsa bile metin bazlı koruma)
+- **fix**: `self_reply_worker.py` — Debug logları eklendi: hangi tweet neden atlandı detaylı görülüyor
+
 ### 2026-03-14 (Otomatik Yanıt Worker Durumu + Clustering Timeout Fix)
 - **feat**: `api.ts` — `AutoReplyStatus` interface'e `current_hour`, `current_hour_accounts`, `next_hour`, `next_hour_accounts`, `schedule` alanları eklendi (backend zaten döndürüyordu, frontend kullanmıyordu)
 - **feat**: `otomatik-yanit/page.tsx` — Worker Durumu paneli: şu an taranan hesaplar, sonraki saat hesapları, scheduler job durumları (son/sonraki çalışma zamanı), çalışma saatleri gösterimi

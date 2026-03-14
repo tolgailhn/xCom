@@ -896,6 +896,13 @@ class TwikitSearchClient:
                        or getattr(tweet, 'in_reply_to_status_id', None)
                        or getattr(tweet, 'reply_to', None))
 
+        # Fallback: conversation_id != tweet.id means it's a reply in a thread
+        if not in_reply_to:
+            conversation_id = getattr(tweet, 'conversation_id', None)
+            tweet_id_str = str(getattr(tweet, 'id', ''))
+            if conversation_id and str(conversation_id) != tweet_id_str:
+                in_reply_to = str(conversation_id)
+
         return {
             'id': str(getattr(tweet, 'id', '')),
             'text': (getattr(tweet, 'full_text', '')

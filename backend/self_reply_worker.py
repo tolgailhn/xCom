@@ -141,12 +141,16 @@ def check_self_replies():
     cutoff_time = now - datetime.timedelta(hours=24)
     min_age_cutoff = now - datetime.timedelta(minutes=min_age_minutes)
 
-    # Bilinen reply ID'lerini topla — kendi reply'larimiza tekrar reply atmamak icin
+    # Bilinen reply ID'lerini + reply metinlerini topla
     known_reply_ids = set()
+    known_reply_texts = set()
     for tid, info in seen.items():
         for rid in info.get("reply_ids", []):
             if rid:
                 known_reply_ids.add(str(rid))
+        for rtxt in info.get("reply_texts", []):
+            if rtxt:
+                known_reply_texts.add(rtxt.strip().lower())
 
     candidates = []
     for tweet in tweets:
@@ -163,15 +167,23 @@ def check_self_replies():
         # Baskasina veya kendine reply olanlari atla (sadece orijinal tweetler)
         in_reply_to = tweet.get("in_reply_to_tweet_id")
         if in_reply_to:
+            logger.debug("Self-reply: tweet %s reply (in_reply_to=%s), atlaniyor", tweet_id, in_reply_to)
             continue
 
-        # Bu tweet zaten bizim attigimiz bir self-reply mi?
+        # Bu tweet zaten bizim attigimiz bir self-reply mi? (ID kontrolu)
         if str(tweet_id) in known_reply_ids:
+            logger.debug("Self-reply: tweet %s bilinen reply ID, atlaniyor", tweet_id)
+            continue
+
+        # Bu tweet zaten bizim attigimiz bir self-reply mi? (metin kontrolu)
+        if tweet_text.strip().lower() in known_reply_texts:
+            logger.debug("Self-reply: tweet %s bilinen reply metni, atlaniyor", tweet_id)
             continue
 
         # Zaten reply atilmis mi? (1 reply = yeterli, 2. reply ATMA)
         seen_info = seen.get(str(tweet_id), {})
         if seen_info.get("replies_sent", 0) >= 1:
+            logger.debug("Self-reply: tweet %s zaten reply atilmis, atlaniyor", tweet_id)
             continue
 
         # Tweet yasi kontrol
