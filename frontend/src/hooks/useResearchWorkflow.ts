@@ -152,8 +152,14 @@ export default function useResearchWorkflow(opts?: UseResearchWorkflowOptions): 
 
     try {
       let fullText = topic;
-      if (researchOpts?.tweetUrl) {
+      // Only extract if topic is very short (URL-only) — skip if we already have tweet text
+      const shouldExtract = researchOpts?.tweetUrl && topic.length < 50 && !topic.includes(" ");
+      if (shouldExtract && researchOpts?.tweetUrl) {
         try {
+          setResearchData(prev => ({
+            ...prev,
+            [key]: { ...prev[key], progress: "Tweet bilgileri cekiliyor..." },
+          }));
           const extracted = await extractTweet(researchOpts.tweetUrl);
           if (extracted?.full_thread_text) fullText = extracted.full_thread_text;
           else if (extracted?.text) fullText = extracted.text;
@@ -163,12 +169,23 @@ export default function useResearchWorkflow(opts?: UseResearchWorkflowOptions): 
           if (mi.length > 0 || urls.length > 0) {
             setExtractedMedia(prev => ({ ...prev, [key]: { media_items: mi, urls } }));
           }
-        } catch { /* use original text */ }
+        } catch {
+          // Extract failed — use original text, continue with research
+          setResearchData(prev => ({
+            ...prev,
+            [key]: { ...prev[key], progress: "Tweet cekme basarisiz, orijinal metin ile devam ediliyor..." },
+          }));
+        }
       }
 
       if (researchOpts?.extraContext) {
         fullText += `\n\n${researchOpts.extraContext}`;
       }
+
+      setResearchData(prev => ({
+        ...prev,
+        [key]: { ...prev[key], progress: "Arastirma baslatiliyor..." },
+      }));
 
       const result = await researchTopicStream(
         {
