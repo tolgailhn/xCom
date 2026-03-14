@@ -458,6 +458,11 @@ Ayarlar sayfasindan Twikit cookie'yi yeniden gir. Cookie suresi dolmus olabilir.
 
 ## Değişiklik Günlüğü
 
+### 2026-03-14 (Kümeleme Sistemi İyileştirme)
+- **fix**: `trend_analyzer.py` — `_cluster_smart_suggestions()` artık sadece trend tweet'leri değil, TÜM discovery_cache + auto_scan_cache tweet'lerini de kullanıyor (max 100 tweet). Trend'lerde olmayan benzersiz konular artık da kümeleniyor
+- **fix**: `api/discovery.py` — `/tweets` endpoint'i artık `auto_scan_cache` tweet'lerini de dahil ediyor (duplicate tweet_id kontrolü ile)
+- **fix**: Otomatik yanıt gönderimi kaldırıldı — X "automated" algılıyor (226 hata). Sadece draft modu, kullanıcı manuel paylaşır
+
 ### 2026-03-14 (Self-Reply Duplicate Fix)
 - **fix**: `twikit_client.py` — `_tweet_to_dict()` `conversation_id` fallback eklendi: `in_reply_to_tweet_id` boşsa ve `conversation_id != tweet.id` ise tweet reply olarak işaretleniyor (self-reply tweetler artık doğru filtreleniyor)
 - **fix**: `self_reply_worker.py` — Bilinen reply metin kontrolü eklendi: daha önce üretilen reply metinleri `known_reply_texts` set'ine toplanıp eşleşen tweetler atlanıyor (ID kaybolsa bile metin bazlı koruma)

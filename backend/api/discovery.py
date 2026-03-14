@@ -96,8 +96,18 @@ def get_tweets(hours: int = 24):
     """Keşfedilmiş tweetleri döndür. hours ile zaman aralığı belirlenebilir (varsayılan 24 saat).
     all_accounts: tüm yapılandırılmış hesap listesi (frontend dropdown için)."""
     import datetime
-    from backend.modules.style_manager import load_discovery_cache, load_discovery_config
+    from backend.modules.style_manager import load_discovery_cache, load_discovery_config, load_auto_scan_cache
     cache = load_discovery_cache()
+
+    # auto_scan tweetlerini de dahil et (duplicate tweet_id kontrolü ile)
+    existing_ids = {t.get("tweet_id", "") for t in cache if t.get("tweet_id")}
+    for t in load_auto_scan_cache():
+        tid = t.get("tweet_id", "")
+        if tid and tid in existing_ids:
+            continue
+        if tid:
+            existing_ids.add(tid)
+        cache.append(t)
     if hours and hours < 168:
         cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=hours)
         filtered = []

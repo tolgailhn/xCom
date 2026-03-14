@@ -287,13 +287,15 @@ def analyze_trends(force: bool = False):
 
 
 def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
-    """Trend tweet'lerini AI ile konu bazlı kümele."""
+    """Trend tweet'lerini + tüm cache tweet'lerini AI ile konu bazlı kümele."""
     import json as _json
 
     from backend.modules.style_manager import (
         load_clustered_suggestions,
         save_clustered_suggestions,
         load_news_cache,
+        load_discovery_cache,
+        load_auto_scan_cache,
     )
 
     # Spam filter for clustering input
@@ -308,34 +310,106 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
     except ImportError:
         _is_lq_check = None
 
-    # Collect all top tweets from all trends (skip spam/GM)
+    MAX_CLUSTERING_TWEETS = 100  # AI prompt boyutu için üst limit
+
+    def _is_clean(text: str) -> bool:
+        """Spam/low-quality kontrolü."""
+        if _is_lq_check and _is_lq_check(text):
+            return False
+        if _is_spam_check and _is_spam_check(text):
+            return False
+        return True
+
+    # ── STEP 1: Trend tweet'lerini topla (öncelikli) ──
     all_tweets = []
-    tweet_meta = []  # Keep track of source info
+    tweet_meta = []
+    seen_ids = set()
+    seen_texts = set()
     skipped_spam = 0
-    for trend in trends[:25]:  # Max 25 trends (daha fazla küme için)
+
+    for trend in trends[:25]:
         for tw in trend.get("top_tweets", [])[:7]:
-            text = (tw.get("text") or "")[:500].strip()  # 500 chars for better semantic understanding
-            if not text or text in [t["text"] for t in tweet_meta]:
+            text = (tw.get("text") or "")[:500].strip()
+            tid = tw.get("tweet_id", "")
+            if not text:
                 continue
-            # Skip low-quality/GM tweets from clustering input
-            if _is_lq_check and _is_lq_check(text):
-                skipped_spam += 1
+            if tid and tid in seen_ids:
                 continue
-            if _is_spam_check and _is_spam_check(text):
+            if text in seen_texts:
+                continue
+            if not _is_clean(text):
                 skipped_spam += 1
                 continue
             all_tweets.append(text)
+            seen_texts.add(text)
+            if tid:
+                seen_ids.add(tid)
             tweet_meta.append({
                 "text": text,
                 "account": tw.get("account", ""),
                 "engagement": tw.get("engagement", 0),
                 "keyword": trend.get("keyword", ""),
-                "tweet_id": tw.get("tweet_id", ""),
+                "tweet_id": tid,
                 "tweet_url": tw.get("tweet_url", ""),
                 "created_at": tw.get("created_at", ""),
             })
+
+    trend_count = len(all_tweets)
+
+    # ── STEP 2: Tüm cache tweet'lerini ekle (trend'de olmayanlar) ──
+    cutoff = (now - datetime.timedelta(hours=24)).isoformat()
+    cache_candidates = []
+
+    for source_loader in (load_discovery_cache, load_auto_scan_cache):
+        try:
+            cache = source_loader()
+        except Exception:
+            continue
+        for t in cache:
+            # Son 24 saat filtresi
+            created = t.get("created_at", "") or t.get("scanned_at", "")
+            if created and created < cutoff:
+                continue
+            tid = t.get("tweet_id", "")
+            text = (t.get("text") or "")[:500].strip()
+            if not text:
+                continue
+            if tid and tid in seen_ids:
+                continue
+            if text in seen_texts:
+                continue
+            if not _is_clean(text):
+                skipped_spam += 1
+                continue
+            engagement = t.get("engagement_score", 0) or t.get("like_count", 0)
+            cache_candidates.append({
+                "text": text,
+                "account": t.get("account", "") or t.get("author", "") or "unknown",
+                "engagement": engagement,
+                "keyword": "",
+                "tweet_id": tid,
+                "tweet_url": t.get("tweet_url", "") or (f"https://x.com/{t.get('account', '')}/status/{tid}" if tid else ""),
+                "created_at": t.get("created_at", ""),
+            })
+            seen_texts.add(text)
+            if tid:
+                seen_ids.add(tid)
+
+    # Engagement'a göre sırala, en değerli tweetleri öncele
+    cache_candidates.sort(key=lambda x: x.get("engagement", 0), reverse=True)
+
+    # Kalan kapasiteyi cache tweet'leriyle doldur
+    remaining = MAX_CLUSTERING_TWEETS - len(all_tweets)
+    for c in cache_candidates[:remaining]:
+        all_tweets.append(c["text"])
+        tweet_meta.append(c)
+
     if skipped_spam:
         logger.info("Clustering: skipped %d spam tweets from input", skipped_spam)
+    logger.info(
+        "Clustering: %d tweets total (%d from trends, %d from cache)",
+        len(all_tweets), trend_count, len(all_tweets) - trend_count,
+    )
 
     if len(all_tweets) < 3:
         logger.info("Clustering: too few tweets (%d), skipping", len(all_tweets))
