@@ -3,24 +3,25 @@ Discovery Worker — Takip edilen hesapların tweetlerini rotasyonlu tarayıp
 engagement sırasına göre listeleyen sistem.
 
 ÇALIŞMA MANTIGI:
-- Scheduler tarafından her 30 dakikada bir çağrılır
-- Her çalışmada sadece 3-4 hesap taranır (batch)
+- Scheduler tarafından her 20 dakikada bir çağrılır
+- Her çalışmada dinamik batch boyutu: toplam_hesap / 6
+  (2 saatte = 6 çalışma × batch → tüm hesaplar taranmış olur)
 - Hesaplar "en uzun süredir taranmayan önce" sırasına göre seçilir
 - Öncelikli hesaplar 2x sık taranır (her batch'te en az 1 priority)
-- 08:00-23:00 arası çalışır → günde ~30 tur → her hesap günde 6-8 kez
+- 08:00-23:00 arası çalışır
 - Thread'ler otomatik algılanır ve tüm parçaları çekilir
 - Her tweet için kısa Türkçe özet üretilir (AI ile)
 - Sonuçlar discovery_cache.json'a kaydedilir (kalıcı arşiv)
 
 BATCH SIZE HESABI:
-- 38+ hesap (DEFAULT_AI_ACCOUNTS + discovery config birleşik), 30dk aralık, 15 saat/gün = 30 slot
-- Batch=5 → 30 slot × 5 = 150 tarama/gün → hesap başı ~4 tarama
-- Priority hesaplar ek slot alır → günde ~6 tarama
+- 38+ hesap, 20dk aralık, 2 saatte 6 çalışma
+- Batch = ceil(38/6) = 7 hesap per çalışma
+- 2 saatte tüm hesaplar en az 1 kez taranır
+- Priority hesaplar ek slot alır
 
 ZAMANLAYICI ÇAKIŞMA:
-- Auto-reply: 5dk, Self-reply: 15dk, Metrics: 30dk
-- Discovery: 30dk — aynı periyotta metrics ile çakışabilir ama
-  ikisi de sadece okuma yapıyor, sorun olmaz
+- Auto-reply: 10dk, Self-reply: 15dk, Metrics: 30dk
+- Discovery: 20dk — ikisi de sadece okuma yapıyor, sorun olmaz
 """
 import datetime
 import logging
@@ -30,8 +31,9 @@ from zoneinfo import ZoneInfo
 logger = logging.getLogger(__name__)
 TZ_TR = ZoneInfo("Europe/Istanbul")
 
-# Batch başına kaç hesap taranacak (5 = rate limit'e takılmadan optimum)
-BATCH_SIZE = 5
+# 2 saatte tüm hesaplar taranacak şekilde hesaplanır (20dk interval × 6 çalışma)
+RUNS_PER_CYCLE = 6  # 120dk / 20dk = 6 çalışma per 2 saat
+DEFAULT_BATCH_SIZE = 7  # Fallback: hesap sayısı bilinmezse
 
 # Maksimum tweet yaşı (saat) — bundan eski tweet'ler cache'e alınmaz (24 saat)
 MAX_TWEET_AGE_HOURS = 24
@@ -88,9 +90,9 @@ def _generate_turkish_summary(tweets: list[dict]) -> dict[str, str]:
         return {}
 
     # Büyük batch'leri küçük parçalara böl (timeout önleme)
-    BATCH_SIZE = 5
+    TRANSLATE_BATCH = 5
     all_summaries = {}
-    for batch_start in range(0, len(tweets), BATCH_SIZE):
+    for batch_start in range(0, len(tweets), TRANSLATE_BATCH):
         batch = tweets[batch_start:batch_start + BATCH_SIZE]
         batch_result = _translate_batch(batch)
         all_summaries.update(batch_result)
@@ -269,9 +271,12 @@ def _pick_batch(priority_accounts: list[str], normal_accounts: list[str],
     """
     Rotasyonla batch seç: en uzun süredir taranmayan hesapları öncelikle al.
     Priority hesaplardan en az 1 tane her batch'te olsun.
+    Batch boyutu dinamik: toplam_hesap / RUNS_PER_CYCLE (2 saatte tüm hesaplar).
     """
+    total_accounts = len(priority_accounts) + len(normal_accounts)
+    batch_size = max(DEFAULT_BATCH_SIZE, -(-total_accounts // RUNS_PER_CYCLE))  # ceil division
+
     last_scanned = rotation.get("last_scanned", {})
-    now_iso = datetime.datetime.now(TZ_TR).isoformat()
 
     def sort_key(account: str) -> str:
         """En eski taranan en başa gelsin (boş = hiç taranmamış = en öncelikli)."""
@@ -289,7 +294,6 @@ def _pick_batch(priority_accounts: list[str], normal_accounts: list[str],
         batch.append(sorted_priority[0])
 
     # Kalan slotları en eski tarananlardan doldur
-    remaining = BATCH_SIZE - len(batch)
     candidates = []
     for a in sorted_priority[1:]:  # priority'nin kalanları
         candidates.append(a)
@@ -300,7 +304,7 @@ def _pick_batch(priority_accounts: list[str], normal_accounts: list[str],
     candidates.sort(key=sort_key)
 
     for a in candidates:
-        if len(batch) >= BATCH_SIZE:
+        if len(batch) >= batch_size:
             break
         if a not in batch:
             batch.append(a)

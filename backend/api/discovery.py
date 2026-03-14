@@ -216,7 +216,7 @@ def get_status():
             if last_dt.tzinfo is None:
                 last_dt = last_dt.replace(tzinfo=TZ_TR)
             elapsed = (now - last_dt).total_seconds()
-            remaining = max(0, 1800 - elapsed)  # 30 dk = 1800 sn
+            remaining = max(0, 1200 - elapsed)  # 20 dk = 1200 sn
             next_scan_seconds = int(remaining)
         except (ValueError, TypeError):
             pass
@@ -230,17 +230,43 @@ def get_status():
     # Hesap başına son tarama zamanı
     last_scanned_per_account = rotation.get("last_scanned", {})
 
+    # Gerçek toplam hesap sayısını hesapla (DEFAULT_AI_ACCOUNTS dahil)
+    priority_accounts = config.get("priority_accounts", [])
+    normal_accounts = config.get("normal_accounts", [])
+    excluded_lower = {a.lower() for a in config.get("excluded_accounts", [])}
+    all_accounts_set = set()
+    for a in priority_accounts:
+        acc = a.strip().lstrip("@").lower()
+        if acc and acc not in excluded_lower:
+            all_accounts_set.add(acc)
+    for a in normal_accounts:
+        acc = a.strip().lstrip("@").lower()
+        if acc and acc not in excluded_lower:
+            all_accounts_set.add(acc)
+    try:
+        from backend.modules.twitter_scanner import DEFAULT_AI_ACCOUNTS
+        for a in DEFAULT_AI_ACCOUNTS:
+            acc = a.strip().lstrip("@").lower()
+            if acc and acc not in excluded_lower:
+                all_accounts_set.add(acc)
+    except ImportError:
+        pass
+
+    priority_set = {a.strip().lstrip("@").lower() for a in priority_accounts}
+    actual_priority = len(priority_set - excluded_lower)
+    actual_total = len(all_accounts_set)
+
     return {
         "enabled": config.get("enabled", False),
         "total_tweets": len(cache),
-        "priority_count": len(config.get("priority_accounts", [])),
-        "normal_count": len(config.get("normal_accounts", [])),
+        "priority_count": actual_priority,
+        "normal_count": actual_total - actual_priority,
         "last_scan": last_scan,
         "next_scan_seconds": next_scan_seconds,
         "current_time": now.isoformat(),
         "account_counts": account_counts,
         "last_scanned_per_account": last_scanned_per_account,
-        "scan_mode": "batch (30dk, 5 hesap/tur)",
+        "scan_mode": "batch (20dk, 2 saatte tum hesaplar)",
     }
 
 

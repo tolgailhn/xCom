@@ -330,7 +330,7 @@ def _check_self_replies():
 
 
 def _check_discovery():
-    """Discovery worker — her 30 dakikada 3-4 hesap rotasyonla tara."""
+    """Discovery worker — her 20 dakikada ~7 hesap rotasyonla tara (2 saatte tüm hesaplar)."""
     try:
         from backend.discovery_worker import scan_accounts
         scan_accounts()
