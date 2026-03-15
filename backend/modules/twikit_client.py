@@ -31,9 +31,53 @@ from twikit.errors import (
 )
 
 LOGIN_TIMEOUT = 30  # seconds — prevents infinite hang on interactive prompts
+_TWIKIT_PATCHED = False  # Track if monkey-patch has been applied
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
 COOKIES_PATH = DATA_DIR / "twikit_cookies.json"
+
+# ---------- Global rate limiter for Twikit requests ----------
+# Prevents rapid-fire requests that cause Twitter to temporarily ban the account.
+TWIKIT_MIN_DELAY = 2.5  # minimum seconds between consecutive requests
+TWIKIT_BACKOFF_MULTIPLIER = 1.5  # multiply delay on consecutive errors
+TWIKIT_MAX_DELAY = 12.0  # max backoff delay
+_twikit_last_request_time: float = 0.0
+_twikit_consecutive_errors: int = 0
+_twikit_rate_lock = threading.Lock()
+
+
+def _twikit_rate_limit_wait():
+    """Wait to respect rate limiting between Twikit requests."""
+    global _twikit_last_request_time, _twikit_consecutive_errors
+    with _twikit_rate_lock:
+        now = time.monotonic()
+        # Calculate delay: base delay + exponential backoff on errors
+        delay = TWIKIT_MIN_DELAY
+        if _twikit_consecutive_errors > 0:
+            delay = min(
+                TWIKIT_MIN_DELAY * (TWIKIT_BACKOFF_MULTIPLIER ** _twikit_consecutive_errors),
+                TWIKIT_MAX_DELAY,
+            )
+        elapsed = now - _twikit_last_request_time
+        if elapsed < delay:
+            wait_time = delay - elapsed
+            print(f"Twikit rate limiter: waiting {wait_time:.1f}s (errors={_twikit_consecutive_errors})")
+            time.sleep(wait_time)
+        _twikit_last_request_time = time.monotonic()
+
+
+def _twikit_rate_limit_success():
+    """Reset consecutive error count on successful request."""
+    global _twikit_consecutive_errors
+    with _twikit_rate_lock:
+        _twikit_consecutive_errors = 0
+
+
+def _twikit_rate_limit_error():
+    """Increment error count for exponential backoff."""
+    global _twikit_consecutive_errors
+    with _twikit_rate_lock:
+        _twikit_consecutive_errors = min(_twikit_consecutive_errors + 1, 5)
 
 
 def _safe_int(val) -> int:
@@ -102,10 +146,116 @@ def adapt_query_for_web(query: str, since_date: str = None) -> str:
     """Adapt Twitter API v2 search operators to web search format."""
     q = query.replace("-is:retweet", "-filter:retweets")
     q = q.replace("-is:reply", "-filter:replies")
-    q = re.sub(r'\blang:\w+\b', '', q)
+    # lang: filtresi twikit web arama formatında 404 veriyor — kaldır
+    q = re.sub(r'\s*lang:\w+', '', q)
     if since_date:
         q += f" since:{since_date}"
     return re.sub(r'\s+', ' ', q).strip()
+
+
+def _patch_twikit_itemcontent():
+    """Monkey-patch twikit's get_tweet_by_id and _get_more_replies to handle
+    missing 'itemContent' keys in X's API responses.
+
+    X/Twitter changed their internal API response structure — cursor entries
+    no longer always have itemContent. This causes KeyError in twikit 2.3.x.
+    See: https://github.com/d60/twikit/issues/375
+    """
+    global _TWIKIT_PATCHED
+    if _TWIKIT_PATCHED:
+        return
+    try:
+        from twikit import Client
+        from twikit.utils import find_dict, Result
+        from twikit.tweet import tweet_from_data
+        from functools import partial
+
+        _orig_get_tweet = Client.get_tweet_by_id
+        _orig_get_more = Client._get_more_replies
+
+        async def _safe_get_tweet_by_id(self, tweet_id, cursor=None):
+            """Patched get_tweet_by_id that handles missing itemContent."""
+            try:
+                return await _orig_get_tweet(self, tweet_id, cursor)
+            except KeyError as e:
+                if 'itemContent' not in str(e) and 'items' not in str(e) and 'content' not in str(e):
+                    raise
+                # Fallback: fetch raw data and extract tweet without reply cursors
+                print(f"Twikit patch: KeyError {e} in get_tweet_by_id, using safe fallback")
+                try:
+                    response, _ = await self.gql.tweet_detail(tweet_id, cursor)
+                    if 'errors' in response:
+                        from twikit.errors import TweetNotAvailable
+                        raise TweetNotAvailable(response['errors'][0]['message'])
+                    entries = find_dict(response, 'entries', find_one=True)[0]
+                    tweet = None
+                    reply_to = []
+                    replies_list = []
+                    related_tweets = []
+                    for entry in entries:
+                        if entry.get('entryId', '').startswith('cursor'):
+                            continue
+                        try:
+                            tweet_object = tweet_from_data(self, entry)
+                        except Exception:
+                            continue
+                        if tweet_object is None:
+                            continue
+                        if entry.get('entryId', '').startswith('tweetdetailrelatedtweets'):
+                            related_tweets.append(tweet_object)
+                            continue
+                        if entry.get('entryId') == f'tweet-{tweet_id}':
+                            tweet = tweet_object
+                        else:
+                            if tweet is None:
+                                reply_to.append(tweet_object)
+                            else:
+                                # Try to extract replies from items safely
+                                replies = []
+                                items = entry.get('content', {}).get('items', [])
+                                for reply in items[1:]:
+                                    eid = reply.get('entryId', '')
+                                    if 'tweetcomposer' in eid:
+                                        continue
+                                    if 'tweet' in eid:
+                                        try:
+                                            rpl = tweet_from_data(self, reply)
+                                            if rpl:
+                                                replies.append(rpl)
+                                        except Exception:
+                                            pass
+                                tweet_object.replies = Result(replies)
+                                replies_list.append(tweet_object)
+                                display_type = find_dict(entry, 'tweetDisplayType', True)
+                                if display_type and display_type[0] == 'SelfThread':
+                                    tweet.thread = [tweet_object, *replies]
+
+                    if tweet is None:
+                        return None
+                    # Skip reply cursor (the thing that fails) — just set empty
+                    tweet.replies = Result(replies_list)
+                    tweet.reply_to = reply_to
+                    tweet.related_tweets = related_tweets
+                    return tweet
+                except KeyError:
+                    # Even fallback failed — return None
+                    print(f"Twikit patch: safe fallback also failed for tweet {tweet_id}")
+                    return None
+
+        async def _safe_get_more_replies(self, tweet_id, cursor):
+            """Patched _get_more_replies that handles missing itemContent."""
+            try:
+                return await _orig_get_more(self, tweet_id, cursor)
+            except KeyError:
+                print(f"Twikit patch: KeyError in _get_more_replies for tweet {tweet_id}")
+                return Result([])
+
+        Client.get_tweet_by_id = _safe_get_tweet_by_id
+        Client._get_more_replies = _safe_get_more_replies
+        _TWIKIT_PATCHED = True
+        print("Twikit: itemContent monkey-patch applied successfully")
+    except Exception as e:
+        print(f"Twikit: failed to apply itemContent patch: {e}")
 
 
 class TwikitSearchClient:
@@ -145,6 +295,9 @@ class TwikitSearchClient:
         Also monkey-patches the client's request() method to remove the
         X-Client-Transaction-Id header entirely (an empty string can cause 404s).
         """
+        # Apply itemContent fix (once, globally)
+        _patch_twikit_itemcontent()
+
         client = self._get_client_sync()
         ct = client.client_transaction
         if ct is None:
@@ -419,13 +572,71 @@ class TwikitSearchClient:
     def is_authenticated(self) -> bool:
         return self._authenticated
 
+    # ── WRITE OPERATIONS ─────────────────────────────────────────
+
+    def create_reply(self, text: str, reply_to_tweet_id: str) -> dict:
+        """Post a reply to a tweet using cookie-based auth.
+
+        Returns dict with 'success', 'tweet_id', 'url' on success,
+        or 'success': False and 'error' on failure.
+        """
+        if not self._authenticated:
+            return {"success": False, "error": "Not authenticated"}
+
+        _twikit_rate_limit_wait()
+        client = self._get_client_sync()
+
+        async def _do_reply():
+            return await client.create_tweet(
+                text=text,
+                reply_to=reply_to_tweet_id,
+            )
+
+        try:
+            result = self._run(_do_reply(), timeout=60)
+            _twikit_rate_limit_success()
+            tweet_id = str(result.id) if hasattr(result, "id") else ""
+            return {
+                "success": True,
+                "tweet_id": tweet_id,
+                "url": f"https://x.com/i/status/{tweet_id}" if tweet_id else "",
+            }
+        except (Unauthorized, Forbidden) as e:
+            # Cookie expired or reply restricted — re-auth once and retry
+            try:
+                self.authenticate(skip_cookies=True)
+                result = self._run(_do_reply(), timeout=60)
+                _twikit_rate_limit_success()
+                tweet_id = str(result.id) if hasattr(result, "id") else ""
+                return {
+                    "success": True,
+                    "tweet_id": tweet_id,
+                    "url": f"https://x.com/i/status/{tweet_id}" if tweet_id else "",
+                }
+            except Exception as retry_err:
+                _twikit_rate_limit_error()
+                return {"success": False, "error": f"{type(e).__name__}: {e} (retry: {retry_err})"}
+        except TooManyRequests as e:
+            _twikit_rate_limit_error()
+            return {"success": False, "error": f"Rate limited: {e}"}
+        except (AccountLocked, AccountSuspended) as e:
+            _twikit_rate_limit_error()
+            return {"success": False, "error": f"Account issue: {e}"}
+        except Exception as e:
+            _twikit_rate_limit_error()
+            return {"success": False, "error": f"{type(e).__name__}: {e}"}
+
     def search_tweets(self, query: str, count: int = 20,
                       since_date: str = None) -> list[dict]:
         """Search tweets. Returns list of tweet dicts."""
         if not self._authenticated:
             return []
+        _twikit_rate_limit_wait()
         adapted = adapt_query_for_web(query, since_date)
-        return self._run(self._search_async(adapted, count))
+        result = self._run(self._search_async(adapted, count))
+        if result:
+            _twikit_rate_limit_success()
+        return result
 
     async def _retry_after_reauth(self, coro_factory):
         """Reset client, force login (skip stale cookies), then run coro_factory().
@@ -478,7 +689,24 @@ class TwikitSearchClient:
                     "Uygulamayı yeniden başlatmayı deneyin."
                 )
                 print(f"Twikit search transport error: {err_name}: {e}")
+            elif err_name == "Forbidden" or "403" in err_str:
+                # Search 403 is NOT an auth issue — it's an IP/endpoint restriction.
+                # Do NOT re-auth (it destroys working cookies for other operations).
+                self.last_error = (
+                    "Erişim reddedildi (403). Twitter arama bu IP'den kısıtlanmış olabilir. "
+                    "Grok motorunu kullanmayı deneyin."
+                )
+                print(f"Twikit search 403 — NOT re-authing (preserving cookies): {e}")
+                _twikit_rate_limit_error()
+            elif err_name in ("NotFound", "TypeError", "AttributeError"):
+                # NotFound = search returned no results or endpoint changed
+                # TypeError/AttributeError = parsing issue, not auth
+                # Do NOT re-auth — it blocks the thread and won't fix these errors.
+                # Do NOT increment rate limit backoff — these are NOT rate limit issues.
+                self.last_error = f"Arama hatası ({err_name}): {e}"
+                print(f"Twikit search {err_name} — NOT re-authing (not an auth issue): {e}")
             else:
+                # Only Unauthorized should trigger re-auth
                 print(f"Twikit search {err_name}, attempting re-auth...")
                 self.last_error = f"Arama hatası ({err_name}): {e}"
                 if self.username and self.password:
@@ -493,6 +721,7 @@ class TwikitSearchClient:
             reset_ts = getattr(e, 'rate_limit_reset', None)
             self.last_error = "Arama rate limit. Biraz bekleyip tekrar deneyin."
             print(f"Twikit search: TooManyRequests (reset={reset_ts})")
+            _twikit_rate_limit_error()
         except Exception as e:
             error_str = str(e)
             error_type = type(e).__name__
@@ -517,6 +746,7 @@ class TwikitSearchClient:
             else:
                 self.last_error = f"Arama hatası: {error_type}: {e}"
             print(f"Twikit search error: {error_type}: {e}")
+            _twikit_rate_limit_error()
         return results
 
     def get_user_tweets(self, username: str, count: int = 10,
@@ -524,7 +754,11 @@ class TwikitSearchClient:
         """Get recent tweets from a user with pagination. Returns list of tweet dicts."""
         if not self._authenticated:
             return []
-        return self._run(self._user_tweets_async(username, count, progress_callback))
+        _twikit_rate_limit_wait()
+        result = self._run(self._user_tweets_async(username, count, progress_callback))
+        if result:
+            _twikit_rate_limit_success()
+        return result
 
     async def _user_tweets_async(self, username: str, count: int,
                                   progress_callback=None) -> list[dict]:
@@ -595,8 +829,19 @@ class TwikitSearchClient:
 
                 except Exception as page_err:
                     err_name = type(page_err).__name__
+                    err_str = str(page_err)
                     if err_name in ("StopIteration", "StopAsyncIteration"):
                         break  # No more pages
+                    # Rate limit (429) — stop immediately, don't retry pages
+                    if "429" in err_str or "Rate limit" in err_str or err_name == "TooManyRequests":
+                        self.last_error = f"@{username}: Rate limit. Bir süre bekleyip tekrar deneyin."
+                        print(f"Twikit pagination rate limit (@{username} page {page + 1}) — stopping")
+                        break
+                    # Recursion depth — stop immediately
+                    if "recursion" in err_str.lower():
+                        self.last_error = f"@{username}: Recursion hatası. Uygulamayı yeniden başlatın."
+                        print(f"Twikit pagination recursion error (@{username}) — stopping")
+                        break
                     print(f"Twikit pagination error (page {page + 1}): {page_err}")
                     self.last_error = f"Sayfa {page + 1} hatası: {err_name}: {page_err}"
                     break
@@ -612,7 +857,12 @@ class TwikitSearchClient:
                     "Uygulamayı yeniden başlatmayı deneyin."
                 )
                 print(f"Twikit user tweets transport error: {err_name}: {e}")
+            elif err_name in ("NotFound", "Forbidden", "TypeError", "AttributeError"):
+                # These are NOT auth issues — re-auth blocks thread and won't fix them
+                self.last_error = f"Kullanıcı tweet hatası (@{username}): {err_name}: {e}"
+                print(f"Twikit user tweets {err_name} — NOT re-authing (not an auth issue): {e}")
             else:
+                # Only Unauthorized should trigger re-auth
                 self.last_error = f"Kullanıcı tweet hatası (@{username}): {err_name}: {e}"
                 print(f"Twikit user tweets {err_name}, attempting re-auth...")
                 if self.username and self.password:
@@ -674,29 +924,274 @@ class TwikitSearchClient:
         # User info
         user = getattr(tweet, 'user', None)
 
-        # Media URLs
+        # Media URLs (legacy) + rich media_items
         media_urls = []
+        media_items = []
         for m in (getattr(tweet, 'media', None) or []):
-            url = getattr(m, 'url', None) or getattr(m, 'media_url_https', None)
-            if url:
-                media_urls.append(url)
+            thumb = getattr(m, 'media_url_https', None) or getattr(m, 'url', None) or ''
+            media_type_raw = getattr(m, 'type', 'photo')  # photo, video, animated_gif
+
+            if media_type_raw in ('video', 'animated_gif'):
+                # Extract best mp4 variant from video_info
+                video_url = ''
+                video_info = getattr(m, 'video_info', None)
+                if video_info:
+                    variants = getattr(video_info, 'variants', None) or []
+                    # If variants is a list of dicts or objects
+                    best_bitrate = -1
+                    for v in variants:
+                        ct = v.get('content_type', '') if isinstance(v, dict) else getattr(v, 'content_type', '')
+                        br = v.get('bitrate', 0) if isinstance(v, dict) else getattr(v, 'bitrate', 0)
+                        vurl = v.get('url', '') if isinstance(v, dict) else getattr(v, 'url', '')
+                        if 'mp4' in ct and int(br or 0) > best_bitrate:
+                            best_bitrate = int(br or 0)
+                            video_url = vurl
+                if not video_url:
+                    # Fallback: check dict-style access
+                    try:
+                        vi = m if isinstance(m, dict) else m.__dict__
+                        for v in (vi.get('video_info', {}) or {}).get('variants', []):
+                            ct = v.get('content_type', '')
+                            br = int(v.get('bitrate', 0) or 0)
+                            if 'mp4' in ct and br > best_bitrate:
+                                best_bitrate = br
+                                video_url = v.get('url', '')
+                    except Exception:
+                        pass
+                if video_url:
+                    media_urls.append(video_url)
+                    media_items.append({
+                        'url': video_url,
+                        'thumbnail': thumb,
+                        'type': 'video',
+                    })
+                elif thumb:
+                    media_urls.append(thumb)
+                    media_items.append({
+                        'url': thumb,
+                        'thumbnail': thumb,
+                        'type': 'video',
+                    })
+            else:
+                if thumb:
+                    media_urls.append(thumb)
+                    media_items.append({
+                        'url': thumb,
+                        'thumbnail': thumb,
+                        'type': 'image',
+                    })
+
+        # URL entities — extract expanded URLs from t.co links
+        tweet_urls = []
+        try:
+            raw_urls = getattr(tweet, 'urls', None) or []
+            for u in raw_urls:
+                if isinstance(u, dict):
+                    expanded = u.get('expanded_url', '') or u.get('url', '')
+                    display = u.get('display_url', '')
+                else:
+                    expanded = getattr(u, 'expanded_url', '') or getattr(u, 'url', '')
+                    display = getattr(u, 'display_url', '')
+                if expanded and 'pic.twitter.com' not in expanded and 'twitter.com/i/' not in expanded:
+                    tweet_urls.append({
+                        'url': expanded,
+                        'display_url': display or expanded,
+                    })
+        except Exception:
+            pass
+
+        # in_reply_to — needed by self-reply worker to filter out replies
+        in_reply_to = (getattr(tweet, 'in_reply_to_tweet_id', None)
+                       or getattr(tweet, 'in_reply_to_status_id', None)
+                       or getattr(tweet, 'reply_to', None))
+
+        # Fallback: conversation_id != tweet.id means it's a reply in a thread
+        if not in_reply_to:
+            conversation_id = getattr(tweet, 'conversation_id', None)
+            tweet_id_str = str(getattr(tweet, 'id', ''))
+            if conversation_id and str(conversation_id) != tweet_id_str:
+                in_reply_to = str(conversation_id)
 
         return {
             'id': str(getattr(tweet, 'id', '')),
             'text': (getattr(tweet, 'full_text', '')
                      or getattr(tweet, 'text', '')
                      or ''),
+            'in_reply_to_tweet_id': str(in_reply_to) if in_reply_to else None,
             'author_name': getattr(user, 'name', 'Unknown') if user else 'Unknown',
             'author_username': getattr(user, 'screen_name', 'unknown') if user else 'unknown',
             'author_profile_image': (getattr(user, 'profile_image_url', '') or '') if user else '',
             'author_followers_count': _safe_int(getattr(user, 'followers_count', 0)) if user else 0,
-            'created_at': created_at,
+            'created_at': created_at.isoformat() if created_at else '',
             'like_count': _safe_int(getattr(tweet, 'favorite_count', 0)),
             'retweet_count': _safe_int(getattr(tweet, 'retweet_count', 0)),
             'reply_count': _safe_int(getattr(tweet, 'reply_count', 0)),
             'impression_count': _safe_int(getattr(tweet, 'view_count', 0)),
             'media_urls': media_urls,
+            'media_items': media_items,
+            'urls': tweet_urls,
         }
+
+    def get_tweet_by_id(self, tweet_id: str) -> dict | None:
+        """Fetch a specific tweet by its ID using twikit."""
+        if not self._authenticated:
+            return None
+        return self._run(self._get_tweet_by_id_async(tweet_id))
+
+    async def _get_tweet_by_id_async(self, tweet_id: str) -> dict | None:
+        try:
+            self._bypass_client_transaction(silent=True)
+            client = self._get_client_sync()
+            tweet = await client.get_tweet_by_id(tweet_id)
+            if tweet:
+                return self._tweet_to_dict(tweet)
+        except Exception as e:
+            print(f"Twikit get_tweet_by_id error: {type(e).__name__}: {e}")
+        return None
+
+    def get_thread(self, tweet_id: str) -> list[dict]:
+        """Fetch the full thread for a given tweet using twikit.
+
+        Strategy:
+        1. Get the tweet to find its author
+        2. Search for conversation tweets from the same author using
+           conversation_id (which twikit's Tweet object exposes)
+        3. Walk up reply chain if conversation_id not available
+        4. Return list of tweet dicts sorted oldest-first
+        """
+        if not self._authenticated:
+            return []
+        _twikit_rate_limit_wait()
+        result = self._run(self._get_thread_async(tweet_id))
+        if result:
+            _twikit_rate_limit_success()
+        return result
+
+    async def _get_thread_async(self, tweet_id: str) -> list[dict]:
+        try:
+            self._bypass_client_transaction(silent=True)
+            client = self._get_client_sync()
+            tweet = await client.get_tweet_by_id(tweet_id)
+            if not tweet:
+                return []
+
+            author_id = None
+            user = getattr(tweet, 'user', None)
+            if user:
+                author_id = getattr(user, 'id', None) or getattr(user, 'rest_id', None)
+            author_screen = getattr(user, 'screen_name', '') if user else ''
+
+            thread_tweets = {}  # id -> tweet dict
+            main_tweet_dict = self._tweet_to_dict(tweet)
+            thread_tweets[str(getattr(tweet, 'id', tweet_id))] = main_tweet_dict
+
+            # Strategy 1: Walk DOWN through replies (same author = self-thread)
+            # twikit's get_tweet_by_id returns a Tweet with .replies attribute
+            await self._walk_thread_down(client, tweet, author_id, thread_tweets)
+
+            # Strategy 2: Walk UP the reply chain (in_reply_to)
+            current = tweet
+            walk_count = 0
+            while walk_count < 15:
+                reply_to_id = (getattr(current, 'in_reply_to_tweet_id', None)
+                               or getattr(current, 'reply_to', None))
+                if not reply_to_id:
+                    break
+                reply_to_id = str(reply_to_id)
+                if reply_to_id in thread_tweets:
+                    break
+                try:
+                    parent = await client.get_tweet_by_id(reply_to_id)
+                    if not parent:
+                        break
+                    # Only include tweets from the same author (self-thread)
+                    parent_user = getattr(parent, 'user', None)
+                    parent_author_id = None
+                    if parent_user:
+                        parent_author_id = (getattr(parent_user, 'id', None)
+                                            or getattr(parent_user, 'rest_id', None))
+                    if author_id and parent_author_id and str(parent_author_id) != str(author_id):
+                        break  # Different author = not a self-thread
+                    thread_tweets[reply_to_id] = self._tweet_to_dict(parent)
+                    current = parent
+                    walk_count += 1
+                    # Also walk DOWN from parent to find siblings in thread
+                    await self._walk_thread_down(client, parent, author_id, thread_tweets)
+                except Exception:
+                    break
+
+            # Strategy 3: conversation_id search (may fail with 404 — non-fatal)
+            conv_id = getattr(tweet, 'conversation_id', None)
+            if conv_id and author_screen and len(thread_tweets) <= 1:
+                try:
+                    query = f"conversation_id:{conv_id} from:{author_screen}"
+                    results = await client.search_tweet(query, 'Latest', count=40)
+                    for t in (results or []):
+                        tid = str(getattr(t, 'id', ''))
+                        if tid and tid not in thread_tweets:
+                            thread_tweets[tid] = self._tweet_to_dict(t)
+                except Exception as e:
+                    print(f"Twikit thread conversation search error (non-fatal): {e}")
+
+            # Sort by created_at (oldest first)
+            sorted_tweets = sorted(
+                thread_tweets.values(),
+                key=lambda t: t.get('created_at') or datetime.datetime.min.replace(
+                    tzinfo=datetime.timezone.utc
+                ),
+            )
+            return sorted_tweets
+
+        except Exception as e:
+            print(f"Twikit get_thread error: {type(e).__name__}: {e}")
+            # Fallback: return single tweet
+            try:
+                single = await self._get_tweet_by_id_async(tweet_id)
+                return [single] if single else []
+            except Exception:
+                return []
+
+    async def _walk_thread_down(self, client, tweet, author_id, thread_tweets,
+                                depth: int = 0, max_depth: int = 20):
+        """Walk DOWN through replies to find self-thread continuation.
+
+        twikit's get_tweet_by_id populates tweet.replies with direct replies.
+        We follow same-author replies to reconstruct the thread downward.
+        """
+        if depth >= max_depth:
+            return
+        replies = getattr(tweet, 'replies', None)
+        if not replies:
+            return
+        try:
+            reply_list = list(replies) if replies else []
+        except Exception:
+            return
+        for reply in reply_list:
+            try:
+                reply_user = getattr(reply, 'user', None)
+                reply_author_id = None
+                if reply_user:
+                    reply_author_id = (getattr(reply_user, 'id', None)
+                                       or getattr(reply_user, 'rest_id', None))
+                # Only follow same-author replies (self-thread)
+                if author_id and reply_author_id and str(reply_author_id) != str(author_id):
+                    continue
+                rid = str(getattr(reply, 'id', ''))
+                if rid and rid not in thread_tweets:
+                    thread_tweets[rid] = self._tweet_to_dict(reply)
+                    # Recurse: fetch full tweet to get its replies
+                    try:
+                        full_reply = await client.get_tweet_by_id(rid)
+                        if full_reply:
+                            await self._walk_thread_down(
+                                client, full_reply, author_id, thread_tweets,
+                                depth + 1, max_depth
+                            )
+                    except Exception:
+                        pass
+            except Exception:
+                continue
 
     def get_user_info(self, username: str) -> dict | None:
         """Get user profile info. Returns dict with user data."""

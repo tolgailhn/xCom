@@ -85,6 +85,11 @@ async def auth_middleware(request: Request, call_next):
     ):
         return await call_next(request)
 
+    # Skip auth for localhost/loopback requests (MCP server, local scripts)
+    client_host = request.client.host if request.client else None
+    if client_host in ("127.0.0.1", "::1", "localhost"):
+        return await call_next(request)
+
     settings = get_settings()
     if not settings.app_password:
         return await call_next(request)

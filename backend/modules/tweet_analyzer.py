@@ -9,7 +9,7 @@ import re
 from collections import Counter
 from pathlib import Path
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
 ANALYSES_DIR = DATA_DIR / "tweet_analyses"
 
 
@@ -44,22 +44,11 @@ def pull_user_tweets(twikit_client, username: str, count: int = 500,
 
 def calculate_engagement_score(tweet: dict) -> float:
     """
-    Calculate weighted engagement score based on X algorithm weights.
-    RT = 20x, Reply = 13.5x, Like = 1x, Bookmark ≈ 10x
+    Calculate weighted engagement score based on X 2026 Phoenix algorithm weights.
+    Delegates to constants.py single source of truth.
     """
-    rt = _safe_int(tweet.get("retweet_count", 0))
-    reply = _safe_int(tweet.get("reply_count", 0))
-    like = _safe_int(tweet.get("like_count", 0))
-    impressions = _safe_int(tweet.get("impression_count", 0))
-
-    score = (rt * 20) + (reply * 13.5) + (like * 1)
-
-    # Engagement rate bonus (if impressions available)
-    if impressions > 0:
-        engagement_rate = (rt + reply + like) / impressions
-        score *= (1 + engagement_rate)
-
-    return round(score, 2)
+    from modules.constants import calculate_engagement_score as _calc
+    return _calc(tweet)
 
 
 def extract_keywords(text: str) -> list[str]:
@@ -93,6 +82,10 @@ def _extract_style_dna(original_tweets: list[dict]) -> dict:
     Deep writing style analysis from ALL original tweets.
     Extracts signature words, phrases, patterns, hooks, tone characteristics.
     This data is used by build_training_context for human-like AI writing.
+
+    v2: Dinamik kelime/kalıp çıkarımı — hardcoded listeler yerine tweet'lerden
+    otomatik keşif yapılır. Casual markers hâlâ bonus ağırlık alır ama
+    tüm sık kullanılan kelimeler ve n-gram'lar da çıkarılır.
     """
     if not original_tweets:
         return {}
@@ -107,49 +100,125 @@ def _extract_style_dna(original_tweets: list[dict]) -> dict:
     lengths = [len(t) for t in all_texts if t]
     avg_len = sum(lengths) // len(lengths) if lengths else 0
 
-    # 3. Signature words (daily/casual language markers)
+    # 3. Signature words — DİNAMİK ÇIKARIM
+    # Tüm tweet'lerden kelime frekansı çıkar, stop words hariç
     all_words = []
     for text in all_texts:
-        all_words.extend(text.lower().split())
+        # URL, mention, hashtag temizle
+        clean = re.sub(r'https?://\S+', '', text)
+        clean = re.sub(r'@\w+', '', clean)
+        clean = re.sub(r'[^\w\sğüşıöçĞÜŞİÖÇ]', ' ', clean)
+        all_words.extend(clean.lower().split())
+
     word_count = Counter(all_words)
 
-    casual_markers = [
-        "olm", "yani", "artık", "bile", "şey", "sadece", "şimdi", "adam", "zaten",
-        "ya", "bak", "böyle", "öyle", "güzel", "mesela", "aslında", "abi",
-        "gerçekten", "neyse", "valla", "sonuçta", "kısacası", "ulan", "tamam",
-        "hadi", "lan", "höcaam", "cidden", "harbiden", "arkadaşım", "kardeşim",
-        "bence", "resmen", "net", "açık", "bedava", "millet", "aga", "beyler",
-        "üstelik", "henüz", "çıktı", "geldi", "tarafı", "sessiz", "sedasız",
-    ]
+    # Geniş stop words listesi — bunlar imza kelimesi OLMAZ
+    _stop_words = frozenset({
+        'bir', 'bu', 'da', 'de', 've', 'ile', 'için', 'var', 'yok', 'ama',
+        'çok', 'ne', 'ki', 'gibi', 'daha', 'en', 'her', 'o', 'ben', 'sen',
+        'biz', 'şu', 'mi', 'mı', 'mu', 'mü', 'olan', 'olarak', 'sonra',
+        'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'to',
+        'of', 'and', 'in', 'that', 'it', 'for', 'on', 'with', 'as', 'at',
+        'by', 'from', 'or', 'not', 'but', 'this', 'has', 'have', 'had',
+        'diyor', 'oldu', 'olur', 'oluyor', 'değil', 'nasıl', 'ise',
+        'bunu', 'onlar', 'siz', 'hem', 'ya', 'kadar', 'neden', 'çünkü',
+        'tüm', 'hep', 'hiç', 'bütün', 'böyle', 'şöyle', 'öyle',
+        'sonuçta', 'ayrıca', 'ancak', 'fakat', 'lakin', 'yine', 'yalnız',
+        'aslında', 'zaten', 'bile', 'sadece', 'yani', 'artık',
+        'onu', 'ona', 'beni', 'bana', 'seni', 'sana', 'bize', 'size',
+        'kendi', 'kendini', 'burada', 'orada', 'şurada',
+        'olan', 'yapan', 'eden', 'gelen', 'giden',
+        # Yaygın AI/tech stop words
+        'https', 'http', 'com', 'www', 'org',
+    })
+
+    # Casual markers — bunlar bulunursa BONUS ağırlık alır (x1.5)
+    _casual_bonus = frozenset({
+        "olm", "bak", "güzel", "mesela", "abi", "gerçekten", "neyse",
+        "valla", "ulan", "tamam", "hadi", "lan", "höcaam",
+        "cidden", "harbiden", "arkadaşım", "kardeşim", "bence", "resmen",
+        "net", "açık", "bedava", "millet", "aga", "beyler", "adam",
+        "şimdi", "şey",
+    })
+
+    # Dinamik imza kelimeleri: frekans >= 3 olan, 2+ karakter, stop word olmayan
+    min_freq = max(3, len(all_texts) // 50)  # Havuz büyüklüğüne orantılı minimum
     signature_words = {}
-    for w in casual_markers:
-        if word_count[w] > 0:
-            signature_words[w] = word_count[w]
-    signature_words = dict(sorted(signature_words.items(), key=lambda x: x[1], reverse=True))
+    for word, count in word_count.items():
+        if len(word) < 2 or word in _stop_words or count < min_freq:
+            continue
+        # Sadece rakamlardan oluşan kelimeleri atla
+        if word.isdigit():
+            continue
+        # Casual marker bonus
+        effective_count = int(count * 1.5) if word in _casual_bonus else count
+        signature_words[word] = effective_count
 
-    # 4. Signature phrases
-    phrase_candidates = [
-        "olm", "ok.", "güzel kardeşim", "o yüzden", "aslında", "biliyor musun",
-        "diyor ki", "bayanlar baylar", "bak şimdi", "şu an", "bu adam",
-        "az önce", "anladın mı", "test ettim", "sevgiler", "algoritma tanrıları",
-        "bi baktım", "sessiz sedasız", "bence", "gördüğüm kadarıyla",
-        "asıl mesele", "artık", "cidden", "harbiden", "açık kaynak",
-        "bu gidişle", "benim gördüğüm", "güzel gelişme", "denemek lazım",
-    ]
+    # En sık 60 kelimeyi tut (eskiden max 31 idi)
+    signature_words = dict(
+        sorted(signature_words.items(), key=lambda x: x[1], reverse=True)[:60]
+    )
+
+    # 4. Signature phrases — DİNAMİK N-GRAM ÇIKARIMI
+    # Hardcoded 24 kalıp yerine, tweet'lerden otomatik bigram/trigram keşfi
+    bigram_count = Counter()
+    trigram_count = Counter()
+    for text in all_texts:
+        clean = re.sub(r'https?://\S+', '', text)
+        clean = re.sub(r'@\w+', '', clean)
+        clean = re.sub(r'[^\w\sğüşıöçĞÜŞİÖÇ]', ' ', clean)
+        words = clean.lower().split()
+        # Bigrams
+        for i in range(len(words) - 1):
+            bg = f"{words[i]} {words[i+1]}"
+            # Her iki kelime de stop word ise atla
+            if words[i] in _stop_words and words[i+1] in _stop_words:
+                continue
+            bigram_count[bg] += 1
+        # Trigrams
+        for i in range(len(words) - 2):
+            tg = f"{words[i]} {words[i+1]} {words[i+2]}"
+            # 3 kelime de stop word ise atla
+            if all(w in _stop_words for w in [words[i], words[i+1], words[i+2]]):
+                continue
+            trigram_count[tg] += 1
+
+    # Minimum frekans: en az 3 tweet'te geçmeli
+    min_phrase_freq = max(3, len(all_texts) // 100)
     signature_phrases = {}
-    for phrase in phrase_candidates:
-        count = sum(1 for t in all_texts if phrase in t.lower())
-        if count > 0:
+    # Trigram'lar daha değerli (daha spesifik kalıplar)
+    for phrase, count in trigram_count.most_common(40):
+        if count >= min_phrase_freq:
             signature_phrases[phrase] = count
-    signature_phrases = dict(sorted(signature_phrases.items(), key=lambda x: x[1], reverse=True))
+    # Bigram'lar da ekle (trigram'da olmayanlar)
+    for phrase, count in bigram_count.most_common(40):
+        if count >= min_phrase_freq and phrase not in signature_phrases:
+            # Bigram'ın bir trigram'ın parçası olup olmadığını kontrol et
+            already_covered = any(phrase in tg for tg in signature_phrases)
+            if not already_covered:
+                signature_phrases[phrase] = count
 
-    # 5. Hook examples from top performing tweets
+    # En sık 40 kalıbı tut (eskiden max 24 idi)
+    signature_phrases = dict(
+        sorted(signature_phrases.items(), key=lambda x: x[1], reverse=True)[:40]
+    )
+
+    # 5. Hook examples from top performing tweets — DAHA FAZLA ÇEŞİTLİLİK
     sorted_by_score = sorted(original_tweets, key=lambda x: x.get("engagement_score", 0), reverse=True)
     hook_examples = []
-    for t in sorted_by_score[:15]:
-        first_line = t["text"].split("\n")[0][:200]
-        if first_line.strip():
-            hook_examples.append(first_line.strip())
+    seen_starts = set()  # Benzer hook'ları filtrele
+    for t in sorted_by_score[:30]:  # 15 yerine 30'a bak
+        first_line = t["text"].split("\n")[0][:200].strip()
+        if not first_line:
+            continue
+        # İlk 30 karakteri aynı olan hook'ları atla (çeşitlilik için)
+        start_key = first_line[:30].lower()
+        if start_key in seen_starts:
+            continue
+        seen_starts.add(start_key)
+        hook_examples.append(first_line)
+        if len(hook_examples) >= 20:  # Max 20 farklı hook (eskiden 15)
+            break
 
     # 6. Ending style
     endings = {"nokta": 0, "noktasiz": 0, "soru": 0, "sevgiler": 0, "link": 0}
@@ -315,8 +384,16 @@ def analyze_tweets(tweets: list[dict]) -> dict:
     hour_engagement = {}
     for tweet in tweets:
         created = tweet.get("created_at")
-        if created and hasattr(created, 'hour'):
-            hour = created.hour
+        if created:
+            if isinstance(created, str):
+                try:
+                    created = datetime.datetime.fromisoformat(created)
+                except (ValueError, TypeError):
+                    continue
+            if hasattr(created, 'hour'):
+                hour = created.hour
+            else:
+                continue
             if hour not in hour_engagement:
                 hour_engagement[hour] = {"total_score": 0, "count": 0}
             hour_engagement[hour]["total_score"] += tweet["engagement_score"]
@@ -652,30 +729,48 @@ def build_training_context(analyses: list[dict], max_examples: int = 50, topic: 
         if style_dna:
             dna_rules = []
 
-            # Lowercase rule
-            lc_pct = style_dna.get("kucuk_harf_yuzde", 0)
-            if lc_pct > 80:
-                dna_rules.append(
-                    f"- KÜÇÜK HARF: Tweet'lerin %{lc_pct}'i küçük harfle başlıyor. "
-                    f"SEN DE küçük harfle başla. Büyük harf KULLANMA (isimler hariç: OpenAI, Claude vs.)"
-                )
+            # Lowercase rule — HER ZAMAN UYGULANIR (sabit kural)
+            dna_rules.append(
+                "- KÜÇÜK HARF (KESİN KURAL): TÜM tweet'ler küçük harfle yazılmalı. "
+                "Cümle başı dahil küçük harf kullan. Büyük harf SADECE özel isimler için: "
+                "OpenAI, Claude, Google, DeepSeek, Twitter/X gibi marka/ürün isimleri. "
+                "Cümle başında bile büyük harf KULLANMA. Bu kural istisnasızdır."
+            )
 
-            # Signature words
+            # Signature words — ROTASYONLU: her çağrıda farklı alt küme
             sig_words = style_dna.get("imza_kelimeleri", {})
             if sig_words:
-                top_words = list(sig_words.items())[:15]
-                words_text = ", ".join([f'"{w}"({c}x)' for w, c in top_words])
+                import random as _rnd_words
+                all_words_list = list(sig_words.items())
+                # İlk 5 her zaman dahil (en karakteristik olanlar), geri kalan rastgele
+                core_words = all_words_list[:5]
+                pool_words = all_words_list[5:]
+                # Havuzdan rastgele 8-12 kelime seç (her seferinde farklı kombinasyon)
+                rotate_count = min(len(pool_words), _rnd_words.randint(8, 12))
+                rotated = _rnd_words.sample(pool_words, rotate_count) if pool_words else []
+                selected_words = core_words + rotated
+                _rnd_words.shuffle(selected_words)
+                words_text = ", ".join([f'"{w}"({c}x)' for w, c in selected_words])
                 dna_rules.append(
-                    f"- İMZA KELİMELERİ (bunları sık kullan): {words_text}"
+                    f"- İMZA KELİMELERİ (bunlardan ilham al, doğal yerleştir — her tweet'te hepsini kullanma, "
+                    f"2-4 tanesini seç): {words_text}"
                 )
 
-            # Signature phrases
+            # Signature phrases — ROTASYONLU: her çağrıda farklı alt küme
             sig_phrases = style_dna.get("imza_kaliplari", {})
             if sig_phrases:
-                top_phrases = list(sig_phrases.items())[:10]
-                phrases_text = ", ".join([f'"{p}"({c}x)' for p, c in top_phrases])
+                import random as _rnd_phrases
+                all_phrases_list = list(sig_phrases.items())
+                # İlk 3 her zaman dahil, geri kalan rastgele
+                core_phrases = all_phrases_list[:3]
+                pool_phrases = all_phrases_list[3:]
+                rotate_count = min(len(pool_phrases), _rnd_phrases.randint(5, 8))
+                rotated = _rnd_phrases.sample(pool_phrases, rotate_count) if pool_phrases else []
+                selected_phrases = core_phrases + rotated
+                _rnd_phrases.shuffle(selected_phrases)
+                phrases_text = ", ".join([f'"{p}"({c}x)' for p, c in selected_phrases])
                 dna_rules.append(
-                    f"- İMZA KALIPLARl (doğal şekilde kullan): {phrases_text}"
+                    f"- İMZA KALIPLARI (bunlar referans — birebir kopyalama, kendi varyasyonlarını oluştur): {phrases_text}"
                 )
 
             # Emoji rule
@@ -707,60 +802,79 @@ def build_training_context(analyses: list[dict], max_examples: int = 50, topic: 
                     + chr(10).join(dna_rules)
                 )
 
-            # Hook examples from DNA
+            # Hook examples from DNA — ROTASYONLU: her çağrıda farklı hook seti
             hooks = style_dna.get("hook_ornekleri", [])
             if hooks:
-                hook_text = chr(10).join([f'- "{h}"' for h in hooks[:10]])
+                import random as _rnd_hooks
+                # Her seferinde farklı 7-10 hook göster (tüm listeden rastgele)
+                hook_count = min(len(hooks), _rnd_hooks.randint(7, 10))
+                rotated_hooks = _rnd_hooks.sample(hooks, hook_count)
+                hook_text = chr(10).join([f'- "{h}"' for h in rotated_hooks])
                 context_parts.append(
-                    f"### @{username} - EN ETKİLİ HOOK'LAR (bu açılış tarzlarını kullan):\n"
+                    f"### @{username} - HOOK ÖRNEKLERİ (bu TARZLARI model al, birebir kopyalama — "
+                    f"kendi orijinal açılışlarını yaz):\n"
                     + hook_text
                 )
 
         # --- SECTION 2: CURATED TWEET EXAMPLES (style training) ---
-        # Havuz varsa bu bölüm atlanır, havuz örnekleri for döngüsünden sonra eklenir
+        # Havuz dolu olsa bile, analiz örnekleri her zaman eklenir (çeşitlilik için)
         all_originals = analysis.get("all_original_tweets", [])
 
-        _pool_used = False
-        try:
-            from backend.modules.tweet_pool import load_pool, select_examples, build_pool_training_context
-            _pool_data = load_pool()
-            if _pool_data.get("pool") and len(_pool_data["pool"]) >= 10:
-                _pool_used = True
-        except Exception:
-            pass
+        if all_originals:
+            import random as _rnd
 
-        if not _pool_used:
+            # Tüm orijinal tweet'lerden akıllı seçim:
+            # - Top %20 engagement (en iyi performans)
+            # - Mid %30-60 arası (orta segment, doğal ton)
+            # - Rastgele %20 (çeşitlilik, tekrar önleme)
+            # - Son 10 tweet (güncel tarz)
+            sorted_by_score = sorted(all_originals, key=lambda x: x.get("engagement_score", 0), reverse=True)
 
-            if all_originals:
-                sorted_by_score = sorted(all_originals, key=lambda x: x.get("engagement_score", 0), reverse=True)
+            n = len(sorted_by_score)
+            top_count = max(8, n // 5)        # en az 8, toplam %20
+            mid_start = n // 3
+            mid_end = (n * 2) // 3
+            mid_count = max(8, n // 5)
 
-                top_examples = sorted_by_score[:10]
-                mid_start = len(sorted_by_score) // 3
-                mid_examples = sorted_by_score[mid_start:mid_start + 10]
-                sorted_by_date = sorted(
-                    all_originals,
-                    key=lambda x: x.get("created_at", ""),
-                    reverse=True
+            top_examples = sorted_by_score[:top_count]
+            mid_pool = sorted_by_score[mid_start:mid_end]
+            mid_examples = _rnd.sample(mid_pool, min(mid_count, len(mid_pool))) if mid_pool else []
+
+            # Son tweet'ler (güncel tarz)
+            sorted_by_date = sorted(
+                all_originals,
+                key=lambda x: x.get("created_at", ""),
+                reverse=True
+            )
+            recent_examples = sorted_by_date[:8]
+
+            # Rastgele seçim (her çağrıda farklı kombinasyon)
+            remaining = [t for t in all_originals
+                         if t not in top_examples and t not in recent_examples]
+            random_count = max(6, n // 10)
+            random_examples = _rnd.sample(remaining, min(random_count, len(remaining))) if remaining else []
+
+            seen_texts = set()
+            curated = []
+            for t in top_examples + mid_examples + recent_examples + random_examples:
+                text = t.get("text", "").strip()
+                if text and len(text) > 30 and text[:100] not in seen_texts:
+                    seen_texts.add(text[:100])
+                    display_text = text[:500] + "..." if len(text) > 500 else text
+                    curated.append(f'"{display_text}"')
+
+            # Karıştır ki AI sıralama etkisine kapılmasın
+            _rnd.shuffle(curated)
+
+            if curated:
+                context_parts.append(
+                    f"### @{username} - YAZIM TARZI ÖRNEKLERİ "
+                    f"({len(curated)} seçilmiş tweet / toplam {len(all_originals)} orijinal):\n"
+                    f"Bu tweet'lerin TONUNU, CÜMLE YAPISINI, KELİME SEÇİMİNİ "
+                    f"ve YAZIM TARZINI birebir model al. Her tweet üretiminde "
+                    f"FARKLI örneklerden ilham al, aynı kalıpları TEKRARLAMA:\n\n"
+                    + "\n---\n".join(curated)
                 )
-                recent_examples = sorted_by_date[:10]
-
-                seen_texts = set()
-                curated = []
-                for t in top_examples + mid_examples + recent_examples:
-                    text = t.get("text", "").strip()
-                    if text and len(text) > 30 and text[:100] not in seen_texts:
-                        seen_texts.add(text[:100])
-                        display_text = text[:500] + "..." if len(text) > 500 else text
-                        curated.append(f'"{display_text}"')
-
-                if curated:
-                    context_parts.append(
-                        f"### @{username} - YAZIM TARZI ÖRNEKLERİ "
-                        f"({len(curated)} seçilmiş tweet / toplam {len(all_originals)} orijinal):\n"
-                        f"Bu tweet'lerin TONUNU, CÜMLE YAPISINI, KELİME SEÇİMİNİ "
-                        f"ve YAZIM TARZINI birebir model al:\n\n"
-                        + "\n---\n".join(curated)
-                    )
 
         # --- SECTION 3: ENGAGEMENT STRATEGY ---
         top_tweets = analysis.get("top_tweets", [])
@@ -849,7 +963,7 @@ def build_training_context(analyses: list[dict], max_examples: int = 50, topic: 
                 sig = ai_dna.get("imza_kelimeleri", {}).get("en_sik", {})
                 if sig:
                     sig_text = chr(10).join([f'- "{k}": {v}' for k, v in list(sig.items())[:12]])
-                    ai_dna_parts.append(f"### İMZA KELİMELERİ (bunları doğal kullan):\n{sig_text}")
+                    ai_dna_parts.append(f"### İMZA KELİMELERİ (her tweet'te 2-3 tanesini doğal yerleştir, hepsini birden kullanma):\n{sig_text}")
 
                 # Hook stratejileri
                 hooks = ai_dna.get("hook_stratejileri", {})
@@ -904,23 +1018,42 @@ def build_training_context(analyses: list[dict], max_examples: int = 50, topic: 
                 pool_dna = get_pool_dna()
                 if pool_dna:
                     dna_rules = []
-                    lc_pct = pool_dna.get("kucuk_harf_yuzde", 0)
-                    if lc_pct > 50:
-                        dna_rules.append(f"- KÜÇÜK HARF: Havuzdaki tweet'lerin %{lc_pct}'i küçük harfle başlıyor.")
+                    dna_rules.append(
+                        "- KÜÇÜK HARF (KESİN KURAL): TÜM tweet'ler küçük harfle yazılmalı. "
+                        "Cümle başı dahil. Büyük harf SADECE marka/ürün isimleri için (OpenAI, Claude vb.)."
+                    )
                     sig_words = pool_dna.get("imza_kelimeleri", {})
                     if sig_words:
-                        top_words = list(sig_words.items())[:20]
-                        words_text = ", ".join([f'"{w}"({c}x)' for w, c in top_words])
-                        dna_rules.append(f"- HAVUZ İMZA KELİMELERİ: {words_text}")
+                        import random as _rnd_pool_w
+                        all_pool_words = list(sig_words.items())
+                        # Havuzdan rastgele 12-16 kelime (rotasyon)
+                        core_pool = all_pool_words[:4]
+                        rest_pool = all_pool_words[4:]
+                        rotate_n = min(len(rest_pool), _rnd_pool_w.randint(8, 12))
+                        rotated_pool = _rnd_pool_w.sample(rest_pool, rotate_n) if rest_pool else []
+                        selected_pool_w = core_pool + rotated_pool
+                        _rnd_pool_w.shuffle(selected_pool_w)
+                        words_text = ", ".join([f'"{w}"({c}x)' for w, c in selected_pool_w])
+                        dna_rules.append(f"- HAVUZ İMZA KELİMELERİ (ilham al, 2-4 tanesini doğal kullan): {words_text}")
                     sig_phrases = pool_dna.get("imza_kaliplari", {})
                     if sig_phrases:
-                        top_phrases = list(sig_phrases.items())[:12]
-                        phrases_text = ", ".join([f'"{p}"({c}x)' for p, c in top_phrases])
-                        dna_rules.append(f"- HAVUZ İMZA KALIPLARl: {phrases_text}")
+                        import random as _rnd_pool_p
+                        all_pool_phrases = list(sig_phrases.items())
+                        core_pp = all_pool_phrases[:3]
+                        rest_pp = all_pool_phrases[3:]
+                        rotate_pp = min(len(rest_pp), _rnd_pool_p.randint(4, 7))
+                        rotated_pp = _rnd_pool_p.sample(rest_pp, rotate_pp) if rest_pp else []
+                        selected_pp = core_pp + rotated_pp
+                        _rnd_pool_p.shuffle(selected_pp)
+                        phrases_text = ", ".join([f'"{p}"({c}x)' for p, c in selected_pp])
+                        dna_rules.append(f"- HAVUZ İMZA KALIPLARI (referans — varyasyonlar oluştur): {phrases_text}")
                     hooks_auto = pool_dna.get("hook_ornekleri", [])
                     if hooks_auto:
-                        hook_text = chr(10).join([f'- "{h}"' for h in hooks_auto[:12]])
-                        dna_rules.append(f"- HAVUZ EN ETKİLİ HOOK'LAR:\n{hook_text}")
+                        import random as _rnd_pool_h
+                        hook_n = min(len(hooks_auto), _rnd_pool_h.randint(6, 9))
+                        rotated_hooks = _rnd_pool_h.sample(hooks_auto, hook_n)
+                        hook_text = chr(10).join([f'- "{h}"' for h in rotated_hooks])
+                        dna_rules.append(f"- HAVUZ HOOK TARZLARI (model al, kopyalama):\n{hook_text}")
                     if dna_rules:
                         context_parts.append(
                             f"### BİRLEŞİK HAVUZ DNA'SI ({pool_dna.get('tweet_sayisi', 0)} tweet'ten):\n"
@@ -944,34 +1077,74 @@ def build_training_context(analyses: list[dict], max_examples: int = 50, topic: 
     return f"""{header}
 
 Bu veriler gerçek Twitter hesabının tweet'lerinden çıkarılmış KİŞİSEL YAZIM DNA'sıdır.
-Bu DNA TÜM yazım tarzlarının (samimi, haber, analitik, kişisel vb.) TEMELİDİR.
+Bu DNA senin SES KAYNAĞIN ve KELİME PALETİNDİR — ama yazının yapısını, tonunu ve yaklaşımını belirleyen SEÇİLEN YAZIM TARZIDIR.
+
+### ÖNCELİK HİYERARŞİSİ:
+- SEÇİLEN YAZIM TARZI → yapı, ton, yaklaşım, hook tipi, format belirler
+- BU DNA → kelime tercihleri, doğal ifadeler, imza kelimeleri, kişilik sesi sağlar
+- Çelişki durumunda → YAZIM TARZI KAZANIR (yapı, ton, format için)
 
 ### BU DNA'YI NASIL KULLANACAKSIN:
 
-1. İMZA KELİMELERİ: Aşağıdaki imza kelimelerini ve kalıplarını doğal şekilde kullan.
-   "bi baktım", "sessiz sedasız", "bence", "cidden" gibi ifadeler senin DNA'n — onları kullan.
+1. KELİME TERCİHLERİ VE DOĞAL SES: Aşağıdaki tweet örneklerindeki kişiliği hisset.
+   KELİME SEÇİMİNİ ve DOĞAL İFADELERİ buradan al. Ama YAPI ve TON → seçilen yazım tarzından gelir.
 
-2. TON VE YAKLAŞIM: Aşağıdaki tweet örneklerindeki TONU model al:
-   - Nasıl giriş yapıyor (hook tarzı)
-   - Nasıl geçişler kullanıyor
-   - Nasıl bitiyor (kapanış tarzı)
-   - Hangi kelimeler seçiyor, nasıl cümle kuruyor
+2. İMZA KELİMELERİ: Verilen kelimeler sana bir PALET sunuyor, hepsini aynı anda kullanma.
+   Her tweet için listeden sadece 2-3 tanesini DOĞAL şekilde yerleştir.
+   Bazen hiç imza kelimesi kullanmadan da yazabilirsin — doğallık her şeyden önemli.
 
-3. YAZIP TARZINA UYARLA: Seçilen yazım tarzı (haber, analitik, kişisel vb.) FORMATI belirler.
-   AMA senin kişisel tonun, kelime seçimin, doğallığın HEP bu DNA'dan gelir.
-   Yani haber yazarken bile SENİN sesinle yaz, robotik haber bülteni gibi değil.
+3. HOOK (AÇILIŞ): Yazım tarzının belirlediği hook tipini kullan.
+   DNA'daki örnekleri SADECE ilham kaynağı olarak gör, ama hook YAPISI → seçilen tarzdan gelir.
+   Aynı hook yapısını üst üste kullanma.
 
-4. ASLA BİREBİR KOPYALAMA: Örnek tweet'lerin cümlelerini kopyalama.
-   Aynı RUHU, TONU ve YAKLAŞIMI koru ama KENDİ cümlelerini kur.
+4. GEÇİŞ VE KAPANIŞ: Her tweet'te FARKLI geçiş tarzı ve kapanış kullan.
+   Örnek tarzlar: kişisel deneyim paylaşımı, kuru tespit, ironi, güçlü görüş, merak bırakma.
+   AMA bunları formül gibi uygulamak yerine konunun doğal akışına bırak.
+
+5. ÇEŞİTLİLİK: En önemli kural — HER tweet birbirinden FARKLI olmalı.
+   Bazıları kısa ve vurucu (1-2 cümle), bazıları uzun ve detaylı olabilir.
+   Bazıları samimi, bazıları ciddi, bazıları ironik olabilir.
 
 {body}
 
 KRİTİK KURALLAR:
-1. YAZIM TARZI DNA'sını uygula — küçük harf, imza kelimeleri, kapanış tarzı.
-2. Bu kişi gibi YAZ — aynı doğallık, aynı samimiyet, aynı akış.
+1. KÜÇÜK HARF (İSTİSNASIZ): TÜM tweet'ler küçük harfle yazılmalı. Cümle başı dahil küçük harf.
+   Büyük harf SADECE özel isimler için: OpenAI, Claude, Google, DeepSeek, Twitter/X gibi marka isimleri.
+   Bu kural her şeyin üstündedir, asla büyük harfle cümle başlatma.
+2. İmza kelimelerinden tweet başına 2-3 TANE doğal kullan, hepsini tıkıştırma.
 3. SORU ile bitirme. "Sizce?", "Siz ne düşünüyorsunuz?" gibi CTA soruları YASAK.
+   "Peki bu neden önemli? Çünkü..." gibi retorik soru + kendi cevabı yapısı da YASAK.
 4. ASLA "@hesapadi diyor ki", "yorumlarda", "X'te kullanıcılar" gibi kaynak referansı verme.
-5. ASLA "şu tweet'teki", "örnekteki" gibi referans verme — kendi orijinal içeriğini yaz.
-6. Bilgiyi KENDİ DENEYİMİN ve BİLGİN gibi yaz — sanki sen araştırdın, sen test ettin.
-7. Robotik ve yapay ifadeler YASAK — doğal, samimi, insan gibi yaz.
+5. Bilgiyi KENDİ DENEYİMİN ve BİLGİN gibi yaz — sanki sen araştırdın, sen test ettin.
+6. Robotik ve yapay ifadeler YASAK — doğal, samimi, insan gibi yaz.
+7. BİREBİR KOPYALAMA YASAK: Örnek tweet'lerin cümlelerini, hook'larını, kalıplarını birebir kullanma.
+   Aynı kelimeyi aynı pozisyonda (giriş/bitiş) tekrar tekrar kullanma.
+   Her tweet TAZE ve ORİJİNAL olmalı — tekrara düşersen tweet kalitesi düşer.
+8. YASAKLI İFADELER — şunları ASLA kullanma:
+   "devrim niteliğinde", "oyunun kurallarını değiştiren", "çığır açan",
+   "geleceği şekillendiren", "kritik öneme sahip", "vazgeçilmez",
+   "dönüm noktası", "paradigma değişimi", "ezber bozan", "sınırları zorlayan",
+   "katma değer sağlayan", "ivme kazandıran", "dönüştüren",
+   "X artık lüks değil, standart", "bu trendi kaçıranlar geride kalacak",
+   "artık hiçbir şey eskisi gibi olmayacak", "hayati önem taşıyan".
+   Bu ifadeler AI parmak izi bırakır. Bunların yerine somut gözlem yaz.
+9. KAPANIŞ CÜMLESİ TESTİ: Son cümleyi yazdıktan sonra şunu sor:
+   - Bu cümleyi LinkedIn'de bir "thought leader" paylaşır mıydı? → SİL.
+   - Bu cümle bir motivasyon posteri üzerine yazılabilir mi? → SİL.
+   - Bu cümleyi kafede arkadaşına söylesen garip kaçar mıydı? → SİL.
+   İyi kapanış: spesifik detayla biter veya hiç "kapanış" olmadan biter.
+10. SİMETRİK İKİLİ YAPILAR YASAK:
+    "X artık Y değil, Z" formatında cümle KURMA.
+    "Mesele sadece X değil, aynı zamanda Y" KURMA.
+    Cümle iki yarıya bölünüp ikinci yarı birincisini ters yüz ediyorsa, SİL.
+11. ÜÇLÜ SOYUT İSİM LİSTESİ YASAK:
+    "Hız, verimlilik ve ölçeklenebilirlik" gibi 3 soyut ismi yan yana dizip
+    sonuç cümlesi olarak KULLANMA.
+12. GÖZLEMCİ TONU KULLAN:
+    "Yapmalılar", "hazırlıklı olmalılar" gibi zorunluluk bildiren yapılar YASAK.
+    Sen danışman değilsin, gözlemcisin. Gördüğünü, deneyimlediğini anlat.
+13. HEYECAN = SOMUT DETAY:
+    Abartılı sıfatlar yerine sayı, tarih, somut gözlem ver.
+    KÖTÜ: "İnanılmaz bir gelişme!"
+    İYİ: "dün açıkladılar, 3 saat içinde 50K kişi denemiş."
 """

@@ -1,22 +1,25 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import Sidebar from "@/components/Sidebar";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
-  const pathname = usePathname();
-  const router = useRouter();
+  const [pathname, setPathname] = useState("");
 
   useEffect(() => {
-    // If not authenticated and not on login page, redirect to login
-    if (!isAuthenticated && pathname !== "/login") {
-      router.push("/login");
+    setPathname(window.location.pathname);
+  }, []);
+
+  useEffect(() => {
+    if (pathname && !isAuthenticated && pathname !== "/login") {
+      window.location.href = "/login";
     }
-  }, [isAuthenticated, pathname, router]);
+  }, [isAuthenticated, pathname]);
+
+  // Wait for pathname to be set
+  if (!pathname) return null;
 
   // Login page — no sidebar, no guard
   if (pathname === "/login") {
@@ -32,7 +35,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 p-6 md:p-8 ml-0 md:ml-64">{children}</main>
+      {/* pt-14: mobile header, pb-28: mobile bottom nav clearance, md:pb-8: desktop bottom spacing */}
+      <main className="flex-1 pt-14 pb-28 px-3 md:pt-0 md:pb-8 md:px-8 md:ml-64 min-w-0">
+        {children}
+      </main>
     </div>
   );
 }

@@ -45,9 +45,9 @@ class AITopic:
 
     @property
     def engagement_score(self) -> float:
-        # X algorithm weights: RT=20x, Reply=13.5x, Like=1x
-        return (self.like_count * 1 + self.retweet_count * 20 +
-                self.reply_count * 13.5)
+        from modules.constants import W_RT, W_REPLY, W_LIKE, W_BOOKMARK
+        return (self.like_count * W_LIKE + self.retweet_count * W_RT +
+                self.reply_count * W_REPLY)
 
     @property
     def total_engagement(self) -> int:
@@ -87,32 +87,28 @@ class AITopic:
 # Kategoriler: xAI/Grok, Beta/Leak Avcıları, Teknik Derinlik, Resmi Büyükler,
 #              Niche/Open-Source/Indie, Bonus Liderler, Diğer Önemli
 DEFAULT_AI_ACCOUNTS = [
-    # xAI / Grok Odaklı (hızlı beta + leak)
-    "XFreeze", "xai", "gaborrok",
-    # Ana AI Beta & Leak Avcıları
-    "testingcatalog", "rowancheung", "MatthewBerman", "adrgrondin", "bentossell",
-    # Teknik Derinlik + Yeni Model
-    "karpathy", "TwoMinutePapers", "goodside", "OfficialLoganK", "mattshumer_",
-    # Resmi Büyük Oyuncular
-    "OpenAI", "AnthropicAI", "GoogleDeepMind", "NVIDIAAI", "huggingface", "perplexity_ai",
-    # Arka Planda Kalan / Niche / Open-Source / Indie
-    "Thom_Wolf", "jeremyphoward", "_aiaborhighlight", "soumithchintala",
-    # Bonus Liderler
-    "sama", "ylecun", "demishassabis",
-    # Diğer Önemli (mevcut listeden kalan)
-    "MetaAI", "MistralAI", "stabilityai", "DarioAmodei", "Alibaba_Qwen",
+    "hrrcnes", "efecim1sn", "XCodeWraith", "merak_makinesi",
+    "umutcanbostanci", "demirbulbuloglu", "runthistown5416", "parsluci",
+    "ErenAILab", "mentalist_ai", "acerionsjournal", "emrullahai",
+    "sarpstar", "AlicanKiraz0", "AIMevzulari", "alphanmanas",
+    "AytuncYildizli", "erhanmeydan", "ismailgunaydinn", "GokBoraYlmz",
+    "ariferol01", "UfukDegen", "0xemrey", "FlowRiderMM",
+    "vibeeval", "onur_a61", "alarax", "yigitakinkaya",
+    "Rucknettin", "turkiyeai", "canlandirdik",
+    "futuristufuk", "AI4Turkey", "1muhammedavci", "mysancaktutan",
+    "bedriozyurt", "devburaq",
 ]
 
 # AI-related search queries
 AI_SEARCH_QUERIES = [
-    "(new model OR new AI OR AI release OR LLM) -is:retweet lang:en",
-    "(GPT OR Claude OR Gemini OR Llama OR Qwen OR Mistral) (release OR launch OR update OR new) -is:retweet",
-    "(AI breakthrough OR machine learning OR deep learning) (new OR release OR paper) -is:retweet",
-    "(artificial intelligence OR neural network) (announcement OR launched OR introducing) -is:retweet",
-    "(AGI OR transformer OR diffusion model OR multimodal) (new OR update OR release) -is:retweet",
-    "(AI agent OR AI tool OR AI startup) (launch OR release OR announce) -is:retweet",
-    "(benchmark OR SOTA OR state-of-the-art) (AI OR model OR LLM) -is:retweet",
-    "(open source OR open-source) (model OR AI OR LLM) (release OR new) -is:retweet",
+    "(yapay zeka OR AI OR LLM) (yeni OR güncelleme OR duyuru OR çıktı) -is:retweet lang:tr",
+    "(GPT OR Claude OR Gemini OR Llama OR Grok OR Mistral) (yeni OR güncelleme OR release) -is:retweet lang:tr",
+    "(yapay zeka OR makine öğrenmesi OR derin öğrenme) -is:retweet lang:tr",
+    "(AI agent OR AI aracı OR otomasyon) -is:retweet lang:tr",
+    "(açık kaynak OR open source) (model OR AI OR LLM) -is:retweet lang:tr",
+    "(new model OR new AI OR AI release OR LLM) -is:retweet lang:tr",
+    "(GPT OR Claude OR Gemini OR Llama OR Grok OR Mistral) (release OR launch OR update OR new) -is:retweet lang:tr",
+    "(AI breakthrough OR AI agent OR AI tool) (new OR release OR launch) -is:retweet lang:tr",
 ]
 
 # Spam/irrelevant patterns to filter out
@@ -124,7 +120,7 @@ SPAM_PATTERNS = [
     r"(?i)(affordable|cheap|discount|promo code|coupon)",
     r"(?i)(join my|subscribe to my|check my link)",
     # Promotional / corporate fluff
-    r"(?i)(thank you for|teşekkür ederiz|uzun süredir|proud to announce|excited to share|thrilled to)",
+    r"(?i)(thank you for|proud to announce|excited to share|thrilled to|honored to)",
     r"(?i)(we('re| are) hiring|job opening|apply now|join our team|career opportunity)",
     r"(?i)(happy birthday|congratulations|congrats to|shout ?out to)",
     r"(?i)(don'?t miss|register now|sign up today|limited time|early bird|save \d+%)",
@@ -134,6 +130,23 @@ SPAM_PATTERNS = [
     r"(?i)^(agree|disagree|thoughts|this|wow|amazing|incredible|game.?changer)[.!?]?$",
     r"(?i)(retweet if|like if|who else|raise your hand|tag someone)",
     r"(?i)(alpha leak|insider info|you won'?t believe|secret.{0,10}reveal)",
+    # English greetings / casual / low-value content
+    r"(?i)^(good morning|good night|good evening|hello|hey|hi|gm|gn)\b",  # GM with anything after
+    r"(?i)^(gm|gn)\s",  # "GM CT", "GM fam", "GN everyone" etc.
+    r"(?i)(how('?s| is) your (day|week|weekend|morning|evening))",  # engagement bait questions
+    r"(?i)^(hey|hello|hi|yo)\s+(fam|gang|ct|community|friends|everyone|team|folks)",
+    r"(?i)(happy (monday|tuesday|wednesday|thursday|friday|saturday|sunday))",
+    r"(?i)(happy new year|happy holidays|merry christmas|happy thanksgiving|happy easter)",
+    r"(?i)^(have a (great|good|nice|wonderful) (day|week|weekend|evening|night))\b",
+    r"(?i)^(thank you all|thanks everyone|appreciate it|grateful for)\b",
+    r"(?i)^(what a (day|week|time|journey|ride))[.!?\s]*$",
+    # Personal updates / non-informative
+    r"(?i)^(feeling|just woke up|can'?t sleep|so tired|need coffee|coffee time)",
+    r"(?i)(my weekend|my vacation|my trip|day off|self care|mental health day)",
+    r"(?i)^(lol|lmao|haha|omg|bruh|fr fr|no cap|real talk|ngl)[.!?\s]*$",
+    # Vague hype without substance
+    r"(?i)^(the future is here|mind blown|this is huge|let that sink in|read that again)[.!?\s]*$",
+    r"(?i)^(I love this|love this|so true|facts|100%|exactly|period)[.!?\s]*$",
 ]
 
 # Non-AI content patterns — these indicate the tweet is NOT about AI tech
@@ -435,6 +448,56 @@ def is_ai_relevant(text: str) -> bool:
     return False
 
 
+# Top AI keywords for quick relevance check (subset for performance)
+_QUICK_AI_KEYWORDS = frozenset(kw.lower() for kw in AI_RELEVANCE_KEYWORDS[:50])
+
+
+def is_low_quality_discovery(text: str) -> bool:
+    """Check if a tweet is too low-quality for the discovery feed.
+
+    Softer than is_spam()+is_ai_relevant() — designed for monitored accounts
+    which are semi-trusted. Catches obvious junk (greetings, casual chat)
+    while allowing short but AI-relevant tweets through.
+    """
+    if not text:
+        return True
+
+    # Definite spam → reject (checks patterns regardless of length)
+    if is_spam(text):
+        return True
+
+    # Strip URLs and check remaining text length
+    text_no_urls = re.sub(r"https?://\S+", "", text).strip()
+
+    # Very short tweet with no AI keyword → likely casual
+    if len(text_no_urls) < 60:
+        text_lower = text.lower()
+        # Allow if it contains an AI keyword
+        if any(kw in text_lower for kw in _QUICK_AI_KEYWORDS):
+            return False
+        # Allow if it has an AI-related URL
+        if "github.com" in text_lower or "huggingface.co" in text_lower or "arxiv.org" in text_lower:
+            return False
+        return True
+
+    # Even for long tweets, check greeting/casual patterns specifically
+    # (is_spam already handles most, but this catches edge cases)
+    text_no_urls_lower = text_no_urls.lower().strip()
+    greeting_patterns = [
+        r"(?i)^(gm|gn)\s",
+        r"(?i)^(good morning|good night|good evening)\b",
+        r"(?i)(how('?s| is) your (day|week|weekend|morning))",
+    ]
+    for pat in greeting_patterns:
+        if re.search(pat, text_no_urls_lower):
+            # But allow if it also contains AI keywords
+            if any(kw in text_no_urls_lower for kw in _QUICK_AI_KEYWORDS):
+                return False
+            return True
+
+    return False
+
+
 def categorize_topic(text: str) -> str:
     """Categorize a tweet into an AI topic category"""
     if not text:
@@ -606,41 +669,58 @@ class TwitterScanner:
         if custom_queries:
             queries.extend(custom_queries)
 
-        # Search by queries
-        for query in queries:
+        import time as _time
+
+        # Search by queries (with delay between requests)
+        for i, query in enumerate(queries):
             try:
                 topics = self._search_tweets(query, start_time, max_results_per_query)
                 for topic in topics:
                     if topic.id not in seen_ids:
                         seen_ids.add(topic.id)
                         all_topics.append(topic)
+                # Delay between search queries to avoid rate limits
+                if i < len(queries) - 1:
+                    _time.sleep(0.5)
             except Exception as e:
                 self.search_errors.append(f"Sorgu hatası: {e}")
                 continue
 
-        # Search by monitored accounts
+        # Search by monitored accounts (with rate limit protection)
         accounts = list(DEFAULT_AI_ACCOUNTS)
         if custom_accounts:
             accounts.extend(custom_accounts)
 
-        for account in accounts:
+        rate_limited = False
+        for i, account in enumerate(accounts):
+            # If rate limited, stop querying more accounts
+            if rate_limited:
+                break
             try:
-                topics = self._get_user_tweets(account, start_time, 10)
+                topics = self._get_user_tweets(account, start_time, 3)
                 for topic in topics:
                     if topic.id not in seen_ids:
                         seen_ids.add(topic.id)
                         all_topics.append(topic)
+                # Check if twikit hit rate limit
+                if self.use_twikit and self.twikit_client:
+                    last_err = self.twikit_client.last_error or ""
+                    if "Rate limit" in last_err or "429" in last_err:
+                        rate_limited = True
+                        break
+                # Delay between account requests (1s every 5 accounts)
+                if (i + 1) % 5 == 0:
+                    _time.sleep(1.0)
+                elif i < len(accounts) - 1:
+                    _time.sleep(0.3)
             except Exception as e:
                 self.search_errors.append(f"Hesap hatası (@{account}): {e}")
                 continue
 
-        # Filter spam, Turkish accounts, low-follower accounts and calculate relevance
+        # Filter spam, low-follower accounts and calculate relevance
         filtered_topics = []
         for topic in all_topics:
             if is_spam(topic.text):
-                continue
-            # Filter Turkish accounts (keep only international)
-            if is_turkish_account(topic.text, topic.author_name):
                 continue
             topic.category = categorize_topic(topic.text)
             topic.relevance_score = calculate_relevance(topic, time_range_hours)
@@ -656,7 +736,8 @@ class TwitterScanner:
                        max_results: int) -> list[AITopic]:
         """Search tweets using Twikit (primary) or Twitter API v2 (fallback)"""
         # Try Twikit first (free, no API cost)
-        if self.use_twikit and self.twikit_client:
+        # Skip if Twikit search already failed with 403 in this scan session
+        if self.use_twikit and self.twikit_client and not getattr(self, '_twikit_search_disabled', False):
             try:
                 since_date = start_time.strftime("%Y-%m-%d")
                 results = self.twikit_client.search_tweets(
@@ -667,6 +748,10 @@ class TwitterScanner:
                     # Only add unique errors (avoid flooding with same message)
                     if err not in self.search_errors:
                         self.search_errors.append(err)
+                    # If 403/404/Forbidden/NotFound, disable Twikit for remaining queries
+                    if ("403" in err or "404" in err or "reddedildi" in err.lower()
+                            or "NotFound" in err):
+                        self._twikit_search_disabled = True
                 topics = []
                 for d in results:
                     if d.get('created_at') and d['created_at'] >= start_time:
@@ -676,6 +761,10 @@ class TwitterScanner:
                 err_msg = f"Twikit arama hatası: {type(e).__name__}: {e}"
                 if err_msg not in self.search_errors:
                     self.search_errors.append(err_msg)
+                # Disable Twikit SEARCH on 403/404 (user_tweets uses different endpoint, keep working)
+                err_str = str(e)
+                if "403" in err_str or "404" in err_str or "Forbidden" in type(e).__name__ or "NotFound" in type(e).__name__:
+                    self._twikit_search_disabled = True
 
         # Fallback: Twitter API v2
         if not self.client:
@@ -757,14 +846,18 @@ class TwitterScanner:
             try:
                 results = self.twikit_client.get_user_tweets(username, count=max_results)
                 if not results and self.twikit_client.last_error:
-                    self.search_errors.append(self.twikit_client.last_error)
+                    err = self.twikit_client.last_error
+                    if err not in self.search_errors:
+                        self.search_errors.append(err)
                 topics = []
                 for d in results:
                     if d.get('created_at') and d['created_at'] >= start_time:
                         topics.append(self._dict_to_topic(d))
                 return topics
             except Exception as e:
-                self.search_errors.append(f"Twikit kullanıcı tweet hatası (@{username}): {e}")
+                err_msg = f"Twikit kullanıcı tweet hatası (@{username}): {e}"
+                if err_msg not in self.search_errors:
+                    self.search_errors.append(err_msg)
 
         # Fallback: Twitter API v2
         if not self.client:
@@ -815,92 +908,114 @@ class TwitterScanner:
 
         return topics
 
-    def get_tweet_by_id(self, tweet_id: str) -> AITopic | None:
-        """Fetch a specific tweet by its ID"""
-        try:
-            response = self.client.get_tweet(
-                id=tweet_id,
-                tweet_fields=["created_at", "public_metrics", "author_id", "conversation_id", "note_tweet"],
-                user_fields=["name", "username", "profile_image_url"],
-                expansions=["author_id"]
-            )
-
-            if not response.data:
-                return None
-
-            tweet = response.data
-            users = {}
-            if response.includes and "users" in response.includes:
-                for user in response.includes["users"]:
-                    users[user.id] = user
-
-            author = users.get(tweet.author_id)
-            metrics = tweet.public_metrics or {}
-
-            return AITopic(
-                id=str(tweet.id),
-                text=_get_full_text(tweet),
-                author_name=author.name if author else "Unknown",
-                author_username=author.username if author else "unknown",
-                author_profile_image=getattr(author, 'profile_image_url', '') if author else '',
-                created_at=tweet.created_at,
-                like_count=metrics.get("like_count", 0),
-                retweet_count=metrics.get("retweet_count", 0),
-                reply_count=metrics.get("reply_count", 0),
-                impression_count=metrics.get("impression_count", 0),
-                url=f"https://x.com/{author.username if author else 'unknown'}/status/{tweet.id}",
-            )
-        except Exception as e:
-            print(f"Get tweet error: {e}")
+    def _get_tweet_by_id_twikit(self, tweet_id: str) -> AITopic | None:
+        """Fetch tweet by ID using twikit (free, cookie-based)."""
+        if not self.twikit_client or not self.use_twikit:
             return None
+        try:
+            data = self.twikit_client.get_tweet_by_id(tweet_id)
+            if data:
+                return self._dict_to_topic(data)
+        except Exception as e:
+            print(f"Twikit get_tweet_by_id error: {e}")
+        return None
+
+    def get_tweet_by_id(self, tweet_id: str) -> AITopic | None:
+        """Fetch a specific tweet by its ID. Uses bearer token if available, else twikit."""
+        # Method 1: Tweepy (bearer token)
+        if self.client:
+            try:
+                response = self.client.get_tweet(
+                    id=tweet_id,
+                    tweet_fields=["created_at", "public_metrics", "author_id", "conversation_id", "note_tweet"],
+                    user_fields=["name", "username", "profile_image_url"],
+                    expansions=["author_id"]
+                )
+
+                if response.data:
+                    tweet = response.data
+                    users = {}
+                    if response.includes and "users" in response.includes:
+                        for user in response.includes["users"]:
+                            users[user.id] = user
+
+                    author = users.get(tweet.author_id)
+                    metrics = tweet.public_metrics or {}
+
+                    return AITopic(
+                        id=str(tweet.id),
+                        text=_get_full_text(tweet),
+                        author_name=author.name if author else "Unknown",
+                        author_username=author.username if author else "unknown",
+                        author_profile_image=getattr(author, 'profile_image_url', '') if author else '',
+                        created_at=tweet.created_at,
+                        like_count=metrics.get("like_count", 0),
+                        retweet_count=metrics.get("retweet_count", 0),
+                        reply_count=metrics.get("reply_count", 0),
+                        impression_count=metrics.get("impression_count", 0),
+                        url=f"https://x.com/{author.username if author else 'unknown'}/status/{tweet.id}",
+                    )
+            except Exception as e:
+                print(f"Tweepy get_tweet_by_id error: {e}")
+
+        # Method 2: Twikit fallback (free)
+        return self._get_tweet_by_id_twikit(tweet_id)
 
     def get_thread(self, tweet_id: str) -> list[str]:
         """
         Fetch the full thread for a given tweet.
         Returns list of tweet texts in order (oldest first).
+        Uses bearer token if available, else twikit.
         """
-        try:
-            # First get the tweet to find conversation_id and author
-            response = self.client.get_tweet(
-                id=tweet_id,
-                tweet_fields=["conversation_id", "author_id", "created_at", "note_tweet"],
-                expansions=["author_id"]
-            )
-            if not response.data:
-                return []
-
-            tweet = response.data
-            conversation_id = tweet.data.get("conversation_id", tweet_id)
-            author_id = tweet.author_id
-
-            # Search for all tweets in this conversation by the same author
-            query = f"conversation_id:{conversation_id} from:{author_id} -is:retweet"
-            search_response = self.client.search_recent_tweets(
-                query=query,
-                max_results=100,
-                tweet_fields=["created_at", "in_reply_to_user_id", "note_tweet"],
-                sort_order="recency"
-            )
-
-            if not search_response.data:
-                return [_get_full_text(tweet)]
-
-            # Sort by time (oldest first) and collect full texts
-            thread_tweets = sorted(search_response.data, key=lambda t: t.created_at)
-            texts = [_get_full_text(t) for t in thread_tweets]
-
-            # If the original tweet isn't in results, prepend it
-            original_ids = {str(t.id) for t in thread_tweets}
-            if str(tweet_id) not in original_ids and str(conversation_id) not in original_ids:
-                texts.insert(0, _get_full_text(tweet))
-
-            return texts
-
-        except Exception as e:
-            print(f"Get thread error: {e}")
-            # Fallback: return just the single tweet
+        # Method 1: Tweepy (bearer token)
+        if self.client:
             try:
-                single = self.get_tweet_by_id(tweet_id)
-                return [single.text] if single else []
-            except Exception:
-                return []
+                response = self.client.get_tweet(
+                    id=tweet_id,
+                    tweet_fields=["conversation_id", "author_id", "created_at", "note_tweet"],
+                    expansions=["author_id"]
+                )
+                if response.data:
+                    tweet = response.data
+                    conversation_id = tweet.data.get("conversation_id", tweet_id)
+                    author_id = tweet.author_id
+
+                    query = f"conversation_id:{conversation_id} from:{author_id} -is:retweet"
+                    search_response = self.client.search_recent_tweets(
+                        query=query,
+                        max_results=100,
+                        tweet_fields=["created_at", "in_reply_to_user_id", "note_tweet"],
+                        sort_order="recency"
+                    )
+
+                    if not search_response.data:
+                        return [_get_full_text(tweet)]
+
+                    thread_tweets = sorted(search_response.data, key=lambda t: t.created_at)
+                    texts = [_get_full_text(t) for t in thread_tweets]
+
+                    original_ids = {str(t.id) for t in thread_tweets}
+                    if str(tweet_id) not in original_ids and str(conversation_id) not in original_ids:
+                        texts.insert(0, _get_full_text(tweet))
+
+                    return texts
+            except Exception as e:
+                print(f"Tweepy get_thread error: {e}")
+
+        # Method 2: Twikit fallback — fetch full thread via twikit
+        if self.twikit_client and self.use_twikit:
+            try:
+                thread_data = self.twikit_client.get_thread(tweet_id)
+                if thread_data and len(thread_data) > 0:
+                    texts = [t.get('text', '') for t in thread_data if t.get('text')]
+                    if texts:
+                        return texts
+            except Exception as e:
+                print(f"Twikit get_thread error: {e}")
+
+        # Method 3: Last resort — single tweet
+        twikit_result = self._get_tweet_by_id_twikit(tweet_id)
+        if twikit_result:
+            return [twikit_result.text]
+
+        return []

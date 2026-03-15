@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = "";
 
 interface AuthContextType {
   isAuthenticated: boolean;

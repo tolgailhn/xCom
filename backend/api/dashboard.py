@@ -37,7 +37,7 @@ async def get_dashboard_stats():
     settings = get_settings()
 
     has_twitter = bool(settings.twitter_bearer_token)
-    has_ai = bool(settings.minimax_api_key or settings.anthropic_api_key or settings.openai_api_key)
+    has_ai = bool(settings.minimax_api_key or settings.groq_api_key or settings.anthropic_api_key or settings.openai_api_key)
 
     post_history = load_post_history()
     drafts = load_draft_tweets()
@@ -51,14 +51,14 @@ async def get_dashboard_stats():
     week_start = (now - datetime.timedelta(days=now.weekday())).strftime("%Y-%m-%d")
     week_logs = [e for e in posting_log if e.get("date", "") >= week_start]
 
-    # Slots
-    is_weekend = now.weekday() >= 5
-    slot_times = [
-        ("10:00" if is_weekend else "09:00", "sunrise"),
-        ("13:30" if is_weekend else "13:00", "lunch"),
-        ("17:30" if is_weekend else "17:00", "afternoon"),
-        ("21:30" if is_weekend else "21:00", "night"),
-    ]
+    # Slots — gun bazli optimal saatler (Grok analizi)
+    from backend.api.calendar import DAILY_SLOTS
+    day_name = now.strftime("%A")
+    day_slots = DAILY_SLOTS.get(day_name, DAILY_SLOTS["Monday"])
+
+    icon_map = {"sun": "sunrise", "utensils": "lunch", "walking": "afternoon",
+                "moon": "night", "sunset": "afternoon"}
+    slot_times = [(s["time"], icon_map.get(s["icon"], "sunrise")) for s in day_slots]
 
     posted_slots = {e["slot_time"] for e in today_logs}
     slots = [SlotInfo(time=t, icon=icon, posted=t in posted_slots) for t, icon in slot_times]

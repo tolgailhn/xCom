@@ -16,7 +16,13 @@ import datetime
 import requests
 from dataclasses import dataclass, field
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from duckduckgo_search import DDGS
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", RuntimeWarning)
+    try:
+        from ddgs import DDGS
+    except ImportError:
+        from duckduckgo_search import DDGS
 from bs4 import BeautifulSoup
 
 
@@ -25,8 +31,8 @@ USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
-FETCH_TIMEOUT = 15
-MAX_ARTICLE_CHARS = 5000
+FETCH_TIMEOUT = 10  # was 15s — reduced to prevent research hangs
+MAX_ARTICLE_CHARS = 16000  # 16K: daha fazla bilgi yoğunluğu, uzun makalelerden daha az kayıp
 SEARCH_DELAY = 0.3  # Delay between sequential DuckDuckGo calls to avoid IP blocking
 SKIP_DOMAINS = {
     "twitter.com", "x.com", "t.co", "youtube.com", "youtu.be",
@@ -65,14 +71,18 @@ def extract_tweet_id(url_or_id: str) -> str | None:
 # SEARCH FUNCTIONS
 # ========================================================================
 
-def web_search(query: str, max_results: int = 8, timelimit: str = "w") -> list[dict]:
-    """Search the web using DuckDuckGo with time filter and automatic fallback.
+def web_search(query: str, max_results: int = 8, timelimit: str = "w",
+               progress_callback=None) -> list[dict]:
+    """Search the web using DuckDuckGo with time filter, retry, and automatic fallback.
 
     Args:
         query: Search query
         max_results: Maximum results to return
         timelimit: Time filter - "d" (day), "w" (week), "m" (month), None (all time)
+        progress_callback: Optional callback for progress/error messages
     """
+    if not query or not query.strip():
+        return []
     results = []
     try:
         with DDGS() as ddgs:
@@ -84,6 +94,20 @@ def web_search(query: str, max_results: int = 8, timelimit: str = "w") -> list[d
                 })
     except Exception as e:
         print(f"[DDG] Web search error for '{query[:40]}': {e}")
+        # Retry once after 2s for transient errors (DecodeError, network issues)
+        if progress_callback:
+            progress_callback(f"⚠️ DuckDuckGo arama hatası, yeniden deneniyor...")
+        time.sleep(2)
+        try:
+            with DDGS() as ddgs:
+                for r in ddgs.text(query, max_results=max_results, timelimit=timelimit):
+                    results.append({
+                        "title": r.get("title", ""),
+                        "url": r.get("href", ""),
+                        "body": r.get("body", ""),
+                    })
+        except Exception as e2:
+            print(f"[DDG] Web search retry also failed for '{query[:40]}': {e2}")
     # Fallback chain: if time-limited search returned nothing, broaden the time range
     if not results and timelimit:
         fallback_chain = {"d": "w", "w": "m", "m": None}
@@ -102,14 +126,18 @@ def web_search(query: str, max_results: int = 8, timelimit: str = "w") -> list[d
     return results
 
 
-def web_search_news(query: str, max_results: int = 6, timelimit: str = "w") -> list[dict]:
-    """Search recent news with time filter and automatic fallback chain.
+def web_search_news(query: str, max_results: int = 6, timelimit: str = "w",
+                    progress_callback=None) -> list[dict]:
+    """Search recent news with time filter, retry, and automatic fallback chain.
 
     Args:
         query: Search query
         max_results: Maximum results to return
         timelimit: Time filter - "d" (day), "w" (week), "m" (month), None (all time)
+        progress_callback: Optional callback for progress/error messages
     """
+    if not query or not query.strip():
+        return []
     results = []
     # Fallback chain: day → week → month
     time_chain = [timelimit] if timelimit else [None]
@@ -130,28 +158,45 @@ def web_search_news(query: str, max_results: int = 6, timelimit: str = "w") -> l
                     })
         except Exception as e:
             print(f"[DDG] News search error for '{query[:40]}' (timelimit={tl}): {e}")
+            # Retry once for transient errors
+            time.sleep(2)
+            try:
+                with DDGS() as ddgs:
+                    for r in ddgs.news(query, max_results=max_results, timelimit=tl):
+                        results.append({
+                            "title": r.get("title", ""),
+                            "url": r.get("url", ""),
+                            "body": r.get("body", ""),
+                            "source": r.get("source", ""),
+                        })
+            except Exception as e2:
+                print(f"[DDG] News search retry also failed for '{query[:40]}' (timelimit={tl}): {e2}")
         if results:
             break
         time.sleep(SEARCH_DELAY)
     return results
 
 
-def _parallel_web_search(queries: list[tuple[str, int, str]]) -> list[list[dict]]:
+def _parallel_web_search(queries: list[tuple[str, int, str]],
+                         progress_callback=None) -> list[list[dict]]:
     """Run multiple web searches in parallel using ThreadPoolExecutor.
 
     Args:
         queries: List of (query, max_results, timelimit) tuples
+        progress_callback: Optional callback for progress/error messages
 
     Returns:
         List of result lists, in the same order as input queries.
     """
     results = [[] for _ in range(len(queries))]
+    fail_count = 0
 
     def _do_search(idx_query_args):
         idx, (query, max_results, timelimit) = idx_query_args
         # Small stagger to avoid burst requests
         time.sleep(idx * 0.15)
-        return idx, web_search(query, max_results=max_results, timelimit=timelimit)
+        return idx, web_search(query, max_results=max_results, timelimit=timelimit,
+                               progress_callback=progress_callback)
 
     with ThreadPoolExecutor(max_workers=4) as executor:
         futures = [executor.submit(_do_search, (i, q)) for i, q in enumerate(queries)]
@@ -159,26 +204,35 @@ def _parallel_web_search(queries: list[tuple[str, int, str]]) -> list[list[dict]
             try:
                 idx, res = future.result()
                 results[idx] = res
+                if not res:
+                    fail_count += 1
             except Exception as e:
                 print(f"[DDG] Parallel search error: {e}")
+                fail_count += 1
+    if fail_count == len(queries) and progress_callback:
+        progress_callback("⚠️ Tüm DuckDuckGo web aramaları başarısız oldu.")
     return results
 
 
-def _parallel_news_search(queries: list[tuple[str, int, str]]) -> list[list[dict]]:
+def _parallel_news_search(queries: list[tuple[str, int, str]],
+                          progress_callback=None) -> list[list[dict]]:
     """Run multiple news searches in parallel using ThreadPoolExecutor.
 
     Args:
         queries: List of (query, max_results, timelimit) tuples
+        progress_callback: Optional callback for progress/error messages
 
     Returns:
         List of result lists, in the same order as input queries.
     """
     results = [[] for _ in range(len(queries))]
+    fail_count = 0
 
     def _do_search(idx_query_args):
         idx, (query, max_results, timelimit) = idx_query_args
         time.sleep(idx * 0.15)
-        return idx, web_search_news(query, max_results=max_results, timelimit=timelimit)
+        return idx, web_search_news(query, max_results=max_results, timelimit=timelimit,
+                                    progress_callback=progress_callback)
 
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = [executor.submit(_do_search, (i, q)) for i, q in enumerate(queries)]
@@ -186,8 +240,13 @@ def _parallel_news_search(queries: list[tuple[str, int, str]]) -> list[list[dict
             try:
                 idx, res = future.result()
                 results[idx] = res
+                if not res:
+                    fail_count += 1
             except Exception as e:
                 print(f"[DDG] Parallel news search error: {e}")
+                fail_count += 1
+    if fail_count == len(queries) and progress_callback:
+        progress_callback("⚠️ Tüm DuckDuckGo haber aramaları başarısız oldu.")
     return results
 
 
@@ -222,6 +281,45 @@ def _parallel_fetch_articles(urls: list[str], max_articles: int = 5,
 # ========================================================================
 # AI-POWERED TOPIC EXTRACTION — understands what the tweet is ACTUALLY about
 # ========================================================================
+
+def _clean_ai_tags(text: str) -> str:
+    """Strip unwanted AI tags from any provider response.
+    MiniMax: <minimax:tool_call>, <think>
+    Reasoning models (Groq, etc.): <think>
+    """
+    if not text:
+        return text
+    text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+    text = re.sub(r'<minimax:tool_call>.*?</minimax:tool_call>', '', text, flags=re.DOTALL).strip()
+    text = re.sub(r'<minimax:tool_call>.*', '', text, flags=re.DOTALL).strip()
+    return text
+
+
+def _call_ai(ai_client, provider: str, ai_model: str | None, prompt: str,
+             max_tokens: int = 1000, temperature: float = 0.3, system: str = "") -> str | None:
+    """MiniMax AI call helper — OpenAI-compatible API."""
+    if not ai_client:
+        return None
+    try:
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        response = ai_client.chat.completions.create(
+            model=ai_model or "MiniMax-M2.5",
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+        text = response.choices[0].message.content.strip()
+        # Strip unwanted AI tags (MiniMax tool_call, think)
+        if text:
+            text = _clean_ai_tags(text)
+        return text
+    except Exception as e:
+        print(f"AI call error ({provider}): {e}")
+        return None
+
 
 def ai_extract_topic(tweet_text: str, ai_client=None, ai_model: str = None,
                      provider: str = "minimax") -> dict | None:
@@ -263,10 +361,18 @@ sorguları çeşitlendir. Sadece "X nedir" değil, şu açılardan da sorgula:
 TWEET:
 {tweet_text[:1500]}
 
-Görevin: Bu tweet'in gerçek konusunu anla ve araştırma yapmak için HEDEFLI arama sorguları üret.
+Görevin: Bu tweet'in gerçek konusunu anla ve HABER ANALİZİ yazmaya yetecek derinlikte araştırma sorguları üret.
 
 DİKKAT: Tweet'te birçok marka/ürün adı geçebilir ama asıl konu farklı olabilir.
 Örnek: "Claude ve Codex built-in" diyen bir tweet Claude hakkında değil, o ürünleri entegre eden ARAÇ hakkındadır.
+
+ALT-SORU FRAMEWORK'Ü — Sorguları üretirken şu 5 boyutu MUTLAKA kapsa:
+1. TEKNİK DETAYLAR: Bu konunun temel teknik özellikleri/yenilikleri neler?
+2. KARŞILAŞTIRMA: Rakiplerle veya önceki versiyonla nasıl kıyaslanıyor?
+3. PRATİK ETKİ: Kime fayda sağlıyor, pratik kullanım senaryoları ne?
+4. TOPLULUK GÖRÜŞÜ: Uzmanlar/topluluk ne diyor, tartışmalar neler?
+5. RİSK/LİMİTASYON: Dezavantajları, sınırlamaları, riskleri var mı?
+Her boyut en az 1 sorgu ile temsil edilmeli.
 {short_tweet_extra}
 Yanıtını SADECE şu JSON formatında ver, başka hiçbir şey yazma:
 {{
@@ -274,6 +380,8 @@ Yanıtını SADECE şu JSON formatında ver, başka hiçbir şey yazma:
     "main_subject": "tweet'in ana konusu olan ürün/şirket/olay (tek isim)",
     "general_queries": ["ne oldu/ne çıktı araması", "detay/özellik araması", "etki/analiz araması"],
     "technical_queries": ["teknik detay/benchmark araması", "karşılaştırma/rakip araması"],
+    "impact_queries": ["pratik etki/kullanıcıya faydası araması", "sektör etkisi/büyük resim araması"],
+    "verification_queries": ["tweet'teki spesifik rakam/iddia doğrulama 1", "rakip/alternatif karşılaştırma doğrulama 2", "fiyat/tarih/versiyon doğrulama 3"],
     "reddit_queries": ["site:reddit.com spesifik tartışma 1", "site:reddit.com spesifik tartışma 2"],
     "news_queries": ["haber araması 1", "haber araması 2"]
 }}
@@ -282,33 +390,22 @@ KURALLAR:
 - Arama sorgularını İngilizce yaz
 - Her sorguya "{current_year}" ekle
 - general_queries: 3 farklı AÇI ile ara (ne oldu + detaylar + etki/analiz)
-- technical_queries: teknik detay + benchmark/karşılaştırma
+- technical_queries: teknik detay + benchmark/karşılaştırma + önceki sürümle fark
+- impact_queries: 2 sorgu — pratik kullanıcı etkisi + sektörel/stratejik etki (ÖNEMLİ: "why it matters", "implications", "impact on" gibi sorgular)
+- verification_queries: Tweet'teki SPESİFİK rakamları/iddiaları doğrulamak için sorgular. Ör: tweet "%78.3 skor" diyorsa → "MRCR v2 benchmark score 2026" gibi. Tweet'te rakam/benchmark/fiyat/tarih varsa MUTLAKA doğrulama sorgusu yaz. 3 sorgu.
 - reddit_queries: Reddit'te kullanıcı deneyimleri ve tartışmaları bul
 - news_queries: son haberler ve duyurular
 - Sorgular KISA olsun (3-7 kelime ideal), spesifik olsun
-- "AI news" gibi genel sorgular YASAK, her sorgu konuya özel olmalı"""
+- "AI news" gibi genel sorgular YASAK, her sorgu konuya özel olmalı
+- impact_queries ÇOK ÖNEMLİ — haber analizi yazmak için "neden önemli" ve "kime etkisi var" bilgisi şart"""
 
     try:
-        if provider == "anthropic":
-            import anthropic
-            response = ai_client.messages.create(
-                model=ai_model or "claude-haiku-4-5-20251001",
-                max_tokens=500,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-            )
-            raw = response.content[0].text.strip()
-        else:
-            response = ai_client.chat.completions.create(
-                model=ai_model or "MiniMax-M2.5",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=500,
-                temperature=0.1,
-            )
-            raw = response.choices[0].message.content.strip()
+        raw = _call_ai(ai_client, provider, ai_model, prompt, max_tokens=700, temperature=0.1)
+        if not raw:
+            return None
 
-        # Strip <think> tags from reasoning models
-        raw = re.sub(r'<think>.*?</think>', '', raw, flags=re.DOTALL).strip()
+        # Strip unwanted AI tags (think, minimax tool_call)
+        raw = _clean_ai_tags(raw)
 
         # Extract JSON from response
         json_match = re.search(r'\{.*\}', raw, re.DOTALL)
@@ -331,6 +428,8 @@ KURALLAR:
             "search_queries": {
                 "general": data.get("general_queries", [])[:3],
                 "technical": data.get("technical_queries", [])[:2],
+                "impact": data.get("impact_queries", [])[:2],
+                "verification": data.get("verification_queries", [])[:3],
                 "reddit": data.get("reddit_queries", [])[:2],
                 "news": news_queries,
             }
@@ -365,7 +464,7 @@ def fetch_article_content(url: str) -> dict | None:
         return _fetch_github_repo(gh_match[0], gh_match[1])
 
     try:
-        # Fetch with retry on timeout
+        # Fetch with retry on timeout only (fast-fail on HTTP errors)
         resp = None
         for attempt in range(2):
             try:
@@ -382,6 +481,11 @@ def fetch_article_content(url: str) -> dict | None:
                     time.sleep(1)
                     continue
                 raise
+            except requests.exceptions.HTTPError as he:
+                # Fast-fail on 403/404/429 — don't retry, don't wait
+                status = he.response.status_code if he.response is not None else 0
+                print(f"Article fetch error ({url[:60]}): {status}")
+                return None
         if resp is None:
             return None
 
@@ -613,21 +717,21 @@ def _follow_tweet_links(
     progress_callback=None,
 ) -> list[dict]:
     """
-    Extract URLs from tweet texts, fetch article content, return articles.
+    Extract URLs from tweet texts, fetch article content in parallel, return articles.
     This enables the system to 'follow links' shared in tweets.
     """
     urls = _extract_urls_from_tweets(tweets)
     if not urls:
         return []
 
-    articles = []
-    for i, url in enumerate(urls[:max_articles]):
-        if progress_callback:
-            progress_callback(f"Tweet'teki link okunuyor ({i + 1}/{min(len(urls), max_articles)})...")
-        article = fetch_article_content(url)
-        if article and article.get("content") and len(article["content"]) > 200:
-            article["source"] = "tweet_link"
-            articles.append(article)
+    if progress_callback:
+        progress_callback(f"Tweet'teki {min(len(urls), max_articles)} link paralel okunuyor...")
+
+    # Use parallel fetch instead of sequential loop
+    articles = _parallel_fetch_articles(urls, max_articles=max_articles,
+                                         progress_callback=None)
+    for article in articles:
+        article["source"] = "tweet_link"
     return articles
 
 
@@ -1313,7 +1417,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                    ai_client=None, ai_model: str = None,
                    ai_provider: str = "minimax",
                    research_sources: list = None,
-                   use_agentic: bool = False,
+                   use_agentic: bool = True,
                    engine: str = "standard",
                    use_grok_agentic: bool = False) -> ResearchResult:
     """
@@ -1476,7 +1580,8 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                                         result.media_urls.extend(t_media)
                             except Exception as e:
                                 print(f"X search in Grok agentic mode error: {e}")
-                        result.related_tweets.sort(key=lambda x: x.get("likes", 0) + x.get("retweets", 0) * 2, reverse=True)
+                                break  # Stop X search on error to prevent ban
+                        result.related_tweets.sort(key=lambda x: _tweet_quality_score(x), reverse=True)
                         result.related_tweets = result.related_tweets[:15]
                     except Exception as e:
                         print(f"X search in Grok agentic error: {e}")
@@ -1528,7 +1633,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                     if parts:
                         x_queries.append(f"({' OR '.join(parts)}) -is:retweet -is:reply lang:en")
                         if len(parts) > 1:
-                            x_queries.append(f"({parts[0]}) -is:retweet -is:reply lang:en min_faves:10")
+                            x_queries.append(f"({parts[0]}) -is:retweet -is:reply lang:en")
                     else:
                         general_q = (result.topic or tweet_text[:50])
                         x_queries.append(f"({general_q}) -is:retweet -is:reply")
@@ -1560,8 +1665,9 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                                     result.media_urls.extend(t_media)
                         except Exception as e:
                             print(f"X search error in agentic mode: {e}")
+                            break  # Stop X search on error to prevent ban
 
-                    result.related_tweets.sort(key=lambda x: x.get("likes", 0) + x.get("retweets", 0) * 2, reverse=True)
+                    result.related_tweets.sort(key=lambda x: _tweet_quality_score(x), reverse=True)
                     result.related_tweets = result.related_tweets[:15]
                 except Exception as e:
                     print(f"X search in agentic mode error: {e}")
@@ -1596,6 +1702,24 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                             all_urls.add(url)
                             r["title"] = f"[TEKNİK] {r.get('title', '')}"
                             result.web_results.append(r)
+                # Impact queries — why it matters, practical implications
+                for query in search_queries.get("impact", [])[:2]:
+                    grok_results = grok_search_web(query, max_results=4)
+                    for r in grok_results:
+                        url = r.get("url", "")
+                        if url and url not in all_urls:
+                            all_urls.add(url)
+                            r["title"] = f"[ETKİ] {r.get('title', '')}"
+                            result.web_results.append(r)
+                # Verification queries — fact-check specific claims/numbers
+                for query in search_queries.get("verification", [])[:3]:
+                    grok_results = grok_search_web(query, max_results=4)
+                    for r in grok_results:
+                        url = r.get("url", "")
+                        if url and url not in all_urls:
+                            all_urls.add(url)
+                            r["title"] = f"[DOĞRULAMA] {r.get('title', '')}"
+                            result.web_results.append(r)
             except Exception as e:
                 print(f"Grok web search error, falling back to DuckDuckGo: {e}")
                 engine = "standard"  # Fallback
@@ -1615,6 +1739,16 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                 parallel_queries.append((query, 5, "m"))
                 query_types.append("technical")
 
+            # Impact queries — why it matters, practical implications
+            for query in search_queries.get("impact", [])[:2]:
+                parallel_queries.append((query, 4, "m"))
+                query_types.append("impact")
+
+            # Verification queries — fact-check specific claims/numbers from tweet
+            for query in search_queries.get("verification", [])[:3]:
+                parallel_queries.append((query, 4, "m"))
+                query_types.append("verification")
+
             # Include Reddit queries in the same parallel batch
             if "reddit" in research_sources:
                 for query in search_queries.get("reddit", [])[:2]:
@@ -1622,7 +1756,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                     query_types.append("reddit")
 
             # Execute all searches in parallel
-            all_results = _parallel_web_search(parallel_queries)
+            all_results = _parallel_web_search(parallel_queries, progress_callback=progress_callback)
 
             for i, results in enumerate(all_results):
                 qtype = query_types[i]
@@ -1631,6 +1765,12 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                         all_urls.add(r["url"])
                         if qtype == "technical":
                             r["title"] = f"[TEKNİK] {r['title']}"
+                            result.web_results.append(r)
+                        elif qtype == "impact":
+                            r["title"] = f"[ETKİ] {r['title']}"
+                            result.web_results.append(r)
+                        elif qtype == "verification":
+                            r["title"] = f"[DOĞRULAMA] {r['title']}"
                             result.web_results.append(r)
                         elif qtype == "reddit":
                             result.reddit_results.append(r)
@@ -1678,7 +1818,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
 
             # Parallel news search with built-in fallback chain (d → w → m)
             news_queries = [(q, 5, "d") for q in search_queries.get("news", [])[:2]]
-            all_news = _parallel_news_search(news_queries)
+            all_news = _parallel_news_search(news_queries, progress_callback=progress_callback)
 
             for news_list in all_news:
                 for n in news_list:
@@ -1691,14 +1831,19 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                             "source": n.get("source", ""),
                         })
 
+    # Check if DDG searches returned any results at all
+    if not result.web_results and not result.reddit_results and progress_callback:
+        if any(s in research_sources for s in ["web", "reddit", "news"]):
+            progress_callback("⚠️ DuckDuckGo aramaları sonuç döndürmedi. Sonuçlar sınırlı olabilir.")
+
     # === STEP 6: DEEP FETCH — parallel article fetching ===
     if any(s in research_sources for s in ["web", "reddit", "news"]):
         if progress_callback:
             progress_callback("Makaleler paralel okunuyor (derin araştırma)...")
 
-        urls_to_fetch = _pick_best_urls(result.web_results + result.reddit_results)
+        urls_to_fetch = _pick_best_urls(result.web_results + result.reddit_results, max_urls=12)
 
-        articles = _parallel_fetch_articles(urls_to_fetch, max_articles=5,
+        articles = _parallel_fetch_articles(urls_to_fetch, max_articles=10,
                                              progress_callback=progress_callback)
         result.deep_articles.extend(articles)
 
@@ -1720,7 +1865,7 @@ def research_topic(tweet_text: str, tweet_author: str = "",
             if parts:
                 x_queries.append(f"({' OR '.join(parts)}) -is:retweet -is:reply lang:en")
                 if len(parts) > 1:
-                    x_queries.append(f"({parts[0]}) -is:retweet -is:reply lang:en min_faves:10")
+                    x_queries.append(f"({parts[0]}) -is:retweet -is:reply lang:en")
                     x_queries.append(f"({parts[1]}) -is:retweet -is:reply lang:en")
                 # Add action-based query
                 action = topic_info.get("action", "")
@@ -1739,10 +1884,14 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                 # Add topic-based variations
                 if topic_info["products"]:
                     for prod in topic_info["products"][:3]:
-                        x_queries.append(f"{prod} -is:retweet -is:reply lang:en min_faves:5")
+                        x_queries.append(f"{prod} -is:retweet -is:reply lang:en")
                 if topic_info["companies"]:
                     for comp in topic_info["companies"][:2]:
                         x_queries.append(f"{comp} {topic_info.get('action', 'AI')} -is:retweet -is:reply lang:en")
+
+            # Limit total X queries to prevent Twitter rate limiting / temp bans
+            MAX_X_QUERIES = 5  # max 5 unique searches per research call
+            x_queries = x_queries[:MAX_X_QUERIES]
 
             start = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=72)
             seen_ids = set()
@@ -1771,8 +1920,9 @@ def research_topic(tweet_text: str, tweet_author: str = "",
                             result.media_urls.extend(t_media)
                 except Exception as e:
                     print(f"X search error ({q[:40]}): {e}")
+                    break  # Stop further X queries on error to prevent Twitter ban
 
-            result.related_tweets.sort(key=lambda x: x.get("likes", 0) + x.get("retweets", 0) * 2, reverse=True)
+            result.related_tweets.sort(key=lambda x: _tweet_quality_score(x), reverse=True)
             result.related_tweets = result.related_tweets[:max_tweets]
 
             if progress_callback:
@@ -1822,6 +1972,39 @@ def research_topic(tweet_text: str, tweet_author: str = "",
 
     result.summary = compile_research_summary(result)
 
+    # === STEP 8.5: Query Refinement — 2nd pass to fill knowledge gaps ===
+    if ai_client and any(s in research_sources for s in ["web", "news"]):
+        try:
+            original_text = result.full_thread_text or result.original_tweet_text or result.topic
+            gap_queries = ai_identify_knowledge_gaps(
+                original_tweet=original_text,
+                current_research=result.summary[:6000],
+                ai_client=ai_client,
+                ai_model=ai_model,
+                provider=ai_provider,
+            )
+            if gap_queries:
+                if progress_callback:
+                    progress_callback(f"Bilgi boslugu tespit edildi, {len(gap_queries)} ek arama yapiliyor...")
+
+                # Run refinement searches in parallel
+                search_tuples = [(q, 5, "w") for q in gap_queries[:3]]
+                gap_search_results = _parallel_web_search(search_tuples, progress_callback=progress_callback)
+                gap_results = [item for sublist in gap_search_results for item in sublist]
+                new_urls = _pick_best_urls(gap_results, max_urls=4)
+                if new_urls:
+                    gap_articles = _parallel_fetch_articles(
+                        new_urls, max_articles=3, progress_callback=progress_callback,
+                    )
+                    if gap_articles:
+                        result.deep_articles.extend(gap_articles)
+                        if progress_callback:
+                            progress_callback(f"Ek {len(gap_articles)} kaynak okundu (bilgi boslugu doldurma)")
+                        # Recompile with new articles
+                        result.summary = compile_research_summary(result)
+        except Exception as e:
+            print(f"Query refinement error: {e}")
+
     # === STEP 9: AI Synthesis — structured research brief ===
     # This transforms raw research into prioritized, tweet-friendly format
     if ai_client and (result.deep_articles or result.web_results or result.reddit_results):
@@ -1839,15 +2022,173 @@ def research_topic(tweet_text: str, tweet_author: str = "",
             if progress_callback:
                 progress_callback("Araştırma sentezi tamamlandı")
 
+            # === STEP 10: 2nd Research Cycle — fill gaps in synthesis ===
+            # Only runs in agentic mode (deep research) to avoid slowing standard mode
+            if use_agentic and brief:
+                try:
+                    gap_queries = _detect_synthesis_gaps(
+                        brief, ai_client=ai_client, ai_model=ai_model, provider=ai_provider
+                    )
+                    if gap_queries:
+                        if progress_callback:
+                            progress_callback(f"2. döngü: {len(gap_queries)} eksik alan için ek araştırma...")
+                        # Run gap-filling searches
+                        gap_urls = set()
+                        for gq in gap_queries[:3]:
+                            try:
+                                from duckduckgo_search import DDGS
+                                with DDGS() as ddgs:
+                                    for r in ddgs.text(gq, max_results=4):
+                                        url = r.get("href", "")
+                                        if url and url not in all_urls and url not in gap_urls:
+                                            gap_urls.add(url)
+                                            result.web_results.append({
+                                                "title": f"[2.DÖNGÜ] {r.get('title', '')}",
+                                                "url": url,
+                                                "body": r.get("body", ""),
+                                            })
+                            except Exception:
+                                pass
+
+                        if gap_urls:
+                            gap_articles = _parallel_fetch_articles(
+                                list(gap_urls)[:5], max_articles=5,
+                                progress_callback=progress_callback,
+                            )
+                            if gap_articles:
+                                result.deep_articles.extend(gap_articles)
+                                # Recompile and re-synthesize with enriched data
+                                result.summary = compile_research_summary(result)
+                                if progress_callback:
+                                    progress_callback("2. döngü sentezi yapılıyor...")
+                                brief2 = ai_synthesize_research(
+                                    raw_summary=result.summary,
+                                    original_tweet=result.full_thread_text or result.original_tweet_text,
+                                    ai_client=ai_client, ai_model=ai_model, provider=ai_provider,
+                                )
+                                if brief2:
+                                    result.synthesized_brief = brief2
+                                if progress_callback:
+                                    progress_callback(f"2. döngü tamamlandı (+{len(gap_articles)} kaynak)")
+                except Exception as e:
+                    print(f"2nd cycle research error: {e}")
+
     return result
 
 
-def _pick_best_urls(results: list[dict], max_urls: int = 8) -> list[str]:
+def _detect_synthesis_gaps(synthesis_text: str, ai_client=None,
+                           ai_model: str = None, provider: str = "minimax") -> list[str]:
+    """Detect weak/missing areas in research synthesis and generate follow-up queries.
+
+    Analyzes the synthesis text for:
+    - Empty or very short sections (KARŞILAŞTIRMALI VERİLER, ÇELİŞKİLER etc.)
+    - Phrases indicating insufficient data ("yetersiz veri", "doğrulanamadı")
+    - Missing comparative data or risk analysis
+
+    Returns up to 3 search queries to fill the gaps.
+    """
+    if not ai_client or not synthesis_text:
+        return []
+
+    prompt = f"""Aşağıdaki araştırma sentezini oku ve EKSİK/ZAYIF alanları tespit et.
+
+SENTEZ:
+{synthesis_text[:4000]}
+
+Görev: Bu sentezde hangi bilgiler eksik veya yetersiz? Eksik alanları doldurmak için
+2-3 adet İngilizce arama sorgusu üret.
+
+Özellikle kontrol et:
+- Karşılaştırmalı veri var mı? (benchmark, fiyat, performans karşılaştırması)
+- Risk/dezavantaj/limitasyon belirtilmiş mi?
+- Spesifik rakamlar/veriler yeterli mi yoksa genel ifadeler mi var?
+- Çelişkili bilgiler tespit edilmiş mi?
+
+SADECE JSON döndür:
+{{"gap_queries": ["sorgu 1", "sorgu 2", "sorgu 3"]}}
+
+Eğer sentez yeterince kapsamlıysa boş liste döndür:
+{{"gap_queries": []}}"""
+
+    try:
+        raw = _call_ai(ai_client, provider, ai_model, prompt, max_tokens=300, temperature=0.1)
+        if not raw:
+            return []
+        raw = _clean_ai_tags(raw)
+        json_match = re.search(r'\{.*\}', raw, re.DOTALL)
+        if not json_match:
+            return []
+        data = json.loads(json_match.group())
+        return data.get("gap_queries", [])[:3]
+    except Exception as e:
+        print(f"Gap detection error: {e}")
+        return []
+
+
+def _tweet_quality_score(tweet: dict) -> float:
+    """
+    Score a tweet for research relevance.
+    Combines absolute engagement with engagement ratio (virality signal).
+    High engagement ratio = content resonated beyond the author's usual reach.
+    """
+    likes = tweet.get("likes", 0) or 0
+    rts = tweet.get("retweets", 0) or 0
+    followers = tweet.get("followers", 0) or 0
+
+    # Absolute engagement (weighted by algorithm values)
+    absolute = likes + rts * 20
+
+    # Engagement ratio bonus (viral content from smaller accounts gets boosted)
+    if followers > 100:
+        ratio = (likes + rts * 3) / followers
+        ratio_bonus = min(ratio * 50, 100)  # Cap at 100 bonus points
+    else:
+        ratio_bonus = 0
+
+    # Content quality: longer tweets with substance score higher
+    text_len = len(tweet.get("text", ""))
+    length_bonus = min(text_len / 50, 5)  # Up to 5 bonus for 250+ char tweets
+
+    return absolute + ratio_bonus + length_bonus
+
+
+def _pick_best_urls(results: list[dict], max_urls: int = 12) -> list[str]:
     """
     Pick the best URLs to deep-fetch based on relevance signals.
-    Prioritize: tech blogs, official announcements, Reddit discussions.
+    Prioritize: official sources, research papers, tier-1 tech blogs, Reddit.
+
+    Scoring tiers:
+    - Tier 1 (official/research): +5 — arxiv, official blogs, papers
+    - Tier 2 (premier tech): +4 — TechCrunch, Verge, Ars, SemiAnalysis
+    - Tier 3 (community): +3 — Reddit, HuggingFace, GitHub
+    - Tier 4 (general tech): +2 — Wired, VentureBeat, etc.
+    - Content signals: numbers/data (+2), long body (+1), key title words (+1 each)
     """
+    from urllib.parse import urlparse
+
     scored = []
+    seen_domains: set[str] = set()  # Domain diversity — max 2 per domain
+
+    # Tiered domain scoring
+    TIER1_DOMAINS = {
+        "arxiv.org": 5, "blog.google": 5, "openai.com": 5, "anthropic.com": 5,
+        "ai.meta.com": 5, "deepmind.google": 5, "research.nvidia.com": 5,
+        "blog.x.ai": 5, "mistral.ai": 5,
+    }
+    TIER2_DOMAINS = {
+        "techcrunch.com": 4, "theverge.com": 4, "arstechnica.com": 4,
+        "semianalysis.com": 4, "towardsdatascience.com": 4,
+    }
+    TIER3_DOMAINS = {
+        "reddit.com": 3, "huggingface.co": 3, "github.com": 3,
+        "news.ycombinator.com": 3,
+    }
+    TIER4_DOMAINS = {
+        "wired.com": 2, "venturebeat.com": 2, "nvidia.com": 2,
+        "microsoft.com": 2, "meta.com": 2, "zdnet.com": 2,
+        "bloomberg.com": 2, "reuters.com": 2,
+    }
+
     for r in results:
         url = r.get("url", "")
         title = r.get("title", "").lower()
@@ -1855,49 +2196,59 @@ def _pick_best_urls(results: list[dict], max_urls: int = 8) -> list[str]:
 
         score = 0
 
-        # Skip social media
         try:
-            from urllib.parse import urlparse
             domain = urlparse(url).netloc.replace("www.", "")
             if domain in SKIP_DOMAINS:
                 continue
         except Exception:
             continue
 
-        # Boost tech sites
-        tech_domains = ["techcrunch.com", "theverge.com", "arstechnica.com",
-                        "wired.com", "venturebeat.com", "huggingface.co",
-                        "reddit.com", "arxiv.org", "github.com",
-                        "nvidia.com", "blog.google", "openai.com",
-                        "anthropic.com", "microsoft.com", "meta.com",
-                        "towardsdatascience.com", "semianalysis.com"]
-        for td in tech_domains:
-            if td in url:
-                score += 3
-                break
+        # Domain tier scoring
+        for tier_map in [TIER1_DOMAINS, TIER2_DOMAINS, TIER3_DOMAINS, TIER4_DOMAINS]:
+            for td, pts in tier_map.items():
+                if td in url:
+                    score += pts
+                    break
+            else:
+                continue
+            break
 
-        # Boost Reddit
-        if "reddit.com" in url:
-            score += 2
-
-        # Boost articles with numbers/data
+        # Content quality signals
         if re.search(r'\d+[BMK%]|\$\d', body):
             score += 2
-
-        # Boost detailed content
         if len(body) > 150:
             score += 1
+        if len(body) > 300:
+            score += 1
 
-        # Boost if title has key signals
-        for signal in ["benchmark", "review", "analysis", "comparison",
-                        "specs", "details", "announced", "released"]:
+        # Title key signals
+        high_value_signals = ["benchmark", "evaluation", "comparison", "performance",
+                              "announced", "released", "launched", "paper", "research"]
+        for signal in high_value_signals:
             if signal in title:
                 score += 1
 
-        scored.append((score, url))
+        # Freshness signal — recent content keywords
+        if any(w in title for w in ["2026", "2025", "new", "latest", "just"]):
+            score += 1
 
-    scored.sort(reverse=True)
-    return [url for _, url in scored[:max_urls]]
+        scored.append((score, url, domain))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+
+    # Domain diversity: max 2 URLs per domain
+    picked: list[str] = []
+    for _, url, domain in scored:
+        base_domain = ".".join(domain.split(".")[-2:])
+        domain_count = sum(1 for d in seen_domains if d == base_domain)
+        if domain_count >= 2:
+            continue
+        seen_domains.add(base_domain)
+        picked.append(url)
+        if len(picked) >= max_urls:
+            break
+
+    return picked
 
 
 # ========================================================================
@@ -1917,70 +2268,78 @@ def ai_synthesize_research(raw_summary: str, original_tweet: str,
     if not ai_client:
         return None
 
-    prompt = f"""Aşağıda bir tweet ve o tweet hakkında yapılmış araştırma sonuçları var.
+    prompt = f"""Aşağıda bir tweet/thread ve o konu hakkında yapılmış araştırma sonuçları var.
 
-ORİJİNAL TWEET:
-"{original_tweet[:800]}"
+ORİJİNAL TWEET/THREAD:
+"{original_tweet[:1500]}"
 
 ARAŞTIRMA SONUÇLARI:
-{raw_summary[:6000]}
+{raw_summary[:12000]}
 
 ---
 
-GÖREV: Bu araştırmadan tweet yazarken kullanılabilecek en değerli bilgileri çıkar.
-Sadece TWEET KONUSUYLA İLGİLİ bilgileri dahil et, alakasız olanları AT.
+GÖREV: Bu araştırmadan bir TWEET yazmak için gerekli TÜM bilgileri çıkar ve detaylıca aktar.
+Amacımız bu gelişmeyi/haberi takipçilerimize DETAYLIYLA aktarmak — okuyucu tweet'i okuyunca konuyu tamamen anlamış olmalı.
 
 Yanıtını şu formatta yaz:
 
 ## TEMEL BULGULAR
-(Tweet'in konusuyla doğrudan ilgili en önemli 3-5 bilgi. Her biri tek cümle.)
+(Bu gelişme/haber/ürün/olay ne? Kim yaptı? Ne zaman? Orijinal tweet bir thread ise thread'deki TÜM bilgileri dahil et — adım adım anlatım, teknik detaylar, örnekler hepsi önemli. KISALTMA, mümkün olduğunca ÇOK bilgi ver.)
 
-## RAKAMLAR VE VERİLER
-(Spesifik rakamlar, yüzdeler, dolar tutarları, tarihler — tweet'e güç katacak veriler.)
+## TEKNİK DETAYLAR VE RAKAMLAR
+(Araştırmadan çıkan TÜM spesifik bilgiler — hiçbirini atlama:
+- Fiyat, tarih, versiyon numarası, benchmark sonuçları
+- Performans karşılaştırmaları (önceki versiyon/rakip ile)
+- Nasıl çalışıyor — teknik mekanizma
+- Kim kullanabilir, nasıl erişilir (ücretsiz mi, açık kaynak mı, API mi)
+- Topluluk/şirket bilgisi, yatırım miktarı, kullanıcı sayısı
+- Avantajlar VE dezavantajlar/riskler/limitasyonlar varsa onlar da)
 
-## UZMAN GÖRÜŞLERİ / ALITILAR
-(Varsa, kaynaklardan alıntılanabilecek görüşler veya ifadeler.)
+## PRATİK ETKİ
+(Bu gelişmenin kullanıcılara, geliştiricilere, sektöre pratik etkisi ne? Somut, herkesin anlayacağı dilde.)
 
-## KARŞIT GÖRÜŞ / ÇELİŞKİ
-(Konuyla ilgili karşıt bir bakış açısı veya ilginç bir çelişki varsa yaz.)
+## KULLANILABİLİR VERİLER
+(Tweet'te doğrudan kullanılabilecek somut bilgiler — rakamlar, tarihler, fiyatlar, karşılaştırmalar:
+- [somut bilgi/rakam 1]
+- [somut bilgi/rakam 2]
+Sadece araştırmada AÇIKÇA bulunan bilgileri yaz. Çıkarım/tahmin YAPMA.
+Veri yoksa bu bölümü TAMAMEN ATLA — "bulunamadı" veya "doğrulanamadı" KESİNLİKLE YAZMA.)
 
-## BAĞLAM
-(Bu olay neden önemli? Piyasa etkisi, sektörel anlam, trend bağlamı.)
+## KARŞILAŞTIRMALI VERİLER
+(Bu ürün/gelişme rakipleriyle veya önceki versiyonuyla nasıl kıyaslanıyor?
+- Benchmark tabloları, fiyat karşılaştırmaları, performans farkları — somut rakamlarla
+- Alternatif çözümlerle kıyaslama (varsa)
+- Önceki versiyon/model ile fark analizi
+Karşılaştırma verisi yoksa bu bölümü TAMAMEN ATLA.)
+
+## ÇELİŞKİLER VE FARKLI KAYNAKLAR
+(Kaynaklar arasında farklı rakamlar veya bilgiler varsa MUTLAKA belirt:
+- Ör: "Kaynak A: %76 skor — Kaynak B: %78.3 skor"
+- Hangi kaynak daha güvenilir görünüyor belirt
+- Tweet'teki iddia ile araştırma arasında fark varsa işaretle
+Çelişki yoksa bu bölümü TAMAMEN ATLA.)
 
 KURALLAR:
-- Her madde TEK CÜMLE olsun, kısa ve net
-- Sadece GERÇEK bilgi yaz, yorum ekleme
-- Tweet konusuyla ALAKASIZ bilgileri dahil etme
-- "Bulunamadı" yazmak yerine o bölümü boş bırak
-- Araştırmada bilgi yoksa bölümü atla
+- Orijinal tweet/thread'deki bilgilere SADIK KAL
+- Araştırmadan MÜMKÜN OLDUĞUNCA ÇOK somut bilgi aktar — yüzeysel özet YAPMA
+- BİLGİ YOĞUNLUĞU en önemli kriter — kısa tutma, uzun ve detaylı yaz
+- Teknik kısaltmaları Türkçe aç (eval → değerlendirme/test, CLI → komut satırı aracı vb.)
+- Yorum ekleme, sadece gerçekleri yaz
+- Bilgi yoksa o bölümü TAMAMEN ATLA — "bulunamadı", "doğrulanamadı", "bu konuda yeterli bilgi yok", "teyit edilemedi" gibi ifadeler KESİNLİKLE YAZMA
+- Sadece MEVCUT ve DOĞRULANMIŞ bilgileri yaz, eksik bilgileri belirtme — sessizce geç
+- Eski veya güncelliğini yitirmiş bilgileri DAHIL ETME
 
-⛔ FİLTRELE:
-- Yıldız sayısı (star count), fork sayısı, contributor sayısı gibi popülerlik metrikleri DAHIL ETME
-- Bunlar yüzeysel vanity metrikler ve tweet'e değer katmaz
-- Bunun yerine teknik bilgi, mimari detay, benchmark sonuçları, pratik kullanım öne çıkar"""
+⛔ DAHIL ETME:
+- Tweet konusuyla ilgisiz karşılaştırmalar
+- Popülerlik metrikleri (star, fork, download sayıları)
+- Genel/herkesin bildiği bilgiler (örn: "AI sektörü büyüyor")
+- Karşıt görüş veya çelişki ARAMA — sadece varsa ve önemliyse yaz"""
 
     try:
-        if provider == "anthropic":
-            import anthropic
-            response = ai_client.messages.create(
-                model=ai_model or "claude-haiku-4-5-20251001",
-                max_tokens=1500,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-            )
-            return response.content[0].text.strip()
-        else:
-            response = ai_client.chat.completions.create(
-                model=ai_model or "MiniMax-M2.5",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=1500,
-                temperature=0.1,
-            )
-            result = response.choices[0].message.content.strip()
-            # Strip <think> tags from reasoning models
-            result = re.sub(r'<think>.*?</think>', '', result, flags=re.DOTALL).strip()
-            return result
-
+        result = _call_ai(ai_client, provider, ai_model, prompt, max_tokens=6000, temperature=0.1)
+        if result:
+            result = _clean_ai_tags(result)
+        return result
     except Exception as e:
         print(f"AI research synthesis error: {e}")
         return None
@@ -2001,11 +2360,11 @@ def compile_research_summary(r: ResearchResult) -> str:
     4. Reddit discussions (community perspective)
     5. X opinions (limited — only high-engagement ones)
 
-    Keeps total under ~5000 chars to avoid token bloat.
+    Keeps total under ~12000 chars — bilgi yoğunluğu öncelikli, kısa tutma.
     """
     parts = []
     total_chars = 0
-    MAX_TOTAL = 8000  # Target max for research context (increased for long-form tweets)
+    MAX_TOTAL = 25000  # 25K: 12 makale destekli, daha derin araştırma aktarımı
 
     # Section 1: Original tweet/thread — MOST IMPORTANT (always included)
     parts.append(f"# ANA KONU: {r.topic}")
@@ -2021,23 +2380,39 @@ def compile_research_summary(r: ResearchResult) -> str:
     total_chars = sum(len(p) for p in parts)
 
     # Section 2: DEEP ARTICLES — Key content from fetched pages
-    # Limit each article to 2000 chars, max 3 articles
+    # Limit each article to 5000 chars, max 12 articles — derin bilgi aktarımı
     if r.deep_articles:
         parts.append(f"\n## ARAŞTIRMA KAYNAKLARI ({len(r.deep_articles)} makale okundu):")
-        for i, article in enumerate(r.deep_articles[:3], 1):
-            content = article['content'][:2000]
+        for i, article in enumerate(r.deep_articles[:12], 1):
+            content = article['content'][:5000]
             article_text = f"\n### Kaynak {i}: {article['title']}\n{content}"
             if total_chars + len(article_text) > MAX_TOTAL:
                 # Truncate this article to fit budget
-                remaining = max(500, MAX_TOTAL - total_chars - 200)
+                remaining = max(800, MAX_TOTAL - total_chars - 200)
                 article_text = f"\n### Kaynak {i}: {article['title']}\n{article['content'][:remaining]}..."
             parts.append(article_text)
             total_chars += len(article_text)
 
-    # Section 3: Web search snippets (compact — title + snippet)
+    # Section 3: Impact findings — WHY IT MATTERS (priority over general web)
     if r.web_results and total_chars < MAX_TOTAL - 300:
         deep_urls = {a["url"] for a in r.deep_articles}
-        remaining = [wr for wr in r.web_results if wr["url"] not in deep_urls]
+        impact_results = [wr for wr in r.web_results
+                          if wr["url"] not in deep_urls and "[ETKİ]" in wr.get("title", "")]
+        if impact_results:
+            parts.append(f"\n## ETKİ ANALİZİ (neden önemli, kime etkisi var):")
+            for i, wr in enumerate(impact_results[:3], 1):
+                clean_title = wr['title'].replace("[ETKİ] ", "")
+                snippet = f"  {i}. {clean_title}: {wr['body'][:300]}"
+                if total_chars + len(snippet) > MAX_TOTAL:
+                    break
+                parts.append(snippet)
+                total_chars += len(snippet)
+
+    # Section 4: Web search snippets (compact — title + snippet)
+    if r.web_results and total_chars < MAX_TOTAL - 300:
+        deep_urls = {a["url"] for a in r.deep_articles}
+        remaining = [wr for wr in r.web_results
+                     if wr["url"] not in deep_urls and "[ETKİ]" not in wr.get("title", "")]
 
         if remaining:
             parts.append(f"\n## Ek Web Bulguları ({len(remaining)} kaynak):")
@@ -2048,7 +2423,7 @@ def compile_research_summary(r: ResearchResult) -> str:
                 parts.append(snippet)
                 total_chars += len(snippet)
 
-    # Section 4: Reddit (compact)
+    # Section 5: Reddit (compact)
     if r.reddit_results and total_chars < MAX_TOTAL - 200:
         deep_urls = {a["url"] for a in r.deep_articles}
         remaining_reddit = [rr for rr in r.reddit_results if rr["url"] not in deep_urls]
@@ -2061,15 +2436,17 @@ def compile_research_summary(r: ResearchResult) -> str:
                 parts.append(snippet)
                 total_chars += len(snippet)
 
-    # Section 5: X opinions — ONLY high-engagement, max 3
+    # Section 6: X opinions — ONLY high-engagement, max 3
     # (This is where irrelevant tangents come from — be very selective)
     if r.related_tweets and total_chars < MAX_TOTAL - 200:
         # Only include tweets with significant engagement
         quality_tweets = [rt for rt in r.related_tweets
                           if rt.get("likes", 0) >= 5 or rt.get("retweets", 0) >= 2]
         if quality_tweets:
+            # Sort by engagement (likes + RTs) for best-first
+            quality_tweets.sort(key=lambda t: t.get("likes", 0) + t.get("retweets", 0) * 3, reverse=True)
             parts.append(f"\n## X'te Öne Çıkan Yorumlar ({len(quality_tweets)} kaliteli):")
-            for i, rt in enumerate(quality_tweets[:3], 1):
+            for i, rt in enumerate(quality_tweets[:5], 1):
                 snippet = f"  {i}. @{rt['author']} ({rt['likes']}❤️): {rt['text'][:500]}"
                 if total_chars + len(snippet) > MAX_TOTAL:
                     break
@@ -2130,25 +2507,11 @@ KURALLAR:
 - Eğer araştırma yeterliyse boş liste döndür: {{"gaps": [], "search_queries": []}}"""
 
     try:
-        if provider == "anthropic":
-            import anthropic
-            response = ai_client.messages.create(
-                model=ai_model or "claude-haiku-4-5-20251001",
-                max_tokens=500,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-            )
-            raw = response.content[0].text.strip()
-        else:
-            response = ai_client.chat.completions.create(
-                model=ai_model or "MiniMax-M2.5",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=500,
-                temperature=0.1,
-            )
-            raw = response.choices[0].message.content.strip()
+        raw = _call_ai(ai_client, provider, ai_model, prompt, max_tokens=500, temperature=0.1)
+        if not raw:
+            return []
 
-        raw = re.sub(r'<think>.*?</think>', '', raw, flags=re.DOTALL).strip()
+        raw = _clean_ai_tags(raw)
         json_match = re.search(r'\{.*\}', raw, re.DOTALL)
         if not json_match:
             return []
@@ -2277,25 +2640,11 @@ KURALLAR:
 - Maks 3 sorun listele"""
 
     try:
-        if provider == "anthropic":
-            import anthropic
-            response = ai_client.messages.create(
-                model=ai_model or "claude-haiku-4-5-20251001",
-                max_tokens=600,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-            )
-            raw = response.content[0].text.strip()
-        else:
-            response = ai_client.chat.completions.create(
-                model=ai_model or "MiniMax-M2.5",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=600,
-                temperature=0.1,
-            )
-            raw = response.choices[0].message.content.strip()
+        raw = _call_ai(ai_client, provider, ai_model, prompt, max_tokens=600, temperature=0.1)
+        if not raw:
+            return None
 
-        raw = re.sub(r'<think>.*?</think>', '', raw, flags=re.DOTALL).strip()
+        raw = _clean_ai_tags(raw)
         json_match = re.search(r'\{.*\}', raw, re.DOTALL)
         if not json_match:
             return None
@@ -2398,7 +2747,7 @@ def research_topic_from_text(
     ai_client=None,
     ai_model: str = None,
     ai_provider: str = "minimax",
-    use_agentic: bool = False,
+    use_agentic: bool = True,
     engine: str = "standard",
     use_grok_agentic: bool = False,
 ) -> TopicResearchResult:
@@ -2487,11 +2836,9 @@ def research_topic_from_text(
 
         # In deep mode, add even more query variations
         if is_deep_mode:
-            # Add min engagement queries for quality tweets
+            # Add duplicate queries for broader coverage (min_faves removed - not supported by Twikit)
             for q in x_queries_en[:3]:
-                base = q.replace("min_faves:5", "").replace("min_faves:10", "").strip()
-                all_x_queries.append(f"{base} min_faves:20")
-                all_x_queries.append(f"{base} min_faves:50")
+                all_x_queries.append(q)
 
         # Deduplicate queries (case-insensitive)
         seen_queries = set()
@@ -2502,6 +2849,9 @@ def research_topic_from_text(
                 seen_queries.add(q_key)
                 unique_queries.append(q)
 
+        # Limit total X queries to prevent Twitter rate limiting / temp bans
+        MAX_AGENTIC_X_QUERIES = 8
+        unique_queries = unique_queries[:MAX_AGENTIC_X_QUERIES]
         total_queries = len(unique_queries)
         if progress_callback:
             progress_callback(f"X'te {total_queries} farklı arama yapılıyor...")
@@ -2527,6 +2877,7 @@ def research_topic_from_text(
                         result.media_urls.extend(t_media)
             except Exception as e:
                 print(f"X topic search error ({q[:50]}): {e}")
+                break  # Stop further X queries on error to prevent Twitter ban
 
         # Sort by engagement
         result.x_tweets.sort(key=lambda x: x.get("likes", 0) + x.get("retweets", 0) * 2, reverse=True)
@@ -2785,7 +3136,7 @@ def _build_x_query_variations(topic_input: str, topic_en: str, ai_topic: dict | 
             # Individual important keywords with min engagement
             for kw in kw_en[:3]:
                 if len(kw) > 3:
-                    extra.append(f"{kw} -is:retweet -is:reply lang:en min_faves:5")
+                    extra.append(f"{kw} -is:retweet -is:reply lang:en")
 
         if len(kw_tr) >= 2:
             extra.append(f"({' '.join(kw_tr[:3])}) -is:retweet -is:reply lang:tr")
@@ -2853,24 +3204,11 @@ SADECE şu JSON formatında yanıt ver:
 - Ürün/teknoloji konusuysa: sürüm bilgisi, release tarihi, beta/GA durumu da araştır"""
 
     try:
-        if provider == "anthropic":
-            response = ai_client.messages.create(
-                model=ai_model or "claude-haiku-4-5-20251001",
-                max_tokens=1200,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.2,
-            )
-            raw = response.content[0].text.strip()
-        else:
-            response = ai_client.chat.completions.create(
-                model=ai_model or "MiniMax-M2.5",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=1200,
-                temperature=0.2,
-            )
-            raw = response.choices[0].message.content.strip()
+        raw = _call_ai(ai_client, provider, ai_model, prompt, max_tokens=1200, temperature=0.2)
+        if not raw:
+            return None
 
-        raw = re.sub(r'<think>.*?</think>', '', raw, flags=re.DOTALL).strip()
+        raw = _clean_ai_tags(raw)
         json_match = re.search(r'\{.*\}', raw, re.DOTALL)
         if not json_match:
             return None
@@ -3000,17 +3338,16 @@ def discover_topics(ai_client=None, ai_model: str = None,
         if focus_area and focus_area.strip():
             focus_words = focus_area.strip()
             trend_queries = [
-                f"({focus_words}) -is:retweet -is:reply lang:en min_faves:50",
-                f"({focus_words}) -is:retweet -is:reply lang:en min_faves:20",
+                f"({focus_words}) -is:retweet -is:reply lang:en",
                 f"({focus_words}) launched OR released OR announced -is:retweet -is:reply lang:en",
             ]
         else:
             trend_queries = [
-                "(AI OR LLM OR GPT OR Claude OR Gemini) launched OR released OR announced -is:retweet -is:reply lang:en min_faves:100",
-                "(AI coding OR agentic OR AI tool) -is:retweet -is:reply lang:en min_faves:50",
-                "(benchmark OR open-source OR new model) AI -is:retweet -is:reply lang:en min_faves:50",
-                "(OpenAI OR Anthropic OR Google OR Meta OR xAI) -is:retweet -is:reply lang:en min_faves:100",
-                "(Cursor OR Windsurf OR Copilot OR Devin) -is:retweet -is:reply lang:en min_faves:30",
+                "(AI OR LLM OR GPT OR Claude OR Gemini) launched OR released OR announced -is:retweet -is:reply lang:en",
+                "(AI coding OR agentic OR AI tool) -is:retweet -is:reply lang:en",
+                "(benchmark OR open-source OR new model) AI -is:retweet -is:reply lang:en",
+                "(OpenAI OR Anthropic OR Google OR Meta OR xAI) -is:retweet -is:reply lang:en",
+                "(Cursor OR Windsurf OR Copilot OR Devin) -is:retweet -is:reply lang:en",
             ]
 
         seen_ids = set()
@@ -3028,6 +3365,7 @@ def discover_topics(ai_client=None, ai_model: str = None,
                         })
             except Exception as e:
                 print(f"Topic discovery X search error: {e}")
+                break  # Stop further X queries on error to prevent Twitter ban
 
         x_tweets.sort(key=lambda x: x.get("likes", 0) + x.get("retweets", 0) * 2, reverse=True)
         x_tweets = x_tweets[:25]
@@ -3121,25 +3459,16 @@ JSON formatında 5-8 konu ver:
 SADECE JSON ver, başka bir şey yazma."""
 
     try:
-        if ai_provider == "anthropic":
-            response = ai_client.messages.create(
-                model=ai_model or "claude-haiku-4-5-20251001",
-                max_tokens=2500,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.5,
-            )
-            text = response.content[0].text
-        else:
-            response = ai_client.chat.completions.create(
-                model=ai_model or "MiniMax-M2.5",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=2500,
-                temperature=0.5,
-            )
-            text = response.choices[0].message.content
+        response = ai_client.chat.completions.create(
+            model=ai_model or "MiniMax-M2.5",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=2500,
+            temperature=0.5,
+        )
+        text = response.choices[0].message.content
 
         # Parse JSON
-        text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+        text = _clean_ai_tags(text)
         json_match = re.search(r'\[.*\]', text, re.DOTALL)
         if json_match:
             topics = json.loads(json_match.group())
