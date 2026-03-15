@@ -1,126 +1,82 @@
 "use client";
 
-import { useState } from "react";
-import { generateTweet, researchTopic } from "@/lib/api";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { getStyles, getProviders } from "@/lib/api";
+import { ContentStyle, FormatOption, ProviderOption } from "./shared";
+import TabDiscover from "./TabDiscover";
+import TabGenerate from "./TabGenerate";
+
+/* ── Main ──────────────────────────────────────────────── */
 
 export default function IcerikPage() {
-  const [topic, setTopic] = useState("");
-  const [generatedContent, setGeneratedContent] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [researching, setResearching] = useState(false);
-  const [researchData, setResearchData] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<"discover" | "generate">("discover");
+  const [contentStyles, setContentStyles] = useState<ContentStyle[]>([]);
+  const [formats, setFormats] = useState<FormatOption[]>([]);
+  const [providers, setProviders] = useState<ProviderOption[]>([]);
 
-  const handleResearch = async () => {
-    if (!topic.trim()) return;
-    setResearching(true);
-    setError(null);
-    try {
-      const result = (await researchTopic(topic, "deep")) as {
-        summary: string;
-        key_points: string[];
-        sources: { title: string; url: string }[];
-      };
-      const text = `${result.summary}\n\nKey Points:\n${result.key_points.join("\n")}`;
-      setResearchData(text);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Arastirma hatasi");
-    } finally {
-      setResearching(false);
-    }
-  };
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t === "discover" || t === "generate") setActiveTab(t);
+  }, [searchParams]);
 
-  const handleGenerate = async () => {
-    if (!topic.trim()) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const result = (await generateTweet({
-        topic,
-        style: "analytical",
-        length: "long",
-        thread: true,
-        research_context: researchData,
-      })) as { text: string; thread_parts: string[] };
-      setGeneratedContent(result.text);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Uretim hatasi");
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    getStyles()
+      .then(
+        (r: {
+          content_styles?: ContentStyle[];
+          formats: FormatOption[];
+        }) => {
+          setContentStyles(
+            r.content_styles || [
+              { id: "deneyim", name: "Kisisel Deneyim", desc: "" },
+              { id: "egitici", name: "Egitici", desc: "" },
+              { id: "karsilastirma", name: "Karsilastirma", desc: "" },
+              { id: "analiz", name: "Analiz", desc: "" },
+              { id: "hikaye", name: "Hikaye Anlatimi", desc: "" },
+            ]
+          );
+          setFormats(r.formats);
+        }
+      )
+      .catch(() => {});
+    getProviders()
+      .then((r: { providers: ProviderOption[] }) => setProviders(r.providers))
+      .catch(() => {});
+  }, []);
+
+  const tabs = [
+    { id: "discover" as const, label: "Konu Kesfet" },
+    { id: "generate" as const, label: "Icerik Uret" },
+  ];
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <h2 className="text-2xl font-bold gradient-text">Icerik Uret</h2>
+      <h2 className="text-2xl font-bold gradient-text">Icerik Uretici</h2>
 
-      <div className="glass-card space-y-4">
-        <div>
-          <label className="text-xs text-[var(--text-secondary)] block mb-1">
-            Konu
-          </label>
-          <textarea
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            placeholder="Detayli icerik konusu..."
-            rows={3}
-            className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-4 py-3 text-sm resize-none focus:border-[var(--accent-blue)] focus:outline-none"
-          />
-        </div>
-
-        <div className="flex gap-3">
+      {/* Tab bar */}
+      <div className="flex gap-1 bg-[var(--bg-secondary)] rounded-xl p-1">
+        {tabs.map((t) => (
           <button
-            onClick={handleResearch}
-            disabled={researching || !topic.trim()}
-            className="btn-secondary text-sm"
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
+            className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${
+              activeTab === t.id
+                ? "bg-[var(--accent-blue)] text-white"
+                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            }`}
           >
-            {researching ? "Arastiriliyor..." : "Derin Arastir"}
+            {t.label}
           </button>
-          <button
-            onClick={handleGenerate}
-            disabled={loading || !topic.trim()}
-            className="btn-primary"
-          >
-            {loading ? "Uretiliyor..." : "Icerik Uret"}
-          </button>
-        </div>
+        ))}
       </div>
 
-      {researchData && (
-        <div className="glass-card">
-          <h4 className="text-sm font-semibold text-[var(--accent-cyan)] mb-2">
-            Arastirma Sonucu
-          </h4>
-          <p className="text-sm text-[var(--text-secondary)] whitespace-pre-line max-h-64 overflow-y-auto">
-            {researchData}
-          </p>
-        </div>
+      {activeTab === "discover" && (
+        <TabDiscover contentStyles={contentStyles} formats={formats} providers={providers} />
       )}
-
-      {error && (
-        <div className="glass-card border-[var(--accent-red)]/50">
-          <p className="text-sm text-[var(--accent-red)]">{error}</p>
-        </div>
-      )}
-
-      {generatedContent && (
-        <div className="glass-card space-y-4">
-          <div className="flex justify-between items-center">
-            <h4 className="font-semibold">Uretilen Icerik</h4>
-            <button
-              onClick={() => navigator.clipboard.writeText(generatedContent)}
-              className="text-xs text-[var(--accent-blue)] hover:underline"
-            >
-              Kopyala
-            </button>
-          </div>
-          <div className="bg-[var(--bg-primary)] rounded-lg p-4 text-sm whitespace-pre-line max-h-96 overflow-y-auto">
-            {generatedContent}
-          </div>
-          <div className="text-xs text-[var(--text-secondary)]">
-            {generatedContent.length} karakter
-          </div>
-        </div>
+      {activeTab === "generate" && (
+        <TabGenerate contentStyles={contentStyles} formats={formats} providers={providers} />
       )}
     </div>
   );

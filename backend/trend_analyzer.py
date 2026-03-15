@@ -1,0 +1,509 @@
+"""
+Faz 4: Trend Tespiti — Çapraz Hesap Keyword Analizi
+Her 1 saatte çalışır. Discovery cache + auto-scan cache'deki tüm tweet'lerden
+keyword frequency çıkarır. 3+ hesapta geçen keyword = TREND.
+"""
+import datetime
+import logging
+import re
+from collections import Counter, defaultdict
+from zoneinfo import ZoneInfo
+
+logger = logging.getLogger(__name__)
+TZ_TR = ZoneInfo("Europe/Istanbul")
+
+# AI/tech keywords to track — these are high-signal terms
+TRACKED_KEYWORDS = {
+    # Models
+    "gpt-5", "gpt-4", "gpt-4o", "chatgpt", "claude", "claude 4", "gemini",
+    "deepseek", "qwen", "llama", "mistral", "grok", "phi", "command-r",
+    # Companies
+    "openai", "anthropic", "google", "meta", "nvidia", "microsoft", "apple",
+    "xai", "deepmind", "cohere", "stability", "midjourney",
+    # Concepts
+    "agent", "agents", "agentic", "mcp", "rag", "fine-tuning", "reasoning",
+    "multimodal", "vision", "voice", "video", "coding", "benchmark",
+    "open-source", "open source", "inference", "training",
+    # Products
+    "cursor", "windsurf", "copilot", "devin", "replit", "v0",
+    "sora", "runway", "flux", "dall-e", "stable diffusion",
+    # Hardware
+    "h100", "h200", "b200", "tpu", "chip",
+}
+
+# Stop words to exclude from auto-detected keywords
+STOP_WORDS = {
+    "the", "is", "at", "in", "on", "to", "for", "of", "and", "or", "a", "an",
+    "this", "that", "it", "with", "from", "by", "as", "are", "was", "be",
+    "has", "have", "had", "but", "not", "you", "we", "they", "your", "our",
+    "will", "can", "do", "does", "did", "just", "new", "more", "most",
+    "bir", "ve", "ile", "de", "da", "bu", "şu", "o", "ne", "için",
+    "çok", "var", "yok", "olan", "gibi", "daha", "en", "ama", "ki",
+    "kadar", "sonra", "önce", "şimdi", "bence", "aslında", "zaten",
+}
+
+
+def analyze_trends():
+    """Trend analizi — scheduler tarafından çağrılır."""
+    now = datetime.datetime.now(TZ_TR)
+
+    # Work hours check
+    if now.hour < 8 or now.hour >= 23:
+        return
+
+    try:
+        from backend.modules.style_manager import (
+            load_discovery_cache,
+            load_auto_scan_cache,
+            load_trend_cache,
+            save_trend_cache,
+        )
+    except ImportError as e:
+        logger.warning("Trend analyzer import error: %s", e)
+        return
+
+    # Collect all recent tweets (last 12 hours)
+    cutoff = (now - datetime.timedelta(hours=12)).isoformat()
+
+    discovery_tweets = load_discovery_cache()
+    auto_scan_tweets = load_auto_scan_cache()
+
+    all_tweets = []
+    for t in discovery_tweets:
+        if t.get("scanned_at", "") > cutoff or t.get("created_at", "") > cutoff:
+            all_tweets.append(t)
+    for t in auto_scan_tweets:
+        if t.get("scanned_at", "") > cutoff:
+            all_tweets.append(t)
+
+    if not all_tweets:
+        logger.info("Trend analyzer: no recent tweets to analyze")
+        return
+
+    # Filter out low-quality tweets before trend analysis
+    try:
+        from backend.modules.twitter_scanner import is_spam
+        pre_count = len(all_tweets)
+        all_tweets = [t for t in all_tweets if not is_spam(t.get("text", "") or "")]
+        filtered = pre_count - len(all_tweets)
+        if filtered > 0:
+            logger.info("Trend analyzer: filtered %d/%d low-quality tweets", filtered, pre_count)
+    except ImportError:
+        pass
+
+    if not all_tweets:
+        logger.info("Trend analyzer: no tweets left after quality filter")
+        return
+
+    # Extract keywords and count per account
+    keyword_accounts = defaultdict(set)  # keyword -> set of accounts
+    keyword_tweets = defaultdict(list)   # keyword -> list of tweet dicts
+    keyword_total_engagement = Counter()  # keyword -> total engagement
+
+    for tweet in all_tweets:
+        text = (tweet.get("text", "") or "").lower()
+        account = tweet.get("account", "") or tweet.get("author", "") or "unknown"
+        engagement = tweet.get("engagement_score", 0) or tweet.get("like_count", 0)
+
+        # Check tracked keywords
+        found_keywords = set()
+        for kw in TRACKED_KEYWORDS:
+            if kw in text:
+                found_keywords.add(kw)
+
+        # Auto-detect capitalized terms (potential new keywords)
+        # E.g., "GPT-5o", "Llama4", etc.
+        raw_text = tweet.get("text", "") or ""
+        caps_words = re.findall(r'\b[A-Z][A-Za-z0-9\-\.]+\b', raw_text)
+        for w in caps_words:
+            wl = w.lower()
+            if len(wl) >= 3 and wl not in STOP_WORDS:
+                found_keywords.add(wl)
+
+        for kw in found_keywords:
+            keyword_accounts[kw].add(account)
+            tweet_id = tweet.get("tweet_id", "")
+            keyword_tweets[kw].append({
+                "tweet_id": tweet_id,
+                "text": (tweet.get("text", "") or "")[:300],
+                "account": account,
+                "engagement": engagement,
+                "tweet_url": f"https://x.com/{account}/status/{tweet_id}" if tweet_id else "",
+                "summary_tr": tweet.get("summary_tr", ""),
+                "created_at": tweet.get("created_at", ""),
+            })
+            keyword_total_engagement[kw] += engagement
+
+    # Detect trends: keyword appears in 3+ different accounts
+    trends = []
+    for kw, accounts in keyword_accounts.items():
+        if len(accounts) >= 2:  # 2+ accounts = potential trend
+            account_count = len(accounts)
+            total_engagement = keyword_total_engagement[kw]
+            # Score: account_count * 100 + total_engagement
+            trend_score = account_count * 100 + total_engagement
+
+            # Get top tweets for this keyword
+            top_tweets = sorted(
+                keyword_tweets[kw],
+                key=lambda x: x.get("engagement", 0),
+                reverse=True
+            )[:5]
+
+            trends.append({
+                "keyword": kw,
+                "account_count": account_count,
+                "accounts": list(accounts)[:10],
+                "total_engagement": total_engagement,
+                "trend_score": trend_score,
+                "tweet_count": len(keyword_tweets[kw]),
+                "top_tweets": top_tweets,
+                "is_strong_trend": account_count >= 3,
+                "detected_at": now.isoformat(),
+            })
+
+    # Sort by trend score
+    trends.sort(key=lambda x: x["trend_score"], reverse=True)
+
+    # Build keyword frequency for overall stats
+    keyword_counts = {
+        kw: len(accounts)
+        for kw, accounts in keyword_accounts.items()
+        if len(accounts) >= 2
+    }
+
+    trend_cache = {
+        "trends": trends[:30],  # Top 30 trends
+        "last_updated": now.isoformat(),
+        "keyword_counts": dict(sorted(
+            keyword_counts.items(),
+            key=lambda x: x[1],
+            reverse=True
+        )[:50]),
+        "total_tweets_analyzed": len(all_tweets),
+    }
+
+    save_trend_cache(trend_cache)
+    strong_trends = [t for t in trends if t["is_strong_trend"]]
+    logger.info(
+        "Trend analyzer: %d trends detected (%d strong), %d tweets analyzed",
+        len(trends), len(strong_trends), len(all_tweets)
+    )
+
+    # Save to trend history (gün bazlı arşiv)
+    try:
+        from backend.modules.style_manager import load_trend_history, save_trend_history
+        history = load_trend_history()
+        date_str = now.strftime("%Y-%m-%d")
+        # Update or add today's entry
+        today_entry = None
+        for h in history:
+            if h.get("date") == date_str:
+                today_entry = h
+                break
+        if today_entry:
+            today_entry["trends"] = trends[:30]
+            today_entry["analysis_date"] = now.isoformat()
+            today_entry["total_tweets_analyzed"] = len(all_tweets)
+        else:
+            history.insert(0, {
+                "date": date_str,
+                "analysis_date": now.isoformat(),
+                "trends": trends[:30],
+                "total_tweets_analyzed": len(all_tweets),
+            })
+        save_trend_history(history)
+    except Exception:
+        logger.exception("Trend history save error")
+
+    # Auto-cluster suggestions (konu bazlı kümeleme)
+    try:
+        _cluster_smart_suggestions(trends, now)
+    except Exception:
+        logger.exception("Auto clustering error")
+
+    # Notify about strong trends + auto-suggest content (Faz 8)
+    if strong_trends:
+        _notify_trends(strong_trends)
+        try:
+            from backend.auto_content_suggester import suggest_content_from_trends
+            suggest_content_from_trends()
+        except Exception:
+            logger.exception("Auto content suggestion error")
+
+
+def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime):
+    """Trend tweet'lerini AI ile konu bazlı kümele."""
+    import json as _json
+
+    from backend.modules.style_manager import (
+        load_clustered_suggestions,
+        save_clustered_suggestions,
+        load_news_cache,
+    )
+
+    # Spam filter for clustering input
+    try:
+        from backend.modules.twitter_scanner import is_spam as _is_spam_check
+    except ImportError:
+        _is_spam_check = None
+
+    # Also import low-quality checker for broader filtering
+    try:
+        from backend.modules.twitter_scanner import is_low_quality_discovery as _is_lq_check
+    except ImportError:
+        _is_lq_check = None
+
+    # Collect all top tweets from all trends (skip spam/GM)
+    all_tweets = []
+    tweet_meta = []  # Keep track of source info
+    skipped_spam = 0
+    for trend in trends[:15]:  # Max 15 trends
+        for tw in trend.get("top_tweets", [])[:5]:
+            text = (tw.get("text") or "")[:500].strip()  # 500 chars for better semantic understanding
+            if not text or text in [t["text"] for t in tweet_meta]:
+                continue
+            # Skip low-quality/GM tweets from clustering input
+            if _is_lq_check and _is_lq_check(text):
+                skipped_spam += 1
+                continue
+            if _is_spam_check and _is_spam_check(text):
+                skipped_spam += 1
+                continue
+            all_tweets.append(text)
+            tweet_meta.append({
+                "text": text,
+                "account": tw.get("account", ""),
+                "engagement": tw.get("engagement", 0),
+                "keyword": trend.get("keyword", ""),
+                "tweet_id": tw.get("tweet_id", ""),
+            })
+    if skipped_spam:
+        logger.info("Clustering: skipped %d spam tweets from input", skipped_spam)
+
+    if len(all_tweets) < 3:
+        logger.info("Clustering: too few tweets (%d), skipping", len(all_tweets))
+        return
+
+    # Build prompt for AI clustering — include engagement data for context
+    tweets_text = "\n".join(
+        f"[{i}] @{tweet_meta[i]['account']} (❤️{tweet_meta[i].get('engagement', 0)}): {tweet_meta[i]['text']}"
+        for i in range(len(all_tweets))
+    )
+
+    prompt = (
+        "Bu tweet'leri SEMANTIK BENZERLIGE göre grupla.\n"
+        "Her grup TEK BİR olay/duyuru/ürün/tartışma hakkında olmalı.\n"
+        "AYNI KONU hakkında farklı kişilerin yazdığı tweetleri AYNI GRUBA koy.\n\n"
+        "KURALLAR:\n"
+        "1. SEMANTIK ANALIZ YAP — sadece keyword eşleşmesine bakma, anlam benzerliğine bak\n"
+        "2. Aynı ürün/olay/duyuru hakkındaki tweetleri MUTLAKA birleştir (ör: 'GPT-5 launched', 'OpenAI releases GPT-5', 'New GPT model' → HEPSİ AYNI GRUP)\n"
+        "3. Her konu başlığı EN AZ 3 kelime olmalı ve spesifik bir olay/ürün/duyuru içermeli\n"
+        "4. GENELLEMELERDEN KAÇIN — 'AI gelişmeleri' değil, 'Google Gemini 2.5 Flash Çıkışı' gibi spesifik ol\n"
+        "5. Birbirine BENZEMEYEN tweet'leri aynı gruba KOYMA\n"
+        "6. TEK tweet grubu YAPMA — eğer bir tweet hiçbir gruba uymuyorsa, onu dahil ETME\n"
+        "7. topic_title_tr ZORUNLU — Türkçe başlık MUTLAKA yaz\n"
+        "8. description_tr ZORUNLU — 'Bu konu neden önemli?' 1-2 cümle Türkçe açıklama yaz\n"
+        "9. Engagement yüksek olan grupları (toplam ❤️) daha yüksek engagement_potential ver\n\n"
+        f"Tweet'ler:\n{tweets_text}\n\n"
+        "SADECE JSON array döndür, başka bir şey yazma:\n"
+        '[{"topic_title": "specific English topic title (min 3 words)", '
+        '"topic_title_tr": "Türkçe başlık (ZORUNLU)", '
+        '"description_tr": "Bu konu neden önemli? Türkçe açıklama (ZORUNLU)", '
+        '"tweet_indices": [0, 3, 5], "engagement_potential": 8, '
+        '"suggested_style": "informative", "suggested_hour": "14:07", '
+        '"reasoning": "neden ilginç kısa açıklama"}]'
+    )
+
+    # Call AI
+    try:
+        from backend.api.helpers import get_ai_provider
+        provider, api_key, _ = get_ai_provider()
+        if not api_key:
+            logger.warning("Clustering: no AI key available")
+            return
+    except Exception:
+        logger.warning("Clustering: AI provider unavailable")
+        return
+
+    response_text = ""
+    try:
+        if provider in ("minimax", "groq", "openai"):
+            import ssl
+            import urllib.request
+            base_urls = {
+                "minimax": "https://api.minimax.io/v1",
+                "groq": "https://api.groq.com/openai/v1",
+                "openai": "https://api.openai.com/v1",
+            }
+            models = {
+                "minimax": "MiniMax-M2.5",
+                "groq": "llama-3.3-70b-versatile",
+                "openai": "gpt-4o-mini",
+            }
+            url = f"{base_urls[provider]}/chat/completions"
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            }
+            payload = {
+                "model": models[provider],
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 2000,
+                "temperature": 0.3,
+            }
+            data = _json.dumps(payload).encode("utf-8")
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            req = urllib.request.Request(url, data=data, headers=headers)
+            with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
+                result = _json.loads(resp.read().decode("utf-8"))
+                response_text = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+        elif provider == "anthropic":
+            import ssl
+            import urllib.request
+            url = "https://api.anthropic.com/v1/messages"
+            headers = {
+                "Content-Type": "application/json",
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+            }
+            payload = {
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 2000,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+            data = _json.dumps(payload).encode("utf-8")
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            req = urllib.request.Request(url, data=data, headers=headers)
+            with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
+                result = _json.loads(resp.read().decode("utf-8"))
+                response_text = result.get("content", [{}])[0].get("text", "")
+        else:
+            logger.warning("Clustering: unsupported provider %s", provider)
+            return
+    except Exception as e:
+        logger.warning("Clustering AI call failed: %s", e)
+        return
+
+    # Strip MiniMax tags if present
+    if provider == "minimax" and response_text:
+        response_text = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL).strip()
+        response_text = re.sub(r'<minimax:tool_call>.*?</minimax:tool_call>', '', response_text, flags=re.DOTALL).strip()
+        response_text = re.sub(r'<minimax:tool_call>.*', '', response_text, flags=re.DOTALL).strip()
+
+    # Parse clusters
+    try:
+        match = re.search(r'\[.*\]', response_text, re.DOTALL)
+        if not match:
+            logger.warning("Clustering: no JSON array found in response")
+            return
+        clusters = _json.loads(match.group())
+    except Exception as e:
+        logger.warning("Clustering: JSON parse error: %s", e)
+        return
+
+    # Build clustered suggestions
+    suggestions = []
+    for cluster in clusters:
+        indices = cluster.get("tweet_indices", [])
+        if not indices:
+            continue
+
+        # Gather tweets for this cluster
+        cluster_tweets = []
+        source_keywords = set()
+        for idx in indices:
+            if 0 <= idx < len(tweet_meta):
+                meta = tweet_meta[idx]
+                cluster_tweets.append({
+                    "text": meta["text"],
+                    "account": meta["account"],
+                    "engagement": meta["engagement"],
+                })
+                source_keywords.add(meta["keyword"])
+
+        if not cluster_tweets:
+            continue
+
+        # Calculate combined engagement
+        total_engagement = sum(t.get("engagement", 0) for t in cluster_tweets)
+
+        suggestions.append({
+            "type": "trend",
+            "topic": cluster.get("topic_title", ""),
+            "topic_tr": cluster.get("topic_title_tr", ""),
+            "description_tr": cluster.get("description_tr", ""),
+            "reason": f"{len(cluster_tweets)} tweet, {len(set(t['account'] for t in cluster_tweets))} hesap",
+            "tweets": cluster_tweets,
+            "engagement_potential": min(10, max(1, cluster.get("engagement_potential", 5))),
+            "suggested_style": cluster.get("suggested_style", "informative"),
+            "suggested_hour": cluster.get("suggested_hour", "14:07"),
+            "reasoning": cluster.get("reasoning", ""),
+            "source_keywords": list(source_keywords),
+            "total_engagement": total_engagement,
+        })
+
+    # Add news-based suggestions (not clustered, each is its own topic)
+    news_cache = load_news_cache()
+    for article in (news_cache or [])[:5]:
+        title = article.get("title", "")
+        if not title:
+            continue
+        suggestions.append({
+            "type": "news",
+            "topic": title,
+            "topic_tr": "",
+            "reason": f"Kaynak: {article.get('source', '')}",
+            "tweets": [],
+            "engagement_potential": 6,
+            "suggested_style": "informative",
+            "suggested_hour": "10:22",
+            "reasoning": "",
+            "url": article.get("url", ""),
+            "source_keywords": [],
+            "total_engagement": 0,
+            "news_body": (article.get("body") or "")[:300],
+            "news_source": article.get("source", ""),
+            "news_date": article.get("date", ""),
+        })
+
+    # Save clustered results
+    save_clustered_suggestions({
+        "suggestions": suggestions,
+        "clustered_at": now.isoformat(),
+        "total": len(suggestions),
+        "tweet_count": len(all_tweets),
+        "source_hash": str(hash(tweets_text[:500])),  # For cache invalidation
+    })
+
+    logger.info(
+        "Clustering: %d clusters created from %d tweets, %d news added",
+        len([s for s in suggestions if s["type"] == "trend"]),
+        len(all_tweets),
+        len([s for s in suggestions if s["type"] == "news"]),
+    )
+
+
+def _notify_trends(trends: list[dict]):
+    """Telegram bildirim — güçlü trendler."""
+    try:
+        from backend.config import get_settings
+        settings = get_settings()
+        if not (settings.telegram_bot_token and settings.telegram_chat_id):
+            return
+
+        from backend.modules.telegram_notifier import send_telegram_message
+        lines = ["📈 Trend Tespiti — Sıcak Konular:\n"]
+        for t in trends[:5]:
+            kw = t["keyword"]
+            count = t["account_count"]
+            eng = t["total_engagement"]
+            lines.append(f"• \"{kw}\" — {count} hesapta, toplam {eng:.0f} engagement")
+        msg = "\n".join(lines)
+        send_telegram_message(msg, settings.telegram_bot_token, settings.telegram_chat_id)
+    except Exception:
+        pass

@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from backend.config import get_settings
-from backend.modules.style_manager import add_to_post_history
+from backend.modules.style_manager import add_to_post_history, add_tweet_metric
 
 router = APIRouter()
 
@@ -22,49 +22,119 @@ class PublishResponse(BaseModel):
     tweet_id: str = ""
     url: str = ""
     error: str = ""
+    thread_results: list[dict] = []
+
+    @classmethod
+    def from_result(cls, result: dict) -> "PublishResponse":
+        """TweetPublisher sonucunu PublishResponse'a cevir (None -> '')"""
+        return cls(
+            success=result.get("success", False),
+            tweet_id=result.get("tweet_id") or "",
+            url=result.get("url") or "",
+            error=result.get("error") or "",
+        )
+
+
+def _create_publisher():
+    """Twitter API publisher olustur — dogru credential'lari kullanir."""
+    settings = get_settings()
+
+    # Twitter API v2 credentials (OAuth 1.0a)
+    api_key = settings.twitter_api_key
+    api_secret = settings.twitter_api_secret
+    access_token = settings.twitter_access_token
+    access_secret = settings.twitter_access_secret
+    bearer_token = settings.twitter_bearer_token
+
+    if not (api_key and api_secret and access_token and access_secret):
+        raise HTTPException(
+            status_code=400,
+            detail="Twitter API credentials eksik. Ayarlar sayfasindan API Key, API Secret, Access Token ve Access Secret girin.",
+        )
+
+    from backend.modules.tweet_publisher import TweetPublisher
+
+    return TweetPublisher(
+        api_key=api_key,
+        api_secret=api_secret,
+        access_token=access_token,
+        access_secret=access_secret,
+        bearer_token=bearer_token,
+    )
+
+
+def _register_metric(tweet_id: str, text: str, url: str):
+    """Paylasilan tweet'i otomatik metrik takibine ekle."""
+    import datetime
+    from zoneinfo import ZoneInfo
+    now = datetime.datetime.now(ZoneInfo("Europe/Istanbul")).isoformat()
+    add_tweet_metric({
+        "tweet_id": tweet_id,
+        "text": text[:200],
+        "url": url,
+        "metrics": {},
+        "last_checked": now,
+        "first_tracked": now,
+        "source": "publish",
+    })
 
 
 @router.post("/tweet", response_model=PublishResponse)
 async def publish_tweet(request: PublishRequest):
     """Tweet veya thread paylas"""
-    settings = get_settings()
-
-    # Check required Twitter credentials
-    if not (settings.twitter_bearer_token and settings.twitter_ct0 and settings.twitter_auth_token):
-        raise HTTPException(
-            status_code=400,
-            detail="Twitter API credentials not configured. Set TWITTER_BEARER_TOKEN, TWITTER_CT0, TWITTER_AUTH_TOKEN.",
-        )
-
     try:
-        from backend.modules.tweet_publisher import TweetPublisher
-
-        publisher = TweetPublisher(
-            api_key=settings.twitter_ct0,
-            api_secret=settings.twitter_auth_token,
-            access_token=settings.twitter_ct0,
-            access_secret=settings.twitter_auth_token,
-            bearer_token=settings.twitter_bearer_token,
-        )
+        publisher = _create_publisher()
 
         if request.thread_parts:
-            # Thread mode
+            # Thread mode — tum sonuclari don
             results = publisher.post_thread(request.thread_parts)
             first = results[0] if results else {}
+            success_count = sum(1 for r in results if r.get("success"))
+            all_success = success_count == len(results)
+
             if first.get("success"):
-                # Save to history
+                urls = [r.get("url", "") for r in results if r.get("success")]
                 add_to_post_history({
                     "text": request.text,
                     "url": first.get("url", ""),
                     "type": "thread",
                     "parts": len(request.thread_parts),
+                    "thread_urls": urls,
                 })
+                if first.get("tweet_id"):
+                    _register_metric(first["tweet_id"], request.text, first.get("url", ""))
+
             return PublishResponse(
                 success=first.get("success", False),
-                tweet_id=first.get("tweet_id", ""),
-                url=first.get("url", ""),
-                error=first.get("error", ""),
+                tweet_id=first.get("tweet_id") or "",
+                url=first.get("url") or "",
+                error=first.get("error") or (
+                    f"{success_count}/{len(results)} tweet paylasild." if not all_success and success_count > 0 else ""
+                ),
+                thread_results=[
+                    {
+                        "index": r.get("index", i + 1),
+                        "success": r.get("success", False),
+                        "tweet_id": r.get("tweet_id") or "",
+                        "url": r.get("url") or "",
+                        "error": r.get("error") or "",
+                    }
+                    for i, r in enumerate(results)
+                ],
             )
+        elif request.reply_to_id:
+            # Reply to tweet
+            result = publisher.post_reply(request.text, request.reply_to_id)
+            if result.get("success"):
+                add_to_post_history({
+                    "text": request.text,
+                    "url": result.get("url", ""),
+                    "type": "reply",
+                    "reply_to_id": request.reply_to_id,
+                })
+                if result.get("tweet_id"):
+                    _register_metric(result["tweet_id"], request.text, result.get("url", ""))
+            return PublishResponse.from_result(result)
         elif request.quote_tweet_id:
             # Quote tweet
             result = publisher.post_quote_tweet(request.text, request.quote_tweet_id)
@@ -74,7 +144,9 @@ async def publish_tweet(request: PublishRequest):
                     "url": result.get("url", ""),
                     "type": "quote_tweet",
                 })
-            return PublishResponse(**result)
+                if result.get("tweet_id"):
+                    _register_metric(result["tweet_id"], request.text, result.get("url", ""))
+            return PublishResponse.from_result(result)
         else:
             # Single tweet
             result = publisher.post_tweet(request.text)
@@ -84,7 +156,11 @@ async def publish_tweet(request: PublishRequest):
                     "url": result.get("url", ""),
                     "type": "tweet",
                 })
-            return PublishResponse(**result)
+                if result.get("tweet_id"):
+                    _register_metric(result["tweet_id"], request.text, result.get("url", ""))
+            return PublishResponse.from_result(result)
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -1,0 +1,1390 @@
+{
+  "username": "cmdnoir",
+  "analyzed_at": "2026-03-05T17:03:41.438021",
+  "analysis": {
+    "total_tweets": 82,
+    "total_likes": 19668,
+    "total_retweets": 1308,
+    "total_replies": 610,
+    "avg_engagement_score": 674.14,
+    "top_tweets": [
+      {
+        "text": "tanıdığım biri var, 22 yaşında, üniversite son sınıf, balide oturuyor.\n\nhayır zengin aile çocuğu değil. hayır kripto ile vurmadı. hayır influencer da değil.\n\nçocuk geçen yaz bir problem buldu. türkiyedeki küçük kliniklerin randevu sistemi yoktu. whatsapptan randevu alıyorlardı. kaçırıyorlardı, unutuyorlardı, hasta küsüyordu.\n\nclaudea oturdu, prompt yazdı. vibe coding ile 3 haftada çalışan bir micro saas çıkardı. randevu al, hatırlat, sms at. basit. gösterişsiz. ama çalışıyor.\n\nilk ay 4 klinik denedi. ikinci ay 11 oldu. üçüncü ay aylık tekrarlayan gelir 1200 dolara çıktı.\n\nşimdi diyeceksin ki 1200 dolar ne ki. türkiyede belki ortalama maaş. ama balide 1200 dolar şu demek: havuzlu villa, coworking üyeliği, günde iki öğün dışarıda yemek, scooter kirası. ve cebinde hala para kalıyor.\n\nçocuk dönem ödevlerini balide yapıyor. sabah sörf, öğleden sonra müşteri destek maili, akşam yeni özellik promptu yazıyor. üniversite hocası zoomdan final sınavı yapıyor, arka planda palmiye ağaçları görünüyor.\n\nkomik olan ne biliyor musun? çocuğun yazdığı kodun yüzde doksanını ai üretti. kendisi frontend backend ayrımını bile tam bilmiyor. ama müşteriyi biliyor. problemi biliyor. çözümü basit tutmayı biliyor.\n\nmichelin yıldızlı kod yazan senior developerlar linkedinde iş arıyor. bu çocuk iki satır prompt ile klinik sahiplerinin parasını alıyor. dünya tersine döndü.\n\nama şunu da söyleyeyim: vibe coding ile çıkardığı ürün mükemmel değil. kod tabanı muhtemelen spagetti. ölçeklenmesi zor. bir gün ciddi refactor gerekecek. bunu o da biliyor.\n\nfarkı şu: o mükemmeli beklemedi. çalışanı çıkardı. çalışan ürünle para kazandı. parayla hayatını kurdu. refactoru da o parayla yaptıracak.\n\nçoğu kişi baliye taşınmak için 5 yıllık plan yapıyor. bu çocuk 5 haftalık sprint ile taşındı.\n\nvibe codinge ticking time bomb diyenler var. haklı olabilirler teknik açıdan. ama o bomba patlayana kadar çocuk balide üçüncü ürününü çıkarmış olacak.\n\nsana kalan soru şu: sen hala mükemmel teknik altyapıyı mı bekliyorsun, yoksa çalışan bir şeyi çıkarıp hayatını mı kuruyorsun?",
+        "engagement_score": 8919.21,
+        "like_count": 3572,
+        "retweet_count": 149,
+        "reply_count": 173,
+        "impression_count": 1091467,
+        "created_at": "2026-02-19 15:16:47+00:00"
+      },
+      {
+        "text": "prompts chat dünyanın en büyük açık kaynak prompt kütüphanesi. 143 bin+ github star almış, harvard ve columbia referans göstermiş.\n\niçinde topluluk tarafından test edilmiş 100+ prompt var. chatgpt, claude, gemini, llama, mistral gibi tüm büyük modellerle çalışıyor.\n\nsemantic search ile istediğin prompt'u buluyorsun. kategori ve tag'lere göre keşfedebiliyorsun.\n\nkendi prompt'unu oluşturup paylaşabiliyorsun. versiyon kontrolü var, değişiklikleri takip ediyorsun. private tutabilir ya da toplulukla paylaşabilirsin.\n\nvoting sistemi sayesinde en popüler prompt'ları görebiliyorsun.\n\ntamamen ücretsiz, açık kaynak. docker ile kendi sunucuna deploy edebilirsin.\n\nhem de tanıdık bir isimden. @fkadev \n\nkaydet, lazım olur.",
+        "engagement_score": 4908.39,
+        "like_count": 1681,
+        "retweet_count": 149,
+        "reply_count": 11,
+        "impression_count": 89536,
+        "created_at": "2026-02-25 17:53:02+00:00"
+      },
+      {
+        "text": "chatgpt'yi silme zamanı geldi ama aylarca öğrettiğin context'i kaybetmek istemiyorsun.\n\nsorun yok. claude import memory özelliğini çıkardı. tek copy-paste ile tüm context'ini aktarıyorsun.\n\nanthropic'in hazırladığı prompt'u chatgpt'ye yapıştır, çıkan sonucu claude'un memory ayarlarına yapıştır. bir dakikadan kısa.\n\nclaude memory'sini güncelliyor, ilk konuşman yüzüncü konuşman gibi oluyor.\n\ntercihlerini konuşmalar arası öğreniyor, proje context'ini ayrı tutuyor, hatırladığı her şeyi görebilip düzenleyebiliyorsun.\n\ntüm ücretli planlarda mevcut.\n\ngeçiş yapmak için bahane kalmadı.",
+        "engagement_score": 4540.03,
+        "like_count": 1532,
+        "retweet_count": 133,
+        "reply_count": 22,
+        "impression_count": 148408,
+        "created_at": "2026-03-01 08:25:30+00:00"
+      },
+      {
+        "text": "elevenlabs müşteri hizmetleri ajanı çıkardı. 70 dilde konuşuyor, empati kuruyor, telefon/whatsapp/email her yerde çalışıyor.\n\nşimdi asıl fırsat:\n\nküçük işletmeler bunun nasıl kurulacağını bilmiyor.\nsen biliyorsun.\n\ndüşün: her gece nöbetçi eczane, kargo firması, diş kliniği, muhasebe ofisi...\nhepsinin sürekli telefon açan birilerine ihtiyacı var.\n\nama kimse gece vardiyasına adam bulamıyor.\nya da buluyor ama maliyet katlanamıyor.\n\nsen git, elevenlabs ajanını kur, ayda 400-500 dolar servis ücreti al.\nmüşteri 7/24 destek sağlıyor, sen sürekli gelir elde ediyorsun.\n\npazar dev, rekabet yok, kurulum kolay.\n\nilk 10 müşteri ile ayda 5-10k kazanç demek.\n\nsadece izleme. yap.",
+        "engagement_score": 3749.11,
+        "like_count": 1510,
+        "retweet_count": 78,
+        "reply_count": 49,
+        "impression_count": 346950,
+        "created_at": "2026-02-19 10:52:12+00:00"
+      },
+      {
+        "text": "35 yaş üstü iş sahiplerine claude nedir diye sor, boş boş bakarlar.\n\ndünyanın %84'ü henüz ai kullanmamış. mümkün olan ile insanların bildigi arasındaki bu boşluk tam bir fırsat alanı.\n\n4 kanıtlanmış yöntemle ayda 2-12 bin dolar kazanılıyor ve hiçbiri için yazılımcı olmana gerek yok.\n\nthread 👇\n\n1/8",
+        "engagement_score": 3562.21,
+        "like_count": 1127,
+        "retweet_count": 107,
+        "reply_count": 20,
+        "impression_count": 175960,
+        "created_at": "2026-02-25 11:27:33+00:00"
+      },
+      {
+        "text": "yıllarca fark edilmemiş 500+ güvenlik açığı, birkaç saatte bulundu.\n\nanthropic, claude code security'i duyurdu.\nyapay zeka artık kodunu insan gibi okuyor.\nsadece bilinen pattern'lere bakmıyor.\niş mantığını anlıyor, veri akışını takip ediyor.\nklasik araçların atlayacağı açıkları yakalıyor.\n\nşimdi şunu düşün:\nyıllardır production'da duran, uzmanların gözünden kaçan buglar var.\nclaude bunları buluyor.\n\nsaldırganlar yapay zekayı kullanmaya başladı.\nsavunma tarafı da kullanmak zorunda.\n\nsiber güvenlik oyununun kuralları değişti.\nkaydet. yakında herkes bundan bahsedecek.",
+        "engagement_score": 2191.68,
+        "like_count": 995,
+        "retweet_count": 49,
+        "reply_count": 15,
+        "impression_count": 162642,
+        "created_at": "2026-02-20 18:25:26+00:00"
+      },
+      {
+        "text": "dan koe \"human 3.0\" modelini yayınladı ve bu şimdiye kadar gördüğüm en kapsamlı kişisel gelişim haritası.\n\nadam 15 yıldır psikoloji, felsefe, teknoloji, para, anlam üzerine araştırma yapmış. son 6 yıldır yazıyor ve örtüşen patternleri bir felsefe haline getirmiş.\n\nhedefi: öğrendiği her şeyi tek bir kapsamlı haritada sentezlemek.\n\nthread 👇\n\n1/12",
+        "engagement_score": 1823.39,
+        "like_count": 619,
+        "retweet_count": 55,
+        "reply_count": 7,
+        "impression_count": 124848,
+        "created_at": "2026-03-02 09:00:20+00:00"
+      },
+      {
+        "text": "cowork'ü düzgün kuran insanlar 2026'da ai'dan en çok değer çıkaranlar.\n\nben ocak ayında kullanmaya başladım, bir ay içinde her sabah açtığım ilk uygulama oldu. email'den, notion'dan, her şeyden önce.\n\nsebep basit: saatlerce süren işlerimi bitirmeye başladı.\n\n30 dakika ayır, düzgün kur, nasıl çalıştığını öğren.\n\nthread 👇\n\n1/10",
+        "engagement_score": 1675.99,
+        "like_count": 739,
+        "retweet_count": 41,
+        "reply_count": 8,
+        "impression_count": 146044,
+        "created_at": "2026-02-26 11:07:23+00:00"
+      },
+      {
+        "text": "modern bir ürün çıkarmak için iki yol var.\n\nyol 1 - en hızlı başlangıç:\nclaude → kod\nsupabase → backend\nvercel → deploy\nnamecheap → domain\nstripe → ödeme\ngithub → versiyon kontrol\nresend → email\nclerk → auth\ncloudflare → dns\nposthog → analitik\nsentry → hata takip\nupstash → redis\npinecone → vector db\n\nyol 2 - en düşük maliyet:\nkimi → kod\nappwrite → backend\ncoolify → deploy\nporkbun → domain\nstripe → ödeme\ngitlab → versiyon kontrol\nlistmonk → email\nauthentik → auth\ncloudflare → dns\numami → analitik\nglitchtip → hata takip\nvalkey → redis\nqdrant → vector db\n\n\"her şey kontrolümde olsun\" deyip vps'e coolify kuranlardan mısın, \nyoksa \"önce deploy, maliyeti sonra düşünürüm\" deyip vercel kullananlardan mı?  \n\nyoruma yazın.",
+        "engagement_score": 1658.69,
+        "like_count": 453,
+        "retweet_count": 40,
+        "reply_count": 28,
+        "impression_count": 30683,
+        "created_at": "2026-02-22 11:59:22+00:00"
+      },
+      {
+        "text": "bir avukat claude ile nasıl çalıştığını anlattı ve bu gerçekten etkileyici.\n\nmüvekkili için bir satın alma anlaşması kapanacak, gece 7'de karşı taraf son dakika değişiklik talep ediyor. yeni escrow koşulları, genişletilmiş tazminat istisnaları, revize kapanış gereklilikleri.\n\nanlaşmayı, açıklama belgelerini, talep mektubunu claude'a yüklüyor. birkaç dakika içinde claude her değişikliği mevcut anlaşma şartlarıyla eşleştiriyor.\n\nthread 👇\n\n1/15",
+        "engagement_score": 1526.11,
+        "like_count": 738,
+        "retweet_count": 35,
+        "reply_count": 6,
+        "impression_count": 166399,
+        "created_at": "2026-03-03 11:36:42+00:00"
+      },
+      {
+        "text": "claude code opus 4.6 ile beraber çok token yakmaya başladı.\nbunu minimize etmenin birçok yolu var.\n\nbugün ilkinden bahsediyorum:\naynı hatayı bir daha yaptırmamak.\n\nbunun için yorumlarda bir claude md formatı vericem. \nbu format direkt geliştirici ekibin paylaştığı bir döküman.\n\npeki ne işe yarıyor?\n\nher düzeltmeden sonra kendini güncelliyor.\naynı hatayı bir daha yapmaması için kural yazıyor.\noturum başında o kuralları okuyup içselleştiriyor.\nbug geldiğinde sormadan çözüyor.\nbitmeden önce \"staff engineer onaylar mı?\" diye soruyor.\n\nyani claude'u bir kez eğitiyorsun,\nsonra aynı şeyi tekrar tekrar söylemek zorunda kalmıyorsun.\n\ntoken'ın büyük kısmı tekrara gidiyor.\nbunu kes, maliyetin yarı yarıya düşer.\n\nkaydet. serinin devamı gelecek.",
+        "engagement_score": 1426.54,
+        "like_count": 485,
+        "retweet_count": 38,
+        "reply_count": 12,
+        "impression_count": 38528,
+        "created_at": "2026-02-22 16:37:31+00:00"
+      },
+      {
+        "text": "app store’da görünmek için haftalarca keyword kovalıyorsun ya.  \n\nclaude-code-aso-skill diye bir repo var. \nclaude code için aso ajan sistemi kuruyor. \nkeyword buluyor, başlık açıklama yazıyor, \nrakip analizi yapıyor.  \n\ntek komutla store audit çıkarıyor. \ndakikalar içinde hazır strateji veriyor.  \n\nindie mobil app yapanlar için ciddi avantaj. \norganik indirme artışı hedefliyorsan tam olay.",
+        "engagement_score": 1261.85,
+        "like_count": 566,
+        "retweet_count": 29,
+        "reply_count": 7,
+        "impression_count": 34985,
+        "created_at": "2026-02-17 08:05:40+00:00"
+      },
+      {
+        "text": "tiktok'ta abd kitlesi için telefon almana gerek yok.\n\naylık 3 dolarlık mobil proxy yeterli.\n\niproyal veya proxycheap'ten al.\ntiktok'u proxy açıkken aç.\nbölgeyi abd yap.\niçerik at.\n\nneden önemli?\nabd trafiği = tier 1 = rpm çok daha yüksek.\naynı video, 10 kat fazla kazanç.\n\ntek kural: tiktok'u her açtığında proxy açık olsun.\nbir an bile kapatma, konum tutarsızlığı hesabı yakar.\n\n10+ hesap veya cihaz izolasyonu gerektiren bir şey yapmıyorsan\niphone olayı gereksiz yere karmaşık.\n\nkaydet. tiktok'tan para kazanmayı düşünüyorsan lazım olur.",
+        "engagement_score": 1169.04,
+        "like_count": 331,
+        "retweet_count": 34,
+        "reply_count": 11,
+        "impression_count": 45711,
+        "created_at": "2026-02-20 17:41:27+00:00"
+      },
+      {
+        "text": "web scraping yapıyorsun, cloudflare engelliyor. beautifulsoup yavaş. website değişince selector'lar bozuluyor.\n\nscrapling bu sorunları çözüyor.\n\nadaptive web scraping framework. parser website değişikliklerinden öğreniyor, elementleri otomatik yeniden buluyor.\n\ncloudflare turnstile bypass ediyor. concurrent crawl, pause/resume, otomatik proxy rotation var.\n\nbeautifulsoup'tan 1775x hızlı, %92 test coverage, terminalden direkt kullanılabiliyor.\n\nmcp server entegrasyonu var. claude, cursor ile web scraping yapabiliyorsun. target content'i extract ediyor, token kullanımını azaltıyor.\n\naçık kaynak, geçen yıl yüzlerce scraper günlük kullanmış.",
+        "engagement_score": 1150.5,
+        "like_count": 434,
+        "retweet_count": 25,
+        "reply_count": 15,
+        "impression_count": 38485,
+        "created_at": "2026-03-04 12:06:12+00:00"
+      },
+      {
+        "text": "RT @vibeeval: arkadaşlar, biliyorsunuz ki bir claude ai, claude code eğitim sürecine girdik. yeni, hatta üst düzey bir skills eğitimi ile g…",
+        "engagement_score": 1140.0,
+        "like_count": 0,
+        "retweet_count": 57,
+        "reply_count": 0,
+        "impression_count": 0,
+        "created_at": "2026-03-01 11:26:28+00:00"
+      },
+      {
+        "text": "anthropic claude için skill oluşturma kılavuzunu yayınladı. 32 sayfalık kapsamlı rehber.\n\nskill nedir? klasör içinde markdown instruction'lar. claude'a belirli görevleri nasıl yapacağını öğretiyor.\n\nher sohbette tercihlerini tekrar anlatmak yerine bir kere öğret, her seferinde faydalanabilirsin.\n\nprogressive disclosure sistemi: yaml frontmatter her zaman yükleniyor, skill body ihtiyaç olunca yükleniyor, linked files claude seçiyor.\n\nüç kategori: document creation (docx, pptx), workflow automation, mcp enhancement.\n\nskill-creator skill'i ile 15-30 dakikada fonksiyonel skill oluşturabiliyorsun.\n\naçık standart. claude dışında başka platformlarda da çalışabilir.\n\nlinki yorumlara ekliyorum. kaybetmemek için kaydet.",
+        "engagement_score": 970.25,
+        "like_count": 345,
+        "retweet_count": 27,
+        "reply_count": 5,
+        "impression_count": 20225,
+        "created_at": "2026-03-02 15:01:20+00:00"
+      },
+      {
+        "text": "vibe coding ile ürünü çıkardın.\nşimdi asıl sınav başlıyor: marketing.\n\nkod yazmak kolaydı.\ninsanlara ulaşmak başka bir oyun.\n\nyorumlardaki listeyi kaydet.\nürününü git bu platformlarda paylaş. marketinge böyle başla. \ndevamını sonra anlatıcam. takipte kal.",
+        "engagement_score": 962.23,
+        "like_count": 411,
+        "retweet_count": 19,
+        "reply_count": 12,
+        "impression_count": 45659,
+        "created_at": "2026-02-21 11:56:01+00:00"
+      },
+      {
+        "text": "RT @acerionsjournal: 2026 YILIND FIVERR'A BAŞLAMAK İSTİYORSAN AMA NEREDEN BAŞLAYACAĞINI BİLMİYORSAN ANLATIYORUM.\n\npazar doydu diyenlere kul…",
+        "engagement_score": 840.0,
+        "like_count": 0,
+        "retweet_count": 6,
+        "reply_count": 0,
+        "impression_count": 1,
+        "created_at": "2026-02-26 14:30:07+00:00"
+      },
+      {
+        "text": "seo için saatlerce yazı mı yazıyorsun? seomachine bu süreci otomatikleştirmiş.\n\nuzun format, seo optimize blog içeriği oluşturmak için tam bir sistem. araştır, yaz, analiz et, optimize et. hepsi bir arada.\n\niçinde ne var: custom workflow komutları, özelleşmiş agent'lar, 26 marketing skill, analytics entegrasyonu.\n\n/research komutu konu araştırması yapıyor. /write makale yazıyor. /optimize seo için optimize ediyor. /performance-review performans analizi yapıyor.\n\nagent'lar var: content analyzer, seo optimizer, meta creator, internal linker, keyword mapper, editor, headline generator.\n\nclaude code'da projeyi aç, bir konu araştır, research brief oluşsun, makaleyi yaz, optimize et. workflow bu kadar basit.\n\naçık kaynak, ücretsiz. claude code kullanan herkes indirebilir.\n\nkaydet. lazım olur.",
+        "engagement_score": 788.8,
+        "like_count": 255,
+        "retweet_count": 20,
+        "reply_count": 9,
+        "impression_count": 17924,
+        "created_at": "2026-03-02 11:38:26+00:00"
+      },
+      {
+        "text": "tasarım ekranları için o uygulamadan çıkıp diğerine girmene gerek yok.\n\nmobbin, dünyanın en büyük ui/ux ekran referans kütüphanesi.\nspotify, notion, duolingo, airbnb...\nbinlerce gerçek uygulamanın her ekranı burada.\nfiltrelenebilir, aranabilir, figma'ya kopyalanabilir.\n\n\"bu ekran nasıl tasarlanır\" diye google'lamak bitti.\n\nlogin ekranı mı lazım? 500+ örnek.\nonboarding akışı mı? hepsi önünde.\nödeme sayfası mı? gerçek uygulamalardan al, ilham al.\n\nücretsiz planı var.\nşu an aç, bir bak.\n\nkaydet. her projede açacaksın.",
+        "engagement_score": 734.97,
+        "like_count": 195,
+        "retweet_count": 23,
+        "reply_count": 5,
+        "impression_count": 12922,
+        "created_at": "2026-02-20 14:46:10+00:00"
+      },
+      {
+        "text": "adam \"ai ile reklam yönetimi\" yapıyormuş.\nclaude bir gecede işlerini bitirmiş.\n\nhata basit: anthropic'in roadmap'inde olan şey üzerine startup kurmuşlar.\n\nmcp protokolü açıklandığında meta ve google ads bağlantısının geleceği belliydi.\nonlar \"birkaç ay var\" diye düşünmüşler, claude \"şimdi\" dedi.\n\nders: büyük oyuncuların açıkça çalıştığı alanlarda startup kurma.\n\nanthropic, openai, google'ın blog'larını okuduğunda ne gelecek görüyorsun.\no alan yasak bölge.\n\nözellikle mcp connectorları belliydi.\nmeta ads, google ads, salesforce... hepsi gelecek dendi.\n\neğer roadmap'te varsa sen orada olma.",
+        "engagement_score": 732.49,
+        "like_count": 335,
+        "retweet_count": 15,
+        "reply_count": 7,
+        "impression_count": 87061,
+        "created_at": "2026-02-24 12:57:41+00:00"
+      },
+      {
+        "text": "7 yıldır felçli olan bir adam gördüm bugün. 2679. gününü sayıyormuş. her gün tek tek.\n\nçoğu insan ilk haftada bırakır. fizik tedaviye gider, sonuç göremez, moral bozulur, randevuları kaçırır, sonra tamamen bırakır. bu adam 2679 gün boyunca her sabah kalkmış. bazı sabahlar hiçbir ilerleme yok. bazı sabahlar dünden daha kötü. ama kalkmış.\n\nbunu okuyunca kendi durumuma baktım. ben bazen 3 gün üst üste kod yazamayınca motivasyonumu kaybediyorum. bir hafta boyunca kullanıcı gelmeyince projeyi çöpe atmayı düşünüyorum. adam 7 yıldır kendi bedenine karşı savaşıyor, ben iki kötü metrik yüzünden pes ediyorum.\n\ninsanlar pes etme hikayelerini hep büyük anlarla anlatır. şampiyon son raundda yumruk atar, girişimci iflasın eşiğinden döner, sporcu sakatlıktan geri gelir. ama gerçek pes etmeme hali o değil. gerçeği sessiz. gerçeği sıkıcı. her gün aynı şeyi yapmak. ilerleme görmeden. alkış almadan. kimse izlemezken.\n\nbu adam muhtemelen sosyal medyada viral olmak için saymıyor günleri. kendi kendine bir söz vermiş. o sözü tutuyor. 2679 gündür tutuyor.\n\nşimdi bunu ai dünyasına çevireyim. her gün yeni bir araç çıkıyor, yeni bir framework, yeni bir model. herkes ilk heyecanla atlıyor. iki hafta sonra yeni parlak şey gelince eskisini bırakıyor. bir ürüne 6 aydan fazla sadık kalan insan sayısı inanılmaz az.\n\nbir tanıdığım var, 14 aydır aynı micro saas üzerinde çalışıyor. ilk 8 ay sıfır gelir. sıfır. ama her gün bir şey ekledi, bir şey düzeltti, bir müşteriye mail attı. 9. ayda ilk ödeme geldi. 14. ayda aylık 3 bin dolara ulaştı. etrafındaki herkes 8. ayda bırakmıştı. o bırakmadı.\n\nfark ne? yetenek değil. çoğu bırakan insan daha yetenekliydi. fark tek bir şey: ertesi gün yine oturup o sıkıcı işi yapabilmek. heyecan yokken, sonuç yokken, kimse izlemezken.\n\nfelçli adam 2680. güne geçecek yarın. sen bugün hangi gündesin ve yarın oturup devam edecek misin?",
+        "engagement_score": 670.61,
+        "like_count": 306,
+        "retweet_count": 14,
+        "reply_count": 6,
+        "impression_count": 60251,
+        "created_at": "2026-03-01 14:41:51+00:00"
+      },
+      {
+        "text": "bir müşterim var, 10+ yıldır kurumsal it sektöründe çalışıyor. maaşı 200k civarı. güvenli, stabil, herkesin imreneceği bir pozisyon.\n\ngeçen yıl ona bir website yaptım. 3 ay önce de seo danışmanlığına başladık. adam boş vakitlerinde kendi müşterilerine sunucu bakım hizmeti veriyordu zaten ama ciddi bir akış yoktu. ayda 2 belki 3 talep geliyordu.\n\nsonra programmatic seoyu denedik.\n\nmantık şuydu: sunucu bakımı arayan insanlar genelde çok spesifik şeyler yazıyor. ankara dedicated sunucu bakım, linux server izleme hizmeti, windows server güncelleme desteği gibi. yüzlerce farklı kombinasyon var ama kimse bu uzun kuyruk aramalara düzgün sayfa hazırlamamış.\n\nbiz her bir hizmet + şehir + sunucu tipi kombinasyonu için şablonla sayfalar ürettik. içerik junk değildi, adam 10 yıllık deneyimini döktü her sayfaya. teknik detaylar gerçekti, fiyatlandırma mantıklıydı, referanslar somuttu.\n\nilk ay bir şey olmadı. ikinci ay google indexlemeye başladı. üçüncü ayda telefon çalmaya başladı.\n\nşu an durumu şu: kurumsal işinden aldığı maaşın yarısını kendi müşterilerinden kazanıyor. ve artış devam ediyor. geçen hafta beni aradı, ben bu işi bırakıyorum dedi.\n\n10 yıllık kariyeri, 200k maaşı, kurumsal güvenceyi bırakmayı düşünüyor. çünkü kendi işinde büyüme eğrisi çok daha dik.\n\nşimdi burada önemli bir ayrım var.\n\nprogrammatic seoyu spam olarak gören büyük bir kesim var. haklılar da çoğu durumda. çünkü insanlar ai ile bir günde 5k sayfa basıp içi boş keyword çiftliği kuruyor. google da bunları tek tek temizliyor. son aylarda bu tarz sitelerin trafiği çakıldı.\n\nama bu adamın durumu farklıydı. gerçek bir hizmet var. gerçek bir uzmanlık var. sayfalar şablon ama içerik özgün ve teknik olarak doğru. müşteri geldiğinde karşısında 10 yıllık bir mühendis buluyor.\n\nprogrammatic seonun çalıştığı yer tam burası: gerçek bir işin, gerçek uzmanlığının dijital vitrinini ölçeklemek. \n\nsahte otorite kurup 10k sayfa basmak değil. var olan otoriteyi doğru formatta görünür kılmak.\n\nadam hala kararını vermedi tam olarak. ama her hafta gelen yeni müşteri sayısı onu biraz daha cesaretlendiriyor.\n\nsence 200k maaşlı güvenli işi bırakıp kendi işine atlamak mantıklı mı, yoksa daha az iş alıp ikisini paralel götürmeli mi?",
+        "engagement_score": 612.2,
+        "like_count": 234,
+        "retweet_count": 10,
+        "reply_count": 13,
+        "impression_count": 58043,
+        "created_at": "2026-02-21 13:55:40+00:00"
+      },
+      {
+        "text": "iki lise öğrencisi 18 ayda 50 milyon dolar gelire ulaştı ve şirketi sattı.\n\ncal ai, myfitnesspal tarafından satın alındı. henry ve arkadaşı 17 yaşındayken başlamışlar, ai ile kalori takibini kolaylaştırmak istemişler.\n\n18 ay sonra milyonlarca kullanıcı, 50 milyon dolar arr, exit.\n\nböyle bir dönem hiç görmedik.\n\neskiden şirket kurmak için ekip lazımdı, ofis lazımdı, yatırımcı lazımdı, yıllar süren hazırlık lazımdı.\n\nşimdi laptop ve internet yeterli. ai ekibin, yardımcın, mentor'un oluyor.\n\nlise öğrencisi 18 ayda nesiller boyu aktarılabilecek servet yaratıyor.\n\ntarihteki hiçbir nesil böyle bir fırsata sahip olmadı.\n\ngarip bir zamandayız ve çoğu insan bunun farkında bile değil.",
+        "engagement_score": 554.68,
+        "like_count": 164,
+        "retweet_count": 12,
+        "reply_count": 11,
+        "impression_count": 47317,
+        "created_at": "2026-03-04 16:29:05+00:00"
+      },
+      {
+        "text": "hala app store connect panelinde kayboluyor musun ya.\n\nasc-client diye bir repo var. \napp store connect işlerini terminalden yapıyorsun. \nbuild, versiyon, metadata tek komut.  \n\nci pipeline’a koy, 2 dakikada release hazır. \npanele gir çık derdi yok.  \n\nios geliştirip deploy sürecini hızlandırmak isteyen indie’ler için birebir.  \n\nhem de @Kerem_Erkan aracılığıyla...",
+        "engagement_score": 531.11,
+        "like_count": 163,
+        "retweet_count": 16,
+        "reply_count": 3,
+        "impression_count": 12513,
+        "created_at": "2026-02-16 06:42:14+00:00"
+      },
+      {
+        "text": "RT @brkguzel: SIFIR BİLGİYLE ve tamamen ÜCRETSİZ bir şekilde \"gamma\" sitesini kullanarak profesyonel sunumlar hazırlayın. \n\ntek tıkla inter…",
+        "engagement_score": 500.0,
+        "like_count": 0,
+        "retweet_count": 25,
+        "reply_count": 0,
+        "impression_count": 0,
+        "created_at": "2026-02-26 18:33:50+00:00"
+      },
+      {
+        "text": "react native uygulama yapıyorsun, icon tasarımı için designer mı bekliyorsun?\n\nsnapai diye bir cli var.\nterminal açıyorsun, prompt yazıyorsun, icon oluşuyor.\n\n\"minimalist weather app with sun and cloud\" yazıyorsun.\nopenai ya da google gemini üretiyor.\n1024x1024 square çıkıyor, ios ve android için hazır.\n\nkurulum yok, hesap yok.\nsadece npx snapai icon --prompt \"fikrini yaz\" komutu.\n\nicon başına ~0.04 dolar.\ndesigner'a 50-100 dolar vermek yerine 4 cent.\n\naçık kaynak, 1.6k star almış.\n\nreact native ve expo developer'lar için altın.\n\nkaydet, lazım olur.",
+        "engagement_score": 465.1,
+        "like_count": 234,
+        "retweet_count": 8,
+        "reply_count": 5,
+        "impression_count": 31631,
+        "created_at": "2026-02-24 11:20:04+00:00"
+      },
+      {
+        "text": "hiçbir yapay zeka şirketi masum değil.\n\nanthropic dün deepseek, minimax ve moonshot'ı suçladı.\n24 bin sahte hesap açıp claude ile 16 milyon konuşma yaptılar.\nkendi modellerini geliştirmek için.\nbuna \"distillation\" deniyor. izinsiz bilgi transferi.\n\nanthropic haklı mı? teknik olarak evet.\nama şunu da hatırlayalım:\n\nanthropic'in milyonlarca kitabı izinsiz kullandığı iddiasıyla açılan davada\nyazarlarla 1,5 milyar dolarlık uzlaşmaya gidildi.\nkimse o yazarlara sormadı.\n\nyani:\n\"benim verilerimi çalmayın\" diyen şirket,\nbaşkasının verisiyle büyüdü.\n\nbu sadece anthropic değil.\nopenai, meta, google, hepsi aynı gemide.",
+        "engagement_score": 444.65,
+        "like_count": 119,
+        "retweet_count": 10,
+        "reply_count": 9,
+        "impression_count": 14636,
+        "created_at": "2026-02-24 08:52:40+00:00"
+      },
+      {
+        "text": "react component için saatlerce tasarım mı yapıyorsun?\n\nreactbits(.)dev'e gir:\nbinlerce gerçek uygulamadan component koleksiyonu var.\nnavbar, modal, button, form, pricing table... hepsi kategorize edilmiş.\n\ntıkla, gör, kopyala.\n\nsıfırdan tasarlama derdi yok.\n\"bu button nasıl olsun\" diye 2 saat düşünme.\n\n50 farklı button tasarımı gör, beğendiğini al, renklerini değiştir, bitti.\n\ncomponent hazır, responsive, typescript destekli.\ndirekt kopyala yapıştır.\n\nindie dev için altın kaynak.\n\nücretsiz versiyonu oldukça yeterli.\nkaydet, ileride lazım olur.",
+        "engagement_score": 423.61,
+        "like_count": 203,
+        "retweet_count": 8,
+        "reply_count": 4,
+        "impression_count": 13554,
+        "created_at": "2026-02-22 14:07:04+00:00"
+      },
+      {
+        "text": "claude code'a /simplify ve /batch gelmiş.\n\n/simplify: değişiklik yaptıktan sonra paralel agent'lar otomatik temizlik ve iyileştirme yapıyor. kod kalitesini yükseltiyor, claude. md kurallarına uyum sağlıyor.\n\n/batch: büyük çaplı kod taşımaları için. bir klasörü solid'den react'e geçirirken onlarca agent paralel çalışıyor. her biri kendi git worktree'inde izole test edip pull request açıyor.\n\nikisi birleşince pull request veya toplu refactor işleri saatler yerine dakikalara iniyor.\n\naskuserquestion artık markdown gösterebiliyor. diyagram, kod örneği kullanıcıya sorulurken görselleşiyor.\n\n/copy komutuyla claude'un son mesajını tek tıkla kopyalayabiliyorsun.\n\nyakında http hook desteği gelecek, dış endpoint'lere bağlanabileceksin.\n\nhenüz herkese açılmadı ama yakında geliyor.",
+        "engagement_score": 415.76,
+        "like_count": 131,
+        "retweet_count": 10,
+        "reply_count": 6,
+        "impression_count": 16095,
+        "created_at": "2026-02-28 15:26:57+00:00"
+      }
+    ],
+    "all_original_tweets": [
+      {
+        "text": "tanıdığım biri var, 22 yaşında, üniversite son sınıf, balide oturuyor.\n\nhayır zengin aile çocuğu değil. hayır kripto ile vurmadı. hayır influencer da değil.\n\nçocuk geçen yaz bir problem buldu. türkiyedeki küçük kliniklerin randevu sistemi yoktu. whatsapptan randevu alıyorlardı. kaçırıyorlardı, unutuyorlardı, hasta küsüyordu.\n\nclaudea oturdu, prompt yazdı. vibe coding ile 3 haftada çalışan bir micro saas çıkardı. randevu al, hatırlat, sms at. basit. gösterişsiz. ama çalışıyor.\n\nilk ay 4 klinik denedi. ikinci ay 11 oldu. üçüncü ay aylık tekrarlayan gelir 1200 dolara çıktı.\n\nşimdi diyeceksin ki 1200 dolar ne ki. türkiyede belki ortalama maaş. ama balide 1200 dolar şu demek: havuzlu villa, coworking üyeliği, günde iki öğün dışarıda yemek, scooter kirası. ve cebinde hala para kalıyor.\n\nçocuk dönem ödevlerini balide yapıyor. sabah sörf, öğleden sonra müşteri destek maili, akşam yeni özellik promptu yazıyor. üniversite hocası zoomdan final sınavı yapıyor, arka planda palmiye ağaçları görünüyor.\n\nkomik olan ne biliyor musun? çocuğun yazdığı kodun yüzde doksanını ai üretti. kendisi frontend backend ayrımını bile tam bilmiyor. ama müşteriyi biliyor. problemi biliyor. çözümü basit tutmayı biliyor.\n\nmichelin yıldızlı kod yazan senior developerlar linkedinde iş arıyor. bu çocuk iki satır prompt ile klinik sahiplerinin parasını alıyor. dünya tersine döndü.\n\nama şunu da söyleyeyim: vibe coding ile çıkardığı ürün mükemmel değil. kod tabanı muhtemelen spagetti. ölçeklenmesi zor. bir gün ciddi refactor gerekecek. bunu o da biliyor.\n\nfarkı şu: o mükemmeli beklemedi. çalışanı çıkardı. çalışan ürünle para kazandı. parayla hayatını kurdu. refactoru da o parayla yaptıracak.\n\nçoğu kişi baliye taşınmak için 5 yıllık plan yapıyor. bu çocuk 5 haftalık sprint ile taşındı.\n\nvibe codinge ticking time bomb diyenler var. haklı olabilirler teknik açıdan. ama o bomba patlayana kadar çocuk balide üçüncü ürününü çıkarmış olacak.\n\nsana kalan soru şu: sen hala mükemmel teknik altyapıyı mı bekliyorsun, yoksa çalışan bir şeyi çıkarıp hayatını mı kuruyorsun?",
+        "engagement_score": 8919.21,
+        "like_count": 3572,
+        "retweet_count": 149,
+        "reply_count": 173,
+        "impression_count": 1091467,
+        "created_at": "2026-02-19 15:16:47+00:00"
+      },
+      {
+        "text": "prompts chat dünyanın en büyük açık kaynak prompt kütüphanesi. 143 bin+ github star almış, harvard ve columbia referans göstermiş.\n\niçinde topluluk tarafından test edilmiş 100+ prompt var. chatgpt, claude, gemini, llama, mistral gibi tüm büyük modellerle çalışıyor.\n\nsemantic search ile istediğin prompt'u buluyorsun. kategori ve tag'lere göre keşfedebiliyorsun.\n\nkendi prompt'unu oluşturup paylaşabiliyorsun. versiyon kontrolü var, değişiklikleri takip ediyorsun. private tutabilir ya da toplulukla paylaşabilirsin.\n\nvoting sistemi sayesinde en popüler prompt'ları görebiliyorsun.\n\ntamamen ücretsiz, açık kaynak. docker ile kendi sunucuna deploy edebilirsin.\n\nhem de tanıdık bir isimden. @fkadev \n\nkaydet, lazım olur.",
+        "engagement_score": 4908.39,
+        "like_count": 1681,
+        "retweet_count": 149,
+        "reply_count": 11,
+        "impression_count": 89536,
+        "created_at": "2026-02-25 17:53:02+00:00"
+      },
+      {
+        "text": "chatgpt'yi silme zamanı geldi ama aylarca öğrettiğin context'i kaybetmek istemiyorsun.\n\nsorun yok. claude import memory özelliğini çıkardı. tek copy-paste ile tüm context'ini aktarıyorsun.\n\nanthropic'in hazırladığı prompt'u chatgpt'ye yapıştır, çıkan sonucu claude'un memory ayarlarına yapıştır. bir dakikadan kısa.\n\nclaude memory'sini güncelliyor, ilk konuşman yüzüncü konuşman gibi oluyor.\n\ntercihlerini konuşmalar arası öğreniyor, proje context'ini ayrı tutuyor, hatırladığı her şeyi görebilip düzenleyebiliyorsun.\n\ntüm ücretli planlarda mevcut.\n\ngeçiş yapmak için bahane kalmadı.",
+        "engagement_score": 4540.03,
+        "like_count": 1532,
+        "retweet_count": 133,
+        "reply_count": 22,
+        "impression_count": 148408,
+        "created_at": "2026-03-01 08:25:30+00:00"
+      },
+      {
+        "text": "elevenlabs müşteri hizmetleri ajanı çıkardı. 70 dilde konuşuyor, empati kuruyor, telefon/whatsapp/email her yerde çalışıyor.\n\nşimdi asıl fırsat:\n\nküçük işletmeler bunun nasıl kurulacağını bilmiyor.\nsen biliyorsun.\n\ndüşün: her gece nöbetçi eczane, kargo firması, diş kliniği, muhasebe ofisi...\nhepsinin sürekli telefon açan birilerine ihtiyacı var.\n\nama kimse gece vardiyasına adam bulamıyor.\nya da buluyor ama maliyet katlanamıyor.\n\nsen git, elevenlabs ajanını kur, ayda 400-500 dolar servis ücreti al.\nmüşteri 7/24 destek sağlıyor, sen sürekli gelir elde ediyorsun.\n\npazar dev, rekabet yok, kurulum kolay.\n\nilk 10 müşteri ile ayda 5-10k kazanç demek.\n\nsadece izleme. yap.",
+        "engagement_score": 3749.11,
+        "like_count": 1510,
+        "retweet_count": 78,
+        "reply_count": 49,
+        "impression_count": 346950,
+        "created_at": "2026-02-19 10:52:12+00:00"
+      },
+      {
+        "text": "35 yaş üstü iş sahiplerine claude nedir diye sor, boş boş bakarlar.\n\ndünyanın %84'ü henüz ai kullanmamış. mümkün olan ile insanların bildigi arasındaki bu boşluk tam bir fırsat alanı.\n\n4 kanıtlanmış yöntemle ayda 2-12 bin dolar kazanılıyor ve hiçbiri için yazılımcı olmana gerek yok.\n\nthread 👇\n\n1/8",
+        "engagement_score": 3562.21,
+        "like_count": 1127,
+        "retweet_count": 107,
+        "reply_count": 20,
+        "impression_count": 175960,
+        "created_at": "2026-02-25 11:27:33+00:00"
+      },
+      {
+        "text": "yıllarca fark edilmemiş 500+ güvenlik açığı, birkaç saatte bulundu.\n\nanthropic, claude code security'i duyurdu.\nyapay zeka artık kodunu insan gibi okuyor.\nsadece bilinen pattern'lere bakmıyor.\niş mantığını anlıyor, veri akışını takip ediyor.\nklasik araçların atlayacağı açıkları yakalıyor.\n\nşimdi şunu düşün:\nyıllardır production'da duran, uzmanların gözünden kaçan buglar var.\nclaude bunları buluyor.\n\nsaldırganlar yapay zekayı kullanmaya başladı.\nsavunma tarafı da kullanmak zorunda.\n\nsiber güvenlik oyununun kuralları değişti.\nkaydet. yakında herkes bundan bahsedecek.",
+        "engagement_score": 2191.68,
+        "like_count": 995,
+        "retweet_count": 49,
+        "reply_count": 15,
+        "impression_count": 162642,
+        "created_at": "2026-02-20 18:25:26+00:00"
+      },
+      {
+        "text": "dan koe \"human 3.0\" modelini yayınladı ve bu şimdiye kadar gördüğüm en kapsamlı kişisel gelişim haritası.\n\nadam 15 yıldır psikoloji, felsefe, teknoloji, para, anlam üzerine araştırma yapmış. son 6 yıldır yazıyor ve örtüşen patternleri bir felsefe haline getirmiş.\n\nhedefi: öğrendiği her şeyi tek bir kapsamlı haritada sentezlemek.\n\nthread 👇\n\n1/12",
+        "engagement_score": 1823.39,
+        "like_count": 619,
+        "retweet_count": 55,
+        "reply_count": 7,
+        "impression_count": 124848,
+        "created_at": "2026-03-02 09:00:20+00:00"
+      },
+      {
+        "text": "cowork'ü düzgün kuran insanlar 2026'da ai'dan en çok değer çıkaranlar.\n\nben ocak ayında kullanmaya başladım, bir ay içinde her sabah açtığım ilk uygulama oldu. email'den, notion'dan, her şeyden önce.\n\nsebep basit: saatlerce süren işlerimi bitirmeye başladı.\n\n30 dakika ayır, düzgün kur, nasıl çalıştığını öğren.\n\nthread 👇\n\n1/10",
+        "engagement_score": 1675.99,
+        "like_count": 739,
+        "retweet_count": 41,
+        "reply_count": 8,
+        "impression_count": 146044,
+        "created_at": "2026-02-26 11:07:23+00:00"
+      },
+      {
+        "text": "modern bir ürün çıkarmak için iki yol var.\n\nyol 1 - en hızlı başlangıç:\nclaude → kod\nsupabase → backend\nvercel → deploy\nnamecheap → domain\nstripe → ödeme\ngithub → versiyon kontrol\nresend → email\nclerk → auth\ncloudflare → dns\nposthog → analitik\nsentry → hata takip\nupstash → redis\npinecone → vector db\n\nyol 2 - en düşük maliyet:\nkimi → kod\nappwrite → backend\ncoolify → deploy\nporkbun → domain\nstripe → ödeme\ngitlab → versiyon kontrol\nlistmonk → email\nauthentik → auth\ncloudflare → dns\numami → analitik\nglitchtip → hata takip\nvalkey → redis\nqdrant → vector db\n\n\"her şey kontrolümde olsun\" deyip vps'e coolify kuranlardan mısın, \nyoksa \"önce deploy, maliyeti sonra düşünürüm\" deyip vercel kullananlardan mı?  \n\nyoruma yazın.",
+        "engagement_score": 1658.69,
+        "like_count": 453,
+        "retweet_count": 40,
+        "reply_count": 28,
+        "impression_count": 30683,
+        "created_at": "2026-02-22 11:59:22+00:00"
+      },
+      {
+        "text": "bir avukat claude ile nasıl çalıştığını anlattı ve bu gerçekten etkileyici.\n\nmüvekkili için bir satın alma anlaşması kapanacak, gece 7'de karşı taraf son dakika değişiklik talep ediyor. yeni escrow koşulları, genişletilmiş tazminat istisnaları, revize kapanış gereklilikleri.\n\nanlaşmayı, açıklama belgelerini, talep mektubunu claude'a yüklüyor. birkaç dakika içinde claude her değişikliği mevcut anlaşma şartlarıyla eşleştiriyor.\n\nthread 👇\n\n1/15",
+        "engagement_score": 1526.11,
+        "like_count": 738,
+        "retweet_count": 35,
+        "reply_count": 6,
+        "impression_count": 166399,
+        "created_at": "2026-03-03 11:36:42+00:00"
+      },
+      {
+        "text": "claude code opus 4.6 ile beraber çok token yakmaya başladı.\nbunu minimize etmenin birçok yolu var.\n\nbugün ilkinden bahsediyorum:\naynı hatayı bir daha yaptırmamak.\n\nbunun için yorumlarda bir claude md formatı vericem. \nbu format direkt geliştirici ekibin paylaştığı bir döküman.\n\npeki ne işe yarıyor?\n\nher düzeltmeden sonra kendini güncelliyor.\naynı hatayı bir daha yapmaması için kural yazıyor.\noturum başında o kuralları okuyup içselleştiriyor.\nbug geldiğinde sormadan çözüyor.\nbitmeden önce \"staff engineer onaylar mı?\" diye soruyor.\n\nyani claude'u bir kez eğitiyorsun,\nsonra aynı şeyi tekrar tekrar söylemek zorunda kalmıyorsun.\n\ntoken'ın büyük kısmı tekrara gidiyor.\nbunu kes, maliyetin yarı yarıya düşer.\n\nkaydet. serinin devamı gelecek.",
+        "engagement_score": 1426.54,
+        "like_count": 485,
+        "retweet_count": 38,
+        "reply_count": 12,
+        "impression_count": 38528,
+        "created_at": "2026-02-22 16:37:31+00:00"
+      },
+      {
+        "text": "app store’da görünmek için haftalarca keyword kovalıyorsun ya.  \n\nclaude-code-aso-skill diye bir repo var. \nclaude code için aso ajan sistemi kuruyor. \nkeyword buluyor, başlık açıklama yazıyor, \nrakip analizi yapıyor.  \n\ntek komutla store audit çıkarıyor. \ndakikalar içinde hazır strateji veriyor.  \n\nindie mobil app yapanlar için ciddi avantaj. \norganik indirme artışı hedefliyorsan tam olay.",
+        "engagement_score": 1261.85,
+        "like_count": 566,
+        "retweet_count": 29,
+        "reply_count": 7,
+        "impression_count": 34985,
+        "created_at": "2026-02-17 08:05:40+00:00"
+      },
+      {
+        "text": "tiktok'ta abd kitlesi için telefon almana gerek yok.\n\naylık 3 dolarlık mobil proxy yeterli.\n\niproyal veya proxycheap'ten al.\ntiktok'u proxy açıkken aç.\nbölgeyi abd yap.\niçerik at.\n\nneden önemli?\nabd trafiği = tier 1 = rpm çok daha yüksek.\naynı video, 10 kat fazla kazanç.\n\ntek kural: tiktok'u her açtığında proxy açık olsun.\nbir an bile kapatma, konum tutarsızlığı hesabı yakar.\n\n10+ hesap veya cihaz izolasyonu gerektiren bir şey yapmıyorsan\niphone olayı gereksiz yere karmaşık.\n\nkaydet. tiktok'tan para kazanmayı düşünüyorsan lazım olur.",
+        "engagement_score": 1169.04,
+        "like_count": 331,
+        "retweet_count": 34,
+        "reply_count": 11,
+        "impression_count": 45711,
+        "created_at": "2026-02-20 17:41:27+00:00"
+      },
+      {
+        "text": "web scraping yapıyorsun, cloudflare engelliyor. beautifulsoup yavaş. website değişince selector'lar bozuluyor.\n\nscrapling bu sorunları çözüyor.\n\nadaptive web scraping framework. parser website değişikliklerinden öğreniyor, elementleri otomatik yeniden buluyor.\n\ncloudflare turnstile bypass ediyor. concurrent crawl, pause/resume, otomatik proxy rotation var.\n\nbeautifulsoup'tan 1775x hızlı, %92 test coverage, terminalden direkt kullanılabiliyor.\n\nmcp server entegrasyonu var. claude, cursor ile web scraping yapabiliyorsun. target content'i extract ediyor, token kullanımını azaltıyor.\n\naçık kaynak, geçen yıl yüzlerce scraper günlük kullanmış.",
+        "engagement_score": 1150.5,
+        "like_count": 434,
+        "retweet_count": 25,
+        "reply_count": 15,
+        "impression_count": 38485,
+        "created_at": "2026-03-04 12:06:12+00:00"
+      },
+      {
+        "text": "anthropic claude için skill oluşturma kılavuzunu yayınladı. 32 sayfalık kapsamlı rehber.\n\nskill nedir? klasör içinde markdown instruction'lar. claude'a belirli görevleri nasıl yapacağını öğretiyor.\n\nher sohbette tercihlerini tekrar anlatmak yerine bir kere öğret, her seferinde faydalanabilirsin.\n\nprogressive disclosure sistemi: yaml frontmatter her zaman yükleniyor, skill body ihtiyaç olunca yükleniyor, linked files claude seçiyor.\n\nüç kategori: document creation (docx, pptx), workflow automation, mcp enhancement.\n\nskill-creator skill'i ile 15-30 dakikada fonksiyonel skill oluşturabiliyorsun.\n\naçık standart. claude dışında başka platformlarda da çalışabilir.\n\nlinki yorumlara ekliyorum. kaybetmemek için kaydet.",
+        "engagement_score": 970.25,
+        "like_count": 345,
+        "retweet_count": 27,
+        "reply_count": 5,
+        "impression_count": 20225,
+        "created_at": "2026-03-02 15:01:20+00:00"
+      },
+      {
+        "text": "vibe coding ile ürünü çıkardın.\nşimdi asıl sınav başlıyor: marketing.\n\nkod yazmak kolaydı.\ninsanlara ulaşmak başka bir oyun.\n\nyorumlardaki listeyi kaydet.\nürününü git bu platformlarda paylaş. marketinge böyle başla. \ndevamını sonra anlatıcam. takipte kal.",
+        "engagement_score": 962.23,
+        "like_count": 411,
+        "retweet_count": 19,
+        "reply_count": 12,
+        "impression_count": 45659,
+        "created_at": "2026-02-21 11:56:01+00:00"
+      },
+      {
+        "text": "seo için saatlerce yazı mı yazıyorsun? seomachine bu süreci otomatikleştirmiş.\n\nuzun format, seo optimize blog içeriği oluşturmak için tam bir sistem. araştır, yaz, analiz et, optimize et. hepsi bir arada.\n\niçinde ne var: custom workflow komutları, özelleşmiş agent'lar, 26 marketing skill, analytics entegrasyonu.\n\n/research komutu konu araştırması yapıyor. /write makale yazıyor. /optimize seo için optimize ediyor. /performance-review performans analizi yapıyor.\n\nagent'lar var: content analyzer, seo optimizer, meta creator, internal linker, keyword mapper, editor, headline generator.\n\nclaude code'da projeyi aç, bir konu araştır, research brief oluşsun, makaleyi yaz, optimize et. workflow bu kadar basit.\n\naçık kaynak, ücretsiz. claude code kullanan herkes indirebilir.\n\nkaydet. lazım olur.",
+        "engagement_score": 788.8,
+        "like_count": 255,
+        "retweet_count": 20,
+        "reply_count": 9,
+        "impression_count": 17924,
+        "created_at": "2026-03-02 11:38:26+00:00"
+      },
+      {
+        "text": "tasarım ekranları için o uygulamadan çıkıp diğerine girmene gerek yok.\n\nmobbin, dünyanın en büyük ui/ux ekran referans kütüphanesi.\nspotify, notion, duolingo, airbnb...\nbinlerce gerçek uygulamanın her ekranı burada.\nfiltrelenebilir, aranabilir, figma'ya kopyalanabilir.\n\n\"bu ekran nasıl tasarlanır\" diye google'lamak bitti.\n\nlogin ekranı mı lazım? 500+ örnek.\nonboarding akışı mı? hepsi önünde.\nödeme sayfası mı? gerçek uygulamalardan al, ilham al.\n\nücretsiz planı var.\nşu an aç, bir bak.\n\nkaydet. her projede açacaksın.",
+        "engagement_score": 734.97,
+        "like_count": 195,
+        "retweet_count": 23,
+        "reply_count": 5,
+        "impression_count": 12922,
+        "created_at": "2026-02-20 14:46:10+00:00"
+      },
+      {
+        "text": "adam \"ai ile reklam yönetimi\" yapıyormuş.\nclaude bir gecede işlerini bitirmiş.\n\nhata basit: anthropic'in roadmap'inde olan şey üzerine startup kurmuşlar.\n\nmcp protokolü açıklandığında meta ve google ads bağlantısının geleceği belliydi.\nonlar \"birkaç ay var\" diye düşünmüşler, claude \"şimdi\" dedi.\n\nders: büyük oyuncuların açıkça çalıştığı alanlarda startup kurma.\n\nanthropic, openai, google'ın blog'larını okuduğunda ne gelecek görüyorsun.\no alan yasak bölge.\n\nözellikle mcp connectorları belliydi.\nmeta ads, google ads, salesforce... hepsi gelecek dendi.\n\neğer roadmap'te varsa sen orada olma.",
+        "engagement_score": 732.49,
+        "like_count": 335,
+        "retweet_count": 15,
+        "reply_count": 7,
+        "impression_count": 87061,
+        "created_at": "2026-02-24 12:57:41+00:00"
+      },
+      {
+        "text": "7 yıldır felçli olan bir adam gördüm bugün. 2679. gününü sayıyormuş. her gün tek tek.\n\nçoğu insan ilk haftada bırakır. fizik tedaviye gider, sonuç göremez, moral bozulur, randevuları kaçırır, sonra tamamen bırakır. bu adam 2679 gün boyunca her sabah kalkmış. bazı sabahlar hiçbir ilerleme yok. bazı sabahlar dünden daha kötü. ama kalkmış.\n\nbunu okuyunca kendi durumuma baktım. ben bazen 3 gün üst üste kod yazamayınca motivasyonumu kaybediyorum. bir hafta boyunca kullanıcı gelmeyince projeyi çöpe atmayı düşünüyorum. adam 7 yıldır kendi bedenine karşı savaşıyor, ben iki kötü metrik yüzünden pes ediyorum.\n\ninsanlar pes etme hikayelerini hep büyük anlarla anlatır. şampiyon son raundda yumruk atar, girişimci iflasın eşiğinden döner, sporcu sakatlıktan geri gelir. ama gerçek pes etmeme hali o değil. gerçeği sessiz. gerçeği sıkıcı. her gün aynı şeyi yapmak. ilerleme görmeden. alkış almadan. kimse izlemezken.\n\nbu adam muhtemelen sosyal medyada viral olmak için saymıyor günleri. kendi kendine bir söz vermiş. o sözü tutuyor. 2679 gündür tutuyor.\n\nşimdi bunu ai dünyasına çevireyim. her gün yeni bir araç çıkıyor, yeni bir framework, yeni bir model. herkes ilk heyecanla atlıyor. iki hafta sonra yeni parlak şey gelince eskisini bırakıyor. bir ürüne 6 aydan fazla sadık kalan insan sayısı inanılmaz az.\n\nbir tanıdığım var, 14 aydır aynı micro saas üzerinde çalışıyor. ilk 8 ay sıfır gelir. sıfır. ama her gün bir şey ekledi, bir şey düzeltti, bir müşteriye mail attı. 9. ayda ilk ödeme geldi. 14. ayda aylık 3 bin dolara ulaştı. etrafındaki herkes 8. ayda bırakmıştı. o bırakmadı.\n\nfark ne? yetenek değil. çoğu bırakan insan daha yetenekliydi. fark tek bir şey: ertesi gün yine oturup o sıkıcı işi yapabilmek. heyecan yokken, sonuç yokken, kimse izlemezken.\n\nfelçli adam 2680. güne geçecek yarın. sen bugün hangi gündesin ve yarın oturup devam edecek misin?",
+        "engagement_score": 670.61,
+        "like_count": 306,
+        "retweet_count": 14,
+        "reply_count": 6,
+        "impression_count": 60251,
+        "created_at": "2026-03-01 14:41:51+00:00"
+      },
+      {
+        "text": "bir müşterim var, 10+ yıldır kurumsal it sektöründe çalışıyor. maaşı 200k civarı. güvenli, stabil, herkesin imreneceği bir pozisyon.\n\ngeçen yıl ona bir website yaptım. 3 ay önce de seo danışmanlığına başladık. adam boş vakitlerinde kendi müşterilerine sunucu bakım hizmeti veriyordu zaten ama ciddi bir akış yoktu. ayda 2 belki 3 talep geliyordu.\n\nsonra programmatic seoyu denedik.\n\nmantık şuydu: sunucu bakımı arayan insanlar genelde çok spesifik şeyler yazıyor. ankara dedicated sunucu bakım, linux server izleme hizmeti, windows server güncelleme desteği gibi. yüzlerce farklı kombinasyon var ama kimse bu uzun kuyruk aramalara düzgün sayfa hazırlamamış.\n\nbiz her bir hizmet + şehir + sunucu tipi kombinasyonu için şablonla sayfalar ürettik. içerik junk değildi, adam 10 yıllık deneyimini döktü her sayfaya. teknik detaylar gerçekti, fiyatlandırma mantıklıydı, referanslar somuttu.\n\nilk ay bir şey olmadı. ikinci ay google indexlemeye başladı. üçüncü ayda telefon çalmaya başladı.\n\nşu an durumu şu: kurumsal işinden aldığı maaşın yarısını kendi müşterilerinden kazanıyor. ve artış devam ediyor. geçen hafta beni aradı, ben bu işi bırakıyorum dedi.\n\n10 yıllık kariyeri, 200k maaşı, kurumsal güvenceyi bırakmayı düşünüyor. çünkü kendi işinde büyüme eğrisi çok daha dik.\n\nşimdi burada önemli bir ayrım var.\n\nprogrammatic seoyu spam olarak gören büyük bir kesim var. haklılar da çoğu durumda. çünkü insanlar ai ile bir günde 5k sayfa basıp içi boş keyword çiftliği kuruyor. google da bunları tek tek temizliyor. son aylarda bu tarz sitelerin trafiği çakıldı.\n\nama bu adamın durumu farklıydı. gerçek bir hizmet var. gerçek bir uzmanlık var. sayfalar şablon ama içerik özgün ve teknik olarak doğru. müşteri geldiğinde karşısında 10 yıllık bir mühendis buluyor.\n\nprogrammatic seonun çalıştığı yer tam burası: gerçek bir işin, gerçek uzmanlığının dijital vitrinini ölçeklemek. \n\nsahte otorite kurup 10k sayfa basmak değil. var olan otoriteyi doğru formatta görünür kılmak.\n\nadam hala kararını vermedi tam olarak. ama her hafta gelen yeni müşteri sayısı onu biraz daha cesaretlendiriyor.\n\nsence 200k maaşlı güvenli işi bırakıp kendi işine atlamak mantıklı mı, yoksa daha az iş alıp ikisini paralel götürmeli mi?",
+        "engagement_score": 612.2,
+        "like_count": 234,
+        "retweet_count": 10,
+        "reply_count": 13,
+        "impression_count": 58043,
+        "created_at": "2026-02-21 13:55:40+00:00"
+      },
+      {
+        "text": "iki lise öğrencisi 18 ayda 50 milyon dolar gelire ulaştı ve şirketi sattı.\n\ncal ai, myfitnesspal tarafından satın alındı. henry ve arkadaşı 17 yaşındayken başlamışlar, ai ile kalori takibini kolaylaştırmak istemişler.\n\n18 ay sonra milyonlarca kullanıcı, 50 milyon dolar arr, exit.\n\nböyle bir dönem hiç görmedik.\n\neskiden şirket kurmak için ekip lazımdı, ofis lazımdı, yatırımcı lazımdı, yıllar süren hazırlık lazımdı.\n\nşimdi laptop ve internet yeterli. ai ekibin, yardımcın, mentor'un oluyor.\n\nlise öğrencisi 18 ayda nesiller boyu aktarılabilecek servet yaratıyor.\n\ntarihteki hiçbir nesil böyle bir fırsata sahip olmadı.\n\ngarip bir zamandayız ve çoğu insan bunun farkında bile değil.",
+        "engagement_score": 554.68,
+        "like_count": 164,
+        "retweet_count": 12,
+        "reply_count": 11,
+        "impression_count": 47317,
+        "created_at": "2026-03-04 16:29:05+00:00"
+      },
+      {
+        "text": "hala app store connect panelinde kayboluyor musun ya.\n\nasc-client diye bir repo var. \napp store connect işlerini terminalden yapıyorsun. \nbuild, versiyon, metadata tek komut.  \n\nci pipeline’a koy, 2 dakikada release hazır. \npanele gir çık derdi yok.  \n\nios geliştirip deploy sürecini hızlandırmak isteyen indie’ler için birebir.  \n\nhem de @Kerem_Erkan aracılığıyla...",
+        "engagement_score": 531.11,
+        "like_count": 163,
+        "retweet_count": 16,
+        "reply_count": 3,
+        "impression_count": 12513,
+        "created_at": "2026-02-16 06:42:14+00:00"
+      },
+      {
+        "text": "react native uygulama yapıyorsun, icon tasarımı için designer mı bekliyorsun?\n\nsnapai diye bir cli var.\nterminal açıyorsun, prompt yazıyorsun, icon oluşuyor.\n\n\"minimalist weather app with sun and cloud\" yazıyorsun.\nopenai ya da google gemini üretiyor.\n1024x1024 square çıkıyor, ios ve android için hazır.\n\nkurulum yok, hesap yok.\nsadece npx snapai icon --prompt \"fikrini yaz\" komutu.\n\nicon başına ~0.04 dolar.\ndesigner'a 50-100 dolar vermek yerine 4 cent.\n\naçık kaynak, 1.6k star almış.\n\nreact native ve expo developer'lar için altın.\n\nkaydet, lazım olur.",
+        "engagement_score": 465.1,
+        "like_count": 234,
+        "retweet_count": 8,
+        "reply_count": 5,
+        "impression_count": 31631,
+        "created_at": "2026-02-24 11:20:04+00:00"
+      },
+      {
+        "text": "hiçbir yapay zeka şirketi masum değil.\n\nanthropic dün deepseek, minimax ve moonshot'ı suçladı.\n24 bin sahte hesap açıp claude ile 16 milyon konuşma yaptılar.\nkendi modellerini geliştirmek için.\nbuna \"distillation\" deniyor. izinsiz bilgi transferi.\n\nanthropic haklı mı? teknik olarak evet.\nama şunu da hatırlayalım:\n\nanthropic'in milyonlarca kitabı izinsiz kullandığı iddiasıyla açılan davada\nyazarlarla 1,5 milyar dolarlık uzlaşmaya gidildi.\nkimse o yazarlara sormadı.\n\nyani:\n\"benim verilerimi çalmayın\" diyen şirket,\nbaşkasının verisiyle büyüdü.\n\nbu sadece anthropic değil.\nopenai, meta, google, hepsi aynı gemide.",
+        "engagement_score": 444.65,
+        "like_count": 119,
+        "retweet_count": 10,
+        "reply_count": 9,
+        "impression_count": 14636,
+        "created_at": "2026-02-24 08:52:40+00:00"
+      },
+      {
+        "text": "react component için saatlerce tasarım mı yapıyorsun?\n\nreactbits(.)dev'e gir:\nbinlerce gerçek uygulamadan component koleksiyonu var.\nnavbar, modal, button, form, pricing table... hepsi kategorize edilmiş.\n\ntıkla, gör, kopyala.\n\nsıfırdan tasarlama derdi yok.\n\"bu button nasıl olsun\" diye 2 saat düşünme.\n\n50 farklı button tasarımı gör, beğendiğini al, renklerini değiştir, bitti.\n\ncomponent hazır, responsive, typescript destekli.\ndirekt kopyala yapıştır.\n\nindie dev için altın kaynak.\n\nücretsiz versiyonu oldukça yeterli.\nkaydet, ileride lazım olur.",
+        "engagement_score": 423.61,
+        "like_count": 203,
+        "retweet_count": 8,
+        "reply_count": 4,
+        "impression_count": 13554,
+        "created_at": "2026-02-22 14:07:04+00:00"
+      },
+      {
+        "text": "claude code'a /simplify ve /batch gelmiş.\n\n/simplify: değişiklik yaptıktan sonra paralel agent'lar otomatik temizlik ve iyileştirme yapıyor. kod kalitesini yükseltiyor, claude. md kurallarına uyum sağlıyor.\n\n/batch: büyük çaplı kod taşımaları için. bir klasörü solid'den react'e geçirirken onlarca agent paralel çalışıyor. her biri kendi git worktree'inde izole test edip pull request açıyor.\n\nikisi birleşince pull request veya toplu refactor işleri saatler yerine dakikalara iniyor.\n\naskuserquestion artık markdown gösterebiliyor. diyagram, kod örneği kullanıcıya sorulurken görselleşiyor.\n\n/copy komutuyla claude'un son mesajını tek tıkla kopyalayabiliyorsun.\n\nyakında http hook desteği gelecek, dış endpoint'lere bağlanabileceksin.\n\nhenüz herkese açılmadı ama yakında geliyor.",
+        "engagement_score": 415.76,
+        "like_count": 131,
+        "retweet_count": 10,
+        "reply_count": 6,
+        "impression_count": 16095,
+        "created_at": "2026-02-28 15:26:57+00:00"
+      },
+      {
+        "text": "\"wordpress\" hala \"claude code\"dan çok daha fazla aranıyor.\n\nbiz burda her gün devrim konuşuyoruz. ama gerçek dünya farklı işliyor.\n\ngeçen hafta kurumsal bir şirkette çalışan sektörün içinden bir arkadaşım aradı.\n\"kanka cursor diye bir şey kurdum, ne olduğunu biliyor musun?\" dedi.\n\nbu adamın hiçbir şeyden haberi yok. cursor'ı auto mode'da kullanıyor.\n\nbüyük çoğunluk hala wordpress kuruyor, excel'de çalışıyor, google'da \"ücretsiz logo yapma sitesi\" arıyor.\n\nasıl fırsat da zaten burada.\nkaydet. uçurum düşündüğünden derin.",
+        "engagement_score": 367.56,
+        "like_count": 89,
+        "retweet_count": 1,
+        "reply_count": 19,
+        "impression_count": 19354,
+        "created_at": "2026-02-21 09:26:59+00:00"
+      },
+      {
+        "text": "claude memory import çıktı. biri bununla nasıl 1 milyon dolar kazanılır diye iş planı yazdı ve gerçekten mantıklı.\n\nşu an çoğu şirketin çalışanları kişisel chatgpt hesapları kullanıyor. herkesin kendi sohbeti var, ortak context yok, şirket bilgisi yok, workflow bağlantısı yok. llm'leri en zor şekilde kullanıyorlar.\n\nclaude ekosistemi iş için çok daha uygun: projects ile takım çalışması, memory ile ortak hafıza, skills ile özel instruction'lar, cowork ile otonom görevler, connectors ile araç entegrasyonları, mcp ile derin sistem bağlantıları. artık chatbot değil, business operating system.\n\nplan şöyle:\n\nbir vertical seç ama çok spesifik ol. \"real estate\" deme, \"commercial real estate brokerages'deki buy-side agents\" de. \"sales teams\" deme, \"automotive dealership'lerdeki sales teams\" de. garip derecede spesifik olmak zorundasın. genel olmak ölüm demek.\n\no team'in workflow'larını kaydet. wispr flow ile toplantılarını transcribe et. kas hafızasıyla yaptıkları her süreci belgele.\n\nbu sop'leri claude skill'e çevir. skill'leri agent'lara çevir. işlerini manuel çalıştırmak yerine react edebilecekleri bir dashboard kur.\n\n\"ai consulting\" satmıyorsun. autonomy satıyorsun.\n\nmüşteri nasıl buluyorsun: o vertical'a özel content üret. \"ai car dealership'lerde bdr rolünü nasıl değiştiriyor\" gibi. organic çalış, sonra ad spend ekle. ücretsiz workshop düzenle, claude ekosistemini tanıt, neden chatgpt'den iş için daha iyi olduğunu göster. ücretli lunch-and-learn sat. artık kapıdasın ve para kazanıyorsun.\n\npara nereden geliyor:\n\nworkshop: 2.5-10k dolar per engagement.\ndocumentation + process mapping retainer: 5k/ay.\ncustom agent + dashboard: 10k/ay.\nmaintenance: 1k/ay.\n\n1 milyon dolara ulaşmak için matematik:\n\nay 1-3: 5 workshop müşterisi (25k). 2'sini retainer'a çevir (10k/ay).\n\nay 4-6: 10 workshop/ay (50k) + 8 retainer client (40k/ay) + 3 software client (30k/ay) = 120k/ay.\n\nay 7-10: referral'lar compound ediyor. 15 workshop (75k) + 15 retainer (75k/ay) + 8 software client (80k/ay) = 230k/ay.\n\n10. ayda toplam: 1 milyon dolar+ (conservative hesap).\n\n1000 müşteriye ihtiyacın yok. bir nişte 15 iyi müşteri yeterli.\n\nneden şimdi işe yarıyor: claude geçişi ücretsiz yaptı. memory import sıfır sürtünme demek. çoğu şirket claude projects'in varlığından bile haberdar değil. bu pencere sonuna kadar açık.\n\neski automation agency playbook kimsenin maintain etmediği zapier, n8n workflow'ları kurmaktı.\n\nyenisi işletmeleri kendilerini yönetir hale getiren intelligence layer'ları kurmak.\n\nbir niş seç. onların kaosunu kaydet. claude'a çevir. ayda 10k dolar al.\n\n10 bin kişi bu playbook'u koştursa hala fırsat var.",
+        "engagement_score": 352.66,
+        "like_count": 123,
+        "retweet_count": 8,
+        "reply_count": 5,
+        "impression_count": 22084,
+        "created_at": "2026-03-05 09:20:48+00:00"
+      },
+      {
+        "text": "google pomelli photoshoot çıktı.\n\ntek fotoğraftan onlarca profesyonel ürün görseli üretiyor.\nfarklı açılar, arka planlar, stiller. saniyeler içinde.\n\nülkemizde yok ama vpn ile kullanılır.\n\nşimdi şöyle düşün:\nküçük e-ticaret siteleri bunun için binlerce lira ödüyor.\nsen vpn açıp bedavaya aynı kalitede çıktı alabiliyorsun.\n\nçıktılar gerçekten iyi.\ndenemeyen kalmasın.\n\nkaydet, ileride lazım olur.",
+        "engagement_score": 337.64,
+        "like_count": 129,
+        "retweet_count": 9,
+        "reply_count": 2,
+        "impression_count": 28627,
+        "created_at": "2026-02-19 19:19:38+00:00"
+      },
+      {
+        "text": "ProductHunt\nUneed\nLaunchIgniter\nMicro Launch\nFoundrlist\nIndieHackers\nLaunchDirectories\nSaaSHub\nAILaunch\nAItoolonline\nBetaList\nDevHunt\nDirectoryHunt\nFazier\nFirsto\nHackerNews\nPeerList\nProofy\nReddit\nShipYard HQ\nShipsquad\nSlocco\nStacker News\nTinyLaunch\nToolFame\nTryLaunch",
+        "engagement_score": 310.73,
+        "like_count": 149,
+        "retweet_count": 5,
+        "reply_count": 4,
+        "impression_count": 6190,
+        "created_at": "2026-02-21 11:56:01+00:00"
+      },
+      {
+        "text": "claude'un connector özelliği artık ücretsiz plana da geldi.\n\nconnector ne demek? claude'u gmail, slack, notion, asana, figma gibi araçlara bağlıyorsun. sonra claude o araçlarda senin adına işlem yapabiliyor.\n\ntakvimde etkinlik oluşturuyor, email gönderebiliyor, notion'da sayfa açabiliyor.\n\n150'den fazla farklı araçla çalışıyor. coding, data, design, finance, sales, productivity... her alanda connector var.\n\nchatgpt reklam koyarken anthropic en güçlü özelliklerini ücretsiz yapıyor. file creation, skills, connectors... hepsi ücretsiz plana geldi.\n\naraçlarını bağla. ücretsiz.",
+        "engagement_score": 289.39,
+        "like_count": 93,
+        "retweet_count": 7,
+        "reply_count": 4,
+        "impression_count": 12467,
+        "created_at": "2026-02-26 18:55:06+00:00"
+      },
+      {
+        "text": "claude ve codex kullanıyorsun ama bir türlü istediğin verimi alamıyorsun.\n\nbazıları sanal roketler kurarken sen iki taşı üst üste koymakta zorlanıyorsun.\n\nbeads, opencode, zep... hepsini kullanıyorsun. claude. md dosyan 26 bin satır. yine de başkaları meleklerle dans ederken sen cennete yaklaşamıyorsun.\n\nsysls bu soruyu cevapladı. cevap şaşırtıcı: fazla araç kullanıyorsun.\n\ndetaylı thread 👇\n\n1/16",
+        "engagement_score": 259.86,
+        "like_count": 151,
+        "retweet_count": 2,
+        "reply_count": 5,
+        "impression_count": 30080,
+        "created_at": "2026-03-04 10:21:06+00:00"
+      },
+      {
+        "text": "harshil tomar 50+ mvp ship etmiş ve hepsinde aynı hatayı görmüş:\n\nakıllı kurucular 3 haftalık işi 3 aya çıkarıyor.\n\nsebep kod değil, kodu yazmadan önce verilen kararlar.\n\n18 kural paylaşmış, hepsini özetledim.\n\nthread 👇\n\n1/9",
+        "engagement_score": 228.38,
+        "like_count": 66,
+        "retweet_count": 4,
+        "reply_count": 6,
+        "impression_count": 12502,
+        "created_at": "2026-02-24 15:09:36+00:00"
+      },
+      {
+        "text": "figma dün claude code çıktısını doğrudan düzenlenebilir tasarıma çeviren özellik getirdi.\n\nterminalde ui kodunu yazıyorsun, figmaya atıyorsun, canvasta düzenlemeye başlıyorsun. tasarımcı beklemeden prototip hazır.\n\nama asıl soru şu: figma bu hamleyle kendi geleceğini mi kurtarıyor yoksa erteliyor mu?\n\nçünkü ui component kodlamak artık dakikalar sürüyor. ai ile istediğin varyasyonu anında test ediyorsun. figmanın klasik değer önerisi zayıflıyor.\n\nşimdi figma diyor ki koddan gelen şeyi bende düzenle. akıllı hamle. ama kod tarafı bu hızla ilerlerse tasarım aracına dönüp düzenleme ihtiyacı ne kadar kalır?\n\nindie devler için şu an güzel köprü. uzun vadede figmanın bu köprünün hangi tarafında kalacağı belirsiz.",
+        "engagement_score": 214.86,
+        "like_count": 92,
+        "retweet_count": 4,
+        "reply_count": 3,
+        "impression_count": 8921,
+        "created_at": "2026-02-18 09:47:11+00:00"
+      },
+      {
+        "text": "https://t.co/16HL31Jjo7",
+        "engagement_score": 193.71,
+        "like_count": 64,
+        "retweet_count": 3,
+        "reply_count": 5,
+        "impression_count": 6252,
+        "created_at": "2026-03-01 11:17:45+00:00"
+      },
+      {
+        "text": "google nano banana 2'yi çıkardı. pro seviyesi kalite artık ücretsiz.\n\ngemini 3.1 flash'ın yeni image modeli. 4k çözünürlük, flash hızında ama pro kalitesinde.\n\nweb search entegrasyonu sayesinde güncel olaylardan ve gerçek dünya bilgisinden besleniyor. çok dilli metin desteği var, logo ve poster yapabiliyorsun, metinler net okunuyor.\n\n5 karaktere kadar tutarlı karakter, tek görselde 14 farklı obje kullanabiliyorsun.\n\nkarmaşık prompt'ları reasoning ile anlıyor. ne istediğini kavramadan üretmiyor.\n\ngemini app, google search, ai studio, antigravity, google ads... her yerde varsayılan.\n\nflash hızı, pro kalite, ücretsiz. google ciddiye almış.",
+        "engagement_score": 157.05,
+        "like_count": 41,
+        "retweet_count": 1,
+        "reply_count": 7,
+        "impression_count": 4905,
+        "created_at": "2026-02-26 16:56:12+00:00"
+      },
+      {
+        "text": "her gün ai ile konuşuyorsun ama seni gerçekten tanıyan bir ai yok.  \n\npersonal_ai_infrastructure diye bir repo var. \nkendi kişisel ai altyapını kurmanı sağlıyor. \nhedeflerini, tercihlerini, geçmiş konuşmalarını hatırlayan bir sistem kuruyorsun. \nher etkileşimden öğreniyor, zamanla daha iyi cevap veriyor.  \n\ntek seferlik prompt değil. \nsürekli gelişen bir dijital asistan.  \n\nözellikle üretken solo çalışanlar, araştırmacılar, içerik üretenler için. zamanla saatler kazandırır, karar yorgunluğunu azaltır.  \nkendi ai altyapını kurma fikri mantıklı mı sence?",
+        "engagement_score": 152.66,
+        "like_count": 36,
+        "retweet_count": 3,
+        "reply_count": 4,
+        "impression_count": 2427,
+        "created_at": "2026-02-19 13:08:22+00:00"
+      },
+      {
+        "text": "3 farklı projeyi aynı anda götürmeye çalışan solo founderın beyni nasıl çalışıyor biliyor musun? hiçbir şekilde çalışmıyor.\n\ngeçen ay kendimde fark ettim. sabah kalktım, saas projesinin backendinde bir bug vardı. oturdum, 20 dakika baktım, tam çözüme yaklaşıyordum ki müşteriden mail geldi. danışmanlık verdiğim bir e-ticaret sitesinin ödeme sayfası kırılmış. geçtim ona, ödeme entegrasyonunu kurcalıyorum, bu sefer yeni bir müşteri iş ile ilgili soru soruyor cevap bekliyorlar.\n\nbir saatin sonunda üç farklı işe bakmıştım ve hiçbirini bitirmemiştim.\n\ncontext switch denen şey sadece bir işten diğerine geçmek değil. her geçişte beynin önceki işin bağlamını tamamen boşaltıp yenisini yüklemesi gerekiyor. bu da ortalama 15 dakika sürüyor. yani sen üç iş arasında zıpladığında aslında 45 dakika sadece beynin şarj olmasını bekliyorsun. hiçbir iş ilerlemiyor, sadece yoruluyorsun.\n\nsolo founder olunca bu kaçınılmaz gibi hissediyorsun. çünkü her şey sensin. kod sen, destek sen, pazarlama sen, muhasebe sen, satış sen. biri seni bekliyorsa erteleyemiyorsun, müşteri kaçar diye korkuyorsun.\n\nama şunu anladım ki aynı gün içinde üç farklı projeye dokunmak üretkenlik değil, meşguliyet. gün sonunda hiçbir şey ilerlememiş oluyor ve buna rağmen tükenmiş hissediyorsun. çünkü beyin gerçekten çalıştı, sadece boşa çalıştı.\n\nçözüm olarak şunu denedim: günleri böldüm. pazartesi çarşamba cuma saas projesi. salı perşembe danışmanlık. hafta sonu yeni müşteriler ve içerik. bir gün içinde tek bir bağlamda kalıyorum. bildirimler kapalı, mail belirli saatlerde açık.\n\nilk hafta zor geldi. salı günü saasta bir fikir gelince not alıp bırakmak sabır istiyor. ama ikinci haftadan itibaren fark ettim: her projedeki ilerleme hızı neredeyse iki katına çıktı. çünkü o projeye oturduğumda beyin zaten o bağlamda. ısınma süresi yok, derin çalışmaya direkt giriyorsun.\n\nsolo founder olmak her şeyi aynı anda yapmak değil. her şeyi doğru zamanda yapmak. beynin paralel işlemci değil, tek çekirdek. onu kabul edince her şey değişiyor.",
+        "engagement_score": 147.38,
+        "like_count": 46,
+        "retweet_count": 3,
+        "reply_count": 3,
+        "impression_count": 8618,
+        "created_at": "2026-03-03 14:21:43+00:00"
+      },
+      {
+        "text": "google gemini cli'ını hatırladı ve 3.1 pro'yu getirdi.\n\nantigravity çıktığından beri bu ürünü tamamen unutmuşlardı. hiç güncelleme yok, hiç duyuru yok, sessizce ölüyordu.\n\nşimdi aniden 3.1 pro eklemişler. tüm ücretli planlarda kullanılabilir, auto router karmaşık promptlar için 3.1 pro seçecek.\n\ngoogle'ın ai ürün stratejisi şu: bir şey duyur, hype yarat, sonra unutmaya bırak. gemini cli, bard, duet ai, makersuite... hepsi aynı hikaye.\n\nantigravity çıkınca oraya odaklandılar, gemini cli ortada kaldı. şimdi belki rekabet görüp hatırladılar.\n\ngoogle'da ai ürünü kullanıyorsan plan b hazırla. yarın yine unutabilirler.",
+        "engagement_score": 144.77,
+        "like_count": 36,
+        "retweet_count": 0,
+        "reply_count": 8,
+        "impression_count": 8245,
+        "created_at": "2026-02-26 13:01:44+00:00"
+      },
+      {
+        "text": "türkiye'de build in public yapmanın en büyük zorluğu bu.\n\nyorumlara gelip \"çıkart göster\" diyorlar.\n\nneden sunayım ki?\nne olacağı belli zaten.",
+        "engagement_score": 137.01,
+        "like_count": 28,
+        "retweet_count": 0,
+        "reply_count": 8,
+        "impression_count": 4858,
+        "created_at": "2026-02-22 06:58:19+00:00"
+      },
+      {
+        "text": "ailem ticaretle uğraşıyor. arada sırada beraber gittiğimiz bir toptancı var, baba dostu gibi bir yer. oğlu da benim yaşıtım, zamanla samimiyetimiz ilerledi.\n\nher gittiğimizde aynı manzara. ürün soruyorsun, depoya bakıyorlar, yok diyorlar. sonra arka raftan çıkıyor. fiyat soruyorsun, defteri karıştırıyorlar. müşteri bekliyor, sıra uzuyor. klasik toptancı kaos ortamı.\n\nçocuk bir gün bir şirketten hazır stok takip sistemi aldı. ciddi para verdi. ama sistem onlara uymadı. toptancı mantığı farklı çalışıyor, kategoriler farklı, birim ölçüleri farklı, müşteri ilişkisi farklı. hazır yazılım genel genel çözüyor ama senin iş akışına oturmuyor. çoğu küçük işletmenin düştüğü tuzak bu zaten. parayı veriyorsun, 2 ay kullanıyorsun, sonra excele geri dönüyorsun.\n\nama bu çocuk geri dönmedi. sistemi kullandıkça neyin eksik olduğunu gördü. bana sorular sormaya başladı. veritabanı nasıl çalışır, frontend ne iş yapar, api nedir. ben mantığını anlattım, geri kalanını kendisi araştırdı. youtube, dökümanlar, forumlar. gece gece oturup kendi toptancılarına özel bir sistem yazmaya başladı.\n\nilk versiyon çirkin ve yavaştı. ama işe yarıyordu. hangi üründen kaç koli var, hangi müşteri ne zaman ne aldı, minimum stok uyarısı, fiyat geçmişi. babası ilk başta ciddiye almadı. sonra bir gün müşteri aradı, ürün var mı diye. çocuk 3 saniyede cevap verdi. babası defteri karıştırırken sipariş çoktan alınmıştı.\n\no an döndü her şey. baba oğluna alan açtı. çocuk sistemi geliştirmeye devam etti. tedarikçi entegrasyonu ekledi. fatura takibi ekledi. müşteri bazlı iskonto mantığı kurdu. iş hızlandı, fire azaldı, müşteri memnuniyeti arttı.\n\nşu an ikinci şube açıyorlar. ilk şubede 4 kişinin yaptığı işi şimdi 2 kişi yapıyor. çocuk yazılımcı olarak başlamadı, toptancının oğlu olarak başladı. ama kendi problemini kendi çözdüğü için çözüm tam oturdu.\n\n2000-3000 dolarlık hazır sistem işe yaramadı. kendi yazdığı sistem işi büyüttü. fark şu: biri genel çözüm satıyor, diğeri kendi derdini biliyor.\n\nen iyi yazılım genelde sorunu yaşayan kişinin yazdığı oluyor. çünkü edge caseleri biliyorsun, iş akışını biliyorsun, neyin gereksiz neyin kritik olduğunu biliyorsun.\n\nşu an kendi işinde tekrar eden bir sorunla uğraşıyorsan, belki de çözümü dışarıda aramayı bırakıp kendini yazman gereken zamandır.",
+        "engagement_score": 136.38,
+        "like_count": 62,
+        "retweet_count": 1,
+        "reply_count": 4,
+        "impression_count": 24029,
+        "created_at": "2026-02-23 12:36:39+00:00"
+      },
+      {
+        "text": "claudeu bir kere promptlayıp çıkanı direkt kullanıyorsan, masada çok şey bırakıyorsun.\n\nrecursive self improvement loop diye bir yöntem var.\nclaude çıktıyı üretiyor, kendi puanlıyor, zayıf noktayı buluyor, yeniden yazıyor. geçene kadar döngü devam ediyor.\n\nörnek: bir reklam görseli konsepti üretiyorsun. 10 kriter var. dikkat çekme gücü, merak boşluğu, duygusal tetikleyici. 9/10 altında kalırsa durmuyor. neden başarısız olduğunu söylüyor, yeniden yazıyor, tekrar puanlıyor.\n\naynı mantık email dizisi, video hook, pozisyonlama, seo içeriği her şeye uyuyor.\n\ntek yapman gereken: tekrar ettiğin bir görevi seç, değerlendirme kriterlerini yaz, her kriteri geçti/kaldı eşiğine çevir ve claudea döngüyü kur. çıktıya bir de şüpheci müşteri gözünden saldırt.\n\nartık her seferinde sıfırdan prompt yazmıyorsun. standart tutan bir sistem kuruyorsun.",
+        "engagement_score": 130.02,
+        "like_count": 61,
+        "retweet_count": 2,
+        "reply_count": 2,
+        "impression_count": 4114,
+        "created_at": "2026-02-18 15:27:44+00:00"
+      },
+      {
+        "text": "claude code'a voice mode geliyor. şu an kullanıcıların %5'inde aktif, önümüzdeki haftalarda herkese açılacak.\n\nerişimin olduğunda welcome screen'de not göreceksin. /voice komutuyla açabiliyorsun.\n\nne işe yarıyor? kod yazarken konuşarak komut verebiliyorsun. bug açıklaması, karmaşık mimari kararı, feature brainstorming... yazı yazmak yavaşlatıyor, konuş yeter.\n\naslında bu özellik topluluk tarafından mcp server olarak zaten yapılmıştı. voicemode adlı mcp openai whisper ve tts kullanıyordu.\n\nşimdi anthropic bunu native olarak entegre ediyor.\n\ndebugging, kod review, uzun açıklamalar için özellikle faydalı.\n\nhenüz %5'te ama yakında herkeste.",
+        "engagement_score": 118.27,
+        "like_count": 23,
+        "retweet_count": 0,
+        "reply_count": 7,
+        "impression_count": 4552,
+        "created_at": "2026-03-03 09:24:41+00:00"
+      },
+      {
+        "text": "skill kullanmadan önce kodlama araçlarını düzgün kullanamıyormuşum gibi hissediyordum.\n\nyüzlerce skill var, size uygun olanı seçip projenize ekleyin.\n\nönemli: her zaman kullanmayacağınız skill'leri user scope'a kurmayın. context'i gereksiz yere şişiriyor ve kullanılabilir alanınızı azaltıyor.\n\nproje bazlı skill kurulumu daha mantıklı.",
+        "engagement_score": 117.88,
+        "like_count": 77,
+        "retweet_count": 2,
+        "reply_count": 0,
+        "impression_count": 10457,
+        "created_at": "2026-02-25 12:58:11+00:00"
+      },
+      {
+        "text": "enpara'ya şöyle bi kampanya gelmiş.\nmoney is money. https://t.co/k1oE8hTZtv",
+        "engagement_score": 106.06,
+        "like_count": 45,
+        "retweet_count": 1,
+        "reply_count": 3,
+        "impression_count": 9191,
+        "created_at": "2026-02-22 17:42:24+00:00"
+      },
+      {
+        "text": "6 ay önce başlasaydım şu an nerede olurdum diye düşünüyorsun ya.\n\naynı cümleyi 6 ay sonra da kuracaksın. eğer bugün bir şey yapmazsan.\n\nai ile ürün çıkaranların çoğu süper yetenekli insanlar değil. sadece bir gün oturup başladılar. kötü bir ilk versiyon çıkardılar. utandılar. düzelttiler. tekrar çıkardılar.\n\nmükemmel plan diye bir şey yok. ilk adımın kalitesi de önemli değil. önemli olan adımın atılmış olması.\n\nbugün 1 saat ayır. tek bir problemi seç. çözen bir şeyin ilk iskeletini kur. yarın ikinci saati ekle.\n\n30 gün sonra geriye bakınca tek pişmanlığın erken başlamamak olacak.",
+        "engagement_score": 105.55,
+        "like_count": 36,
+        "retweet_count": 2,
+        "reply_count": 2,
+        "impression_count": 1615,
+        "created_at": "2026-02-20 11:07:45+00:00"
+      },
+      {
+        "text": "thariq claude code geliştirirken agent'ların nasıl düşündüğünü anlamak için izledikleri süreci anlatmış.\n\nana soru: agent'ınıza hangi araçları verirsiniz?\n\ntek bir tool mu yoksa 50 farklı tool mu?\n\nthariq şöyle açıklamış: zor bir matematik problemi aldığını düşün. hangi araçları isterdin?\n\nkağıt minimum ama manuel hesapla sınırlısın. hesap makinesi daha iyi ama gelişmiş özellikleri kullanmayı bilmen gerek. bilgisayar en hızlı ama kod yazmayı bilmen lazım.\n\nthread 👇\n\n1/11",
+        "engagement_score": 99.77,
+        "like_count": 45,
+        "retweet_count": 0,
+        "reply_count": 4,
+        "impression_count": 6288,
+        "created_at": "2026-02-28 11:09:56+00:00"
+      },
+      {
+        "text": "context management asıl sorun haline geldi.\n\nclaude code'da her skill eklediğinde %3-5 context gidiyor.\n10 skill = %40 context.\nsıfır konuşmaya %60 ile başlıyorsun.\n\nskill-manager çözüm olabilir.\n\nben şu an proje tipine göre ayırıyorum.\nher stack'e özel skill seti var.\nböylece gereksiz yükten kaçınıyorum.\n\nskill-manager bunu otomasyona dönüştürüyor.\n%38'den %18'e düşmek büyük kazanç.\n\nkaydet, lazım olur.",
+        "engagement_score": 99.54,
+        "like_count": 52,
+        "retweet_count": 1,
+        "reply_count": 2,
+        "impression_count": 9995,
+        "created_at": "2026-02-23 10:01:30+00:00"
+      },
+      {
+        "text": "jake pahor bir yıl x'te sessiz kaldıktan sonra ai content engine kurmuş ve sonuçları paylaşmış.\n\n2 hafta içinde:\n• 275k+ gösterim (%1660 artış)\n• 433+ profil tıklaması (%510 artış)\n• 125 yeni takipçi\n• bir post 250k görüntülenme ve 2.8k bookmark aldı\n\nmaliyet: ayda 50 dolar. claude pro + notion plus.\n\nadam bunu nasıl yaptığını adım adım anlatmış.\n\nthread 👇\n\n1/12",
+        "engagement_score": 92.52,
+        "like_count": 31,
+        "retweet_count": 1,
+        "reply_count": 3,
+        "impression_count": 3152,
+        "created_at": "2026-02-27 12:59:57+00:00"
+      },
+      {
+        "text": "motivasyon seni sabah 5te bir kere kaldırır. disiplin her gün kaldırır.\n\nbu tweeti okuyorsan zaten çoğu insanın yapmadığını yapıyorsun. sürekli bir şeyler öğrenmek için çabalıyorsun. ama o enerji dalgalı geliyor, bunu biliyorsun.\n\nbir gün her şeyi yapasın var. ertesi gün hiçbir şeye dokunamıyorsun.\n\nmotivasyonla başlayanlar ilk zorlu haftada bırakıyor. disiplinle gidenler o haftayı geçip ikinci aya ulaşıyor. ikinci ayda momentum oluşuyor. üçüncü ayda ilk sonuçlar geliyor.\n\nuykusuz geceler tek başına bir şey ifade etmiyor. uykusuz geceden sonra ertesi gün yine oturup devam edebilmek, o ifade ediyor.\n\nsistematik ol. küçük günlük rutinler koy. her gün 45 dakika bile olsa ürüne dokun. hissine göre değil, takvime göre çalış.\n\nrutininden bir parça bırak, herkes faydalansın.",
+        "engagement_score": 82.2,
+        "like_count": 19,
+        "retweet_count": 1,
+        "reply_count": 3,
+        "impression_count": 677,
+        "created_at": "2026-02-24 18:00:02+00:00"
+      },
+      {
+        "text": "claude cowork'e scheduled tasks geldi ve bu openclaw'ın yaptığı her şeye bir adım daha yaklaştı.\n\nartık claude belirli saatlerde otomatik görevleri tamamlayabiliyor. sabah briefing hazırla, haftalık excel güncellemesi yap, cuma team sunumu oluştur gibi. sen uyurken o çalışıyor.\n\nplugins sayesinde domain expertise kazanıyor. tasarım, mühendislik, operasyon, sales, finance, legal... her departman için özel agent olabiliyor.\n\nyeni customize tab var, tek yerden plugin, skill ve connector yönetimi yapıyorsun.\n\nopenclaw gibi araçlar şu anda bilgisayarını kontrol ediyor, dosya okuyor, program açıyor, eylem alıyor. claude da aynı yolda ilerliyor.\n\nscheduled tasks, plugins, multi-app orchestration (excel ve powerpoint arası veri aktarımı)... yakında aradaki fark kalmayacak.\n\nmacOS ve windows'ta research preview olarak mevcut. tüm ücretli planlarda kullanılabilir.",
+        "engagement_score": 73.16,
+        "like_count": 32,
+        "retweet_count": 0,
+        "reply_count": 3,
+        "impression_count": 3863,
+        "created_at": "2026-02-26 08:10:07+00:00"
+      },
+      {
+        "text": "vibe coding yapıyorsun ama çıkan frontend'ler hep aynı basmakalıp şeyler. claude'u suçluyorsun ama sorun sende.\n\n\"menu yap\" diyorsun, \"button ekle\" diyorsun. başka kelime bilmiyorsun. claude da sana generic bir şey yapıyor.\n\ncomponent. gallery var. 63 farklı ui component var içinde. 93 tasarım sisteminden 2500+ gerçek örnek toplanmış.\n\naccordion ne, badge ne, breadcrumb ne, carousel ne, segmented control ne, toast ne bilmiyorsun.\n\n\"menu yap\" diyorsun. hangi menu? dropdown menu mu, navigation menu mu, context menu mu?\n\n\"button yap\" diyorsun. hangi button? primary mi, secondary mi, ghost mu, icon button mu?\n\nbu isimleri öğrenince prompt'ların bambaşka oluyor.\n\n\"segmented control ekle\" diyorsun, claude ekliyor. \"subtle badge kullan\" diyorsun, kullanıyor. \"bottom sheet aç\" diyorsun, açıyor.\n\ncomponent. gallery'ye gir, component isimlerini öğren. vibecoding seviye atlıyor.",
+        "engagement_score": 57.87,
+        "like_count": 13,
+        "retweet_count": 0,
+        "reply_count": 3,
+        "impression_count": 196,
+        "created_at": "2026-03-05 13:36:36+00:00"
+      },
+      {
+        "text": "open source maintainer mısın? anthropic sana 6 ay ücretsiz claude max 20x veriyor.\n\nmax 20x normalde ayda 200 dolar. 6 ay ücretsiz = 1200 dolar değerinde.\n\nkim başvurabilir? github'da 5 bin+ star'ı olan ya da ayda 1 milyon+ npm indirmesi alan projelerin ana maintainer'ları.\n\nson 3 ay içinde aktif commit, release veya pr review yapmış olman gerekiyor.\n\nkriterlere tam uymuyorsan yine de başvur diyorlar. \"ekosistem sessizce projenize bağımlıysa bize anlatın\" diyorlar.\n\nopenai open source'a hiçbir şey vermezken anthropic maksimum planı ücretsiz veriyor.",
+        "engagement_score": 55.88,
+        "like_count": 15,
+        "retweet_count": 0,
+        "reply_count": 3,
+        "impression_count": 2660,
+        "created_at": "2026-02-27 09:33:26+00:00"
+      },
+      {
+        "text": "geçenlerde sadece max üyelere gelen remote control özelliği pro kullanıcılara da açılmış.",
+        "engagement_score": 53.64,
+        "like_count": 26,
+        "retweet_count": 0,
+        "reply_count": 2,
+        "impression_count": 2314,
+        "created_at": "2026-02-28 08:19:49+00:00"
+      },
+      {
+        "text": "claude code remote control çıktı.\n\nterminalde bir iş başlatıyorsun, telefondan devam ediyorsun.\ntoplantıdayken ya da yürüyüşte claude makinende çalışmaya devam ediyor, sen claude app'ten kontrol ediyorsun.\n\nbu haberi farklı postlardan da görmüşsünüzdür o yüzden farklı bir noktaya değinmek istiyorum.\n\ndaha önce gördüm. \"claude'u uzaktan kontrol et\" diye tool'lar yapılmıştı.\n\nşimdi hepsi çöp.\n\nclaude code için desktop app, remote control özelliği, collaboration tool'ları... anthropic hepsini native ekledi.\n\nbüyük oyuncuların açıkça çalıştığı alanlarda ürün kurma.\n\nanthropic blog'unu okuduğunda ne gelecek görüyorsun, o alan yasak bölge.\n\neğer roadmap'te varsa sen orada olma.",
+        "engagement_score": 50.43,
+        "like_count": 23,
+        "retweet_count": 0,
+        "reply_count": 2,
+        "impression_count": 2886,
+        "created_at": "2026-02-25 07:55:11+00:00"
+      },
+      {
+        "text": "## Workflow Orchestration\n\n### 1. Plan Node Default\n- Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions)\n- If something goes sideways, STOP and re-plan immediately - don't keep pushing\n- Use plan mode for verification steps, not just building\n- Write detailed specs upfront to reduce ambiguity\n\n### 2. Subagent Strategy\n- Use subagents liberally to keep main context window clean\n- Offload research, exploration, and parallel analysis to subagents\n- For complex problems, throw more compute at it via subagents\n- One tack per subagent for focused execution\n\n### 3. Self-Improvement Loop\n- After ANY correction from the user: update `tasks/lessons.md` with the pattern\n- Write rules for yourself that prevent the same mistake\n- Ruthlessly iterate on these lessons until mistake rate drops\n- Review lessons at session start for relevant project\n\n### 4. Verification Before Done\n- Never mark a task complete without proving it works\n- Diff behavior between main and your changes when relevant\n- Ask yourself: \"Would a staff engineer approve this?\"\n- Run tests, check logs, demonstrate correctness\n\n### 5. Demand Elegance (Balanced)\n- For non-trivial changes: pause and ask \"is there a more elegant way?\"\n- If a fix feels hacky: \"Knowing everything I know now, implement the elegant solution\"\n- Skip this for simple, obvious fixes - don't over-engineer\n- Challenge your own work before presenting it\n\n### 6. Autonomous Bug Fixing\n- When given a bug report: just fix it. Don't ask for hand-holding\n- Point at logs, errors, failing tests - then resolve them\n- Zero context switching required from the user\n- Go fix failing CI tests without being told how\n\n## Task Management\n\n1. **Plan First**: Write plan to `tasks/todo.md` with checkable items\n2. **Verify Plan**: Check in before starting implementation\n3. **Track Progress**: Mark items complete as you go\n4. **Explain Changes**: High-level summary at each step\n5. **Document Results**: Add review section to `tasks/todo.md`\n6. **Capture Lessons**: Update `tasks/lessons.md` after corrections\n\n## Core Principles\n\n- **Simplicity First**: Make every change as simple as possible. Impact minimal code.\n- **No Laziness**: Find root causes. No temporary fixes. Senior developer standards.\n- **Minimat Impact**: Changes should only touch what's necessary. Avoid introducing bugs.",
+        "engagement_score": 46.39,
+        "like_count": 26,
+        "retweet_count": 1,
+        "reply_count": 0,
+        "impression_count": 3213,
+        "created_at": "2026-02-22 16:38:05+00:00"
+      },
+      {
+        "text": "tek başına chatgpt ile hisse analizi yapmaya çalışıyorsan büyük resmi kaçırıyorsun.  \n\ntradingagents-cn diye bir repo var. \nbirden fazla ai ajanını aynı masaya oturtuyor. \nbiri teknik bakıyor, biri temel analiz yapıyor, biri haberleri tarıyor. \nsonra ortak bir karar çıkarıyor.  \n\nçin piyasasına odaklı ama mantık evrensel. \ntek prompt yerine ekip çalışması. \ndakikalar içinde rapor üretiyor, pdf olarak indiriyorsun.  \n\nözellikle kendi stratejisini test eden trader ve finans meraklısına ilaç. \nbunu canlıya alan var mı, deneyimini yazsın.",
+        "engagement_score": 18.81,
+        "like_count": 5,
+        "retweet_count": 0,
+        "reply_count": 1,
+        "impression_count": 358,
+        "created_at": "2026-02-18 07:30:04+00:00"
+      },
+      {
+        "text": "hala bütçe yönetimi için yabancı uygulamalara para ödüyorsun ya.\n\nactual diye bir repo var.\nkişisel finans uygulaması.\nlocal çalışıyor, verin sende kalıyor.\nistersen kendi sunucunda senkronize ediyorsun.\n\n10 dakikada kur, giderini kategorize etmeye başla.\nabone ücreti yok.\n\nmaaşı nereye gidiyor görmek isteyen indie maker için birebir.\n\nsen hangi bütçe uygulamasını kullanıyorsun?",
+        "engagement_score": 16.74,
+        "like_count": 3,
+        "retweet_count": 0,
+        "reply_count": 1,
+        "impression_count": 280,
+        "created_at": "2026-02-15 07:37:50+00:00"
+      },
+      {
+        "text": "gerçek örnekler:\n\ntracked changes: karşı taraf redline anlaşma gönderiyor. 40 sayfa değişiklik. claude'a yüklüyor \"karşı tarafın değişikliklerini müvekkilim perspektifinden değerlendir\" diyor.\n\nskill çalışıyor. her değişikliği ciddiyete göre organize ediyor, risk kaymasını işaretliyor, değiştirilen hükümler arası gerilimi belirliyor, olması gereken ama olmayan standart hükümleri kontrol ediyor.\n\nsonra kararını veriyor, claude'a düzenlemeleri uygulamasını söylüyor. claude word belgesini xml seviyesinde açıyor, tracked changes uyguluyor, adına atfediliyor.\n\n14/15",
+        "engagement_score": 16.53,
+        "like_count": 3,
+        "retweet_count": 0,
+        "reply_count": 1,
+        "impression_count": 2365,
+        "created_at": "2026-03-03 11:36:51+00:00"
+      },
+      {
+        "text": "Tüm 35 yaş üstü abi ve ablalarıma karşı lafımı geri alıyorum. Baş tacısınız.🙏🙏",
+        "engagement_score": 15.55,
+        "like_count": 2,
+        "retweet_count": 0,
+        "reply_count": 1,
+        "impression_count": 954,
+        "created_at": "2026-02-25 21:08:07+00:00"
+      },
+      {
+        "text": "archetypes ve metatypes:\n\narchetypes: belirli çeyreklerde ve seviyelerde ortaya çıkan insan patternleri.\n\nmetatypes: bir kişinin her çeyrekteki dört archetypinin sentezi. kişilik testi gibi ama kendini geliştirme için.\n\nörnek progressions:\n• zihin: npc → player → creator\n• beden: incel → chad → sigma\n• meslek: job → career → calling\n• ruh: religion → atheism → mysticism\n\n11/12",
+        "engagement_score": 15.54,
+        "like_count": 2,
+        "retweet_count": 0,
+        "reply_count": 1,
+        "impression_count": 1295,
+        "created_at": "2026-03-02 09:00:28+00:00"
+      },
+      {
+        "text": "Epstein dosyalarını yayınlayan siteye 46 bin dolar Vercel faturası geldi.\n\nAsıl sorun şu: Serverless, trafik patlaması durumunda limit koymazsan sınırsız ölçeklenir. Ve fatura da öyle.\n\nÇoğu geliştirici şunu unutuyor: Vercel gibi platformlarda default'ta maliyet tavanı YOK. Viral olunca compute kaynak tüketimi çarpık artar.\n\nBu vakada şöyle önlenebilirdi:\n→ Cloudflare CDN önüne koyup static asset'leri cachele (ücretsiz)\n→ Vercel'de spending limit ayarla (project settings)\n→ S3 + CloudFront gibi fixed-cost alternatif kullan yüksek trafik için\n→ Rate limiting ekle (abuse koruması)\n\nServerless harika, ama maliyet kontrolü manuel iş. Sen durdurmadıkça platform otomatik ölçeklenir.\n\nProd'a çıkmadan önce kendin sor: Yarın HackerNews'e çıksam, sabah kaç dolarlık fatura görürüm?\"",
+        "engagement_score": 7.32,
+        "like_count": 7,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 154,
+        "created_at": "2026-02-10 19:22:10+00:00"
+      },
+      {
+        "text": "geleneksel güvenlik tarayıcıları binlerce alarm üretiyor, ama kaçı gerçekten exploitable?\n\nshannon adlı otonom ai pentester yaklaşımı değiştiriyor:\n• alert değil, direkt çalışan exploit üretiyor\n• kaynak kodu analiz edip multi-step attack path'ler buluyor\n• XBOW benchmark'ta %96.15 başarı oranı (hint-free, source-aware)\n\nasıl ilginç olan: manual pentesting'in ekonomisi değişiyor.\n\nbir pentest 2-4 hafta sürüyor, 15-30k$ maliyeti var. shannon aynı işi saatlerde yapıyor.\n\nama dikkat: ai, context anlamadan exploit üretebilir. business risk'i değerlendiremez. hangi bug'ın öncelikli olduğunu, hangisinin prod'da gerçekten tehlikeli olduğunu hala insan karar veriyor.\n\nai + insan hibrit model, security'de yeni standart olacak gibi görünüyor.",
+        "engagement_score": 5.22,
+        "like_count": 5,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 115,
+        "created_at": "2026-02-11 15:00:17+00:00"
+      },
+      {
+        "text": "\"able to learn rapidly\" kısmı çok önemli.\n\nmodel artık statik değil, her hafta gelişiyor.\n\nyani şu an iyi olan şey 1 ay sonra daha iyi olacak.\n\nbu yaklaşım diğer modellere de yayılırsa asıl devrim o zaman başlar.",
+        "engagement_score": 5.04,
+        "like_count": 5,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 704,
+        "created_at": "2026-02-17 19:41:36+00:00"
+      },
+      {
+        "text": "bugün öğrendiğim şey: onboarding metni geliri etkiliyor.\n\nai ile yaptığım micro app’te ilk ekran metnini 27 kelimeden 11 kelimeye düşürdüm.\n\nsonuç: deneme başlatma oranı %18’den %31’e çıktı.\n\nözellik eklemedim.\nsadece ilk 5 saniyeyi sadeleştirdim.\n\nşu an senin ürününde ilk cümle kaç kelime?",
+        "engagement_score": 4.17,
+        "like_count": 4,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 95,
+        "created_at": "2026-02-12 09:00:29+00:00"
+      },
+      {
+        "text": "çoğu founder yanlış metriğe oynuyor.\n\nx algoritması 2026’da ilk 30 dakikadaki reply oranını güçlü kalite sinyali sayıyor. 10 like alan ama 6 reply üreten tweet, 40 like alan ama 1 reply üreten tweete göre daha uzun dağıtım alıyor.\n\nçünkü reply = dwell time + tartışma + geri dönüş.\n\nbu yüzden içerik yazarken şunu sor:\n\n“buna insanlar cevap yazmak ister mi?”\n\n3 taktik:\n1) net karşıt görüş koy.\n2) tek cümlelik iddia yaz.\n3) sonunda spesifik soru sor.\n\nlike kovalamayı bırak, konuşma başlat.\n\nsen son tweetinde reply oranını ölçtün mü?",
+        "engagement_score": 4.14,
+        "like_count": 4,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 118,
+        "created_at": "2026-02-13 09:00:50+00:00"
+      },
+      {
+        "text": "chatgpt reklam göstermeye başladı, farkında mısın?\n\nopenai abd’de free ve go planlarında sponsorlu yanıtları test ediyor. plus ve üstü planlarda yok.\n\nbu, klasik reklamcılığın bittiği an olabilir.\n\nçünkü artık banner değil, niyet satılacak.\n\nkullanıcı “en iyi muhasebe app’i” diye soruyor.\ncevabın altında sponsorlu bir muhasebe aracı çıkıyor.\n\narama motoru mantığı + sohbet bağlamı + kişisel geçmiş.\nbu, dünyanın en yüksek niyetli reklam alanı.\n\nşimdi asıl fırsat şu:\n\n1) prompt yazmayı öğrenenler değil,\n2) sohbet içi reklam kurgusu tasarlayanlar kazanacak.\n\ngelecekte “ai reklam ajansı” diye bir model göreceğiz.\n\nmarkaya şunu satacaksın:\n- hangi kullanıcı sorusunda görünmeli?\n- hangi kelime tetikleyici olmalı?\n- sponsorlu cevap nasıl doğal akmalı?\n\nbugün google ads bilen ajanslar var.\nyarın chatgpt ads bilen ajanslar olacak.\n\nsistem daha test aşamasında.\nöğrenmek için en ucuz zaman şimdi.\n\nsence 2 yıl sonra markalar bütçeyi nereye kaydıracak?",
+        "engagement_score": 4.1,
+        "like_count": 4,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 162,
+        "created_at": "2026-02-14 07:15:03+00:00"
+      },
+      {
+        "text": "https://t.co/KcvHUuXuVZ",
+        "engagement_score": 4.0,
+        "like_count": 4,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 4307,
+        "created_at": "2026-02-21 14:04:59+00:00"
+      },
+      {
+        "text": "opus 4.6 insan olsaydı muhtemelen overthinker biri olurdu",
+        "engagement_score": 3.11,
+        "like_count": 3,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 84,
+        "created_at": "2026-02-11 21:40:54+00:00"
+      },
+      {
+        "text": "özellikle online toplantı yapanlar için altın değerinde. göz teması kopmadan 15 dk sunum akıyor, not kağıdı derdi bitiyor.",
+        "engagement_score": 3.05,
+        "like_count": 3,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 171,
+        "created_at": "2026-02-11 12:51:24+00:00"
+      },
+      {
+        "text": "sonnet 4.6 çıktı.\n\n1m token context gelmiş sonunda.\n\nclaude zaten context'i çok kullanıyordu, şimdi en azından kısıtlama derdi yok.\n\nuzun döküman analizi, büyük codebase review artık daha rahat.",
+        "engagement_score": 3.02,
+        "like_count": 3,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 445,
+        "created_at": "2026-02-17 18:54:21+00:00"
+      },
+      {
+        "text": "fiyat farkları bazen %200'leri bulabiliyor. bu filtre ile ciddi bir tasarruf sağlayabilirsiniz.",
+        "engagement_score": 2.02,
+        "like_count": 2,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 200,
+        "created_at": "2026-02-12 14:19:15+00:00"
+      },
+      {
+        "text": "6 ay sonra pişman olmak istemezsin.\n\nai ile ürün yapanların çoğu dahi değil. sadece senden 90 gün önce başladılar.\n\nbugün 1 basit problem seçip 7 günde ilk versiyonu çıkaran, 30 günde ilk 3 müşteriyi buluyor.\n\nmükemmel fikir yok. erken adım var.\n\nşimdi hangi problemi seçiyorsun? https://t.co/jmpqlye9Vo",
+        "engagement_score": 1.01,
+        "like_count": 1,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 123,
+        "created_at": "2026-02-12 15:01:06+00:00"
+      },
+      {
+        "text": "subsense 27 milyon dolar toplamış beyne burundan sensör yerleştirmek için.\n\nneuralink kafatasını açıyor.\nbunlar burundan çekiyor.\n\nteknoloji ilerliyor ama yönü garip.\n\n\"invaziv değil\" diyorlar ama burnundan beyne kablo çekmek invaziv değil mi?",
+        "engagement_score": 1.0,
+        "like_count": 1,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 228,
+        "created_at": "2026-02-14 18:50:24+00:00"
+      },
+      {
+        "text": "claude pentagon operasyonunda kullanılmış.\n\ninternet ordunun projesiydi (ARPANET).\nweb cern'de bilim için yapıldı.\ngps askeri navigasyon sistemiydi.\n\nşimdi bunları kullanarak özgür olduğumuzu sanıyoruz.\n\nama altyapı hep onların.\nsunucular onların.\nprotokoller onların tasarladığı.\n\nher yeni teknoloji önce onlar için geliştirilir.\nsonra bize açılır.\n\ngerçekten teknolojiyi mi kullanıyoruz yoksa teknoloji mi biz kullanıyor?",
+        "engagement_score": 1.0,
+        "like_count": 1,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 275,
+        "created_at": "2026-02-14 09:36:33+00:00"
+      },
+      {
+        "text": "Akademik araştırma yapanların kesinlikle kullanması gereken bir araç. @emrullahai da çok iyi anlatmış. videoyu izlemenizi öneririm.",
+        "engagement_score": 0.0,
+        "like_count": 0,
+        "retweet_count": 0,
+        "reply_count": 0,
+        "impression_count": 511,
+        "created_at": "2026-02-25 12:52:26+00:00"
+      }
+    ],
+    "all_retweets": [
+      {
+        "text": "RT @vibeeval: arkadaşlar, biliyorsunuz ki bir claude ai, claude code eğitim sürecine girdik. yeni, hatta üst düzey bir skills eğitimi ile g…",
+        "engagement_score": 1140.0,
+        "like_count": 0,
+        "retweet_count": 57,
+        "reply_count": 0,
+        "impression_count": 0,
+        "created_at": "2026-03-01 11:26:28+00:00"
+      },
+      {
+        "text": "RT @brkguzel: SIFIR BİLGİYLE ve tamamen ÜCRETSİZ bir şekilde \"gamma\" sitesini kullanarak profesyonel sunumlar hazırlayın. \n\ntek tıkla inter…",
+        "engagement_score": 500.0,
+        "like_count": 0,
+        "retweet_count": 25,
+        "reply_count": 0,
+        "impression_count": 0,
+        "created_at": "2026-02-26 18:33:50+00:00"
+      },
+      {
+        "text": "RT @acerionsjournal: 2026 YILIND FIVERR'A BAŞLAMAK İSTİYORSAN AMA NEREDEN BAŞLAYACAĞINI BİLMİYORSAN ANLATIYORUM.\n\npazar doydu diyenlere kul…",
+        "engagement_score": 840.0,
+        "like_count": 0,
+        "retweet_count": 6,
+        "reply_count": 0,
+        "impression_count": 1,
+        "created_at": "2026-02-26 14:30:07+00:00"
+      },
+      {
+        "text": "RT @mrledtasso: 30 saniyelik videolar izlerken beynin frontal lobu yavaş yavaş söndürülüyor.\nYani odaklanmayı, plan yapmayı, dürtüleri kont…",
+        "engagement_score": 60.0,
+        "like_count": 0,
+        "retweet_count": 3,
+        "reply_count": 0,
+        "impression_count": 0,
+        "created_at": "2026-02-26 14:29:40+00:00"
+      },
+      {
+        "text": "RT @MurattYucedag: @cmdnoir Buna çok benzer bir konuda içerik hazırladım. AspNet Core ile bir sigorta sisteminde canlı desteği OpenAI ve Ge…",
+        "engagement_score": 20.0,
+        "like_count": 0,
+        "retweet_count": 1,
+        "reply_count": 0,
+        "impression_count": 0,
+        "created_at": "2026-02-19 13:22:00+00:00"
+      }
+    ],
+    "original_count": 77,
+    "retweet_count": 5,
+    "top_keywords": [
+      {
+        "keyword": "gelir",
+        "avg_score": 4446.31
+      },
+      {
+        "keyword": "çıkardı",
+        "avg_score": 4341.35
+      },
+      {
+        "keyword": "destek",
+        "avg_score": 4271.9
+      },
+      {
+        "keyword": "aylık",
+        "avg_score": 3586.29
+      },
+      {
+        "keyword": "demek",
+        "avg_score": 3327.59
+      },
+      {
+        "keyword": "dolara",
+        "avg_score": 3314.16
+      },
+      {
+        "keyword": "vibe",
+        "avg_score": 3313.1
+      },
+      {
+        "keyword": "saas",
+        "avg_score": 3245.73
+      },
+      {
+        "keyword": "sistemi",
+        "avg_score": 3239.22
+      },
+      {
+        "keyword": "haftada",
+        "avg_score": 3224.01
+      },
+      {
+        "keyword": "üçüncü",
+        "avg_score": 3204.54
+      },
+      {
+        "keyword": "muhtemelen",
+        "avg_score": 3197.64
+      },
+      {
+        "keyword": "günde",
+        "avg_score": 3177.47
+      },
+      {
+        "keyword": "bekliyorsun",
+        "avg_score": 3177.23
+      },
+      {
+        "keyword": "dünya",
+        "avg_score": 3147.94
+      },
+      {
+        "keyword": "kişi",
+        "avg_score": 3136.08
+      },
+      {
+        "keyword": "arka",
+        "avg_score": 3131.08
+      },
+      {
+        "keyword": "haftalık",
+        "avg_score": 3073.58
+      },
+      {
+        "keyword": "kuruyorsun",
+        "avg_score": 3067.3
+      },
+      {
+        "keyword": "frontend",
+        "avg_score": 3037.82
+      },
+      {
+        "keyword": "sana",
+        "avg_score": 3010.99
+      },
+      {
+        "keyword": "mükemmel",
+        "avg_score": 3008.59
+      },
+      {
+        "keyword": "alıyor",
+        "avg_score": 2998.84
+      },
+      {
+        "keyword": "küçük",
+        "avg_score": 2644.91
+      },
+      {
+        "keyword": "coding",
+        "avg_score": 2557.17
+      },
+      {
+        "keyword": "lere",
+        "avg_score": 2505.28
+      },
+      {
+        "keyword": "teknik",
+        "avg_score": 2498.72
+      },
+      {
+        "keyword": "musun",
+        "avg_score": 2491.32
+      },
+      {
+        "keyword": "micro",
+        "avg_score": 2476.18
+      },
+      {
+        "keyword": "belki",
+        "avg_score": 2453.14
+      }
+    ],
+    "most_used_keywords": [
+      {
+        "keyword": "claude",
+        "count": 32
+      },
+      {
+        "keyword": "tek",
+        "count": 20
+      },
+      {
+        "keyword": "diye",
+        "count": 19
+      },
+      {
+        "keyword": "şimdi",
+        "count": 19
+      },
+      {
+        "keyword": "şey",
+        "count": 16
+      },
+      {
+        "keyword": "değil",
+        "count": 16
+      },
+      {
+        "keyword": "aynı",
+        "count": 15
+      },
+      {
+        "keyword": "kaydet",
+        "count": 14
+      },
+      {
+        "keyword": "ediyor",
+        "count": 13
+      },
+      {
+        "keyword": "ilk",
+        "count": 13
+      },
+      {
+        "keyword": "çalışıyor",
+        "count": 13
+      },
+      {
+        "keyword": "code",
+        "count": 13
+      },
+      {
+        "keyword": "büyük",
+        "count": 13
+      },
+      {
+        "keyword": "içinde",
+        "count": 12
+      },
+      {
+        "keyword": "kendi",
+        "count": 12
+      },
+      {
+        "keyword": "farklı",
+        "count": 11
+      },
+      {
+        "keyword": "çoğu",
+        "count": 11
+      },
+      {
+        "keyword": "artık",
+        "count": 11
+      },
+      {
+        "keyword": "yeni",
+        "count": 11
+      },
+      {
+        "keyword": "önce",
+        "count": 11
+      },
+      {
+        "keyword": "prompt",
+        "count": 10
+      },
+      {
+        "keyword": "dolar",
+        "count": 10
+      },
+      {
+        "keyword": "ücretsiz",
+        "count": 10
+      },
+      {
+        "keyword": "kod",
+        "count": 10
+      },
+      {
+        "keyword": "google",
+        "count": 10
+      },
+      {
+        "keyword": "hangi",
+        "count": 9
+      },
+      {
+        "keyword": "yapıyor",
+        "count": 9
+      },
+      {
+        "keyword": "context",
+        "count": 9
+      },
+      {
+        "keyword": "ayda",
+        "count": 9
+      },
+      {
+        "keyword": "sadece",
+        "count": 9
+      }
+    ],
+    "length_analysis": {
+      "short": {
+        "count": 21,
+        "avg_score": 218.5
+      },
+      "medium": {
+        "count": 17,
+        "avg_score": 672.14
+      },
+      "long": {
+        "count": 44,
+        "avg_score": 892.38
+      }
+    },
+    "question_analysis": {
+      "question_tweets": {
+        "count": 32,
+        "avg_score": 625.48
+      },
+      "statement_tweets": {
+        "count": 50,
+        "avg_score": 705.29
+      }
+    },
+    "top_hashtags": [],
+    "best_hours": [
+      {
+        "hour": 17,
+        "avg_score": 2061.16,
+        "tweet_count": 3
+      },
+      {
+        "hour": 15,
+        "avg_score": 1524.26,
+        "tweet_count": 7
+      },
+      {
+        "hour": 10,
+        "avg_score": 1369.5,
+        "tweet_count": 3
+      },
+      {
+        "hour": 8,
+        "avg_score": 1274.67,
+        "tweet_count": 5
+      },
+      {
+        "hour": 11,
+        "avg_score": 961.96,
+        "tweet_count": 13
+      }
+    ],
+    "style_dna": {
+      "kucuk_harf_yuzde": 84,
+      "ortalama_uzunluk": 630,
+      "imza_kelimeleri": {
+        "şey": 20,
+        "şimdi": 19,
+        "artık": 12,
+        "sadece": 12,
+        "adam": 12,
+        "gerçekten": 8,
+        "açık": 7,
+        "zaten": 6,
+        "bile": 5,
+        "ya": 5,
+        "yani": 3,
+        "böyle": 3,
+        "henüz": 3,
+        "aslında": 2,
+        "net": 2,
+        "geldi": 2,
+        "tarafı": 2,
+        "güzel": 1,
+        "abi": 1,
+        "arkadaşım": 1,
+        "çıktı": 1,
+        "sessiz": 1
+      },
+      "imza_kaliplari": {
+        "ok.": 17,
+        "olm": 13,
+        "şu an": 11,
+        "artık": 11,
+        "açık kaynak": 4,
+        "biliyor musun": 3,
+        "bu adam": 3,
+        "aslında": 2,
+        "o yüzden": 1,
+        "diyor ki": 1
+      },
+      "hook_ornekleri": [
+        "tanıdığım biri var, 22 yaşında, üniversite son sınıf, balide oturuyor.",
+        "prompts chat dünyanın en büyük açık kaynak prompt kütüphanesi. 143 bin+ github star almış, harvard ve columbia referans göstermiş.",
+        "chatgpt'yi silme zamanı geldi ama aylarca öğrettiğin context'i kaybetmek istemiyorsun.",
+        "elevenlabs müşteri hizmetleri ajanı çıkardı. 70 dilde konuşuyor, empati kuruyor, telefon/whatsapp/email her yerde çalışıyor.",
+        "35 yaş üstü iş sahiplerine claude nedir diye sor, boş boş bakarlar.",
+        "yıllarca fark edilmemiş 500+ güvenlik açığı, birkaç saatte bulundu.",
+        "dan koe \"human 3.0\" modelini yayınladı ve bu şimdiye kadar gördüğüm en kapsamlı kişisel gelişim haritası.",
+        "cowork'ü düzgün kuran insanlar 2026'da ai'dan en çok değer çıkaranlar.",
+        "modern bir ürün çıkarmak için iki yol var.",
+        "bir avukat claude ile nasıl çalıştığını anlattı ve bu gerçekten etkileyici.",
+        "claude code opus 4.6 ile beraber çok token yakmaya başladı.",
+        "app store’da görünmek için haftalarca keyword kovalıyorsun ya.",
+        "tiktok'ta abd kitlesi için telefon almana gerek yok.",
+        "web scraping yapıyorsun, cloudflare engelliyor. beautifulsoup yavaş. website değişince selector'lar bozuluyor.",
+        "anthropic claude için skill oluşturma kılavuzunu yayınladı. 32 sayfalık kapsamlı rehber."
+      ],
+      "kapanis_tercihi": {
+        "nokta": 49,
+        "noktasiz": 14,
+        "soru": 10,
+        "sevgiler": 0,
+        "link": 4
+      },
+      "emoji_yuzde": 1,
+      "tweet_sayisi": 77
+    }
+  },
+  "ai_report": ""
+}

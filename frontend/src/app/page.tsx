@@ -22,6 +22,48 @@ interface DashboardData {
   }[];
 }
 
+function HowToUse() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="text-sm text-[var(--accent-blue)] hover:underline"
+      >
+        {open ? "▾ Nasil Kullanilir?" : "▸ Nasil Kullanilir?"}
+      </button>
+      {open && (
+        <div className="glass-card mt-2 text-sm space-y-3">
+          <div>
+            <h4 className="font-semibold">1. API Anahtarlarini Ayarla</h4>
+            <p className="text-xs text-[var(--text-secondary)]">
+              <a href="/ayarlar" className="text-[var(--accent-blue)] hover:underline">Ayarlar</a> sayfasindan AI API anahtarini (MiniMax, Anthropic veya OpenAI) ve X cerezlerini girin.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-semibold">2. Tweet / Icerik Yaz</h4>
+            <p className="text-xs text-[var(--text-secondary)]">
+              <a href="/yaz" className="text-[var(--accent-blue)] hover:underline">Yaz</a> veya <a href="/icerik" className="text-[var(--accent-blue)] hover:underline">Icerik</a> sayfasindan konu girin, tarzi secin, AI uretsin. Begendiyseniz paylasin.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-semibold">3. Tweet Analizi</h4>
+            <p className="text-xs text-[var(--text-secondary)]">
+              <a href="/analiz" className="text-[var(--accent-blue)] hover:underline">Analiz</a> sayfasindan hesap tweet'lerini analiz edin. AI bu verilerle daha iyi tweet yazar.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-semibold">4. Takipci Kesfi</h4>
+            <p className="text-xs text-[var(--text-secondary)]">
+              <a href="/analiz" className="text-[var(--accent-blue)] hover:underline">Analiz &gt; Takipci Kesfi</a> tab'indan nisinizdeki hesaplarin takipcilerini kesfedin.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,18 +107,18 @@ export default function Dashboard() {
       : "var(--accent-amber)";
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 mt-4 md:mt-0">
+    <div className="max-w-6xl mx-auto space-y-6 md:space-y-8 mt-2 md:mt-0 overflow-hidden">
       {/* Hero */}
-      <div className="text-center py-8">
-        <div className="text-5xl mb-3">🤖</div>
-        <h1 className="text-3xl font-bold gradient-text">X AI Otomasyon</h1>
+      <div className="text-center py-4 md:py-8">
+        <div className="text-4xl md:text-5xl mb-2 md:mb-3">🤖</div>
+        <h1 className="text-2xl md:text-3xl font-bold gradient-text">X AI Otomasyon</h1>
         <p className="text-[var(--text-secondary)] mt-2">
-          Tara &middot; Yaz &middot; Paylas
+          Yaz &middot; Uret &middot; Paylas
         </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <StatBox value={`${data.today_posts}/4`} label="Bugun" />
         <StatBox value={String(data.total_drafts)} label="Taslak" />
         <StatBox value={`${data.week_posts}/28`} label="Bu Hafta" />
@@ -93,42 +135,48 @@ export default function Dashboard() {
       {/* Quick Actions */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Hizli Islemler</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <ActionCard
-            href="/tara"
-            icon="🔍"
-            title="AI Gundem Tara"
-            description="X'te AI gelismelerini kesfet"
-          />
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           <ActionCard
             href="/yaz"
-            icon="✍️"
-            title="Tweet Yaz"
-            description="AI ile dogal tweet uret"
+            icon="🔍"
+            title="Arastirmali Quote"
+            description="Quote tweet ile arastirmali icerik"
           />
           <ActionCard
-            href="/icerik"
+            href="/yaz?tab=linkreply"
+            icon="🔗"
+            title="Linkle Reply"
+            description="Tweet linkine yanit uret"
+          />
+          <ActionCard
+            href="/yaz?tab=selfreply"
+            icon="🔄"
+            title="Self Reply"
+            description="Tweet'ine yanit zinciri olustur"
+          />
+          <ActionCard
+            href="/otomatik-yanit?tab=logs"
+            icon="🤖"
+            title="Otomatik Yanit"
+            description="Yanit loglari ve durumu"
+          />
+          <ActionCard
+            href="/kesif?tab=tweets"
+            icon="👥"
+            title="Hesap Kesfi"
+            description="Kesfedilen tweetleri gor"
+          />
+          <ActionCard
+            href="/icerik?tab=generate"
             icon="💡"
             title="Icerik Uret"
-            description="Konu kesfet, uzun icerik yaz"
-          />
-          <ActionCard
-            href="/analiz"
-            icon="📊"
-            title="Tweet Analizi"
-            description="Analiz et, AI'yi egit"
+            description="Uzun icerik ve thread yaz"
           />
           <ActionCard
             href="/takvim"
             icon="📅"
             title="Takvim"
             description="Gunluk posting takvimi"
-          />
-          <ActionCard
-            href="/ayarlar"
-            icon="⚙️"
-            title="Ayarlar"
-            description="API ve yazim tarzi"
           />
         </div>
       </div>
@@ -183,20 +231,35 @@ export default function Dashboard() {
             <p className="text-[var(--text-secondary)]">
               Henuz paylasim yapilmamis.
               <br />
-              <strong>Tara</strong> sayfasindan baslayarak ilk tweet&apos;ini
+              <strong>Yaz</strong> sayfasindan baslayarak ilk tweet&apos;ini
               olustur!
             </p>
           </div>
         )}
       </div>
 
+      {/* How to Use Guide */}
+      <HowToUse />
+
       {/* Setup warning */}
       {(!data.has_twitter || !data.has_ai) && (
-        <div className="glass-card border-[var(--accent-amber)]/50 flex items-center gap-3">
+        <div className="glass-card border-[var(--accent-amber)]/50 flex items-start gap-3">
           <span className="text-2xl">⚠️</span>
-          <span className="text-sm text-[var(--accent-amber)]">
-            API anahtarlarinizi Ayarlar sayfasindan yapilandirin.
-          </span>
+          <div>
+            <p className="text-sm text-[var(--accent-amber)] font-semibold">
+              API anahtarlari yapilandirilmamis
+            </p>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">
+              {!data.has_ai && "AI API anahtari (MiniMax, Anthropic veya OpenAI) gerekli. "}
+              {!data.has_twitter && "Twitter Bearer Token gerekli. "}
+              <a
+                href="/ayarlar"
+                className="text-[var(--accent-blue)] hover:underline"
+              >
+                Ayarlar sayfasina git →
+              </a>
+            </p>
+          </div>
         </div>
       )}
     </div>
