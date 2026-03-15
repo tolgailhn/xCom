@@ -344,7 +344,10 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime, force
             return False
         return True
 
-    # ── STEP 1: Trend tweet'lerini topla (öncelikli) ──
+    # Gece yarısı sınırı: sadece bugünün tweet'leri
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+
+    # ── STEP 1: Trend tweet'lerini topla (öncelikli, bugünden) ──
     all_tweets = []
     tweet_meta = []
     seen_ids = set()
@@ -356,6 +359,10 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime, force
             text = (tw.get("text") or "")[:500].strip()
             tid = tw.get("tweet_id", "")
             if not text:
+                continue
+            # Bugünden önceki tweet'leri atla
+            created = tw.get("created_at", "")
+            if created and created < today_start:
                 continue
             if tid and tid in seen_ids:
                 continue
@@ -382,7 +389,6 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime, force
     trend_count = len(all_tweets)
 
     # ── STEP 2: Tüm cache tweet'lerini ekle (trend'de olmayanlar) ──
-    cutoff = (now - datetime.timedelta(hours=24)).isoformat()
     cache_candidates = []
 
     for source_loader in (load_discovery_cache, load_auto_scan_cache):
@@ -391,9 +397,9 @@ def _cluster_smart_suggestions(trends: list[dict], now: datetime.datetime, force
         except Exception:
             continue
         for t in cache:
-            # Son 24 saat filtresi
+            # Bugünün tweet'leri (gece yarısından itibaren)
             created = t.get("created_at", "") or t.get("scanned_at", "")
-            if created and created < cutoff:
+            if created and created < today_start:
                 continue
             tid = t.get("tweet_id", "")
             text = (t.get("text") or "")[:500].strip()

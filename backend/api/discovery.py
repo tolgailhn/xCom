@@ -1654,10 +1654,10 @@ def get_daily_feed(date: str = ""):
         trends_data = load_trend_cache()
         trends = trends_data.get("trends", []) if isinstance(trends_data, dict) else trends_data if isinstance(trends_data, list) else []
 
-        # Bugünün tweet'leri (24h)
+        # Bugünün tweet'leri (gece yarısından itibaren)
         cache = load_discovery_cache()
-        cutoff = (now - _dt.timedelta(hours=24)).isoformat()
-        tweets = [t for t in cache if (t.get("created_at") or t.get("scanned_at", "")) >= cutoff]
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+        tweets = [t for t in cache if (t.get("created_at") or t.get("scanned_at", "")) >= today_start]
 
         return {
             "date": today_str,
