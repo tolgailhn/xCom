@@ -686,7 +686,7 @@ def start_scheduler():
         scheduler.add_job(
             _check_telegram,
             "interval",
-            seconds=5,
+            minutes=1,
             id="telegram_bot",
             replace_existing=True,
         )
